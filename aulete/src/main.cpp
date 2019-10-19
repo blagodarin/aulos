@@ -16,18 +16,76 @@
 //
 
 #include <array>
+#include <iostream>
+#include <filesystem>
+#include <fstream>
 
 #include <aulos.hpp>
 
-int main(int, char**)
+#include "wav_writer.hpp"
+
+class FileOutput
 {
+public:
+	FileOutput(const std::filesystem::path& path)
+		: _path{ path } {}
+
+	~FileOutput() noexcept
+	{
+		if (!_committed)
+		{
+			_stream.close();
+			std::error_code ec;
+			std::filesystem::remove(_path, ec);
+		}
+	}
+
+	void commit() noexcept { _committed = true; }
+	const std::filesystem::path& path() const noexcept { return _path; }
+	std::ostream& stream() noexcept { return _stream; }
+
+private:
+	const std::filesystem::path _path;
+	std::ofstream _stream{ _path, std::ios::binary };
+	bool _committed = false;
+};
+
+int main(int argc, char** argv)
+{
+	if (argc != 2)
+	{
+		std::cerr << "Usage: " << std::filesystem::path{ argv[0] } << " OUTFILE\n";
+		return 1;
+	}
+
+	FileOutput output{ argv[1] };
+	if (!output.stream())
+	{
+		std::cerr << "Failed to open file: " << output.path() << "\n";
+		return 2;
+	}
+
+	WavWriter writer{ output.stream() };
+	if (!writer)
+	{
+		std::cerr << "Failed to write file headers: " << output.path() << "\n";
+		return 3;
+	}
+
 	aulos::Renderer renderer{ "", 0 };
 	std::array<uint8_t, 1024> buffer;
 	for (;;)
 	{
-		const auto bytesWritten = renderer.render(buffer.data(), buffer.size());
-		if (!bytesWritten)
+		const auto bytesRendered = renderer.render(buffer.data(), buffer.size());
+		if (!bytesRendered)
 			break;
+		if (!writer.write(buffer.data(), bytesRendered))
+		{
+			std::cerr << "Failed to write file data: " << output.path() << "\n";
+			return 4;
+		}
 	}
+
+	output.commit();
 	return 0;
 }

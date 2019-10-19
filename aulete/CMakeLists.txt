@@ -17,5 +17,7 @@
 
 add_executable(aulete
 	src/main.cpp
+	src/wav_writer.cpp
+	src/wav_writer.hpp
 	)
 target_link_libraries(aulete PRIVATE aulos)
