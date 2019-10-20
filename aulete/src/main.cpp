@@ -18,6 +18,7 @@
 #include "main.hpp"
 
 #include "file_output.hpp"
+#include "playback_writer.hpp"
 #include "wav_writer.hpp"
 
 #include <array>
@@ -27,14 +28,15 @@
 
 int main(int argc, char** argv)
 {
-	if (argc != 2)
-	{
-		std::cerr << "Usage: " << std::filesystem::path{ argv[0] } << " OUTFILE\n";
-		return 1;
-	}
 	try
 	{
-		const auto writer = makeWavWriter(makeFileOutput(argv[1]));
+		std::unique_ptr<Writer> writer;
+		if (argc == 1)
+			writer = makePlaybackWriter();
+		else if (argc == 2)
+			writer = makeWavWriter(makeFileOutput(argv[1]));
+		else
+			throw std::runtime_error{ "Usage:\n\t" + std::filesystem::path{ argv[0] }.filename().string() + " [OUTFILE]" };
 		aulos::Renderer renderer{ "", 0 };
 		std::array<uint8_t, 1024> buffer;
 		while (const auto bytesRendered = renderer.render(buffer.data(), buffer.size()))

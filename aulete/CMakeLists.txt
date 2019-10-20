@@ -20,6 +20,8 @@ add_executable(aulete
 	src/file_output.hpp
 	src/main.cpp
 	src/main.hpp
+	src/playback_writer.hpp
+	src/playback_writer_winmm.cpp
 	src/wav_writer.cpp
 	src/wav_writer.hpp
 	)
