@@ -17,8 +17,9 @@
 
 #include "wav_writer.hpp"
 
-#include <cstdint>
-#include <ostream>
+#include "main.hpp"
+
+#include <stdexcept>
 
 namespace
 {
@@ -75,27 +76,38 @@ namespace
 	constexpr size_t MaxWavDataSize = std::numeric_limits<uint32_t>::max() - (sizeof(WavFileHeaders) - sizeof(WavChunkHeader));
 }
 
-WavWriter::WavWriter(std::ostream& output)
-	: _output{ output }
+class WavWriter : public Writer
 {
-	WavFileHeaders headers{ 0 };
-	_headersWritten = static_cast<bool>(_output.write(reinterpret_cast<const char*>(&headers), sizeof headers));
-}
+public:
+	WavWriter(std::unique_ptr<Output>&& output)
+		: _output{ std::move(output) }
+	{
+		WavFileHeaders headers{ 0 };
+		_output->write(&headers, sizeof headers);
+	}
 
-bool WavWriter::commit()
-{
-	if (!_output.seekp(0))
-		return false;
-	WavFileHeaders headers{ _dataWritten };
-	return _output.write(reinterpret_cast<const char*>(&headers), sizeof headers) && _output.flush();
-}
+	void commit() override
+	{
+		_output->seek(0);
+		WavFileHeaders headers{ _dataWritten };
+		_output->write(&headers, sizeof headers);
+		_output->commit();
+	}
 
-bool WavWriter::write(const void* data, size_t size)
+	void write(const void* data, size_t size) override
+	{
+		if (size > MaxWavDataSize - _dataWritten)
+			throw std::runtime_error{ "Failed to write output file data" };
+		_output->write(data, size);
+		_dataWritten += size;
+	}
+
+private:
+	const std::unique_ptr<Output> _output;
+	size_t _dataWritten = 0;
+};
+
+std::unique_ptr<Writer> makeWavWriter(std::unique_ptr<Output>&& output)
 {
-	if (size > MaxWavDataSize - _dataWritten)
-		return false;
-	if (!_output.write(reinterpret_cast<const char*>(data), size))
-		return false;
-	_dataWritten += size;
-	return true;
+	return std::make_unique<WavWriter>(std::move(output));
 }

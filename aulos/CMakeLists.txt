@@ -17,7 +17,7 @@
 
 add_library(aulos STATIC
 	include/aulos.hpp
-	src/main.cpp
+	src/renderer.cpp
 	)
 target_compile_definitions(aulos PRIVATE _USE_MATH_DEFINES)
 target_include_directories(aulos PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)

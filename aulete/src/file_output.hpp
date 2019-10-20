@@ -17,9 +17,9 @@
 
 #pragma once
 
+#include <filesystem>
 #include <memory>
 
 class Output;
-class Writer;
 
-std::unique_ptr<Writer> makeWavWriter(std::unique_ptr<Output>&&);
+std::unique_ptr<Output> makeFileOutput(const std::filesystem::path&);

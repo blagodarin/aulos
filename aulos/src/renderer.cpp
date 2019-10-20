@@ -28,7 +28,7 @@ namespace aulos
 		size_t _bytesWritten = 0;
 	};
 
-	Renderer::Renderer(void const*, size_t)
+	Renderer::Renderer(const void*, size_t)
 		: _impl{ std::make_unique<RendererImpl>() }
 	{
 	}

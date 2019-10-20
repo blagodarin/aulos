@@ -17,9 +17,23 @@
 
 #pragma once
 
-#include <memory>
+#include <cstdint>
 
-class Output;
-class Writer;
+class Output
+{
+public:
+	virtual ~Output() noexcept = default;
 
-std::unique_ptr<Writer> makeWavWriter(std::unique_ptr<Output>&&);
+	virtual void commit() = 0;
+	virtual void seek(uint64_t) = 0;
+	virtual void write(const void* data, size_t size) = 0;
+};
+
+class Writer
+{
+public:
+	virtual ~Writer() noexcept = default;
+
+	virtual void commit() = 0;
+	virtual void write(const void* data, size_t size) = 0;
+};

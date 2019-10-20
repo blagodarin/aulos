@@ -16,7 +16,10 @@
 #
 
 add_executable(aulete
+	src/file_output.cpp
+	src/file_output.hpp
 	src/main.cpp
+	src/main.hpp
 	src/wav_writer.cpp
 	src/wav_writer.hpp
 	)
