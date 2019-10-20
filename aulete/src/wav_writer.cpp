@@ -19,6 +19,7 @@
 
 #include "main.hpp"
 
+#include <array>
 #include <stdexcept>
 
 namespace
@@ -86,25 +87,36 @@ public:
 		_output->write(&headers, sizeof headers);
 	}
 
+	virtual void* buffer()
+	{
+		return _buffer.data();
+	}
+
+	virtual size_t bufferSize() const noexcept
+	{
+		return _buffer.size();
+	}
+
 	void commit() override
 	{
 		_output->seek(0);
-		WavFileHeaders headers{ _dataWritten };
+		WavFileHeaders headers{ _totalWritten };
 		_output->write(&headers, sizeof headers);
 		_output->commit();
 	}
 
-	void write(const void* data, size_t size) override
+	void write(size_t size) override
 	{
-		if (size > MaxWavDataSize - _dataWritten)
+		if (size > MaxWavDataSize - _totalWritten)
 			throw std::runtime_error{ "Failed to write output file data" };
-		_output->write(data, size);
-		_dataWritten += size;
+		_output->write(_buffer.data(), size);
+		_totalWritten += size;
 	}
 
 private:
 	const std::unique_ptr<Output> _output;
-	size_t _dataWritten = 0;
+	size_t _totalWritten = 0;
+	std::array<std::byte, 1024> _buffer{};
 };
 
 std::unique_ptr<Writer> makeWavWriter(std::unique_ptr<Output>&& output)

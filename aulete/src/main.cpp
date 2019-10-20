@@ -38,9 +38,11 @@ int main(int argc, char** argv)
 		else
 			throw std::runtime_error{ "Usage:\n\t" + std::filesystem::path{ argv[0] }.filename().string() + " [OUTFILE]" };
 		aulos::Renderer renderer{ "", 0 };
-		std::array<uint8_t, 1024> buffer;
-		while (const auto bytesRendered = renderer.render(buffer.data(), buffer.size()))
-			writer->write(buffer.data(), bytesRendered);
+		for (;;)
+			if (const auto bytesRendered = renderer.render(writer->buffer(), writer->bufferSize()); bytesRendered > 0)
+				writer->write(bytesRendered);
+			else
+				break;
 		writer->commit();
 	}
 	catch (const std::runtime_error& e)

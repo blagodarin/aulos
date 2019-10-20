@@ -34,6 +34,8 @@ class Writer
 public:
 	virtual ~Writer() noexcept = default;
 
+	virtual void* buffer() = 0;
+	virtual size_t bufferSize() const noexcept = 0;
 	virtual void commit() = 0;
-	virtual void write(const void* data, size_t size) = 0;
+	virtual void write(size_t size) = 0;
 };
