@@ -86,6 +86,12 @@ int main(int argc, char** argv)
 		}
 	}
 
+	if (!writer.commit())
+	{
+		std::cerr << "Failed to finalize file: " << output.path() << "\n";
+		return 5;
+	}
+
 	output.commit();
 	return 0;
 }

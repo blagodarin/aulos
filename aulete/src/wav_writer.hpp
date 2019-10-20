@@ -17,17 +17,20 @@
 
 #pragma once
 
-#include <ostream>
+#include <iosfwd>
 
 class WavWriter
 {
 public:
 	WavWriter(std::ostream&);
 
-	explicit operator bool() const noexcept { return true; }
+	explicit operator bool() const noexcept { return _headersWritten; }
 
+	bool commit();
 	bool write(const void* data, size_t size);
 
 private:
 	std::ostream& _output;
+	bool _headersWritten = false;
+	size_t _dataWritten = 0;
 };

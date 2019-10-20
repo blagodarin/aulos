@@ -17,10 +17,15 @@
 
 #include <aulos.hpp>
 
+#include <algorithm>
+#include <cmath>
+
 namespace aulos
 {
 	class RendererImpl
 	{
+	public:
+		size_t _bytesWritten = 0;
 	};
 
 	Renderer::Renderer(void const*, size_t)
@@ -30,8 +35,21 @@ namespace aulos
 
 	Renderer::~Renderer() noexcept = default;
 
-	size_t Renderer::render(void*, size_t) noexcept
+	size_t Renderer::render(void* buffer, size_t bufferBytes) noexcept
 	{
-		return 0;
+		constexpr size_t samplingRate = 48'000;
+		constexpr auto totalSamples = samplingRate / 2;
+		constexpr auto totalSize = totalSamples * 4;
+		constexpr auto timeStep = 440.0 / samplingRate;
+		const auto samplesWritten = _impl->_bytesWritten / 4;
+		const auto nextSamplesWritten = samplesWritten + std::min(totalSamples - samplesWritten, bufferBytes / 4);
+		for (size_t i = samplesWritten; i < nextSamplesWritten; ++i)
+		{
+			const auto base = std::sin(2 * M_PI * timeStep * static_cast<double>(i));
+			const auto amplitude = static_cast<double>(totalSamples - i) / totalSamples;
+			static_cast<float*>(buffer)[i - samplesWritten] = static_cast<float>(base * amplitude);
+		}
+		_impl->_bytesWritten = nextSamplesWritten * 4;
+		return (nextSamplesWritten - samplesWritten) * 4;
 	}
 }
