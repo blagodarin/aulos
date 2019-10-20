@@ -19,18 +19,58 @@
 
 #include <algorithm>
 #include <cmath>
+#include <vector>
+
+namespace
+{
+	constexpr auto kSampleSize = sizeof(float);
+
+	struct Note
+	{
+		const double _frequency;
+		const double _gain;
+		const double _duration;
+
+		constexpr Note(double frequency, double gain, double duration = 1.0) noexcept
+			: _frequency{ frequency }, _gain{ gain }, _duration{ duration } {}
+	};
+}
 
 namespace aulos
 {
 	class RendererImpl
 	{
 	public:
-		size_t _bytesWritten = 0;
+		std::vector<Note> _notes;
+		std::vector<Note>::const_iterator _currentNote;
+		size_t _currentNoteOffset = 0;
 	};
 
-	Renderer::Renderer(const void*, size_t)
+	Renderer::Renderer()
 		: _impl{ std::make_unique<RendererImpl>() }
 	{
+		_impl->_notes.emplace_back(220.0, 1.0, 0.5);
+		_impl->_notes.emplace_back(220.0, 1.0, 0.5);
+		_impl->_notes.emplace_back(220.0, 1.0, 0.5);
+		_impl->_notes.emplace_back(220.0, 1.0);
+		_impl->_notes.emplace_back(440.0, 1.0);
+		_impl->_notes.emplace_back(220.0, 1.0);
+		_impl->_notes.emplace_back(440.0, 1.0);
+		_impl->_notes.emplace_back(220.0, 1.0);
+		_impl->_notes.emplace_back(440.0, 1.0, 0.5);
+		_impl->_notes.emplace_back(220.0, 1.0);
+		_impl->_notes.emplace_back(440.0, 1.0, 0.5);
+		_impl->_notes.emplace_back(220.0, 1.0, 0.5);
+		_impl->_notes.emplace_back(440.0, 1.0, 0.5);
+		_impl->_notes.emplace_back(220.0, 1.0);
+		_impl->_notes.emplace_back(440.0, 1.0);
+		_impl->_notes.emplace_back(220.0, 0.5);
+		_impl->_notes.emplace_back(440.0, 0.5);
+		_impl->_notes.emplace_back(220.0, 0.25);
+		_impl->_notes.emplace_back(440.0, 0.25, 0.5);
+		_impl->_notes.emplace_back(220.0, 0.125);
+		_impl->_notes.emplace_back(440.0, 0.125);
+		_impl->_currentNote = _impl->_notes.cbegin();
 	}
 
 	Renderer::~Renderer() noexcept = default;
@@ -38,18 +78,33 @@ namespace aulos
 	size_t Renderer::render(void* buffer, size_t bufferBytes) noexcept
 	{
 		constexpr size_t samplingRate = 48'000;
-		constexpr auto totalSamples = samplingRate / 2;
-		constexpr auto totalSize = totalSamples * 4;
-		constexpr auto timeStep = 440.0 / samplingRate;
-		const auto samplesWritten = _impl->_bytesWritten / 4;
-		const auto nextSamplesWritten = samplesWritten + std::min(totalSamples - samplesWritten, bufferBytes / 4);
-		for (size_t i = samplesWritten; i < nextSamplesWritten; ++i)
+		constexpr auto baseNoteSamples = samplingRate / 4;
+
+		size_t samplesWritten = 0;
+		while (_impl->_currentNote != _impl->_notes.cend())
 		{
-			const auto base = std::sin(2 * M_PI * timeStep * static_cast<double>(i));
-			const auto amplitude = static_cast<double>(totalSamples - i) / totalSamples;
-			static_cast<float*>(buffer)[i - samplesWritten] = static_cast<float>(base * amplitude);
+			const auto totalNoteSamples = static_cast<size_t>(baseNoteSamples * _impl->_currentNote->_duration);
+			const auto remainingSamples = totalNoteSamples - _impl->_currentNoteOffset;
+			if (!remainingSamples)
+			{
+				++_impl->_currentNote;
+				_impl->_currentNoteOffset = 0;
+				continue;
+			}
+			const auto samplesToWrite = std::min(remainingSamples, bufferBytes / kSampleSize - samplesWritten);
+			if (!samplesToWrite)
+				break;
+			const auto timeStep = _impl->_currentNote->_frequency / samplingRate;
+			auto sample = static_cast<float*>(buffer) + samplesWritten;
+			for (auto i = _impl->_currentNoteOffset; i < _impl->_currentNoteOffset + samplesToWrite; ++i)
+			{
+				const auto base = std::sin(2 * M_PI * timeStep * static_cast<double>(i));
+				const auto amplitude = static_cast<double>(totalNoteSamples - i) / totalNoteSamples;
+				*sample++ = static_cast<float>(base * amplitude * _impl->_currentNote->_gain);
+			}
+			samplesWritten += samplesToWrite;
+			_impl->_currentNoteOffset += samplesToWrite;
 		}
-		_impl->_bytesWritten = nextSamplesWritten * 4;
-		return (nextSamplesWritten - samplesWritten) * 4;
+		return samplesWritten * kSampleSize;
 	}
 }

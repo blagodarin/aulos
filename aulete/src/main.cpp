@@ -37,7 +37,7 @@ int main(int argc, char** argv)
 			writer = makeWavWriter(makeFileOutput(argv[1]));
 		else
 			throw std::runtime_error{ "Usage:\n\t" + std::filesystem::path{ argv[0] }.filename().string() + " [OUTFILE]" };
-		aulos::Renderer renderer{ "", 0 };
+		aulos::Renderer renderer;
 		for (;;)
 			if (const auto bytesRendered = renderer.render(writer->buffer(), writer->bufferSize()); bytesRendered > 0)
 				writer->write(bytesRendered);
