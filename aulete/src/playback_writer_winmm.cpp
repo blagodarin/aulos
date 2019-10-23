@@ -76,7 +76,6 @@ public:
 	{
 		waitForBuffers(1);
 		return _freeBuffers.back()->_data.data();
-
 	}
 
 	virtual size_t bufferSize() const noexcept

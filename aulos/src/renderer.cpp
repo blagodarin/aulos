@@ -83,6 +83,47 @@ namespace
 		constexpr NoteInfo(Note note, double gain = 1.0, double duration = 1.0) noexcept
 			: _frequency{ kNoteTable[note] }, _gain{ gain }, _duration{ duration } {}
 	};
+
+	class Voice
+	{
+	public:
+		constexpr Voice(size_t samplingRate) noexcept
+			: _samplingRate{ samplingRate } {}
+
+		void generate(float amplitude, double frequency, float* base, size_t count) noexcept
+		{
+			if (frequency < 1.0)
+				return;
+			const auto samplesPerHalfPeriod = _samplingRate / (2 * frequency);
+			auto remainingHalfPeriod = static_cast<size_t>(_halfPeriodRemaining * samplesPerHalfPeriod);
+			while (remainingHalfPeriod <= count)
+			{
+				const auto samples = std::min(remainingHalfPeriod, _samplesToSilence);
+				for (auto i = samples; i > 0; --i)
+					*base++ += _currentAmplitude * amplitude * (static_cast<float>(_samplesToSilence - i) / _samplingRate);
+				count -= remainingHalfPeriod;
+				_samplesToSilence -= samples;
+				_currentAmplitude = -_currentAmplitude;
+				remainingHalfPeriod = static_cast<size_t>(samplesPerHalfPeriod);
+			}
+			const auto samples = std::min(count, _samplesToSilence);
+			for (auto i = samples; i > 0; --i)
+				*base++ += _currentAmplitude * amplitude * (static_cast<float>(_samplesToSilence - i) / _samplingRate);
+			_samplesToSilence -= samples;
+			_halfPeriodRemaining = static_cast<double>(remainingHalfPeriod - count) / samplesPerHalfPeriod;
+		}
+
+		void restart() noexcept
+		{
+			_samplesToSilence = _samplingRate / 4;
+		}
+
+	private:
+		const size_t _samplingRate;
+		float _currentAmplitude = 1.f;
+		double _halfPeriodRemaining = 1.0;
+		size_t _samplesToSilence = _samplingRate / 4;
+	};
 }
 
 namespace aulos
@@ -90,6 +131,7 @@ namespace aulos
 	class RendererImpl
 	{
 	public:
+		Voice _voice{ 48'000 };
 		std::vector<NoteInfo> _notes;
 		std::vector<NoteInfo>::const_iterator _currentNote;
 		size_t _currentNoteOffset = 0;
@@ -149,6 +191,7 @@ namespace aulos
 		constexpr size_t samplingRate = 48'000;
 		constexpr auto baseNoteSamples = samplingRate / 4;
 
+		std::memset(buffer, 0, bufferBytes);
 		size_t samplesWritten = 0;
 		while (_impl->_currentNote != _impl->_notes.cend())
 		{
@@ -159,19 +202,13 @@ namespace aulos
 			{
 				++_impl->_currentNote;
 				_impl->_currentNoteOffset = 0;
+				_impl->_voice.restart();
 				continue;
 			}
 			const auto samplesToWrite = std::min(remainingSamples, bufferBytes / kSampleSize - samplesWritten);
 			if (!samplesToWrite)
 				break;
-			const auto timeStep = _impl->_currentNote->_frequency / samplingRate;
-			auto sample = static_cast<float*>(buffer) + samplesWritten;
-			for (auto i = _impl->_currentNoteOffset; i < _impl->_currentNoteOffset + samplesToWrite; ++i)
-			{
-				const auto base = std::sin(2 * M_PI * timeStep * static_cast<double>(i));
-				const auto amplitude = i <= halfNoteSamples ? std::sqrt(static_cast<double>(i) / halfNoteSamples) : std::sqrt(static_cast<double>(totalNoteSamples - 1 - i) / halfNoteSamples);
-				*sample++ = static_cast<float>(base * amplitude * _impl->_currentNote->_gain);
-			}
+			_impl->_voice.generate(0.5f, _impl->_currentNote->_frequency, static_cast<float*>(buffer) + samplesWritten, samplesToWrite);
 			samplesWritten += samplesToWrite;
 			_impl->_currentNoteOffset += samplesToWrite;
 		}
