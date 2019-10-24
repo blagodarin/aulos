@@ -50,13 +50,16 @@ namespace
 	{
 		WavFormat _format = WavFormat::IeeeFloat;
 		uint16_t _channels = 1;
-		uint32_t _samplesPerSecond = 48'000;
-		uint32_t _bytesPerSecond = _samplesPerSecond * 4;
+		uint32_t _samplesPerSecond;
+		uint32_t _bytesPerSecond;
 		uint16_t _blockAlign = 4;
 		uint16_t _bitsPerSample = 32;
 
-		constexpr WavFormatChunk() noexcept
-			: WavChunkHeader{ makeFourcc('f', 'm', 't', ' '), sizeof(WavFormatChunk) - sizeof(WavChunkHeader) } {}
+		constexpr WavFormatChunk(unsigned samplingRate) noexcept
+			: WavChunkHeader{ makeFourcc('f', 'm', 't', ' '), sizeof(WavFormatChunk) - sizeof(WavChunkHeader) }
+			, _samplesPerSecond{ samplingRate }
+			, _bytesPerSecond{ samplingRate * sizeof(float) }
+		{}
 	};
 
 	struct WavFileHeaders
@@ -66,10 +69,17 @@ namespace
 		WavFormatChunk _fmt;
 		WavChunkHeader _data;
 
-		constexpr explicit WavFileHeaders(size_t dataSize) noexcept
-			: _riff{ makeFourcc('R', 'I', 'F', 'F'), static_cast<uint32_t>(dataSize + sizeof(WavFileHeaders) - sizeof _riff) }
-			, _data{ makeFourcc('d', 'a', 't', 'a'), static_cast<uint32_t>(dataSize) }
+		constexpr explicit WavFileHeaders(unsigned samplingRate) noexcept
+			: _riff{ makeFourcc('R', 'I', 'F', 'F'), sizeof(WavFileHeaders) - sizeof _riff }
+			, _fmt{ samplingRate }
+			, _data{ makeFourcc('d', 'a', 't', 'a') }
 		{}
+
+		constexpr void setDataSize(size_t dataSize) noexcept
+		{
+			_riff._size = static_cast<uint32_t>(dataSize + sizeof(WavFileHeaders) - sizeof _riff);
+			_data._size = static_cast<uint32_t>(dataSize);
+		}
 	};
 
 #pragma pack(pop)
@@ -80,11 +90,11 @@ namespace
 class WavWriter : public Writer
 {
 public:
-	WavWriter(std::unique_ptr<Output>&& output)
+	WavWriter(unsigned samplingRate, std::unique_ptr<Output>&& output)
 		: _output{ std::move(output) }
+		, _headers{ samplingRate }
 	{
-		WavFileHeaders headers{ 0 };
-		_output->write(&headers, sizeof headers);
+		_output->write(&_headers, sizeof _headers);
 	}
 
 	virtual void* buffer()
@@ -99,9 +109,9 @@ public:
 
 	void commit() override
 	{
+		_headers.setDataSize(_totalWritten);
 		_output->seek(0);
-		WavFileHeaders headers{ _totalWritten };
-		_output->write(&headers, sizeof headers);
+		_output->write(&_headers, sizeof _headers);
 		_output->commit();
 	}
 
@@ -115,11 +125,12 @@ public:
 
 private:
 	const std::unique_ptr<Output> _output;
+	WavFileHeaders _headers;
 	size_t _totalWritten = 0;
 	std::array<std::byte, 1024> _buffer{};
 };
 
-std::unique_ptr<Writer> makeWavWriter(std::unique_ptr<Output>&& output)
+std::unique_ptr<Writer> makeWavWriter(unsigned samplingRate, std::unique_ptr<Output>&& output)
 {
-	return std::make_unique<WavWriter>(std::move(output));
+	return std::make_unique<WavWriter>(samplingRate, std::move(output));
 }

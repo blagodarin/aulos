@@ -131,10 +131,10 @@ private:
 	std::array<Buffer, 2> _buffers;
 };
 
-std::unique_ptr<Writer> makePlaybackWriter()
+std::unique_ptr<Writer> makePlaybackWriter(unsigned samplingRate)
 {
 	auto writer = std::make_unique<PlaybackWriter>();
-	if (!writer->init(48'000, 1))
+	if (!writer->init(samplingRate, 1))
 		throw std::runtime_error{ "Failed to initialize playback" };
 	return writer;
 }

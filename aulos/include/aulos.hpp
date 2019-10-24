@@ -24,7 +24,7 @@ namespace aulos
 	class Renderer
 	{
 	public:
-		Renderer();
+		Renderer(unsigned samplingRate);
 		~Renderer() noexcept;
 
 		size_t render(void* buffer, size_t bufferBytes) noexcept;

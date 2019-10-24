@@ -22,4 +22,4 @@
 class Output;
 class Writer;
 
-std::unique_ptr<Writer> makeWavWriter(std::unique_ptr<Output>&&);
+std::unique_ptr<Writer> makeWavWriter(unsigned samplingRate, std::unique_ptr<Output>&&);

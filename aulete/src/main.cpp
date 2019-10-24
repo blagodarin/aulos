@@ -28,16 +28,17 @@
 
 int main(int argc, char** argv)
 {
+	constexpr unsigned samplingRate = 48'000;
 	try
 	{
 		std::unique_ptr<Writer> writer;
 		if (argc == 1)
-			writer = makePlaybackWriter();
+			writer = makePlaybackWriter(samplingRate);
 		else if (argc == 2)
-			writer = makeWavWriter(makeFileOutput(argv[1]));
+			writer = makeWavWriter(samplingRate, makeFileOutput(argv[1]));
 		else
 			throw std::runtime_error{ "Usage:\n\t" + std::filesystem::path{ argv[0] }.filename().string() + " [OUTFILE]" };
-		aulos::Renderer renderer;
+		aulos::Renderer renderer{ samplingRate };
 		for (;;)
 			if (const auto bytesRendered = renderer.render(writer->buffer(), writer->bufferSize()); bytesRendered > 0)
 				writer->write(bytesRendered);

@@ -21,4 +21,4 @@
 
 class Writer;
 
-std::unique_ptr<Writer> makePlaybackWriter();
+std::unique_ptr<Writer> makePlaybackWriter(unsigned samplingRate);
