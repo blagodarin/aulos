@@ -75,63 +75,59 @@ namespace
 	struct NoteInfo
 	{
 		const double _frequency = 0.0;
-		const size_t _length = 1;
+		const size_t _duration = 1;
 
-		constexpr NoteInfo(size_t length = 1) noexcept
-			: _length{ length } {}
-		constexpr NoteInfo(Note note, size_t length = 1) noexcept
-			: _frequency{ kNoteTable[note] }, _length{ length } {}
+		constexpr NoteInfo(size_t duration = 1) noexcept
+			: _duration{ duration } {}
+		constexpr NoteInfo(Note note, size_t duration = 1) noexcept
+			: _frequency{ kNoteTable[note] }, _duration{ duration } {}
 	};
 
 	class Voice
 	{
 	public:
-		constexpr Voice(size_t samplingRate) noexcept
-			: _samplingRate{ samplingRate } {}
+		constexpr Voice(size_t samplingRate, double duration) noexcept
+			: _samplingRate{ samplingRate }, _maxSamples{ static_cast<size_t>(samplingRate * duration) } {}
 
-		size_t generate(float* base, size_t maxSamples) noexcept
+		void generate(float* base, size_t count) noexcept
 		{
-			const auto count = std::min(_samplesToEnd, maxSamples);
-			_samplesToEnd -= count;
-			if (_frequency >= 1.0)
+			if (!_samplesToSilence)
+				return;
+			const auto samplesPerHalfPeriod = _samplingRate / (2 * _frequency);
+			auto remainingHalfPeriod = static_cast<size_t>(_halfPeriodRemaining * samplesPerHalfPeriod);
+			while (remainingHalfPeriod <= count)
 			{
-				const auto samplesPerHalfPeriod = _samplingRate / (2 * _frequency);
-				auto remainingHalfPeriod = static_cast<size_t>(_halfPeriodRemaining * samplesPerHalfPeriod);
-				size_t remainingSamples = count;
-				while (remainingHalfPeriod <= remainingSamples)
-				{
-					const auto samples = std::min(remainingHalfPeriod, _samplesToSilence);
-					for (auto i = samples; i > 0; --i)
-						*base++ += _amplitude * (static_cast<float>(_samplesToSilence - i) / _samplingRate);
-					remainingSamples -= remainingHalfPeriod;
-					_samplesToSilence -= samples;
-					_amplitude = -_amplitude;
-					remainingHalfPeriod = static_cast<size_t>(samplesPerHalfPeriod);
-				}
-				const auto samples = std::min(remainingSamples, _samplesToSilence);
+				const auto samples = std::min(remainingHalfPeriod, _samplesToSilence);
 				for (auto i = samples; i > 0; --i)
 					*base++ += _amplitude * (static_cast<float>(_samplesToSilence - i) / _samplingRate);
+				count -= remainingHalfPeriod;
 				_samplesToSilence -= samples;
-				_halfPeriodRemaining = static_cast<double>(remainingHalfPeriod - remainingSamples) / samplesPerHalfPeriod;
+				_amplitude = -_amplitude;
+				remainingHalfPeriod = static_cast<size_t>(samplesPerHalfPeriod);
 			}
-			return count;
+			const auto samples = std::min(count, _samplesToSilence);
+			for (auto i = samples; i > 0; --i)
+				*base++ += _amplitude * (static_cast<float>(_samplesToSilence - i) / _samplingRate);
+			_samplesToSilence -= samples;
+			_halfPeriodRemaining = static_cast<double>(remainingHalfPeriod - count) / samplesPerHalfPeriod;
 		}
 
-		void start(double frequency, float amplitude, double duration, size_t samples) noexcept
+		void start(double frequency, float amplitude) noexcept
 		{
+			if (!_samplesToSilence)
+				_halfPeriodRemaining = 1.0;
 			_frequency = frequency;
 			_amplitude = std::copysign(std::clamp(amplitude, -1.f, 1.f), _amplitude);
-			_samplesToSilence = static_cast<size_t>(_samplingRate * duration);
-			_samplesToEnd = samples;
+			_samplesToSilence = frequency > 0.0 ? _maxSamples : 0;
 		}
 
 	private:
 		const size_t _samplingRate;
+		const size_t _maxSamples;
 		double _frequency = 1.0;
 		float _amplitude = 1.f;
 		double _halfPeriodRemaining = 1.0;
 		size_t _samplesToSilence = 0;
-		size_t _samplesToEnd = 0;
 	};
 }
 
@@ -146,9 +142,11 @@ namespace aulos
 	public:
 		const unsigned _samplingRate;
 		const size_t _stepSamples = _samplingRate / 4;
-		Voice _voice{ _samplingRate };
+		Voice _voice{ _samplingRate, 1.0 };
 		std::vector<NoteInfo> _notes;
 		std::vector<NoteInfo>::const_iterator _currentNote;
+		bool _noteStarted = false;
+		size_t _noteSamplesRemaining = 0;
 	};
 
 	Renderer::Renderer(unsigned samplingRate)
@@ -191,30 +189,33 @@ namespace aulos
 		_impl->_notes.emplace_back(Note::B4);
 		_impl->_notes.emplace_back(Note::A4, 4);
 		_impl->_currentNote = _impl->_notes.cbegin();
-		if (_impl->_currentNote != _impl->_notes.cend())
-			_impl->_voice.start(_impl->_currentNote->_frequency, .25f, 1.0, _impl->_stepSamples * _impl->_currentNote->_length);
 	}
 
 	Renderer::~Renderer() noexcept = default;
 
 	size_t Renderer::render(void* buffer, size_t bufferBytes) noexcept
 	{
-		if (_impl->_currentNote == _impl->_notes.cend())
-			return 0;
 		std::memset(buffer, 0, bufferBytes);
 		size_t samplesRendered = 0;
-		for (;;)
+		while (_impl->_currentNote != _impl->_notes.cend())
 		{
+			if (!_impl->_noteStarted)
+			{
+				_impl->_noteStarted = true;
+				_impl->_noteSamplesRemaining = _impl->_stepSamples * _impl->_currentNote->_duration;
+				_impl->_voice.start(_impl->_currentNote->_frequency, .25f);
+			}
 			const auto samplesToGenerate = bufferBytes / kSampleSize - samplesRendered;
 			if (!samplesToGenerate)
 				break;
-			const auto samplesGenerated = _impl->_voice.generate(static_cast<float*>(buffer) + samplesRendered, samplesToGenerate);
+			const auto samplesGenerated = std::min(_impl->_noteSamplesRemaining, samplesToGenerate);
+			_impl->_voice.generate(static_cast<float*>(buffer) + samplesRendered, samplesGenerated);
+			_impl->_noteSamplesRemaining -= samplesGenerated;
 			samplesRendered += samplesGenerated;
 			if (samplesGenerated < samplesToGenerate)
 			{
 				++_impl->_currentNote;
-				if (_impl->_currentNote != _impl->_notes.cend())
-					_impl->_voice.start(_impl->_currentNote->_frequency, .25f, 1.0, _impl->_stepSamples * _impl->_currentNote->_length);
+				_impl->_noteStarted = false;
 			}
 		}
 		return samplesRendered * kSampleSize;
