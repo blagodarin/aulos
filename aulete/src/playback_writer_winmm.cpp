@@ -111,7 +111,7 @@ private:
 	}
 
 private:
-	static constexpr DWORD playbackBufferSize = 8192;
+	static constexpr DWORD playbackBufferSize = 65536;
 
 	struct Buffer
 	{
