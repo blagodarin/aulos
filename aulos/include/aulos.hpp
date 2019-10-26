@@ -24,7 +24,7 @@ namespace aulos
 	class Composition
 	{
 	public:
-		static std::unique_ptr<Composition> create();
+		static std::unique_ptr<Composition> create(const char* source);
 
 		virtual ~Composition() noexcept = default;
 	};

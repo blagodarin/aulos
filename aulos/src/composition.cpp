@@ -17,50 +17,83 @@
 
 #include "composition.hpp"
 
+#include <cassert>
+#include <stdexcept>
+
 namespace aulos
 {
-	CompositionImpl::CompositionImpl()
+	CompositionImpl::CompositionImpl(const char* source)
 	{
-		_notes.emplace_back(Note::Silence);
-		_notes.emplace_back(Note::E5);
-		_notes.emplace_back(Note::Eb5);
-		_notes.emplace_back(Note::E5);
-		_notes.emplace_back(Note::Eb5);
-		_notes.emplace_back(Note::E5);
-		_notes.emplace_back(Note::B4);
-		_notes.emplace_back(Note::D5);
-		_notes.emplace_back(Note::C5);
-		_notes.emplace_back(Note::A4, 3);
-		_notes.emplace_back(Note::C4);
-		_notes.emplace_back(Note::E4);
-		_notes.emplace_back(Note::A4);
-		_notes.emplace_back(Note::B4, 3);
-		_notes.emplace_back(Note::E4);
-		_notes.emplace_back(Note::A4);
-		_notes.emplace_back(Note::B4);
-		_notes.emplace_back(Note::C5, 3);
-		_notes.emplace_back(Note::E4);
-		_notes.emplace_back(Note::E5);
-		_notes.emplace_back(Note::Eb5);
-		_notes.emplace_back(Note::E5);
-		_notes.emplace_back(Note::Eb5);
-		_notes.emplace_back(Note::E5);
-		_notes.emplace_back(Note::B4);
-		_notes.emplace_back(Note::D5);
-		_notes.emplace_back(Note::C5);
-		_notes.emplace_back(Note::A4, 3);
-		_notes.emplace_back(Note::C4);
-		_notes.emplace_back(Note::E4);
-		_notes.emplace_back(Note::A4);
-		_notes.emplace_back(Note::B4, 3);
-		_notes.emplace_back(Note::E4);
-		_notes.emplace_back(Note::C5);
-		_notes.emplace_back(Note::B4);
-		_notes.emplace_back(Note::A4, 4);
+		const auto parseNote = [this](const char* data, size_t baseOffset) {
+			assert(baseOffset >= 0 && baseOffset < 12);
+			if (*data == '#')
+			{
+				if (baseOffset == 11)
+					throw std::runtime_error{ "Bad composition" };
+				++baseOffset;
+				++data;
+			}
+			else if (*data == 'b')
+			{
+				if (!baseOffset)
+					throw std::runtime_error{ "Bad composition" };
+				--baseOffset;
+				++data;
+			}
+			if (*data < '0' || *data > '9')
+				throw std::runtime_error{ "Bad composition" };
+			_notes.emplace_back(static_cast<Note>((*data - '0') * 12 + baseOffset));
+			return data + 1;
+		};
+
+		for (;;)
+		{
+			switch (*source++)
+			{
+			case '\0':
+			case '\n':
+			case '\r':
+				return;
+			case '\t':
+			case ' ':
+				while (*source == '\t' || *source == ' ')
+					++source;
+				break;
+			case '.':
+				if (_notes.empty())
+					_notes.emplace_back(Note::Silence);
+				else
+					++_notes.back()._duration;
+				break;
+			case 'A':
+				source = parseNote(source, 9);
+				break;
+			case 'B':
+				source = parseNote(source, 11);
+				break;
+			case 'C':
+				source = parseNote(source, 0);
+				break;
+			case 'D':
+				source = parseNote(source, 2);
+				break;
+			case 'E':
+				source = parseNote(source, 4);
+				break;
+			case 'F':
+				source = parseNote(source, 5);
+				break;
+			case 'G':
+				source = parseNote(source, 7);
+				break;
+			default:
+				throw std::runtime_error{ "Bad composition" };
+			}
+		}
 	}
 
-	std::unique_ptr<Composition> Composition::create()
+	std::unique_ptr<Composition> Composition::create(const char* source)
 	{
-		return std::make_unique<CompositionImpl>();
+		return std::make_unique<CompositionImpl>(source);
 	}
 }

@@ -42,8 +42,8 @@ namespace aulos
 
 	struct NoteInfo
 	{
-		const Note _note = Note::Silence;
-		const size_t _duration = 1;
+		Note _note = Note::Silence;
+		size_t _duration = 1;
 
 		constexpr NoteInfo(Note note, size_t duration = 1) noexcept
 			: _note{ note }, _duration{ duration } {}
@@ -53,6 +53,6 @@ namespace aulos
 	{
 		std::vector<NoteInfo> _notes;
 
-		CompositionImpl();
+		CompositionImpl(const char* source);
 	};
 }

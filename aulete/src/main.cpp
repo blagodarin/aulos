@@ -29,8 +29,11 @@
 int main(int argc, char** argv)
 {
 	constexpr unsigned samplingRate = 48'000;
+	const auto input = ". E5 Eb5 E5 Eb5 E5 B4 D5 C5 A4 . . C4 E4 A4 B4 . . E4 A4 B4 C5 . . E4 E5 Eb5 E5 Eb5 E5 B4 D5 C5 A4 . . C4 E4 A4 B4 . . E4 C5 B4 A4 . . .";
 	try
 	{
+		const auto composition = aulos::Composition::create(input);
+		aulos::Renderer renderer{ *composition, samplingRate };
 		std::unique_ptr<Writer> writer;
 		if (argc == 1)
 			writer = makePlaybackWriter(samplingRate);
@@ -38,8 +41,6 @@ int main(int argc, char** argv)
 			writer = makeWavWriter(samplingRate, makeFileOutput(argv[1]));
 		else
 			throw std::runtime_error{ "Usage:\n\t" + std::filesystem::path{ argv[0] }.filename().string() + " [OUTFILE]" };
-		const auto composition = aulos::Composition::create();
-		aulos::Renderer renderer{ *composition, samplingRate };
 		for (;;)
 			if (const auto bytesRendered = renderer.render(writer->buffer(), writer->bufferSize()); bytesRendered > 0)
 				writer->write(bytesRendered);
