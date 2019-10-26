@@ -51,7 +51,7 @@ namespace aulos
 
 	struct CompositionImpl : public Composition
 	{
-		std::vector<NoteInfo> _notes;
+		std::vector<std::vector<NoteInfo>> _tracks;
 
 		CompositionImpl(const char* source);
 	};

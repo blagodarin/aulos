@@ -24,7 +24,9 @@ namespace aulos
 {
 	CompositionImpl::CompositionImpl(const char* source)
 	{
-		const auto parseNote = [this](const char* data, size_t baseOffset) {
+		bool startTrack = true;
+
+		const auto parseNote = [&](const char* data, size_t baseOffset) {
 			assert(baseOffset >= 0 && baseOffset < 12);
 			if (*data == '#')
 			{
@@ -42,7 +44,12 @@ namespace aulos
 			}
 			if (*data < '0' || *data > '9')
 				throw std::runtime_error{ "Bad composition" };
-			_notes.emplace_back(static_cast<Note>((*data - '0') * 12 + baseOffset));
+			if (startTrack)
+			{
+				_tracks.emplace_back();
+				startTrack = false;
+			}
+			_tracks.back().emplace_back(static_cast<Note>((*data - '0') * 12 + baseOffset));
 			return data + 1;
 		};
 
@@ -51,8 +58,14 @@ namespace aulos
 			switch (*source++)
 			{
 			case '\0':
+				return;
 			case '\n':
+				startTrack = true;
+				break;
 			case '\r':
+				if (*source == '\n')
+					++source;
+				startTrack = true;
 				return;
 			case '\t':
 			case ' ':
@@ -60,10 +73,15 @@ namespace aulos
 					++source;
 				break;
 			case '.':
-				if (_notes.empty())
-					_notes.emplace_back(Note::Silence);
+				if (startTrack)
+				{
+					_tracks.emplace_back();
+					startTrack = false;
+				}
+				if (_tracks.back().empty())
+					_tracks.back().emplace_back(Note::Silence);
 				else
-					++_notes.back()._duration;
+					++_tracks.back().back()._duration;
 				break;
 			case 'A':
 				source = parseNote(source, 9);

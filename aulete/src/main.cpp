@@ -29,7 +29,8 @@
 int main(int argc, char** argv)
 {
 	constexpr unsigned samplingRate = 48'000;
-	const auto input = ". E5 Eb5 E5 Eb5 E5 B4 D5 C5 A4 . . C4 E4 A4 B4 . . E4 A4 B4 C5 . . E4 E5 Eb5 E5 Eb5 E5 B4 D5 C5 A4 . . C4 E4 A4 B4 . . E4 C5 B4 A4 . . .";
+	const auto input = ". E5 D#5 E5 D#5 E5 B4 D5 C5 A4 .  .  C4 E4 A4 B4 .  .   E4 A4 B4 C5 .  .  E4 E5 D#5 E5 D#5 E5 B4 D5 C5 A4 .  .  C4 E4 A4 B4 .  .   E4 C5 B4 A4 .  .  . . .\n"
+					   ". .  .   .  .   .  .  .  .  A2 E3 A3 .  .  .  E2 E3 G#3 .  .  .  A2 E3 A3 .  .  .   .  .   .  .  .  .  A2 E3 A3 .  .  .  E2 E3 G#3 .  .  .  A2 E3 A3 . . .\n";
 	try
 	{
 		const auto composition = aulos::Composition::create(input);
