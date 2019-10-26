@@ -22,26 +22,40 @@
 #include "wav_writer.hpp"
 
 #include <array>
+#include <fstream>
 #include <iostream>
 
 #include <aulos.hpp>
 
+namespace
+{
+	std::string loadFile(const std::filesystem::path& path)
+	{
+		std::ifstream stream{ path, std::ios::binary };
+		if (!stream)
+			throw std::runtime_error{ "Failed to open input file" };
+		stream.seekg(0, std::ios::end);
+		std::string result(stream.tellg(), '\0');
+		stream.seekg(0, std::ios::beg);
+		stream.read(result.data(), result.size());
+		return result;
+	}
+}
+
 int main(int argc, char** argv)
 {
 	constexpr unsigned samplingRate = 48'000;
-	const auto input = ". E5 D#5 E5 D#5 E5 B4 D5 C5 A4 .  .  C4 E4 A4 B4 .  .   E4 A4 B4 C5 .  .  E4 E5 D#5 E5 D#5 E5 B4 D5 C5 A4 .  .  C4 E4 A4 B4 .  .   E4 C5 B4 A4 .  .  . . .\n"
-					   ". .  .   .  .   .  .  .  .  A2 E3 A3 .  .  .  E2 E3 G#3 .  .  .  A2 E3 A3 .  .  .   .  .   .  .  .  .  A2 E3 A3 .  .  .  E2 E3 G#3 .  .  .  A2 E3 A3 . . .\n";
 	try
 	{
-		const auto composition = aulos::Composition::create(input);
-		aulos::Renderer renderer{ *composition, samplingRate };
 		std::unique_ptr<Writer> writer;
-		if (argc == 1)
+		if (argc == 2)
 			writer = makePlaybackWriter(samplingRate);
-		else if (argc == 2)
+		else if (argc == 3)
 			writer = makeWavWriter(samplingRate, makeFileOutput(argv[1]));
 		else
-			throw std::runtime_error{ "Usage:\n\t" + std::filesystem::path{ argv[0] }.filename().string() + " [OUTFILE]" };
+			throw std::runtime_error{ "Usage:\n\t" + std::filesystem::path{ argv[0] }.filename().string() + " INFILE [OUTFILE]" };
+		const auto composition = aulos::Composition::create(loadFile(argv[1]).c_str());
+		aulos::Renderer renderer{ *composition, samplingRate };
 		for (;;)
 			if (const auto bytesRendered = renderer.render(writer->buffer(), writer->bufferSize()); bytesRendered > 0)
 				writer->write(bytesRendered);

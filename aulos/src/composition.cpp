@@ -66,7 +66,7 @@ namespace aulos
 				if (*source == '\n')
 					++source;
 				startTrack = true;
-				return;
+				break;
 			case '\t':
 			case ' ':
 				while (*source == '\t' || *source == ' ')
