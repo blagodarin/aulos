@@ -88,7 +88,10 @@ namespace
 		void start(double frequency, float amplitude) noexcept
 		{
 			if (!_samplesToSilence)
+			{
+				_amplitude = 1.f;
 				_halfPeriodRemaining = 1.0;
+			}
 			_frequency = frequency;
 			_amplitude = std::copysign(std::clamp(amplitude, -1.f, 1.f), _amplitude);
 			_samplesToSilence = frequency > 0.0 ? _maxSamples : 0;

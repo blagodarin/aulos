@@ -23,7 +23,9 @@
 
 #include <array>
 #include <fstream>
+#include <functional>
 #include <iostream>
+#include <optional>
 
 #include <aulos.hpp>
 
@@ -40,22 +42,52 @@ namespace
 		stream.read(result.data(), result.size());
 		return result;
 	}
+
+	struct Options
+	{
+		std::filesystem::path _input;
+		std::filesystem::path _output;
+		unsigned _samplingRate = 48'000;
+	};
+
+	bool parseArguments(int argc, char** argv, Options& options)
+	{
+		for (int i = 1; i < argc;)
+		{
+			const std::string_view argument{ argv[i++] };
+			if (argument == "-o")
+			{
+				if (i == argc)
+					return false;
+				options._output = argv[i++];
+			}
+			else if (argument == "-s")
+			{
+				if (i == argc)
+					return false;
+				options._samplingRate = std::atoi(argv[i++]);
+			}
+			else if (argument[0] != '-')
+				options._input = argument;
+			else
+				return false;
+		}
+		return !options._input.empty();
+	}
 }
 
 int main(int argc, char** argv)
 {
-	constexpr unsigned samplingRate = 48'000;
 	try
 	{
-		std::unique_ptr<Writer> writer;
-		if (argc == 2)
-			writer = makePlaybackWriter(samplingRate);
-		else if (argc == 3)
-			writer = makeWavWriter(samplingRate, makeFileOutput(argv[1]));
-		else
-			throw std::runtime_error{ "Usage:\n\t" + std::filesystem::path{ argv[0] }.filename().string() + " INFILE [OUTFILE]" };
-		const auto composition = aulos::Composition::create(loadFile(argv[1]).c_str());
-		const auto renderer = aulos::Renderer::create(*composition, samplingRate);
+		Options options;
+		if (!parseArguments(argc, argv, options))
+			throw std::runtime_error{ "Usage:\n\t" + std::filesystem::path{ argv[0] }.filename().string() + " INFILE [-o OUTFILE] [-s SAMPLERATE]" };
+		const auto writer = options._output.empty()
+			? makePlaybackWriter(options._samplingRate)
+			: makeWavWriter(options._samplingRate, makeFileOutput(options._output));
+		const auto composition = aulos::Composition::create(loadFile(options._input).c_str());
+		const auto renderer = aulos::Renderer::create(*composition, options._samplingRate);
 		for (;;)
 			if (const auto bytesRendered = renderer->render(writer->buffer(), writer->bufferSize()); bytesRendered > 0)
 				writer->write(bytesRendered);

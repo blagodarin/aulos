@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-add_executable(aulete
+set(_src
 	src/file_output.cpp
 	src/file_output.hpp
 	src/main.cpp
@@ -25,4 +25,7 @@ add_executable(aulete
 	src/wav_writer.cpp
 	src/wav_writer.hpp
 	)
+source_group("src" FILES ${_src})
+
+add_executable(aulete ${_src})
 target_link_libraries(aulete PRIVATE aulos)
