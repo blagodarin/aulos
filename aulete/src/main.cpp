@@ -55,9 +55,9 @@ int main(int argc, char** argv)
 		else
 			throw std::runtime_error{ "Usage:\n\t" + std::filesystem::path{ argv[0] }.filename().string() + " INFILE [OUTFILE]" };
 		const auto composition = aulos::Composition::create(loadFile(argv[1]).c_str());
-		aulos::Renderer renderer{ *composition, samplingRate };
+		const auto renderer = aulos::Renderer::create(*composition, samplingRate);
 		for (;;)
-			if (const auto bytesRendered = renderer.render(writer->buffer(), writer->bufferSize()); bytesRendered > 0)
+			if (const auto bytesRendered = renderer->render(writer->buffer(), writer->bufferSize()); bytesRendered > 0)
 				writer->write(bytesRendered);
 			else
 				break;

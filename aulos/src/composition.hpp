@@ -49,7 +49,7 @@ namespace aulos
 			: _note{ note }, _duration{ duration } {}
 	};
 
-	struct CompositionImpl : public Composition
+	struct CompositionImpl final : public Composition
 	{
 		std::vector<std::vector<NoteInfo>> _tracks;
 

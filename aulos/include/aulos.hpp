@@ -32,12 +32,10 @@ namespace aulos
 	class Renderer
 	{
 	public:
-		Renderer(const Composition&, unsigned samplingRate);
-		~Renderer() noexcept;
+		static std::unique_ptr<Renderer> create(const Composition&, unsigned samplingRate);
 
-		size_t render(void* buffer, size_t bufferBytes) noexcept;
+		virtual ~Renderer() noexcept = default;
 
-	private:
-		std::unique_ptr<class RendererImpl> const _impl;
+		virtual size_t render(void* buffer, size_t bufferBytes) noexcept = 0;
 	};
 }

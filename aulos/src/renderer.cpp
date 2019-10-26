@@ -106,11 +106,52 @@ namespace
 
 namespace aulos
 {
-	class RendererImpl
+	class RendererImpl final : public Renderer
 	{
 	public:
 		RendererImpl(const CompositionImpl& composition, unsigned samplingRate)
-			: _composition{ composition }, _samplingRate{ samplingRate } {}
+			: _composition{ composition }
+			, _samplingRate{ samplingRate }
+		{
+			_tracks.reserve(_composition._tracks.size());
+			for (const auto& track : _composition._tracks)
+				_tracks.emplace_back(std::make_unique<RendererImpl::TrackState>(samplingRate, track.cbegin(), track.cend()));
+		}
+
+		size_t render(void* buffer, size_t bufferBytes) noexcept override
+		{
+			if (_tracks.empty())
+				return 0;
+			std::memset(buffer, 0, bufferBytes);
+			size_t samplesRendered = 0;
+			for (auto& track : _tracks)
+			{
+				size_t trackSamplesRendered = 0;
+				while (track->_note != track->_end)
+				{
+					if (!track->_noteStarted)
+					{
+						track->_noteStarted = true;
+						track->_noteSamplesRemaining = _stepSamples * track->_note->_duration;
+						track->_voice.start(kNoteTable[track->_note->_note], .25f);
+					}
+					const auto samplesToGenerate = bufferBytes / kSampleSize - trackSamplesRendered;
+					if (!samplesToGenerate)
+						break;
+					const auto samplesGenerated = std::min(track->_noteSamplesRemaining, samplesToGenerate);
+					track->_voice.generate(static_cast<float*>(buffer) + trackSamplesRendered, samplesGenerated);
+					track->_noteSamplesRemaining -= samplesGenerated;
+					trackSamplesRendered += samplesGenerated;
+					if (samplesGenerated < samplesToGenerate)
+					{
+						++track->_note;
+						track->_noteStarted = false;
+					}
+				}
+				samplesRendered = std::max(samplesRendered, trackSamplesRendered);
+			}
+			return samplesRendered * kSampleSize;
+		}
 
 	public:
 		struct TrackState
@@ -131,48 +172,8 @@ namespace aulos
 		std::vector<std::unique_ptr<TrackState>> _tracks;
 	};
 
-	Renderer::Renderer(const Composition& composition, unsigned samplingRate)
-		: _impl{ std::make_unique<RendererImpl>(static_cast<const CompositionImpl&>(composition), samplingRate) }
+	std::unique_ptr<Renderer> Renderer::create(const Composition& composition, unsigned samplingRate)
 	{
-		_impl->_tracks.reserve(_impl->_composition._tracks.size());
-		for (const auto& track : _impl->_composition._tracks)
-			_impl->_tracks.emplace_back(std::make_unique<RendererImpl::TrackState>(samplingRate, track.cbegin(), track.cend()));
-	}
-
-	Renderer::~Renderer() noexcept = default;
-
-	size_t Renderer::render(void* buffer, size_t bufferBytes) noexcept
-	{
-		if (_impl->_tracks.empty())
-			return 0;
-		std::memset(buffer, 0, bufferBytes);
-		size_t samplesRendered = 0;
-		for (auto& track : _impl->_tracks)
-		{
-			size_t trackSamplesRendered = 0;
-			while (track->_note != track->_end)
-			{
-				if (!track->_noteStarted)
-				{
-					track->_noteStarted = true;
-					track->_noteSamplesRemaining = _impl->_stepSamples * track->_note->_duration;
-					track->_voice.start(kNoteTable[track->_note->_note], .25f);
-				}
-				const auto samplesToGenerate = bufferBytes / kSampleSize - trackSamplesRendered;
-				if (!samplesToGenerate)
-					break;
-				const auto samplesGenerated = std::min(track->_noteSamplesRemaining, samplesToGenerate);
-				track->_voice.generate(static_cast<float*>(buffer) + trackSamplesRendered, samplesGenerated);
-				track->_noteSamplesRemaining -= samplesGenerated;
-				trackSamplesRendered += samplesGenerated;
-				if (samplesGenerated < samplesToGenerate)
-				{
-					++track->_note;
-					track->_noteStarted = false;
-				}
-			}
-			samplesRendered = std::max(samplesRendered, trackSamplesRendered);
-		}
-		return samplesRendered * kSampleSize;
+		return std::make_unique<RendererImpl>(static_cast<const CompositionImpl&>(composition), samplingRate);
 	}
 }
