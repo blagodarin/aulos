@@ -56,53 +56,52 @@ namespace
 
 	const NoteTable kNoteTable;
 
-	class Voice
+	class SquareWave
 	{
 	public:
-		constexpr Voice(size_t samplingRate, double duration) noexcept
+		constexpr SquareWave(size_t samplingRate, double duration) noexcept
 			: _samplingRate{ samplingRate }, _maxSamples{ static_cast<size_t>(samplingRate * duration) } {}
-
-		void generate(float* base, size_t count) noexcept
-		{
-			if (!_samplesToSilence)
-				return;
-			const auto samplesPerHalfPeriod = _samplingRate / (2 * _frequency);
-			auto remainingHalfPeriod = static_cast<size_t>(_halfPeriodRemaining * samplesPerHalfPeriod);
-			while (remainingHalfPeriod <= count)
-			{
-				const auto samples = std::min(remainingHalfPeriod, _samplesToSilence);
-				for (auto i = samples; i > 0; --i)
-					*base++ += _amplitude * (static_cast<float>(_samplesToSilence - i) / _samplingRate);
-				count -= remainingHalfPeriod;
-				_samplesToSilence -= samples;
-				_amplitude = -_amplitude;
-				remainingHalfPeriod = static_cast<size_t>(samplesPerHalfPeriod);
-			}
-			const auto samples = std::min(count, _samplesToSilence);
-			for (auto i = samples; i > 0; --i)
-				*base++ += _amplitude * (static_cast<float>(_samplesToSilence - i) / _samplingRate);
-			_samplesToSilence -= samples;
-			_halfPeriodRemaining = static_cast<double>(remainingHalfPeriod - count) / samplesPerHalfPeriod;
-		}
 
 		void start(double frequency, float amplitude) noexcept
 		{
-			if (!_samplesToSilence)
+			if (frequency <= 0.0)
 			{
-				_amplitude = 1.f;
-				_halfPeriodRemaining = 1.0;
+				_samplesToSilence = 0;
+				return;
 			}
-			_frequency = frequency;
+			const double halfPeriodPart = _samplesToSilence > 0 ? _halfPeriodRemaining / _halfPeriodLength : 1.0;
 			_amplitude = std::copysign(std::clamp(amplitude, -1.f, 1.f), _amplitude);
-			_samplesToSilence = frequency > 0.0 ? _maxSamples : 0;
+			_halfPeriodLength = _samplingRate / (2 * frequency);
+			_halfPeriodRemaining = _halfPeriodLength * halfPeriodPart;
+			_samplesToSilence = _maxSamples;
+		}
+
+		void generate(float* buffer, size_t maxSamples) noexcept
+		{
+			for (auto totalSamples = std::min(maxSamples, _samplesToSilence); totalSamples > 0;)
+			{
+				const auto partSamples = std::min(static_cast<size_t>(std::ceil(_halfPeriodRemaining)), totalSamples);
+				for (size_t i = 0; i < partSamples; ++i)
+					buffer[i] += _amplitude * (static_cast<float>(_samplesToSilence - (partSamples - i)) / _samplingRate);
+				_halfPeriodRemaining -= partSamples;
+				if (_halfPeriodRemaining <= 0.0)
+				{
+					_amplitude = -_amplitude;
+					_halfPeriodRemaining += _halfPeriodLength;
+				}
+				_samplesToSilence -= partSamples;
+				buffer += partSamples;
+				totalSamples -= partSamples;
+			}
 		}
 
 	private:
 		const size_t _samplingRate;
 		const size_t _maxSamples;
-		double _frequency = 1.0;
-		float _amplitude = 1.f;
-		double _halfPeriodRemaining = 1.0;
+		double _frequency = 0.0;
+		float _amplitude = 0.f;
+		double _halfPeriodLength = 0.0;
+		double _halfPeriodRemaining = 0.0;
 		size_t _samplesToSilence = 0;
 	};
 }
@@ -159,7 +158,7 @@ namespace aulos
 	public:
 		struct TrackState
 		{
-			Voice _voice;
+			SquareWave _voice;
 			std::vector<NoteInfo>::const_iterator _note;
 			const std::vector<NoteInfo>::const_iterator _end;
 			bool _noteStarted = false;
