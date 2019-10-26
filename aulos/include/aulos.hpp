@@ -21,10 +21,18 @@
 
 namespace aulos
 {
+	class Composition
+	{
+	public:
+		static std::unique_ptr<Composition> create();
+
+		virtual ~Composition() noexcept = default;
+	};
+
 	class Renderer
 	{
 	public:
-		Renderer(unsigned samplingRate);
+		Renderer(const Composition&, unsigned samplingRate);
 		~Renderer() noexcept;
 
 		size_t render(void* buffer, size_t bufferBytes) noexcept;

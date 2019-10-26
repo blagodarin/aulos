@@ -15,73 +15,46 @@
 // limitations under the License.
 //
 
-#include <aulos.hpp>
+#include "composition.hpp"
 
 #include <algorithm>
 #include <array>
 #include <cmath>
-#include <vector>
 
 namespace
 {
 	constexpr auto kSampleSize = sizeof(float);
 	constexpr auto kNoteRatio = 1.0594630943592952645618252949463;
 
-	enum class Note : uint8_t
-	{
-		// clang-format off
-		C0, Db0, D0, Eb0, E0, F0, Gb0, G0, Ab0, A0, Bb0, B0,
-		C1, Db1, D1, Eb1, E1, F1, Gb1, G1, Ab1, A1, Bb1, B1,
-		C2, Db2, D2, Eb2, E2, F2, Gb2, G2, Ab2, A2, Bb2, B2,
-		C3, Db3, D3, Eb3, E3, F3, Gb3, G3, Ab3, A3, Bb3, B3,
-		C4, Db4, D4, Eb4, E4, F4, Gb4, G4, Ab4, A4, Bb4, B4,
-		C5, Db5, D5, Eb5, E5, F5, Gb5, G5, Ab5, A5, Bb5, B5,
-		C6, Db6, D6, Eb6, E6, F6, Gb6, G6, Ab6, A6, Bb6, B6,
-		C7, Db7, D7, Eb7, E7, F7, Gb7, G7, Ab7, A7, Bb7, B7,
-		C8, Db8, D8, Eb8, E8, F8, Gb8, G8, Ab8, A8, Bb8, B8,
-		C9, Db9, D9, Eb9, E9, F9, Gb9, G9, Ab9, A9, Bb9, B9,
-		// clang-format on
-	};
-
 	class NoteTable
 	{
 	public:
 		NoteTable() noexcept
 		{
-			_frequencies[static_cast<size_t>(Note::A0)] = 27.5; // A0 for the standard A440 pitch (A4 = 440 Hz).
-			for (auto a = static_cast<size_t>(Note::A1); a <= static_cast<size_t>(Note::A9); a += 12)
+			_frequencies[static_cast<size_t>(aulos::Note::A0)] = 27.5; // A0 for the standard A440 pitch (A4 = 440 Hz).
+			for (auto a = static_cast<size_t>(aulos::Note::A1); a <= static_cast<size_t>(aulos::Note::A9); a += 12)
 				_frequencies[a] = _frequencies[a - 12] * 2.0;
-			for (size_t base = 0; base < _frequencies.size(); base += 12)
+			for (size_t base = 0; base < _frequencies.size() - 1; base += 12)
 			{
-				const auto a = base + static_cast<size_t>(Note::A0) - static_cast<size_t>(Note::C0);
+				const auto a = base + static_cast<size_t>(aulos::Note::A0) - static_cast<size_t>(aulos::Note::C0);
 				for (auto note = a; note > base; --note)
 					_frequencies[note - 1] = _frequencies[note] / kNoteRatio;
-				for (auto note = a; note < base + static_cast<size_t>(Note::B0) - static_cast<size_t>(Note::C0); ++note)
+				for (auto note = a; note < base + static_cast<size_t>(aulos::Note::B0) - static_cast<size_t>(aulos::Note::C0); ++note)
 					_frequencies[note + 1] = _frequencies[note] * kNoteRatio;
 			}
+			_frequencies[static_cast<size_t>(aulos::Note::Silence)] = 0.0;
 		}
 
-		constexpr double operator[](Note note) const noexcept
+		constexpr double operator[](aulos::Note note) const noexcept
 		{
 			return _frequencies[static_cast<size_t>(note)];
 		}
 
 	private:
-		std::array<double, 120> _frequencies;
+		std::array<double, 121> _frequencies;
 	};
 
 	const NoteTable kNoteTable;
-
-	struct NoteInfo
-	{
-		const double _frequency = 0.0;
-		const size_t _duration = 1;
-
-		constexpr NoteInfo(size_t duration = 1) noexcept
-			: _duration{ duration } {}
-		constexpr NoteInfo(Note note, size_t duration = 1) noexcept
-			: _frequency{ kNoteTable[note] }, _duration{ duration } {}
-	};
 
 	class Voice
 	{
@@ -136,59 +109,23 @@ namespace aulos
 	class RendererImpl
 	{
 	public:
-		RendererImpl(unsigned samplingRate)
-			: _samplingRate{ samplingRate } {}
+		RendererImpl(const CompositionImpl& composition, unsigned samplingRate)
+			: _composition{ composition }, _samplingRate{ samplingRate } {}
 
 	public:
+		const CompositionImpl& _composition;
 		const unsigned _samplingRate;
 		const size_t _stepSamples = _samplingRate / 4;
 		Voice _voice{ _samplingRate, 1.0 };
-		std::vector<NoteInfo> _notes;
 		std::vector<NoteInfo>::const_iterator _currentNote;
 		bool _noteStarted = false;
 		size_t _noteSamplesRemaining = 0;
 	};
 
-	Renderer::Renderer(unsigned samplingRate)
-		: _impl{ std::make_unique<RendererImpl>(samplingRate) }
+	Renderer::Renderer(const Composition& composition, unsigned samplingRate)
+		: _impl{ std::make_unique<RendererImpl>(static_cast<const CompositionImpl&>(composition), samplingRate) }
 	{
-		_impl->_notes.emplace_back(1);
-		_impl->_notes.emplace_back(Note::E5);
-		_impl->_notes.emplace_back(Note::Eb5);
-		_impl->_notes.emplace_back(Note::E5);
-		_impl->_notes.emplace_back(Note::Eb5);
-		_impl->_notes.emplace_back(Note::E5);
-		_impl->_notes.emplace_back(Note::B4);
-		_impl->_notes.emplace_back(Note::D5);
-		_impl->_notes.emplace_back(Note::C5);
-		_impl->_notes.emplace_back(Note::A4, 3);
-		_impl->_notes.emplace_back(Note::C4);
-		_impl->_notes.emplace_back(Note::E4);
-		_impl->_notes.emplace_back(Note::A4);
-		_impl->_notes.emplace_back(Note::B4, 3);
-		_impl->_notes.emplace_back(Note::E4);
-		_impl->_notes.emplace_back(Note::A4);
-		_impl->_notes.emplace_back(Note::B4);
-		_impl->_notes.emplace_back(Note::C5, 3);
-		_impl->_notes.emplace_back(Note::E4);
-		_impl->_notes.emplace_back(Note::E5);
-		_impl->_notes.emplace_back(Note::Eb5);
-		_impl->_notes.emplace_back(Note::E5);
-		_impl->_notes.emplace_back(Note::Eb5);
-		_impl->_notes.emplace_back(Note::E5);
-		_impl->_notes.emplace_back(Note::B4);
-		_impl->_notes.emplace_back(Note::D5);
-		_impl->_notes.emplace_back(Note::C5);
-		_impl->_notes.emplace_back(Note::A4, 3);
-		_impl->_notes.emplace_back(Note::C4);
-		_impl->_notes.emplace_back(Note::E4);
-		_impl->_notes.emplace_back(Note::A4);
-		_impl->_notes.emplace_back(Note::B4, 3);
-		_impl->_notes.emplace_back(Note::E4);
-		_impl->_notes.emplace_back(Note::C5);
-		_impl->_notes.emplace_back(Note::B4);
-		_impl->_notes.emplace_back(Note::A4, 4);
-		_impl->_currentNote = _impl->_notes.cbegin();
+		_impl->_currentNote = _impl->_composition._notes.cbegin();
 	}
 
 	Renderer::~Renderer() noexcept = default;
@@ -197,13 +134,13 @@ namespace aulos
 	{
 		std::memset(buffer, 0, bufferBytes);
 		size_t samplesRendered = 0;
-		while (_impl->_currentNote != _impl->_notes.cend())
+		while (_impl->_currentNote != _impl->_composition._notes.cend())
 		{
 			if (!_impl->_noteStarted)
 			{
 				_impl->_noteStarted = true;
 				_impl->_noteSamplesRemaining = _impl->_stepSamples * _impl->_currentNote->_duration;
-				_impl->_voice.start(_impl->_currentNote->_frequency, .25f);
+				_impl->_voice.start(kNoteTable[_impl->_currentNote->_note], .25f);
 			}
 			const auto samplesToGenerate = bufferBytes / kSampleSize - samplesRendered;
 			if (!samplesToGenerate)

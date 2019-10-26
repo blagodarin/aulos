@@ -15,9 +15,18 @@
 # limitations under the License.
 #
 
-add_library(aulos STATIC
+set(_include
 	include/aulos.hpp
+	)
+source_group("include" FILES ${_include})
+
+set(_src
+	src/composition.cpp
+	src/composition.hpp
 	src/renderer.cpp
 	)
+source_group("src" FILES ${_src})
+
+add_library(aulos STATIC ${_include} ${_src})
 target_compile_definitions(aulos PRIVATE _USE_MATH_DEFINES)
 target_include_directories(aulos PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
