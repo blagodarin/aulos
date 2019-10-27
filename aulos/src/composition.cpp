@@ -17,7 +17,9 @@
 
 #include "composition.hpp"
 
+#include <algorithm>
 #include <cassert>
+#include <numeric>
 #include <stdexcept>
 
 namespace aulos
@@ -99,11 +101,27 @@ namespace aulos
 			}
 		};
 
+		std::vector<size_t> trackLengths;
+		const auto alignTracks = [&] {
+			if (_tracks.empty())
+				return;
+			trackLengths.resize(_tracks.size());
+			for (size_t i = 0; i < _tracks.size(); ++i)
+				trackLengths[i] = std::reduce(_tracks[i].cbegin(), _tracks[i].cend(), size_t{ 0 }, [](size_t size, const NoteInfo& noteInfo) { return size + noteInfo._duration; });
+			const auto maxLength = *std::max_element(trackLengths.cbegin(), trackLengths.cend());
+			for (size_t i = 0; i < _tracks.size(); ++i)
+				if (!_tracks[i].empty())
+					_tracks[i].back()._duration += maxLength - trackLengths[i];
+				else
+					_tracks[i].emplace_back(Note::Silence, maxLength);
+		};
+
 		for (;;)
 		{
 			switch (*source++)
 			{
 			case '\0':
+				alignTracks();
 				return;
 			case '\r':
 				if (*source == '\n')
@@ -122,6 +140,8 @@ namespace aulos
 					++source;
 				continue;
 			case '|':
+				if (!trackIndex)
+					alignTracks();
 				if (trackIndex == _tracks.size())
 					_tracks.emplace_back();
 				if (!parseNotes(_tracks[trackIndex++]))
