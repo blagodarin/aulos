@@ -102,18 +102,19 @@ namespace aulos
 		};
 
 		std::vector<size_t> trackLengths;
+		size_t maxTrackLength = 0;
 		const auto alignTracks = [&] {
 			if (_tracks.empty())
 				return;
 			trackLengths.resize(_tracks.size());
 			for (size_t i = 0; i < _tracks.size(); ++i)
 				trackLengths[i] = std::reduce(_tracks[i].cbegin(), _tracks[i].cend(), size_t{ 0 }, [](size_t size, const NoteInfo& noteInfo) { return size + noteInfo._duration; });
-			const auto maxLength = *std::max_element(trackLengths.cbegin(), trackLengths.cend());
+			maxTrackLength = *std::max_element(trackLengths.cbegin(), trackLengths.cend());
 			for (size_t i = 0; i < _tracks.size(); ++i)
 				if (!_tracks[i].empty())
-					_tracks[i].back()._duration += maxLength - trackLengths[i];
+					_tracks[i].back()._duration += maxTrackLength - trackLengths[i];
 				else
-					_tracks[i].emplace_back(Note::Silence, maxLength);
+					_tracks[i].emplace_back(Note::Silence, maxTrackLength);
 		};
 
 		for (;;)
@@ -128,6 +129,7 @@ namespace aulos
 					++source;
 				[[fallthrough]];
 			case '\n':
+				alignTracks();
 				trackIndex = 0;
 				break;
 			case '\t':
@@ -140,10 +142,12 @@ namespace aulos
 					++source;
 				continue;
 			case '|':
-				if (!trackIndex)
-					alignTracks();
 				if (trackIndex == _tracks.size())
+				{
 					_tracks.emplace_back();
+					if (maxTrackLength > 0)
+						_tracks.back().emplace_back(Note::Silence, maxTrackLength);
+				}
 				if (!parseNotes(_tracks[trackIndex++]))
 					return;
 				break;
