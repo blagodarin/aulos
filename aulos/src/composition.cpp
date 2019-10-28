@@ -28,6 +28,35 @@ namespace aulos
 	{
 		size_t trackIndex = 0;
 
+		const auto skipSpaces = [&] {
+			if (*source != ' ' && *source != '\t' && *source != '\n' && *source != '\r' && *source)
+				return false;
+			do
+				++source;
+			while (*source == ' ' || *source == '\t');
+			return true;
+		};
+
+		const auto readIdentifier = [&]() -> std::string_view {
+			if (*source < 'a' || *source > 'z')
+				return {};
+			const auto begin = source;
+			do
+				++source;
+			while (*source >= 'a' && *source <= 'z');
+			return { begin, static_cast<size_t>(source - begin) };
+		};
+
+		const auto readDigits = [&]() -> std::string_view {
+			if (*source < '0' || *source > '9')
+				return {};
+			const auto begin = source;
+			do
+				++source;
+			while (*source >= '0' && *source <= '9');
+			return { begin, static_cast<size_t>(source - begin) };
+		};
+
 		const auto parseNote = [&](std::vector<NoteInfo>& track, const char* data, size_t baseOffset) {
 			assert(baseOffset >= 0 && baseOffset < 12);
 			if (*data == '#')
@@ -117,30 +146,47 @@ namespace aulos
 					_tracks[i].emplace_back(Note::Silence, maxTrackLength);
 		};
 
+		const auto parseCommand = [&](std::string_view command) {
+			if (command == "tempo" && skipSpaces())
+			{
+				if (const auto tempo = readDigits(); !tempo.empty() && tempo.size() <= 3)
+				{
+					skipSpaces();
+					if (!*source || *source == '\n' || *source == '\r')
+					{
+						_tempo = std::strtoul(tempo.data(), nullptr, 10);
+						return;
+					}
+				}
+			}
+			throw std::runtime_error{ "Bad composition" };
+		};
+
 		for (;;)
 		{
-			switch (*source++)
+			switch (*source)
 			{
 			case '\0':
 				alignTracks();
 				return;
 			case '\r':
-				if (*source == '\n')
+				if (source[1] == '\n')
 					++source;
 				[[fallthrough]];
 			case '\n':
+				++source;
 				alignTracks();
 				trackIndex = 0;
 				break;
 			case '\t':
 			case ' ':
-				while (*source == ' ' || *source == '\t')
-					++source;
+				skipSpaces();
 				break;
 			case ';':
-				while (*source && *source != '\n' && *source != '\r')
+				do
 					++source;
-				continue;
+				while (*source && *source != '\n' && *source != '\r');
+				break;
 			case '|':
 				if (trackIndex == _tracks.size())
 				{
@@ -148,10 +194,16 @@ namespace aulos
 					if (maxTrackLength > 0)
 						_tracks.back().emplace_back(Note::Silence, maxTrackLength);
 				}
+				++source;
 				if (!parseNotes(_tracks[trackIndex++]))
 					return;
 				break;
 			default:
+				if (const auto command = readIdentifier(); !command.empty())
+				{
+					parseCommand(command);
+					break;
+				}
 				throw std::runtime_error{ "Bad composition" };
 			}
 		}
