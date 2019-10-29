@@ -19,6 +19,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cassert>
 #include <cmath>
 
 namespace
@@ -56,53 +57,98 @@ namespace
 
 	const NoteTable kNoteTable;
 
+	// Attack-Release envelope.
+	struct EnvelopeAR
+	{
+		double _attack = 0.0;  // Seconds from zero to full amplitude.
+		double _release = 0.0; // Seconds from full amplitude to zero.
+	};
+
+	struct Envelope
+	{
+		struct Part
+		{
+			float _left = 0.f;
+			float _right = 0.f;
+			size_t _samples = 0;
+
+			constexpr Part(float left, float right, size_t samples) noexcept
+				: _left{ left }, _right{ right }, _samples{ samples } {}
+		};
+
+		std::vector<Part> _parts;
+
+		Envelope(const EnvelopeAR& envelope, size_t samplingRate)
+		{
+			if (const auto attack = static_cast<size_t>(envelope._attack * samplingRate); attack > 0)
+				_parts.emplace_back(0.f, 1.f, attack);
+			if (const auto release = static_cast<size_t>(envelope._release * samplingRate); release > 0)
+				_parts.emplace_back(1.f, 0.f, release);
+		}
+	};
+
 	class SquareWave
 	{
 	public:
-		constexpr SquareWave(size_t samplingRate, double duration) noexcept
-			: _samplingRate{ samplingRate }, _maxSamples{ static_cast<size_t>(samplingRate * duration) } {}
+		SquareWave(const Envelope& envelope, size_t samplingRate) noexcept
+			: _samplingRate{ samplingRate }, _envelope{ envelope } {}
 
 		void start(double frequency, float amplitude) noexcept
 		{
 			if (frequency <= 0.0)
 			{
-				_samplesToSilence = 0;
+				_current = _envelope._parts.cend();
 				return;
 			}
-			const double halfPeriodPart = _samplesToSilence > 0 ? _halfPeriodRemaining / _halfPeriodLength : 1.0;
+			const double halfPeriodPart = _current != _envelope._parts.cend() ? _halfPeriodRemaining / _halfPeriodLength : 1.0;
 			_amplitude = std::copysign(std::clamp(amplitude, -1.f, 1.f), _amplitude);
 			_halfPeriodLength = _samplingRate / (2 * frequency);
 			_halfPeriodRemaining = _halfPeriodLength * halfPeriodPart;
-			_samplesToSilence = _maxSamples;
+			_current = _envelope._parts.cbegin();
+			_samplesToSwitch = _current->_samples;
 		}
 
 		void generate(float* buffer, size_t maxSamples) noexcept
 		{
-			for (auto totalSamples = std::min(maxSamples, _samplesToSilence); totalSamples > 0;)
+			assert(maxSamples > 0);
+			while (_current != _envelope._parts.cend())
 			{
-				const auto partSamples = std::min(static_cast<size_t>(std::ceil(_halfPeriodRemaining)), totalSamples);
-				for (size_t i = 0; i < partSamples; ++i)
-					buffer[i] += _amplitude * (static_cast<float>(_samplesToSilence - (partSamples - i)) / _samplingRate);
-				_halfPeriodRemaining -= partSamples;
+				if (!_samplesToSwitch)
+				{
+					++_current;
+					if (_current != _envelope._parts.cend())
+						_samplesToSwitch = _current->_samples;
+					continue;
+				}
+				if (!maxSamples)
+					break;
+				const auto halfPeriodSamples = std::min(static_cast<size_t>(std::ceil(_halfPeriodRemaining)), std::min(maxSamples, _samplesToSwitch));
+				for (size_t i = 0; i < halfPeriodSamples; ++i)
+				{
+					const auto progress = static_cast<float>(_samplesToSwitch - (halfPeriodSamples - i)) / _samplingRate;
+					buffer[i] += _amplitude * (_current->_left * progress + _current->_right * (1.f - progress));
+				}
+				_halfPeriodRemaining -= halfPeriodSamples;
 				if (_halfPeriodRemaining <= 0.0)
 				{
 					_amplitude = -_amplitude;
 					_halfPeriodRemaining += _halfPeriodLength;
 				}
-				_samplesToSilence -= partSamples;
-				buffer += partSamples;
-				totalSamples -= partSamples;
+				_samplesToSwitch -= halfPeriodSamples;
+				buffer += halfPeriodSamples;
+				maxSamples -= halfPeriodSamples;
 			}
 		}
 
 	private:
 		const size_t _samplingRate;
-		const size_t _maxSamples;
+		const Envelope& _envelope;
+		std::vector<Envelope::Part>::const_iterator _current = _envelope._parts.cend();
+		size_t _samplesToSwitch = 0;
 		double _frequency = 0.0;
 		float _amplitude = 0.f;
 		double _halfPeriodLength = 0.0;
 		double _halfPeriodRemaining = 0.0;
-		size_t _samplesToSilence = 0;
 	};
 }
 
@@ -158,6 +204,7 @@ namespace aulos
 	public:
 		struct TrackState
 		{
+			Envelope _envelope;
 			SquareWave _voice;
 			std::vector<NoteInfo>::const_iterator _note;
 			const std::vector<NoteInfo>::const_iterator _end;
@@ -165,7 +212,7 @@ namespace aulos
 			size_t _noteSamplesRemaining = 0;
 
 			TrackState(unsigned samplingRate, const std::vector<NoteInfo>::const_iterator& note, const std::vector<NoteInfo>::const_iterator& end)
-				: _voice{ samplingRate, 1.0 }, _note{ note }, _end{ end } {}
+				: _envelope{ { 0.25, 0.75 }, samplingRate }, _voice{ _envelope, samplingRate }, _note{ note }, _end{ end } {}
 		};
 
 		const CompositionImpl& _composition;
