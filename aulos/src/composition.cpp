@@ -19,7 +19,9 @@
 
 #include <algorithm>
 #include <cassert>
+#include <charconv>
 #include <numeric>
+#include <optional>
 #include <stdexcept>
 
 namespace aulos
@@ -47,14 +49,21 @@ namespace aulos
 			return { begin, static_cast<size_t>(source - begin) };
 		};
 
-		const auto readDigits = [&]() -> std::string_view {
+		const auto readFloat = [&]() -> std::optional<float> {
 			if (*source < '0' || *source > '9')
 				return {};
 			const auto begin = source;
 			do
 				++source;
 			while (*source >= '0' && *source <= '9');
-			return { begin, static_cast<size_t>(source - begin) };
+			if (*source == '.')
+				do
+					++source;
+				while (*source >= '0' && *source <= '9');
+			float result;
+			if (std::from_chars(begin, source, result).ec != std::errc{})
+				return {};
+			return result;
 		};
 
 		const auto parseNote = [&](std::vector<NoteInfo>& track, const char* data, size_t baseOffset) {
@@ -147,16 +156,14 @@ namespace aulos
 		};
 
 		const auto parseCommand = [&](std::string_view command) {
-			if (command == "tempo" && skipSpaces())
+			if (command == "speed" && skipSpaces())
 			{
-				if (const auto tempo = readDigits(); !tempo.empty() && tempo.size() <= 3)
+				if (const auto speed = readFloat(); speed && *speed >= 1.f && *speed <= 32.f)
 				{
+					_speed = *speed;
 					skipSpaces();
 					if (!*source || *source == '\n' || *source == '\r')
-					{
-						_tempo = std::strtoul(tempo.data(), nullptr, 10);
 						return;
-					}
 				}
 			}
 			throw std::runtime_error{ "Bad composition" };

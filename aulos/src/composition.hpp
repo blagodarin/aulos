@@ -51,7 +51,7 @@ namespace aulos
 
 	struct CompositionImpl final : public Composition
 	{
-		size_t _tempo = 60;
+		float _speed = 1;
 		std::vector<std::vector<NoteInfo>> _tracks;
 
 		CompositionImpl(const char* source);

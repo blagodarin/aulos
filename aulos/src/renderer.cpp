@@ -288,7 +288,7 @@ namespace aulos
 
 		const CompositionImpl& _composition;
 		const unsigned _samplingRate;
-		const size_t _stepSamples = _samplingRate * 15ul / _composition._tempo;
+		const size_t _stepSamples = static_cast<size_t>(std::lround(_samplingRate / _composition._speed));
 		std::vector<std::unique_ptr<TrackState>> _tracks;
 	};
 
