@@ -58,7 +58,7 @@ namespace aulos
 			while (*source == ' ' || *source == '\t');
 		};
 
-		const auto readIdentifier = [&]() {
+		const auto readIdentifier = [&] {
 			if (*source < 'a' || *source > 'z')
 				throw CompositionError{ location(), "Identifier expected" };
 			const auto begin = source;
@@ -70,7 +70,21 @@ namespace aulos
 			return result;
 		};
 
-		const auto readFloat = [&]() -> float {
+		const auto readUnsigned = [&] {
+			if (*source < '0' || *source > '9')
+				throw CompositionError{ location(), "Number expected" };
+			const auto begin = source;
+			do
+				++source;
+			while (*source >= '0' && *source <= '9');
+			unsigned result;
+			if (std::from_chars(begin, source, result).ec != std::errc{})
+				throw CompositionError{ { line, begin - lineBase }, "Number expected" };
+			skipSpaces();
+			return result;
+		};
+
+		const auto readFloat = [&] {
 			if (*source < '0' || *source > '9')
 				throw CompositionError{ location(), "Number expected" };
 			const auto begin = source;
@@ -168,18 +182,30 @@ namespace aulos
 				return;
 			trackLengths.resize(_tracks.size());
 			for (size_t i = 0; i < _tracks.size(); ++i)
-				trackLengths[i] = std::reduce(_tracks[i].cbegin(), _tracks[i].cend(), size_t{ 0 }, [](size_t size, const NoteInfo& noteInfo) { return size + noteInfo._duration; });
+				trackLengths[i] = std::reduce(_tracks[i]._notes.cbegin(), _tracks[i]._notes.cend(), size_t{ 0 }, [](size_t size, const NoteInfo& noteInfo) { return size + noteInfo._duration; });
 			maxTrackLength = *std::max_element(trackLengths.cbegin(), trackLengths.cend());
-			for (size_t i = 0; i < _tracks.size(); ++i)
-				if (!_tracks[i].empty())
-					_tracks[i].back()._duration += maxTrackLength - trackLengths[i];
-				else
-					_tracks[i].emplace_back(Note::Silence, maxTrackLength);
+			if (maxTrackLength > 0)
+				for (size_t i = 0; i < _tracks.size(); ++i)
+					if (!_tracks[i]._notes.empty())
+						_tracks[i]._notes.back()._duration += maxTrackLength - trackLengths[i];
+					else
+						_tracks[i]._notes.emplace_back(Note::Silence, maxTrackLength);
 		};
 
 		const auto parseCommand = [&](std::string_view command) {
 			if (command == "envelope")
 			{
+				const auto index = readUnsigned();
+				if (!index)
+					throw CompositionError{ location(), "Bad voice index" };
+				if (index > _tracks.size())
+				{
+					do
+						_tracks.emplace_back();
+					while (index > _tracks.size());
+					alignTracks();
+				}
+				auto& envelopeParts = _tracks[index - 1]._envelope._parts;
 				const auto type = readIdentifier();
 				if (type == "adsr")
 				{
@@ -187,11 +213,11 @@ namespace aulos
 					const auto decay = readFloat();
 					const auto sustain = readFloat();
 					const auto release = readFloat();
-					_envelope._parts.reserve(3);
-					_envelope._parts.clear();
-					_envelope._parts.emplace_back(0.f, 1.f, attack);
-					_envelope._parts.emplace_back(1.f, sustain, decay);
-					_envelope._parts.emplace_back(sustain, 0.f, release);
+					envelopeParts.reserve(3);
+					envelopeParts.clear();
+					envelopeParts.emplace_back(0.f, 1.f, attack);
+					envelopeParts.emplace_back(1.f, sustain, decay);
+					envelopeParts.emplace_back(sustain, 0.f, release);
 				}
 				else if (type == "ahdsr")
 				{
@@ -200,12 +226,12 @@ namespace aulos
 					const auto decay = readFloat();
 					const auto sustain = readFloat();
 					const auto release = readFloat();
-					_envelope._parts.reserve(4);
-					_envelope._parts.clear();
-					_envelope._parts.emplace_back(0.f, 1.f, attack);
-					_envelope._parts.emplace_back(1.f, 1.f, hold);
-					_envelope._parts.emplace_back(1.f, sustain, decay);
-					_envelope._parts.emplace_back(sustain, 0.f, release);
+					envelopeParts.reserve(4);
+					envelopeParts.clear();
+					envelopeParts.emplace_back(0.f, 1.f, attack);
+					envelopeParts.emplace_back(1.f, 1.f, hold);
+					envelopeParts.emplace_back(1.f, sustain, decay);
+					envelopeParts.emplace_back(sustain, 0.f, release);
 				}
 				else
 					throw CompositionError{ location(), "Bad envelope type" };
@@ -257,10 +283,10 @@ namespace aulos
 				{
 					_tracks.emplace_back();
 					if (maxTrackLength > 0)
-						_tracks.back().emplace_back(Note::Silence, maxTrackLength);
+						_tracks.back()._notes.emplace_back(Note::Silence, maxTrackLength);
 				}
 				++source;
-				if (!parseNotes(_tracks[trackIndex++]))
+				if (!parseNotes(_tracks[trackIndex++]._notes))
 					return;
 				break;
 			default:

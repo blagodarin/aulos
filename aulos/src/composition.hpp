@@ -64,11 +64,16 @@ namespace aulos
 		std::vector<Part> _parts;
 	};
 
+	struct Track
+	{
+		Envelope _envelope;
+		std::vector<NoteInfo> _notes;
+	};
+
 	struct CompositionImpl final : public Composition
 	{
 		float _speed = 1;
-		Envelope _envelope{ { { 0.f, 1.f, .05f }, { 1.f, .25f, .05f }, { .25f, 0.f, 0.4f } } };
-		std::vector<std::vector<NoteInfo>> _tracks;
+		std::vector<Track> _tracks;
 
 		CompositionImpl(const char* source);
 	};

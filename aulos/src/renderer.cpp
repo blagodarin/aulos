@@ -57,7 +57,7 @@ namespace
 
 	const NoteTable kNoteTable;
 
-	struct Envelope
+	struct SampledEnvelope
 	{
 	public:
 		struct Part
@@ -67,7 +67,7 @@ namespace
 			size_t _samples;
 		};
 
-		Envelope(const aulos::Envelope& envelope, size_t samplingRate) noexcept
+		SampledEnvelope(const aulos::Envelope& envelope, size_t samplingRate) noexcept
 		{
 			assert(envelope._parts.size() <= _parts.size());
 			for (const auto& part : envelope._parts)
@@ -89,7 +89,7 @@ namespace
 	class EnvelopeState
 	{
 	public:
-		EnvelopeState(const Envelope& envelope) noexcept
+		EnvelopeState(const SampledEnvelope& envelope) noexcept
 			: _envelope{ envelope } {}
 
 		float advance() noexcept
@@ -138,8 +138,8 @@ namespace
 		}
 
 	private:
-		const Envelope& _envelope;
-		const Envelope::Part* _current = _envelope.end();
+		const SampledEnvelope& _envelope;
+		const SampledEnvelope::Part* _current = _envelope.end();
 		float _currentLeft = 0.f;
 		float _lastValue = 0.f;
 		size_t _currentOffset = 0;
@@ -148,7 +148,7 @@ namespace
 	class SquareWave
 	{
 	public:
-		SquareWave(const Envelope& envelope, size_t samplingRate) noexcept
+		SquareWave(const SampledEnvelope& envelope, size_t samplingRate) noexcept
 			: _samplingRate{ samplingRate }, _envelopeState{ envelope } {}
 
 		void start(double frequency, float amplitude) noexcept
@@ -203,7 +203,7 @@ namespace aulos
 		{
 			_tracks.reserve(_composition._tracks.size());
 			for (const auto& track : _composition._tracks)
-				_tracks.emplace_back(std::make_unique<RendererImpl::TrackState>(_composition._envelope, track.cbegin(), track.cend(), samplingRate));
+				_tracks.emplace_back(std::make_unique<RendererImpl::TrackState>(track._envelope, track._notes.cbegin(), track._notes.cend(), samplingRate));
 		}
 
 		size_t render(void* buffer, size_t bufferBytes) noexcept override
@@ -244,14 +244,14 @@ namespace aulos
 	public:
 		struct TrackState
 		{
-			::Envelope _envelope;
+			SampledEnvelope _envelope;
 			SquareWave _voice;
 			std::vector<NoteInfo>::const_iterator _note;
 			const std::vector<NoteInfo>::const_iterator _end;
 			bool _noteStarted = false;
 			size_t _noteSamplesRemaining = 0;
 
-			TrackState(const aulos::Envelope& envelope, const std::vector<NoteInfo>::const_iterator& note, const std::vector<NoteInfo>::const_iterator& end, unsigned samplingRate)
+			TrackState(const Envelope& envelope, const std::vector<NoteInfo>::const_iterator& note, const std::vector<NoteInfo>::const_iterator& end, unsigned samplingRate)
 				: _envelope{ envelope, samplingRate }, _voice{ _envelope, samplingRate }, _note{ note }, _end{ end } {}
 		};
 
