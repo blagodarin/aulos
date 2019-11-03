@@ -49,9 +49,25 @@ namespace aulos
 			: _note{ note }, _duration{ duration } {}
 	};
 
+	struct Envelope
+	{
+		struct Part
+		{
+			float _left;
+			float _right;
+			float _duration;
+
+			constexpr Part(float left, float right, float duration) noexcept
+				: _left{ left }, _right{ right }, _duration{ duration } {}
+		};
+
+		std::vector<Part> _parts;
+	};
+
 	struct CompositionImpl final : public Composition
 	{
 		float _speed = 1;
+		Envelope _envelope{ { { 0.f, 1.f, .05f }, { 1.f, .25f, .05f }, { .25f, 0.f, 0.4f } } };
 		std::vector<std::vector<NoteInfo>> _tracks;
 
 		CompositionImpl(const char* source);

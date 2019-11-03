@@ -57,30 +57,6 @@ namespace
 
 	const NoteTable kNoteTable;
 
-	// Attack-Release envelope.
-	struct EnvelopeAR
-	{
-		double _attack = 0.0;  // Seconds from zero to full amplitude.
-		double _release = 0.0; // Seconds from full amplitude to zero.
-	};
-
-	struct EnvelopeADSR
-	{
-		double _attack = 0.0;
-		double _decay = 0.0;
-		float _sustain = 0.f;
-		double _release = 0.0;
-	};
-
-	struct EnvelopeAHDSR
-	{
-		double _attack = 0.0;
-		double _hold = 0.0;
-		double _decay = 0.0;
-		float _sustain = 0.f;
-		double _release = 0.0;
-	};
-
 	struct Envelope
 	{
 	public:
@@ -91,23 +67,16 @@ namespace
 			size_t _samples;
 		};
 
-		Envelope(const EnvelopeAHDSR& envelope, size_t samplingRate) noexcept
+		Envelope(const aulos::Envelope& envelope, size_t samplingRate) noexcept
 		{
-			if (const auto attack = static_cast<size_t>(envelope._attack * samplingRate); attack > 0)
-				_parts[_size++] = { 0.f, 1.f, attack };
-			if (const auto hold = static_cast<size_t>(envelope._hold * samplingRate); hold > 0)
-				_parts[_size++] = { 1.f, 1.f, hold };
-			if (const auto decay = static_cast<size_t>(envelope._decay * samplingRate); decay > 0)
-				_parts[_size++] = { 1.f, envelope._sustain, decay };
-			if (const auto release = static_cast<size_t>(envelope._release * samplingRate); release > 0)
-				_parts[_size++] = { envelope._sustain, 0.f, release };
+			assert(envelope._parts.size() <= _parts.size());
+			for (const auto& part : envelope._parts)
+			{
+				assert(part._duration >= 0.f);
+				if (const auto samples = static_cast<size_t>(double{ part._duration } * samplingRate); samples > 0)
+					_parts[_size++] = { part._left, part._right, samples };
+			}
 		}
-
-		Envelope(const EnvelopeADSR& envelope, size_t samplingRate) noexcept
-			: Envelope{ EnvelopeAHDSR{ envelope._attack, 0.0, envelope._decay, envelope._sustain, envelope._release }, samplingRate } {}
-
-		Envelope(const EnvelopeAR& envelope, size_t samplingRate) noexcept
-			: Envelope{ EnvelopeADSR{ envelope._attack, envelope._release, 0.f, 0.0 }, samplingRate } {}
 
 		const Part* begin() const noexcept { return _parts.data(); }
 		const Part* end() const noexcept { return _parts.data() + _size; }
@@ -234,7 +203,7 @@ namespace aulos
 		{
 			_tracks.reserve(_composition._tracks.size());
 			for (const auto& track : _composition._tracks)
-				_tracks.emplace_back(std::make_unique<RendererImpl::TrackState>(samplingRate, track.cbegin(), track.cend()));
+				_tracks.emplace_back(std::make_unique<RendererImpl::TrackState>(_composition._envelope, track.cbegin(), track.cend(), samplingRate));
 		}
 
 		size_t render(void* buffer, size_t bufferBytes) noexcept override
@@ -275,15 +244,15 @@ namespace aulos
 	public:
 		struct TrackState
 		{
-			Envelope _envelope;
+			::Envelope _envelope;
 			SquareWave _voice;
 			std::vector<NoteInfo>::const_iterator _note;
 			const std::vector<NoteInfo>::const_iterator _end;
 			bool _noteStarted = false;
 			size_t _noteSamplesRemaining = 0;
 
-			TrackState(unsigned samplingRate, const std::vector<NoteInfo>::const_iterator& note, const std::vector<NoteInfo>::const_iterator& end)
-				: _envelope{ EnvelopeAHDSR{ 0.01, 0.04, 0.05, 0.5f, 0.9 }, samplingRate }, _voice{ _envelope, samplingRate }, _note{ note }, _end{ end } {}
+			TrackState(const aulos::Envelope& envelope, const std::vector<NoteInfo>::const_iterator& note, const std::vector<NoteInfo>::const_iterator& end, unsigned samplingRate)
+				: _envelope{ envelope, samplingRate }, _voice{ _envelope, samplingRate }, _note{ note }, _end{ end } {}
 		};
 
 		const CompositionImpl& _composition;

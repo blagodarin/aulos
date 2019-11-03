@@ -21,37 +21,58 @@
 #include <cassert>
 #include <charconv>
 #include <numeric>
-#include <optional>
 #include <stdexcept>
+#include <string>
+
+namespace
+{
+	struct Location
+	{
+		size_t _line = 1;
+		ptrdiff_t _offset = 1;
+	};
+
+	class CompositionError : public std::runtime_error
+	{
+	public:
+		CompositionError(const Location& location, const std::string& message)
+			: std::runtime_error("(" + std::to_string(location._line) + ':' + std::to_string(location._offset + 1) + ") " + message) {}
+	};
+}
 
 namespace aulos
 {
 	CompositionImpl::CompositionImpl(const char* source)
 	{
+		size_t line = 1;
+		const char* lineBase = source;
 		size_t trackIndex = 0;
+
+		const auto location = [&]() -> Location { return { line, source - lineBase }; };
 
 		const auto skipSpaces = [&] {
 			if (*source != ' ' && *source != '\t' && *source != '\n' && *source != '\r' && *source)
-				return false;
+				throw CompositionError{ location(), "Space expected" };
 			do
 				++source;
 			while (*source == ' ' || *source == '\t');
-			return true;
 		};
 
-		const auto readIdentifier = [&]() -> std::string_view {
+		const auto readIdentifier = [&]() {
 			if (*source < 'a' || *source > 'z')
-				return {};
+				throw CompositionError{ location(), "Identifier expected" };
 			const auto begin = source;
 			do
 				++source;
 			while (*source >= 'a' && *source <= 'z');
-			return { begin, static_cast<size_t>(source - begin) };
+			const std::string_view result{ begin, static_cast<size_t>(source - begin) };
+			skipSpaces();
+			return result;
 		};
 
-		const auto readFloat = [&]() -> std::optional<float> {
+		const auto readFloat = [&]() -> float {
 			if (*source < '0' || *source > '9')
-				return {};
+				throw CompositionError{ location(), "Number expected" };
 			const auto begin = source;
 			do
 				++source;
@@ -62,7 +83,8 @@ namespace aulos
 				while (*source >= '0' && *source <= '9');
 			float result;
 			if (std::from_chars(begin, source, result).ec != std::errc{})
-				return {};
+				throw CompositionError{ { line, begin - lineBase }, "Number expected" };
+			skipSpaces();
 			return result;
 		};
 
@@ -71,19 +93,19 @@ namespace aulos
 			if (*data == '#')
 			{
 				if (baseOffset == 11)
-					throw std::runtime_error{ "Bad composition" };
+					throw CompositionError{ location(), "Note overflow" };
 				++baseOffset;
 				++data;
 			}
 			else if (*data == 'b')
 			{
 				if (!baseOffset)
-					throw std::runtime_error{ "Bad composition" };
+					throw CompositionError{ location(), "Note underflow" };
 				--baseOffset;
 				++data;
 			}
 			if (*data < '0' || *data > '9')
-				throw std::runtime_error{ "Bad composition" };
+				throw CompositionError{ location(), "Bad note" };
 			track.emplace_back(static_cast<Note>((*data - '0') * 12 + baseOffset));
 			return data + 1;
 		};
@@ -134,7 +156,7 @@ namespace aulos
 					source = parseNote(track, source, 7);
 					break;
 				default:
-					throw std::runtime_error{ "Bad composition" };
+					throw CompositionError{ location(), "Bad note" };
 				}
 			}
 		};
@@ -156,17 +178,49 @@ namespace aulos
 		};
 
 		const auto parseCommand = [&](std::string_view command) {
-			if (command == "speed" && skipSpaces())
+			if (command == "envelope")
 			{
-				if (const auto speed = readFloat(); speed && *speed >= 1.f && *speed <= 32.f)
+				const auto type = readIdentifier();
+				if (type == "adsr")
 				{
-					_speed = *speed;
-					skipSpaces();
-					if (!*source || *source == '\n' || *source == '\r')
-						return;
+					const auto attack = readFloat();
+					const auto decay = readFloat();
+					const auto sustain = readFloat();
+					const auto release = readFloat();
+					_envelope._parts.reserve(3);
+					_envelope._parts.clear();
+					_envelope._parts.emplace_back(0.f, 1.f, attack);
+					_envelope._parts.emplace_back(1.f, sustain, decay);
+					_envelope._parts.emplace_back(sustain, 0.f, release);
 				}
+				else if (type == "ahdsr")
+				{
+					const auto attack = readFloat();
+					const auto hold = readFloat();
+					const auto decay = readFloat();
+					const auto sustain = readFloat();
+					const auto release = readFloat();
+					_envelope._parts.reserve(4);
+					_envelope._parts.clear();
+					_envelope._parts.emplace_back(0.f, 1.f, attack);
+					_envelope._parts.emplace_back(1.f, 1.f, hold);
+					_envelope._parts.emplace_back(1.f, sustain, decay);
+					_envelope._parts.emplace_back(sustain, 0.f, release);
+				}
+				else
+					throw CompositionError{ location(), "Bad envelope type" };
 			}
-			throw std::runtime_error{ "Bad composition" };
+			else if (command == "speed")
+			{
+				const auto speed = readFloat();
+				if (speed < 1.f || speed > 32.f)
+					throw CompositionError{ location(), "Bad speed" };
+				_speed = speed;
+			}
+			else
+				throw CompositionError{ location(), "Bad command" };
+			if (*source && *source == '\n' && *source == '\r')
+				throw CompositionError{ location(), "End of line expected" };
 		};
 
 		for (;;)
@@ -182,12 +236,16 @@ namespace aulos
 				[[fallthrough]];
 			case '\n':
 				++source;
+				++line;
+				lineBase = source;
 				alignTracks();
 				trackIndex = 0;
 				break;
 			case '\t':
 			case ' ':
-				skipSpaces();
+				do
+					++source;
+				while (*source == ' ' || *source == '\t');
 				break;
 			case ';':
 				do
@@ -206,12 +264,7 @@ namespace aulos
 					return;
 				break;
 			default:
-				if (const auto command = readIdentifier(); !command.empty())
-				{
-					parseCommand(command);
-					break;
-				}
-				throw std::runtime_error{ "Bad composition" };
+				parseCommand(readIdentifier());
 			}
 		}
 	}
