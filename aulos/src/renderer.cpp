@@ -300,12 +300,12 @@ namespace
 		double _partSamplesRemaining = 0.0;
 	};
 
-	std::unique_ptr<Voice> createVoice(aulos::Wave wave, const SampledEnvelope& envelope, unsigned samplingRate)
+	std::unique_ptr<Voice> createVoice(aulos::Wave wave, double waveParameter, const SampledEnvelope& envelope, unsigned samplingRate)
 	{
 		switch (wave)
 		{
-		case aulos::Wave::Rectangle: return std::make_unique<RectangleWave>(0.1, envelope, samplingRate);
-		case aulos::Wave::Triangle: return std::make_unique<TriangleWave>(0.75, envelope, samplingRate);
+		case aulos::Wave::Rectangle: return std::make_unique<RectangleWave>(waveParameter, envelope, samplingRate);
+		case aulos::Wave::Triangle: return std::make_unique<TriangleWave>(waveParameter, envelope, samplingRate);
 		}
 		return {};
 	}
@@ -323,7 +323,7 @@ namespace aulos
 			const auto totalWeight = static_cast<float>(std::reduce(_composition._tracks.cbegin(), _composition._tracks.cend(), 0u, [](unsigned weight, const Track& track) { return weight + track._weight; }));
 			_tracks.reserve(_composition._tracks.size());
 			for (const auto& track : _composition._tracks)
-				_tracks.emplace_back(std::make_unique<RendererImpl::TrackState>(track._wave, track._envelope, track._weight / totalWeight, track._notes.cbegin(), track._notes.cend(), samplingRate));
+				_tracks.emplace_back(std::make_unique<RendererImpl::TrackState>(track._wave, track._waveParameter, track._envelope, track._weight / totalWeight, track._notes.cbegin(), track._notes.cend(), samplingRate));
 		}
 
 		size_t render(void* buffer, size_t bufferBytes) noexcept override
@@ -372,8 +372,8 @@ namespace aulos
 			bool _noteStarted = false;
 			size_t _noteSamplesRemaining = 0;
 
-			TrackState(Wave wave, const Envelope& envelope, float amplitude, const std::vector<NoteInfo>::const_iterator& note, const std::vector<NoteInfo>::const_iterator& end, unsigned samplingRate)
-				: _envelope{ envelope, samplingRate }, _voice{ createVoice(wave, _envelope, samplingRate) }, _amplitude{ amplitude }, _note{ note }, _end{ end } {}
+			TrackState(Wave wave, double waveParameter, const Envelope& envelope, float amplitude, const std::vector<NoteInfo>::const_iterator& note, const std::vector<NoteInfo>::const_iterator& end, unsigned samplingRate)
+				: _envelope{ envelope, samplingRate }, _voice{ createVoice(wave, waveParameter, _envelope, samplingRate) }, _amplitude{ amplitude }, _note{ note }, _end{ end } {}
 		};
 
 		const CompositionImpl& _composition;

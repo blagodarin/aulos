@@ -73,6 +73,7 @@ namespace aulos
 	struct Track
 	{
 		Wave _wave = Wave::Rectangle;
+		double _waveParameter = 0.0;
 		Envelope _envelope;
 		unsigned _weight = 1;
 		std::vector<NoteInfo> _notes;

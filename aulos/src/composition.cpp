@@ -21,6 +21,7 @@
 #include <cassert>
 #include <charconv>
 #include <numeric>
+#include <optional>
 #include <stdexcept>
 #include <string>
 
@@ -84,9 +85,9 @@ namespace aulos
 			return result;
 		};
 
-		const auto readFloat = [&] {
+		const auto tryReadFloat = [&]() -> std::optional<float> {
 			if (*source < '0' || *source > '9')
-				throw CompositionError{ location(), "Number expected" };
+				return {};
 			const auto begin = source;
 			do
 				++source;
@@ -97,9 +98,16 @@ namespace aulos
 				while (*source >= '0' && *source <= '9');
 			float result;
 			if (std::from_chars(begin, source, result).ec != std::errc{})
-				throw CompositionError{ { line, begin - lineBase }, "Number expected" };
+				throw CompositionError{ { line, begin - lineBase }, "Bad number" };
 			skipSpaces();
 			return result;
+		};
+
+		const auto readFloat = [&] {
+			const auto result = tryReadFloat();
+			if (!result)
+				throw CompositionError{ location(), "Number expected" };
+			return *result;
 		};
 
 		const auto parseNote = [&](std::vector<NoteInfo>& track, const char* data, size_t baseOffset) {
@@ -210,8 +218,7 @@ namespace aulos
 			if (command == "envelope")
 			{
 				auto& envelopeParts = readTrack()._envelope._parts;
-				const auto type = readIdentifier();
-				if (type == "adsr")
+				if (const auto type = readIdentifier(); type == "adsr")
 				{
 					const auto attack = readFloat();
 					const auto decay = readFloat();
@@ -250,13 +257,20 @@ namespace aulos
 			else if (command == "wave")
 			{
 				auto& track = readTrack();
-				const auto type = readIdentifier();
-				if (type == "rectangle")
+				if (const auto type = readIdentifier(); type == "rectangle")
+				{
+					const auto parameter = tryReadFloat();
 					track._wave = Wave::Rectangle;
+					track._waveParameter = parameter ? std::clamp(*parameter, -1.f, 1.f) : 0.f;
+				}
 				else if (type == "triangle")
+				{
+					const auto parameter = tryReadFloat();
 					track._wave = Wave::Triangle;
+					track._waveParameter = parameter ? std::clamp(*parameter, -1.f, 1.f) : 0.f;
+				}
 				else
-					throw CompositionError{ location(), "Bad envelope type" };
+					throw CompositionError{ location(), "Bad wave type" };
 			}
 			else if (command == "weight")
 			{
@@ -266,7 +280,8 @@ namespace aulos
 					throw CompositionError{ location(), "Bad track weight" };
 				track._weight = weight;
 			}
-			else throw CompositionError{ location(), "Bad command" };
+			else
+				throw CompositionError{ location(), "Bad command" };
 			if (*source && *source == '\n' && *source == '\r')
 				throw CompositionError{ location(), "End of line expected" };
 		};
