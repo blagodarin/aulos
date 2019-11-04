@@ -123,6 +123,11 @@ namespace
 			return restart;
 		}
 
+		void stop() noexcept
+		{
+			_current = _envelope.end();
+		}
+
 		bool update() noexcept
 		{
 			if (_current == _envelope.end())
@@ -155,20 +160,36 @@ namespace
 		virtual void generate(float* buffer, size_t maxSamples) noexcept = 0;
 	};
 
-	class SquareWave final : public Voice
+	class RectangleWave final : public Voice
 	{
 	public:
-		SquareWave(const SampledEnvelope& envelope, size_t samplingRate) noexcept
-			: _samplingRate{ samplingRate }, _envelopeState{ envelope } {}
+		RectangleWave(double parameter, const SampledEnvelope& envelope, size_t samplingRate) noexcept
+			: _parameter{ (1.0 + std::clamp(parameter, -1.0, 1.0)) / 2.0 }, _samplingRate{ samplingRate }, _envelopeState{ envelope } {}
 
 		void start(double frequency, float amplitude) noexcept override
 		{
 			if (frequency <= 0.0)
+			{
+				_envelopeState.stop();
 				return;
-			const double halfPeriodPart = _envelopeState.start() ? 1.0 : _halfPeriodRemaining / _halfPeriodLength;
-			_amplitude = std::copysign(std::clamp(amplitude, -1.f, 1.f), _amplitude);
-			_halfPeriodLength = _samplingRate / (2 * frequency);
-			_halfPeriodRemaining = _halfPeriodLength * halfPeriodPart;
+			}
+			const auto clampedAmplitude = std::clamp(amplitude, -1.f, 1.f);
+			double partRemaining;
+			if (_envelopeState.start())
+			{
+				_baseAmplitude = clampedAmplitude;
+				_partIndex = 0;
+				partRemaining = 1.0;
+			}
+			else
+			{
+				_baseAmplitude = std::copysign(clampedAmplitude, _baseAmplitude);
+				partRemaining = _partSamplesRemaining / _partSamples[_partIndex];
+			}
+			const auto periodSamples = _samplingRate / frequency;
+			_partSamples[0] = periodSamples * _parameter;
+			_partSamples[1] = periodSamples - _partSamples[0];
+			setCurrentPartSamples(_partSamples[_partIndex] * partRemaining);
 		}
 
 		void generate(float* buffer, size_t maxSamples) noexcept override
@@ -176,44 +197,69 @@ namespace
 			assert(maxSamples > 0);
 			while (_envelopeState.update())
 			{
-				if (!maxSamples)
-					break;
-				const auto samplesToGenerate = std::min(static_cast<size_t>(std::ceil(_halfPeriodRemaining)), std::min(maxSamples, _envelopeState.partSamplesRemaining()));
+				const auto samplesToGenerate = std::min(static_cast<size_t>(std::ceil(_partSamplesRemaining)), std::min(maxSamples, _envelopeState.partSamplesRemaining()));
 				for (size_t i = 0; i < samplesToGenerate; ++i)
-					buffer[i] += _amplitude * _envelopeState.advance();
-				_halfPeriodRemaining -= samplesToGenerate;
-				if (_halfPeriodRemaining <= 0.0)
-				{
-					_amplitude = -_amplitude;
-					_halfPeriodRemaining += _halfPeriodLength;
-				}
+					buffer[i] += _baseAmplitude * _envelopeState.advance();
+				setCurrentPartSamples(_partSamplesRemaining - samplesToGenerate);
 				buffer += samplesToGenerate;
 				maxSamples -= samplesToGenerate;
+				if (!maxSamples)
+					break;
 			}
 		}
 
 	private:
+		void setCurrentPartSamples(double samples) noexcept
+		{
+			while (samples <= 0.0)
+			{
+				_baseAmplitude = -_baseAmplitude;
+				_partIndex = 1 - _partIndex;
+				samples += _partSamples[_partIndex];
+			}
+			_partSamplesRemaining = samples;
+		}
+
+	private:
+		const double _parameter;
 		const size_t _samplingRate;
 		EnvelopeState _envelopeState;
-		float _amplitude = 0.f;
-		double _halfPeriodLength = 0.0;
-		double _halfPeriodRemaining = 0.0;
+		float _baseAmplitude = 0.f;
+		size_t _partIndex = 0;
+		std::array<double, 2> _partSamples{};
+		double _partSamplesRemaining = 0.0;
 	};
 
 	class TriangleWave final : public Voice
 	{
 	public:
-		TriangleWave(const SampledEnvelope& envelope, size_t samplingRate) noexcept
-			: _samplingRate{ samplingRate }, _envelopeState{ envelope } {}
+		TriangleWave(double parameter, const SampledEnvelope& envelope, size_t samplingRate) noexcept
+			: _parameter{ (1.0 + std::clamp(parameter, -1.0, 1.0)) / 2.0 }, _samplingRate{ samplingRate }, _envelopeState{ envelope } {}
 
 		void start(double frequency, float amplitude) noexcept override
 		{
 			if (frequency <= 0.0)
+			{
+				_envelopeState.stop();
 				return;
-			const double halfPeriodPart = _envelopeState.start() ? 1.0 : _halfPeriodRemaining / _halfPeriodLength;
-			_amplitude = std::copysign(std::clamp(amplitude, -1.f, 1.f), _amplitude);
-			_halfPeriodLength = _samplingRate / (2 * frequency);
-			_halfPeriodRemaining = _halfPeriodLength * halfPeriodPart;
+			}
+			const auto clampedAmplitude = std::clamp(amplitude, -1.f, 1.f);
+			double partRemaining;
+			if (_envelopeState.start())
+			{
+				_baseAmplitude = clampedAmplitude;
+				_partIndex = 0;
+				partRemaining = 1.0;
+			}
+			else
+			{
+				_baseAmplitude = std::copysign(clampedAmplitude, _baseAmplitude);
+				partRemaining = _partSamplesRemaining / _partSamples[_partIndex];
+			}
+			const auto periodSamples = _samplingRate / frequency;
+			_partSamples[0] = periodSamples * _parameter;
+			_partSamples[1] = periodSamples - _partSamples[0];
+			setCurrentPartSamples(_partSamples[_partIndex] * partRemaining);
 		}
 
 		void generate(float* buffer, size_t maxSamples) noexcept override
@@ -221,36 +267,45 @@ namespace
 			assert(maxSamples > 0);
 			while (_envelopeState.update())
 			{
-				if (!maxSamples)
-					break;
-				const auto samplesToGenerate = std::min(static_cast<size_t>(std::ceil(_halfPeriodRemaining)), std::min(maxSamples, _envelopeState.partSamplesRemaining()));
+				const auto samplesToGenerate = std::min(static_cast<size_t>(std::ceil(_partSamplesRemaining)), std::min(maxSamples, _envelopeState.partSamplesRemaining()));
 				for (size_t i = 0; i < samplesToGenerate; ++i)
-					buffer[i] += _amplitude * static_cast<float>(1.0 - 2.0 * (_halfPeriodRemaining - i) / _halfPeriodLength) * _envelopeState.advance();
-				_halfPeriodRemaining -= samplesToGenerate;
-				if (_halfPeriodRemaining <= 0.0)
-				{
-					_amplitude = -_amplitude;
-					_halfPeriodRemaining += _halfPeriodLength;
-				}
+					buffer[i] += _baseAmplitude * static_cast<float>(1.0 - 2.0 * (_partSamplesRemaining - i) / _partSamples[_partIndex]) * _envelopeState.advance();
+				setCurrentPartSamples(_partSamplesRemaining - samplesToGenerate);
 				buffer += samplesToGenerate;
 				maxSamples -= samplesToGenerate;
+				if (!maxSamples)
+					break;
 			}
 		}
 
 	private:
+		void setCurrentPartSamples(double samples) noexcept
+		{
+			while (samples <= 0.0)
+			{
+				_baseAmplitude = -_baseAmplitude;
+				_partIndex = 1 - _partIndex;
+				samples += _partSamples[_partIndex];
+			}
+			_partSamplesRemaining = samples;
+		}
+
+	private:
+		const double _parameter;
 		const size_t _samplingRate;
 		EnvelopeState _envelopeState;
-		float _amplitude = 0.f;
-		double _halfPeriodLength = 0.0;
-		double _halfPeriodRemaining = 0.0;
+		float _baseAmplitude = 0.f;
+		size_t _partIndex = 0;
+		std::array<double, 2> _partSamples{};
+		double _partSamplesRemaining = 0.0;
 	};
 
 	std::unique_ptr<Voice> createVoice(aulos::Wave wave, const SampledEnvelope& envelope, unsigned samplingRate)
 	{
 		switch (wave)
 		{
-		case aulos::Wave::Square: return std::make_unique<SquareWave>(envelope, samplingRate);
-		case aulos::Wave::Triangle: return std::make_unique<TriangleWave>(envelope, samplingRate);
+		case aulos::Wave::Rectangle: return std::make_unique<RectangleWave>(0.1, envelope, samplingRate);
+		case aulos::Wave::Triangle: return std::make_unique<TriangleWave>(0.75, envelope, samplingRate);
 		}
 		return {};
 	}

@@ -251,8 +251,8 @@ namespace aulos
 			{
 				auto& track = readTrack();
 				const auto type = readIdentifier();
-				if (type == "square")
-					track._wave = Wave::Square;
+				if (type == "rectangle")
+					track._wave = Wave::Rectangle;
 				else if (type == "triangle")
 					track._wave = Wave::Triangle;
 				else

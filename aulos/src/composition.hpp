@@ -51,7 +51,7 @@ namespace aulos
 
 	enum class Wave
 	{
-		Square,
+		Rectangle,
 		Triangle,
 	};
 
@@ -72,7 +72,7 @@ namespace aulos
 
 	struct Track
 	{
-		Wave _wave = Wave::Square;
+		Wave _wave = Wave::Rectangle;
 		Envelope _envelope;
 		unsigned _weight = 1;
 		std::vector<NoteInfo> _notes;
