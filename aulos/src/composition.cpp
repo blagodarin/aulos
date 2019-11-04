@@ -243,6 +243,26 @@ namespace aulos
 					throw CompositionError{ location(), "Bad speed" };
 				_speed = speed;
 			}
+			else if (command == "wave")
+			{
+				const auto index = readUnsigned();
+				if (!index)
+					throw CompositionError{ location(), "Bad voice index" };
+				if (index > _tracks.size())
+				{
+					do
+						_tracks.emplace_back();
+					while (index > _tracks.size());
+					alignTracks();
+				}
+				const auto type = readIdentifier();
+				if (type == "square")
+					_tracks[index - 1]._wave = Wave::Square;
+				else if (type == "triangle")
+					_tracks[index - 1]._wave = Wave::Triangle;
+				else
+					throw CompositionError{ location(), "Bad envelope type" };
+			}
 			else
 				throw CompositionError{ location(), "Bad command" };
 			if (*source && *source == '\n' && *source == '\r')

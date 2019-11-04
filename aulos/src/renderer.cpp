@@ -145,13 +145,22 @@ namespace
 		size_t _currentOffset = 0;
 	};
 
-	class SquareWave
+	class Voice
+	{
+	public:
+		virtual ~Voice() noexcept = default;
+
+		virtual void start(double frequency, float amplitude) noexcept = 0;
+		virtual void generate(float* buffer, size_t maxSamples) noexcept = 0;
+	};
+
+	class SquareWave final : public Voice
 	{
 	public:
 		SquareWave(const SampledEnvelope& envelope, size_t samplingRate) noexcept
 			: _samplingRate{ samplingRate }, _envelopeState{ envelope } {}
 
-		void start(double frequency, float amplitude) noexcept
+		void start(double frequency, float amplitude) noexcept override
 		{
 			if (frequency <= 0.0)
 				return;
@@ -161,7 +170,7 @@ namespace
 			_halfPeriodRemaining = _halfPeriodLength * halfPeriodPart;
 		}
 
-		void generate(float* buffer, size_t maxSamples) noexcept
+		void generate(float* buffer, size_t maxSamples) noexcept override
 		{
 			assert(maxSamples > 0);
 			while (_envelopeState.update())
@@ -185,11 +194,65 @@ namespace
 	private:
 		const size_t _samplingRate;
 		EnvelopeState _envelopeState;
-		double _frequency = 0.0;
 		float _amplitude = 0.f;
 		double _halfPeriodLength = 0.0;
 		double _halfPeriodRemaining = 0.0;
 	};
+
+	class TriangleWave final : public Voice
+	{
+	public:
+		TriangleWave(const SampledEnvelope& envelope, size_t samplingRate) noexcept
+			: _samplingRate{ samplingRate }, _envelopeState{ envelope } {}
+
+		void start(double frequency, float amplitude) noexcept override
+		{
+			if (frequency <= 0.0)
+				return;
+			const double halfPeriodPart = _envelopeState.start() ? 1.0 : _halfPeriodRemaining / _halfPeriodLength;
+			_amplitude = std::copysign(std::clamp(amplitude, -1.f, 1.f), _amplitude);
+			_halfPeriodLength = _samplingRate / (2 * frequency);
+			_halfPeriodRemaining = _halfPeriodLength * halfPeriodPart;
+		}
+
+		void generate(float* buffer, size_t maxSamples) noexcept override
+		{
+			assert(maxSamples > 0);
+			while (_envelopeState.update())
+			{
+				if (!maxSamples)
+					break;
+				const auto samplesToGenerate = std::min(static_cast<size_t>(std::ceil(_halfPeriodRemaining)), std::min(maxSamples, _envelopeState.partSamplesRemaining()));
+				for (size_t i = 0; i < samplesToGenerate; ++i)
+					buffer[i] += _amplitude * static_cast<float>(1.0 - 2.0 * (_halfPeriodRemaining - i) / _halfPeriodLength) * _envelopeState.advance();
+				_halfPeriodRemaining -= samplesToGenerate;
+				if (_halfPeriodRemaining <= 0.0)
+				{
+					_amplitude = -_amplitude;
+					_halfPeriodRemaining += _halfPeriodLength;
+				}
+				buffer += samplesToGenerate;
+				maxSamples -= samplesToGenerate;
+			}
+		}
+
+	private:
+		const size_t _samplingRate;
+		EnvelopeState _envelopeState;
+		float _amplitude = 0.f;
+		double _halfPeriodLength = 0.0;
+		double _halfPeriodRemaining = 0.0;
+	};
+
+	std::unique_ptr<Voice> createVoice(aulos::Wave wave, const SampledEnvelope& envelope, unsigned samplingRate)
+	{
+		switch (wave)
+		{
+		case aulos::Wave::Square: return std::make_unique<SquareWave>(envelope, samplingRate);
+		case aulos::Wave::Triangle: return std::make_unique<TriangleWave>(envelope, samplingRate);
+		}
+		return {};
+	}
 }
 
 namespace aulos
@@ -203,7 +266,7 @@ namespace aulos
 		{
 			_tracks.reserve(_composition._tracks.size());
 			for (const auto& track : _composition._tracks)
-				_tracks.emplace_back(std::make_unique<RendererImpl::TrackState>(track._envelope, track._notes.cbegin(), track._notes.cend(), samplingRate));
+				_tracks.emplace_back(std::make_unique<RendererImpl::TrackState>(track._wave, track._envelope, track._notes.cbegin(), track._notes.cend(), samplingRate));
 		}
 
 		size_t render(void* buffer, size_t bufferBytes) noexcept override
@@ -221,13 +284,13 @@ namespace aulos
 					{
 						track->_noteStarted = true;
 						track->_noteSamplesRemaining = _stepSamples * track->_note->_duration;
-						track->_voice.start(kNoteTable[track->_note->_note], .25f);
+						track->_voice->start(kNoteTable[track->_note->_note], 1.f / _tracks.size());
 					}
 					const auto samplesToGenerate = bufferBytes / kSampleSize - trackSamplesRendered;
 					if (!samplesToGenerate)
 						break;
 					const auto samplesGenerated = std::min(track->_noteSamplesRemaining, samplesToGenerate);
-					track->_voice.generate(static_cast<float*>(buffer) + trackSamplesRendered, samplesGenerated);
+					track->_voice->generate(static_cast<float*>(buffer) + trackSamplesRendered, samplesGenerated);
 					track->_noteSamplesRemaining -= samplesGenerated;
 					trackSamplesRendered += samplesGenerated;
 					if (!track->_noteSamplesRemaining)
@@ -245,14 +308,14 @@ namespace aulos
 		struct TrackState
 		{
 			SampledEnvelope _envelope;
-			SquareWave _voice;
+			std::unique_ptr<Voice> _voice;
 			std::vector<NoteInfo>::const_iterator _note;
 			const std::vector<NoteInfo>::const_iterator _end;
 			bool _noteStarted = false;
 			size_t _noteSamplesRemaining = 0;
 
-			TrackState(const Envelope& envelope, const std::vector<NoteInfo>::const_iterator& note, const std::vector<NoteInfo>::const_iterator& end, unsigned samplingRate)
-				: _envelope{ envelope, samplingRate }, _voice{ _envelope, samplingRate }, _note{ note }, _end{ end } {}
+			TrackState(Wave wave, const Envelope& envelope, const std::vector<NoteInfo>::const_iterator& note, const std::vector<NoteInfo>::const_iterator& end, unsigned samplingRate)
+				: _envelope{ envelope, samplingRate }, _voice{ createVoice(wave, _envelope, samplingRate) }, _note{ note }, _end{ end } {}
 		};
 
 		const CompositionImpl& _composition;

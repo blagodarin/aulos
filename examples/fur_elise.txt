@@ -1,7 +1,11 @@
 ; Ludwig van Beethoven - Fur Elise
 
 speed 4
+
+wave 1 triangle
 envelope 1 adsr 0.1 0.1 0.25 0.3
+
+wave 2 square
 envelope 2 ahdsr 0.01 0.04 0.05 0.5 0.9
 
 | . E5 D#5 E5 D#5 E5 B4 D5 C5 A4 .  .  C4 E4 A4 B4 .  .   E4 G#4 B4 C5

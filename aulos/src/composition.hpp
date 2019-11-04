@@ -49,6 +49,12 @@ namespace aulos
 			: _note{ note }, _duration{ duration } {}
 	};
 
+	enum class Wave
+	{
+		Square,
+		Triangle,
+	};
+
 	struct Envelope
 	{
 		struct Part
@@ -66,13 +72,14 @@ namespace aulos
 
 	struct Track
 	{
+		Wave _wave = Wave::Square;
 		Envelope _envelope;
 		std::vector<NoteInfo> _notes;
 	};
 
 	struct CompositionImpl final : public Composition
 	{
-		float _speed = 1;
+		float _speed = 1.f;
 		std::vector<Track> _tracks;
 
 		CompositionImpl(const char* source);
