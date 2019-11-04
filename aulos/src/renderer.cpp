@@ -21,6 +21,7 @@
 #include <array>
 #include <cassert>
 #include <cmath>
+#include <numeric>
 
 namespace
 {
@@ -264,9 +265,10 @@ namespace aulos
 			: _composition{ composition }
 			, _samplingRate{ samplingRate }
 		{
+			const auto totalWeight = static_cast<float>(std::reduce(_composition._tracks.cbegin(), _composition._tracks.cend(), 0u, [](unsigned weight, const Track& track) { return weight + track._weight; }));
 			_tracks.reserve(_composition._tracks.size());
 			for (const auto& track : _composition._tracks)
-				_tracks.emplace_back(std::make_unique<RendererImpl::TrackState>(track._wave, track._envelope, track._notes.cbegin(), track._notes.cend(), samplingRate));
+				_tracks.emplace_back(std::make_unique<RendererImpl::TrackState>(track._wave, track._envelope, track._weight / totalWeight, track._notes.cbegin(), track._notes.cend(), samplingRate));
 		}
 
 		size_t render(void* buffer, size_t bufferBytes) noexcept override
@@ -284,7 +286,7 @@ namespace aulos
 					{
 						track->_noteStarted = true;
 						track->_noteSamplesRemaining = _stepSamples * track->_note->_duration;
-						track->_voice->start(kNoteTable[track->_note->_note], 1.f / _tracks.size());
+						track->_voice->start(kNoteTable[track->_note->_note], track->_amplitude);
 					}
 					const auto samplesToGenerate = bufferBytes / kSampleSize - trackSamplesRendered;
 					if (!samplesToGenerate)
@@ -309,13 +311,14 @@ namespace aulos
 		{
 			SampledEnvelope _envelope;
 			std::unique_ptr<Voice> _voice;
+			const float _amplitude;
 			std::vector<NoteInfo>::const_iterator _note;
 			const std::vector<NoteInfo>::const_iterator _end;
 			bool _noteStarted = false;
 			size_t _noteSamplesRemaining = 0;
 
-			TrackState(Wave wave, const Envelope& envelope, const std::vector<NoteInfo>::const_iterator& note, const std::vector<NoteInfo>::const_iterator& end, unsigned samplingRate)
-				: _envelope{ envelope, samplingRate }, _voice{ createVoice(wave, _envelope, samplingRate) }, _note{ note }, _end{ end } {}
+			TrackState(Wave wave, const Envelope& envelope, float amplitude, const std::vector<NoteInfo>::const_iterator& note, const std::vector<NoteInfo>::const_iterator& end, unsigned samplingRate)
+				: _envelope{ envelope, samplingRate }, _voice{ createVoice(wave, _envelope, samplingRate) }, _amplitude{ amplitude }, _note{ note }, _end{ end } {}
 		};
 
 		const CompositionImpl& _composition;

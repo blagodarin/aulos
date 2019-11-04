@@ -74,6 +74,7 @@ namespace aulos
 	{
 		Wave _wave = Wave::Square;
 		Envelope _envelope;
+		unsigned _weight = 1;
 		std::vector<NoteInfo> _notes;
 	};
 

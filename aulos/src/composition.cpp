@@ -193,8 +193,7 @@ namespace aulos
 		};
 
 		const auto parseCommand = [&](std::string_view command) {
-			if (command == "envelope")
-			{
+			const auto readTrack = [&]() -> Track& {
 				const auto index = readUnsigned();
 				if (!index)
 					throw CompositionError{ location(), "Bad voice index" };
@@ -205,7 +204,12 @@ namespace aulos
 					while (index > _tracks.size());
 					alignTracks();
 				}
-				auto& envelopeParts = _tracks[index - 1]._envelope._parts;
+				return _tracks[index - 1];
+			};
+
+			if (command == "envelope")
+			{
+				auto& envelopeParts = readTrack()._envelope._parts;
 				const auto type = readIdentifier();
 				if (type == "adsr")
 				{
@@ -245,26 +249,24 @@ namespace aulos
 			}
 			else if (command == "wave")
 			{
-				const auto index = readUnsigned();
-				if (!index)
-					throw CompositionError{ location(), "Bad voice index" };
-				if (index > _tracks.size())
-				{
-					do
-						_tracks.emplace_back();
-					while (index > _tracks.size());
-					alignTracks();
-				}
+				auto& track = readTrack();
 				const auto type = readIdentifier();
 				if (type == "square")
-					_tracks[index - 1]._wave = Wave::Square;
+					track._wave = Wave::Square;
 				else if (type == "triangle")
-					_tracks[index - 1]._wave = Wave::Triangle;
+					track._wave = Wave::Triangle;
 				else
 					throw CompositionError{ location(), "Bad envelope type" };
 			}
-			else
-				throw CompositionError{ location(), "Bad command" };
+			else if (command == "weight")
+			{
+				auto& track = readTrack();
+				const auto weight = readUnsigned();
+				if (!weight || weight > 256)
+					throw CompositionError{ location(), "Bad track weight" };
+				track._weight = weight;
+			}
+			else throw CompositionError{ location(), "Bad command" };
 			if (*source && *source == '\n' && *source == '\r')
 				throw CompositionError{ location(), "End of line expected" };
 		};
