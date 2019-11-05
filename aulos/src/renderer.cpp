@@ -214,7 +214,7 @@ namespace
 		double _partSamplesRemaining = 0.0;
 	};
 
-	template <typename Generator>
+	template <typename Oscillator>
 	class TwoPartWave final : public TwoPartWaveBase
 	{
 	public:
@@ -227,9 +227,9 @@ namespace
 			while (_envelopeState.update())
 			{
 				const auto samplesToGenerate = std::min(static_cast<size_t>(std::ceil(_partSamplesRemaining)), std::min(maxSamples, _envelopeState.partSamplesRemaining()));
-				Generator generator{ _partSamplesRemaining, _partSamples[_partIndex] };
+				Oscillator oscillator{ _partSamplesRemaining, _partSamples[_partIndex] };
 				for (size_t i = 0; i < samplesToGenerate; ++i)
-					buffer[i] += _baseAmplitude * generator() * _envelopeState.advance();
+					buffer[i] += _baseAmplitude * oscillator() * _envelopeState.advance();
 				setCurrentPartSamples(_partSamplesRemaining - samplesToGenerate);
 				buffer += samplesToGenerate;
 				maxSamples -= samplesToGenerate;
@@ -239,9 +239,9 @@ namespace
 		}
 	};
 
-	struct RectangleWaveGenerator
+	struct RectangleOscillator
 	{
-		constexpr RectangleWaveGenerator(double, double) noexcept {}
+		constexpr RectangleOscillator(double, double) noexcept {}
 
 		constexpr float operator()() const noexcept
 		{
@@ -249,12 +249,12 @@ namespace
 		}
 	};
 
-	struct TriangleWaveGenerator
+	struct TriangleOscillator
 	{
 		double _value;
 		const double _increment;
 
-		constexpr TriangleWaveGenerator(double remainingSamples, double totalSamples) noexcept
+		constexpr TriangleOscillator(double remainingSamples, double totalSamples) noexcept
 			: _value{ 1.0 - 2.0 * (remainingSamples - 1.0) / totalSamples }, _increment{ 2.0 / totalSamples } {}
 
 		constexpr float operator()() noexcept
@@ -263,12 +263,12 @@ namespace
 		}
 	};
 
-	std::unique_ptr<Voice> createVoice(aulos::Wave wave, double waveParameter, const SampledEnvelope& envelope, unsigned samplingRate)
+	std::unique_ptr<Voice> createVoice(const aulos::Wave& wave, const SampledEnvelope& amplitude, unsigned samplingRate)
 	{
-		switch (wave)
+		switch (wave._type)
 		{
-		case aulos::Wave::Rectangle: return std::make_unique<TwoPartWave<RectangleWaveGenerator>>(waveParameter, envelope, samplingRate);
-		case aulos::Wave::Triangle: return std::make_unique<TwoPartWave<TriangleWaveGenerator>>(waveParameter, envelope, samplingRate);
+		case aulos::WaveType::Rectangle: return std::make_unique<TwoPartWave<RectangleOscillator>>(wave._parameter, amplitude, samplingRate);
+		case aulos::WaveType::Triangle: return std::make_unique<TwoPartWave<TriangleOscillator>>(wave._parameter, amplitude, samplingRate);
 		}
 		return {};
 	}
@@ -286,7 +286,7 @@ namespace aulos
 			const auto totalWeight = static_cast<float>(std::reduce(_composition._tracks.cbegin(), _composition._tracks.cend(), 0u, [](unsigned weight, const Track& track) { return weight + track._weight; }));
 			_tracks.reserve(_composition._tracks.size());
 			for (const auto& track : _composition._tracks)
-				_tracks.emplace_back(std::make_unique<RendererImpl::TrackState>(track._wave, track._waveParameter, track._envelope, track._weight / totalWeight, track._notes.cbegin(), track._notes.cend(), samplingRate));
+				_tracks.emplace_back(std::make_unique<RendererImpl::TrackState>(track._wave, track._amplitude, track._weight / totalWeight, track._notes, samplingRate));
 		}
 
 		size_t render(void* buffer, size_t bufferBytes) noexcept override
@@ -304,7 +304,7 @@ namespace aulos
 					{
 						track->_noteStarted = true;
 						track->_noteSamplesRemaining = _stepSamples * track->_note->_duration;
-						track->_voice->start(kNoteTable[track->_note->_note], track->_amplitude);
+						track->_voice->start(kNoteTable[track->_note->_note], track->_normalizedWeight);
 					}
 					const auto samplesToGenerate = bufferBytes / kSampleSize - trackSamplesRendered;
 					if (!samplesToGenerate)
@@ -327,16 +327,16 @@ namespace aulos
 	public:
 		struct TrackState
 		{
-			SampledEnvelope _envelope;
+			SampledEnvelope _amplitude;
 			std::unique_ptr<Voice> _voice;
-			const float _amplitude;
+			const float _normalizedWeight;
 			std::vector<NoteInfo>::const_iterator _note;
 			const std::vector<NoteInfo>::const_iterator _end;
 			bool _noteStarted = false;
 			size_t _noteSamplesRemaining = 0;
 
-			TrackState(Wave wave, double waveParameter, const Envelope& envelope, float amplitude, const std::vector<NoteInfo>::const_iterator& note, const std::vector<NoteInfo>::const_iterator& end, unsigned samplingRate)
-				: _envelope{ envelope, samplingRate }, _voice{ createVoice(wave, waveParameter, _envelope, samplingRate) }, _amplitude{ amplitude }, _note{ note }, _end{ end } {}
+			TrackState(const Wave& wave, const Envelope& amplitude, float normalizedWeight, const std::vector<NoteInfo>& notes, unsigned samplingRate)
+				: _amplitude{ amplitude, samplingRate }, _voice{ createVoice(wave, _amplitude, samplingRate) }, _normalizedWeight{ normalizedWeight }, _note{ notes.cbegin() }, _end{ notes.cend() } {}
 		};
 
 		const CompositionImpl& _composition;

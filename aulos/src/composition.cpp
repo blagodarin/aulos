@@ -215,20 +215,20 @@ namespace aulos
 				return _tracks[index - 1];
 			};
 
-			if (command == "envelope")
+			if (command == "amplitude")
 			{
-				auto& envelopeParts = readTrack()._envelope._parts;
+				auto& envelope = readTrack()._amplitude._parts;
 				if (const auto type = readIdentifier(); type == "adsr")
 				{
 					const auto attack = readFloat();
 					const auto decay = readFloat();
 					const auto sustain = readFloat();
 					const auto release = readFloat();
-					envelopeParts.reserve(3);
-					envelopeParts.clear();
-					envelopeParts.emplace_back(0.f, 1.f, attack);
-					envelopeParts.emplace_back(1.f, sustain, decay);
-					envelopeParts.emplace_back(sustain, 0.f, release);
+					envelope.reserve(3);
+					envelope.clear();
+					envelope.emplace_back(0.f, 1.f, attack);
+					envelope.emplace_back(1.f, sustain, decay);
+					envelope.emplace_back(sustain, 0.f, release);
 				}
 				else if (type == "ahdsr")
 				{
@@ -237,12 +237,12 @@ namespace aulos
 					const auto decay = readFloat();
 					const auto sustain = readFloat();
 					const auto release = readFloat();
-					envelopeParts.reserve(4);
-					envelopeParts.clear();
-					envelopeParts.emplace_back(0.f, 1.f, attack);
-					envelopeParts.emplace_back(1.f, 1.f, hold);
-					envelopeParts.emplace_back(1.f, sustain, decay);
-					envelopeParts.emplace_back(sustain, 0.f, release);
+					envelope.reserve(4);
+					envelope.clear();
+					envelope.emplace_back(0.f, 1.f, attack);
+					envelope.emplace_back(1.f, 1.f, hold);
+					envelope.emplace_back(1.f, sustain, decay);
+					envelope.emplace_back(sustain, 0.f, release);
 				}
 				else
 					throw CompositionError{ location(), "Bad envelope type" };
@@ -260,14 +260,14 @@ namespace aulos
 				if (const auto type = readIdentifier(); type == "rectangle")
 				{
 					const auto parameter = tryReadFloat();
-					track._wave = Wave::Rectangle;
-					track._waveParameter = parameter ? std::clamp(*parameter, -1.f, 1.f) : 0.f;
+					track._wave._type = WaveType::Rectangle;
+					track._wave._parameter = parameter ? std::clamp(*parameter, -1.f, 1.f) : 0.f;
 				}
 				else if (type == "triangle")
 				{
 					const auto parameter = tryReadFloat();
-					track._wave = Wave::Triangle;
-					track._waveParameter = parameter ? std::clamp(*parameter, -1.f, 1.f) : 0.f;
+					track._wave._type = WaveType::Triangle;
+					track._wave._parameter = parameter ? std::clamp(*parameter, -1.f, 1.f) : 0.f;
 				}
 				else
 					throw CompositionError{ location(), "Bad wave type" };

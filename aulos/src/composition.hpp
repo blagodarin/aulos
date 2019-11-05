@@ -49,10 +49,16 @@ namespace aulos
 			: _note{ note }, _duration{ duration } {}
 	};
 
-	enum class Wave
+	enum class WaveType
 	{
 		Rectangle,
 		Triangle,
+	};
+
+	struct Wave
+	{
+		WaveType _type = WaveType::Rectangle;
+		double _parameter = 0.0;
 	};
 
 	struct Envelope
@@ -72,9 +78,8 @@ namespace aulos
 
 	struct Track
 	{
-		Wave _wave = Wave::Rectangle;
-		double _waveParameter = 0.0;
-		Envelope _envelope;
+		Wave _wave;
+		Envelope _amplitude;
 		unsigned _weight = 1;
 		std::vector<NoteInfo> _notes;
 	};
