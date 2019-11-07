@@ -87,10 +87,10 @@ namespace
 		std::array<Part, 4> _parts{};
 	};
 
-	class EnvelopeState
+	class AmplitudeState
 	{
 	public:
-		EnvelopeState(const SampledEnvelope& envelope) noexcept
+		AmplitudeState(const SampledEnvelope& envelope) noexcept
 			: _envelope{ envelope } {}
 
 		float advance() noexcept
@@ -151,6 +151,53 @@ namespace
 		size_t _currentOffset = 0;
 	};
 
+	class FrequencyState
+	{
+	public:
+		FrequencyState(const SampledEnvelope& envelope, size_t samplingRate) noexcept
+			: _envelope{ envelope }, _samplingRate{ static_cast<double>(samplingRate) } {}
+
+		double currentPeriodSamples() const noexcept { return _samplingRate / _currentFrequency; }
+
+		void start(double frequency) noexcept
+		{
+			_baseFrequency = frequency;
+			_offset = 0;
+			_current = _envelope.begin();
+			_currentFrequency = _current != _envelope.end() ? _current->_left * _baseFrequency : _baseFrequency;
+		}
+
+		void advance(size_t samples) noexcept
+		{
+			for (;;)
+			{
+				if (_current == _envelope.end())
+					return;
+				const auto remainingSamples = _current->_samples - _offset;
+				if (remainingSamples <= samples)
+				{
+					samples -= remainingSamples;
+					_offset = 0;
+					_currentFrequency = _current->_right * _baseFrequency;
+					++_current;
+					continue;
+				}
+				_offset += samples;
+				const auto progress = static_cast<double>(_offset) / _current->_samples;
+				_currentFrequency = (_current->_left * (1.0 - progress) + _current->_right * progress) * _baseFrequency;
+				break;
+			}
+		}
+
+	private:
+		const SampledEnvelope& _envelope;
+		const double _samplingRate;
+		double _baseFrequency = 0.0;
+		const SampledEnvelope::Part* _current = _envelope.end();
+		size_t _offset = 0;
+		double _currentFrequency = 0.0;
+	};
+
 	class Voice
 	{
 	public:
@@ -163,19 +210,19 @@ namespace
 	class TwoPartWaveBase : public Voice
 	{
 	public:
-		TwoPartWaveBase(double parameter, const SampledEnvelope& envelope, size_t samplingRate) noexcept
-			: _parameter{ (1.0 + std::clamp(parameter, -1.0, 1.0)) / 2.0 }, _samplingRate{ samplingRate }, _envelopeState{ envelope } {}
+		TwoPartWaveBase(double parameter, const SampledEnvelope& amplitude, const SampledEnvelope& frequency, size_t samplingRate) noexcept
+			: _parameter{ (1.0 + std::clamp(parameter, -1.0, 1.0)) / 2.0 }, _amplitudeState{ amplitude }, _frequencyState{ frequency, samplingRate } {}
 
 		void start(double frequency, float amplitude) noexcept override
 		{
 			if (frequency <= 0.0)
 			{
-				_envelopeState.stop();
+				_amplitudeState.stop();
 				return;
 			}
 			const auto clampedAmplitude = std::clamp(amplitude, -1.f, 1.f);
 			double partRemaining;
-			if (_envelopeState.start())
+			if (_amplitudeState.start())
 			{
 				_baseAmplitude = clampedAmplitude;
 				_partIndex = 0;
@@ -186,28 +233,38 @@ namespace
 				_baseAmplitude = std::copysign(clampedAmplitude, _baseAmplitude);
 				partRemaining = _partSamplesRemaining / _partSamples[_partIndex];
 			}
-			const auto periodSamples = _samplingRate / frequency;
+			_frequencyState.start(frequency);
+			const auto periodSamples = _frequencyState.currentPeriodSamples();
 			_partSamples[0] = periodSamples * _parameter;
 			_partSamples[1] = periodSamples - _partSamples[0];
-			setCurrentPartSamples(_partSamples[_partIndex] * partRemaining);
+			_partSamplesRemaining = _partSamples[_partIndex] * partRemaining;
+			advance(0);
 		}
 
 	protected:
-		void setCurrentPartSamples(double samples) noexcept
+		void advance(size_t samples) noexcept
 		{
-			while (samples <= 0.0)
+			_frequencyState.advance(samples);
+			auto remaining = _partSamplesRemaining - samples;
+			while (remaining <= 0.0)
 			{
 				_baseAmplitude = -_baseAmplitude;
 				_partIndex = 1 - _partIndex;
-				samples += _partSamples[_partIndex];
+				if (!_partIndex)
+				{
+					const auto periodSamples = _frequencyState.currentPeriodSamples();
+					_partSamples[0] = periodSamples * _parameter;
+					_partSamples[1] = periodSamples - _partSamples[0];
+				}
+				remaining += _partSamples[_partIndex];
 			}
-			_partSamplesRemaining = samples;
+			_partSamplesRemaining = remaining;
 		}
 
 	protected:
 		const double _parameter;
-		const size_t _samplingRate;
-		EnvelopeState _envelopeState;
+		AmplitudeState _amplitudeState;
+		FrequencyState _frequencyState;
 		float _baseAmplitude = 0.f;
 		size_t _partIndex = 0;
 		std::array<double, 2> _partSamples{};
@@ -218,19 +275,19 @@ namespace
 	class TwoPartWave final : public TwoPartWaveBase
 	{
 	public:
-		TwoPartWave(double parameter, const SampledEnvelope& envelope, size_t samplingRate) noexcept
-			: TwoPartWaveBase{ parameter, envelope, samplingRate } {}
+		TwoPartWave(double parameter, const SampledEnvelope& amplitude, const SampledEnvelope& frequency, size_t samplingRate) noexcept
+			: TwoPartWaveBase{ parameter, amplitude, frequency, samplingRate } {}
 
 		void generate(float* buffer, size_t maxSamples) noexcept override
 		{
 			assert(maxSamples > 0);
-			while (_envelopeState.update())
+			while (_amplitudeState.update())
 			{
-				const auto samplesToGenerate = std::min(static_cast<size_t>(std::ceil(_partSamplesRemaining)), std::min(maxSamples, _envelopeState.partSamplesRemaining()));
+				const auto samplesToGenerate = std::min(static_cast<size_t>(std::ceil(_partSamplesRemaining)), std::min(maxSamples, _amplitudeState.partSamplesRemaining()));
 				Oscillator oscillator{ _partSamplesRemaining, _partSamples[_partIndex] };
 				for (size_t i = 0; i < samplesToGenerate; ++i)
-					buffer[i] += _baseAmplitude * oscillator() * _envelopeState.advance();
-				setCurrentPartSamples(_partSamplesRemaining - samplesToGenerate);
+					buffer[i] += _baseAmplitude * oscillator() * _amplitudeState.advance();
+				advance(samplesToGenerate);
 				buffer += samplesToGenerate;
 				maxSamples -= samplesToGenerate;
 				if (!maxSamples)
@@ -263,12 +320,12 @@ namespace
 		}
 	};
 
-	std::unique_ptr<Voice> createVoice(const aulos::Wave& wave, const SampledEnvelope& amplitude, unsigned samplingRate)
+	std::unique_ptr<Voice> createVoice(const aulos::Wave& wave, const SampledEnvelope& amplitude, const SampledEnvelope& frequency, unsigned samplingRate)
 	{
 		switch (wave._type)
 		{
-		case aulos::WaveType::Rectangle: return std::make_unique<TwoPartWave<RectangleOscillator>>(wave._parameter, amplitude, samplingRate);
-		case aulos::WaveType::Triangle: return std::make_unique<TwoPartWave<TriangleOscillator>>(wave._parameter, amplitude, samplingRate);
+		case aulos::WaveType::Rectangle: return std::make_unique<TwoPartWave<RectangleOscillator>>(wave._parameter, amplitude, frequency, samplingRate);
+		case aulos::WaveType::Triangle: return std::make_unique<TwoPartWave<TriangleOscillator>>(wave._parameter, amplitude, frequency, samplingRate);
 		}
 		return {};
 	}
@@ -286,7 +343,7 @@ namespace aulos
 			const auto totalWeight = static_cast<float>(std::reduce(_composition._tracks.cbegin(), _composition._tracks.cend(), 0u, [](unsigned weight, const Track& track) { return weight + track._weight; }));
 			_tracks.reserve(_composition._tracks.size());
 			for (const auto& track : _composition._tracks)
-				_tracks.emplace_back(std::make_unique<RendererImpl::TrackState>(track._wave, track._amplitude, track._weight / totalWeight, track._notes, samplingRate));
+				_tracks.emplace_back(std::make_unique<RendererImpl::TrackState>(track._wave, track._amplitude, track._frequency, track._weight / totalWeight, track._notes, samplingRate));
 		}
 
 		size_t render(void* buffer, size_t bufferBytes) noexcept override
@@ -328,6 +385,7 @@ namespace aulos
 		struct TrackState
 		{
 			SampledEnvelope _amplitude;
+			SampledEnvelope _frequency;
 			std::unique_ptr<Voice> _voice;
 			const float _normalizedWeight;
 			std::vector<NoteInfo>::const_iterator _note;
@@ -335,8 +393,8 @@ namespace aulos
 			bool _noteStarted = false;
 			size_t _noteSamplesRemaining = 0;
 
-			TrackState(const Wave& wave, const Envelope& amplitude, float normalizedWeight, const std::vector<NoteInfo>& notes, unsigned samplingRate)
-				: _amplitude{ amplitude, samplingRate }, _voice{ createVoice(wave, _amplitude, samplingRate) }, _normalizedWeight{ normalizedWeight }, _note{ notes.cbegin() }, _end{ notes.cend() } {}
+			TrackState(const Wave& wave, const Envelope& amplitude, const Envelope& frequency, float normalizedWeight, const std::vector<NoteInfo>& notes, unsigned samplingRate)
+				: _amplitude{ amplitude, samplingRate }, _frequency{ frequency, samplingRate }, _voice{ createVoice(wave, _amplitude, _frequency, samplingRate) }, _normalizedWeight{ normalizedWeight }, _note{ notes.cbegin() }, _end{ notes.cend() } {}
 		};
 
 		const CompositionImpl& _composition;

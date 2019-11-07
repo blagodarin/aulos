@@ -19,6 +19,7 @@
 
 #include <aulos.hpp>
 
+#include <limits>
 #include <vector>
 
 namespace aulos
@@ -80,8 +81,14 @@ namespace aulos
 	{
 		Wave _wave;
 		Envelope _amplitude;
+		Envelope _frequency;
 		unsigned _weight = 1;
 		std::vector<NoteInfo> _notes;
+
+		Track()
+		{
+			_frequency._parts.emplace_back(1.f, 1.f, 1.f);
+		}
 	};
 
 	struct CompositionImpl final : public Composition

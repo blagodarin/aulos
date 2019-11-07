@@ -85,7 +85,7 @@ namespace aulos
 			return result;
 		};
 
-		const auto tryReadFloat = [&]() -> std::optional<float> {
+		const auto tryReadFloat = [&](float min, float max) -> std::optional<float> {
 			if (*source < '0' || *source > '9')
 				return {};
 			const auto begin = source;
@@ -99,12 +99,14 @@ namespace aulos
 			float result;
 			if (std::from_chars(begin, source, result).ec != std::errc{})
 				throw CompositionError{ { line, begin - lineBase }, "Bad number" };
+			if (result < min || result > max)
+				throw CompositionError{ { line, begin - lineBase }, "Number is out of range" };
 			skipSpaces();
 			return result;
 		};
 
-		const auto readFloat = [&] {
-			const auto result = tryReadFloat();
+		const auto readFloat = [&](float min, float max) {
+			const auto result = tryReadFloat(min, max);
 			if (!result)
 				throw CompositionError{ location(), "Number expected" };
 			return *result;
@@ -217,13 +219,14 @@ namespace aulos
 
 			if (command == "amplitude")
 			{
+				constexpr auto maxPartDuration = 60.f;
 				auto& envelope = readTrack()._amplitude._parts;
 				if (const auto type = readIdentifier(); type == "adsr")
 				{
-					const auto attack = readFloat();
-					const auto decay = readFloat();
-					const auto sustain = readFloat();
-					const auto release = readFloat();
+					const auto attack = readFloat(0.f, maxPartDuration);
+					const auto decay = readFloat(0.f, maxPartDuration);
+					const auto sustain = readFloat(0.f, 1.f);
+					const auto release = readFloat(0.f, maxPartDuration);
 					envelope.reserve(3);
 					envelope.clear();
 					envelope.emplace_back(0.f, 1.f, attack);
@@ -232,11 +235,11 @@ namespace aulos
 				}
 				else if (type == "ahdsr")
 				{
-					const auto attack = readFloat();
-					const auto hold = readFloat();
-					const auto decay = readFloat();
-					const auto sustain = readFloat();
-					const auto release = readFloat();
+					const auto attack = readFloat(0.f, maxPartDuration);
+					const auto hold = readFloat(0.f, maxPartDuration);
+					const auto decay = readFloat(0.f, maxPartDuration);
+					const auto sustain = readFloat(0.f, 1.f);
+					const auto release = readFloat(0.f, maxPartDuration);
 					envelope.reserve(4);
 					envelope.clear();
 					envelope.emplace_back(0.f, 1.f, attack);
@@ -247,27 +250,40 @@ namespace aulos
 				else
 					throw CompositionError{ location(), "Bad envelope type" };
 			}
+			else if (command == "frequency")
+			{
+				constexpr auto minFrequency = std::numeric_limits<float>::min();
+				auto& track = readTrack();
+				std::vector<Envelope::Part> parts;
+				auto lastFrequency = readFloat(minFrequency, 1.f);
+				while (const auto duration = tryReadFloat(minFrequency, 1.f))
+				{
+					const auto nextFrequency = readFloat(minFrequency, 1.f);
+					parts.emplace_back(lastFrequency, nextFrequency, *duration);
+					lastFrequency = nextFrequency;
+				}
+				if (parts.empty())
+					parts.emplace_back(lastFrequency, lastFrequency, 1.f);
+				track._frequency._parts = std::move(parts);
+			}
 			else if (command == "speed")
 			{
-				const auto speed = readFloat();
-				if (speed < 1.f || speed > 32.f)
-					throw CompositionError{ location(), "Bad speed" };
-				_speed = speed;
+				_speed = readFloat(1.f, 32.f);
 			}
 			else if (command == "wave")
 			{
 				auto& track = readTrack();
 				if (const auto type = readIdentifier(); type == "rectangle")
 				{
-					const auto parameter = tryReadFloat();
+					const auto parameter = tryReadFloat(-1.f, 1.f);
 					track._wave._type = WaveType::Rectangle;
-					track._wave._parameter = parameter ? std::clamp(*parameter, -1.f, 1.f) : 0.f;
+					track._wave._parameter = parameter ? *parameter : 0.f;
 				}
 				else if (type == "triangle")
 				{
-					const auto parameter = tryReadFloat();
+					const auto parameter = tryReadFloat(-1.f, 1.f);
 					track._wave._type = WaveType::Triangle;
-					track._wave._parameter = parameter ? std::clamp(*parameter, -1.f, 1.f) : 0.f;
+					track._wave._parameter = parameter ? *parameter : 0.f;
 				}
 				else
 					throw CompositionError{ location(), "Bad wave type" };
