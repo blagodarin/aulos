@@ -220,18 +220,19 @@ namespace aulos
 			if (command == "amplitude")
 			{
 				constexpr auto maxPartDuration = 60.f;
-				auto& envelope = readTrack()._amplitude._parts;
+				auto& envelope = readTrack()._amplitude._points;
 				if (const auto type = readIdentifier(); type == "adsr")
 				{
 					const auto attack = readFloat(0.f, maxPartDuration);
 					const auto decay = readFloat(0.f, maxPartDuration);
 					const auto sustain = readFloat(0.f, 1.f);
 					const auto release = readFloat(0.f, maxPartDuration);
-					envelope.reserve(3);
+					envelope.reserve(4);
 					envelope.clear();
-					envelope.emplace_back(0.f, 1.f, attack);
-					envelope.emplace_back(1.f, sustain, decay);
-					envelope.emplace_back(sustain, 0.f, release);
+					envelope.emplace_back(0.f, 0.f);
+					envelope.emplace_back(attack, 1.f);
+					envelope.emplace_back(decay, sustain);
+					envelope.emplace_back(release, 0.f);
 				}
 				else if (type == "ahdsr")
 				{
@@ -240,12 +241,13 @@ namespace aulos
 					const auto decay = readFloat(0.f, maxPartDuration);
 					const auto sustain = readFloat(0.f, 1.f);
 					const auto release = readFloat(0.f, maxPartDuration);
-					envelope.reserve(4);
+					envelope.reserve(5);
 					envelope.clear();
-					envelope.emplace_back(0.f, 1.f, attack);
-					envelope.emplace_back(1.f, 1.f, hold);
-					envelope.emplace_back(1.f, sustain, decay);
-					envelope.emplace_back(sustain, 0.f, release);
+					envelope.emplace_back(0.f, 0.f);
+					envelope.emplace_back(attack, 1.f);
+					envelope.emplace_back(hold, 1.f);
+					envelope.emplace_back(decay, sustain);
+					envelope.emplace_back(release, 0.f);
 				}
 				else
 					throw CompositionError{ location(), "Bad envelope type" };
@@ -254,17 +256,11 @@ namespace aulos
 			{
 				constexpr auto minFrequency = std::numeric_limits<float>::min();
 				auto& track = readTrack();
-				std::vector<Envelope::Part> parts;
-				auto lastFrequency = readFloat(minFrequency, 1.f);
-				while (const auto duration = tryReadFloat(minFrequency, 1.f))
-				{
-					const auto nextFrequency = readFloat(minFrequency, 1.f);
-					parts.emplace_back(lastFrequency, nextFrequency, *duration);
-					lastFrequency = nextFrequency;
-				}
-				if (parts.empty())
-					parts.emplace_back(lastFrequency, lastFrequency, 1.f);
-				track._frequency._parts = std::move(parts);
+				std::vector<Envelope::Point> points;
+				points.emplace_back(0.f, readFloat(minFrequency, 1.f));
+				while (const auto delay = tryReadFloat(minFrequency, 1.f))
+					points.emplace_back(*delay, readFloat(minFrequency, 1.f));
+				track._frequency._points = std::move(points);
 			}
 			else if (command == "speed")
 			{

@@ -70,12 +70,16 @@ namespace
 
 		SampledEnvelope(const aulos::Envelope& envelope, size_t samplingRate) noexcept
 		{
-			assert(envelope._parts.size() <= _parts.size());
-			for (const auto& part : envelope._parts)
+			float last = 0.f;
+			for (const auto& point : envelope._points)
 			{
-				assert(part._duration >= 0.f);
-				if (const auto samples = static_cast<size_t>(double{ part._duration } * samplingRate); samples > 0)
-					_parts[_size++] = { part._left, part._right, samples };
+				assert(point._delay >= 0.f);
+				if (const auto samples = static_cast<size_t>(double{ point._delay } * samplingRate); samples > 0)
+				{
+					assert(_size < _parts.size());
+					_parts[_size++] = { last, point._value, samples };
+				}
+				last = point._value;
 			}
 		}
 

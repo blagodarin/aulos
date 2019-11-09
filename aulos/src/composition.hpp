@@ -64,17 +64,16 @@ namespace aulos
 
 	struct Envelope
 	{
-		struct Part
+		struct Point
 		{
-			float _left;
-			float _right;
-			float _duration;
+			float _delay;
+			float _value;
 
-			constexpr Part(float left, float right, float duration) noexcept
-				: _left{ left }, _right{ right }, _duration{ duration } {}
+			constexpr Point(float delay, float value) noexcept
+				: _delay{ delay }, _value{ value } {}
 		};
 
-		std::vector<Part> _parts;
+		std::vector<Point> _points;
 	};
 
 	struct Track
@@ -87,7 +86,7 @@ namespace aulos
 
 		Track()
 		{
-			_frequency._parts.emplace_back(1.f, 1.f, 1.f);
+			_frequency._points.emplace_back(0.f, 1.f);
 		}
 	};
 
