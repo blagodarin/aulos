@@ -52,14 +52,14 @@ namespace aulos
 
 	enum class WaveType
 	{
-		Rectangle,
-		Triangle,
+		Linear,
 	};
 
 	struct Wave
 	{
-		WaveType _type = WaveType::Rectangle;
-		double _parameter = 0.0;
+		WaveType _type = WaveType::Linear;
+		double _asymmetry = 0.0;
+		double _oscillation = 0.0;
 	};
 
 	struct Envelope

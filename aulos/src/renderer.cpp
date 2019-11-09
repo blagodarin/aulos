@@ -111,18 +111,10 @@ namespace
 		bool start() noexcept
 		{
 			const bool restart = _nextPoint == _envelope.end();
-			_nextPoint = _envelope.begin();
+			_baseValue = restart ? 0.f : _currentValue;
+			_nextPoint = std::find_if(_envelope.begin(), _envelope.end(), [](const SampledEnvelope::Point& point) { return point._delay > 0; });
 			_offset = 0;
-			if (_nextPoint != _envelope.end())
-			{
-				_baseValue = restart ? _nextPoint->_value : _currentValue;
-				update();
-			}
-			else
-			{
-				_baseValue = 0.f;
-				_currentValue = _baseValue;
-			}
+			_currentValue = _baseValue;
 			return restart;
 		}
 
@@ -215,8 +207,13 @@ namespace
 	class TwoPartWaveBase : public Voice
 	{
 	public:
-		TwoPartWaveBase(double parameter, const SampledEnvelope& amplitude, const SampledEnvelope& frequency, size_t samplingRate) noexcept
-			: _parameter{ (1.0 + std::clamp(parameter, -1.0, 1.0)) / 2.0 }, _amplitudeModulator{ amplitude }, _frequencyModulator{ frequency, samplingRate } {}
+		TwoPartWaveBase(double asymmetry, double oscillation, const SampledEnvelope& amplitude, const SampledEnvelope& frequency, size_t samplingRate) noexcept
+			: _asymmetry{ (1.0 + std::clamp(asymmetry, -1.0, 1.0)) / 2.0 }
+			, _oscillation{ oscillation }
+			, _amplitudeModulator{ amplitude }
+			, _frequencyModulator{ frequency, samplingRate }
+		{
+		}
 
 		void start(double frequency, float amplitude) noexcept override
 		{
@@ -240,7 +237,7 @@ namespace
 			}
 			_frequencyModulator.start(frequency);
 			const auto periodSamples = _frequencyModulator.currentPeriodSamples();
-			_partSamples[0] = periodSamples * _parameter;
+			_partSamples[0] = periodSamples * _asymmetry;
 			_partSamples[1] = periodSamples - _partSamples[0];
 			_partSamplesRemaining = _partSamples[_partIndex] * partRemaining;
 			advance(0);
@@ -258,7 +255,7 @@ namespace
 				if (!_partIndex)
 				{
 					const auto periodSamples = _frequencyModulator.currentPeriodSamples();
-					_partSamples[0] = periodSamples * _parameter;
+					_partSamples[0] = periodSamples * _asymmetry;
 					_partSamples[1] = periodSamples - _partSamples[0];
 				}
 				remaining += _partSamples[_partIndex];
@@ -267,7 +264,8 @@ namespace
 		}
 
 	protected:
-		const double _parameter;
+		const double _asymmetry;
+		const double _oscillation;
 		AmplitudeModulator _amplitudeModulator;
 		FrequencyModulator _frequencyModulator;
 		float _baseAmplitude = 0.f;
@@ -288,7 +286,7 @@ namespace
 			while (_amplitudeModulator.update())
 			{
 				const auto samplesToGenerate = std::min(static_cast<size_t>(std::ceil(_partSamplesRemaining)), std::min(maxSamples, _amplitudeModulator.partSamplesRemaining()));
-				Oscillator oscillator{ _partSamplesRemaining, _partSamples[_partIndex] };
+				Oscillator oscillator{ _partSamplesRemaining, _partSamples[_partIndex], _oscillation };
 				for (size_t i = 0; i < samplesToGenerate; ++i)
 					buffer[i] += _baseAmplitude * oscillator() * _amplitudeModulator.advance();
 				advance(samplesToGenerate);
@@ -300,23 +298,13 @@ namespace
 		}
 	};
 
-	struct RectangleOscillator
+	struct LinearOscillator
 	{
-		constexpr RectangleOscillator(double, double) noexcept {}
-
-		constexpr float operator()() const noexcept
-		{
-			return 1.f;
-		}
-	};
-
-	struct TriangleOscillator
-	{
-		double _value;
 		const double _increment;
+		double _value;
 
-		constexpr TriangleOscillator(double remainingSamples, double totalSamples) noexcept
-			: _value{ 1.0 - 2.0 * (remainingSamples - 1.0) / totalSamples }, _increment{ 2.0 / totalSamples } {}
+		constexpr LinearOscillator(double remainingSamples, double totalSamples, double oscillation) noexcept
+			: _increment{ 2.0 * oscillation / totalSamples }, _value{ 1.0 - _increment * (remainingSamples - 1.0) } {}
 
 		constexpr float operator()() noexcept
 		{
@@ -328,8 +316,7 @@ namespace
 	{
 		switch (wave._type)
 		{
-		case aulos::WaveType::Rectangle: return std::make_unique<TwoPartWave<RectangleOscillator>>(wave._parameter, amplitude, frequency, samplingRate);
-		case aulos::WaveType::Triangle: return std::make_unique<TwoPartWave<TriangleOscillator>>(wave._parameter, amplitude, frequency, samplingRate);
+		case aulos::WaveType::Linear: return std::make_unique<TwoPartWave<LinearOscillator>>(wave._asymmetry, wave._oscillation, amplitude, frequency, samplingRate);
 		}
 		return {};
 	}

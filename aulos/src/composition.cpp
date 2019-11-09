@@ -227,9 +227,8 @@ namespace aulos
 					const auto decay = readFloat(0.f, maxPartDuration);
 					const auto sustain = readFloat(0.f, 1.f);
 					const auto release = readFloat(0.f, maxPartDuration);
-					envelope.reserve(4);
+					envelope.reserve(3);
 					envelope.clear();
-					envelope.emplace_back(0.f, 0.f);
 					envelope.emplace_back(attack, 1.f);
 					envelope.emplace_back(decay, sustain);
 					envelope.emplace_back(release, 0.f);
@@ -241,9 +240,8 @@ namespace aulos
 					const auto decay = readFloat(0.f, maxPartDuration);
 					const auto sustain = readFloat(0.f, 1.f);
 					const auto release = readFloat(0.f, maxPartDuration);
-					envelope.reserve(5);
+					envelope.reserve(4);
 					envelope.clear();
-					envelope.emplace_back(0.f, 0.f);
 					envelope.emplace_back(attack, 1.f);
 					envelope.emplace_back(hold, 1.f);
 					envelope.emplace_back(decay, sustain);
@@ -269,17 +267,27 @@ namespace aulos
 			else if (command == "wave")
 			{
 				auto& track = readTrack();
-				if (const auto type = readIdentifier(); type == "rectangle")
+				if (const auto type = readIdentifier(); type == "linear")
 				{
-					const auto parameter = tryReadFloat(-1.f, 1.f);
-					track._wave._type = WaveType::Rectangle;
-					track._wave._parameter = parameter ? *parameter : 0.f;
+					const auto asymmetry = tryReadFloat(-1.f, 1.f);
+					const auto oscillation = tryReadFloat(0.f, 1.f);
+					track._wave._type = WaveType::Linear;
+					track._wave._asymmetry = asymmetry ? *asymmetry : 0.f;
+					track._wave._oscillation = oscillation ? *oscillation : 0.f;
+				}
+				else if (type == "rectangle")
+				{
+					const auto asymmetry = tryReadFloat(-1.f, 1.f);
+					track._wave._type = WaveType::Linear;
+					track._wave._asymmetry = asymmetry ? *asymmetry : 0.f;
+					track._wave._oscillation = 0.0;
 				}
 				else if (type == "triangle")
 				{
-					const auto parameter = tryReadFloat(-1.f, 1.f);
-					track._wave._type = WaveType::Triangle;
-					track._wave._parameter = parameter ? *parameter : 0.f;
+					const auto asymmetry = tryReadFloat(-1.f, 1.f);
+					track._wave._type = WaveType::Linear;
+					track._wave._asymmetry = asymmetry ? *asymmetry : 0.f;
+					track._wave._oscillation = 1.0;
 				}
 				else
 					throw CompositionError{ location(), "Bad wave type" };
