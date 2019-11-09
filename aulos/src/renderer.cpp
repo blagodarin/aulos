@@ -82,7 +82,7 @@ namespace
 
 	private:
 		size_t _size = 0;
-		std::array<Point, 6> _points{};
+		std::array<Point, 4> _points{};
 	};
 
 	class AmplitudeModulator
@@ -91,31 +91,37 @@ namespace
 		AmplitudeModulator(const SampledEnvelope& envelope) noexcept
 			: _envelope{ envelope } {}
 
+		bool start(float magnitude) noexcept
+		{
+			const bool restart = _nextPoint == _envelope.end();
+			_magnitude = restart ? magnitude : std::copysign(magnitude, _magnitude);
+			_baseValue = restart ? 0.f : _currentValue;
+			_nextPoint = std::find_if(_envelope.begin(), _envelope.end(), [](const SampledEnvelope::Point& point) { return point._delay > 0; });
+			_offset = 0;
+			_currentValue = _baseValue;
+			return restart;
+		}
+
 		float advance() noexcept
 		{
 			assert(_nextPoint != _envelope.end());
-			assert(_nextPoint->_delay > 1);
+			assert(_nextPoint->_delay > 0);
 			assert(_offset < _nextPoint->_delay);
-			const auto progress = static_cast<float>(_offset) / (_nextPoint->_delay - 1);
+			const auto progress = static_cast<float>(_offset) / _nextPoint->_delay;
 			_currentValue = _baseValue * (1.f - progress) + _nextPoint->_value * progress;
 			++_offset;
-			return _currentValue;
+			return _currentValue * _magnitude;
+		}
+
+		constexpr void negateMagnitude() noexcept
+		{
+			_magnitude = -_magnitude;
 		}
 
 		size_t partSamplesRemaining() const noexcept
 		{
 			assert(_nextPoint != _envelope.end());
 			return _nextPoint->_delay - _offset;
-		}
-
-		bool start() noexcept
-		{
-			const bool restart = _nextPoint == _envelope.end();
-			_baseValue = restart ? 0.f : _currentValue;
-			_nextPoint = std::find_if(_envelope.begin(), _envelope.end(), [](const SampledEnvelope::Point& point) { return point._delay > 0; });
-			_offset = 0;
-			_currentValue = _baseValue;
-			return restart;
 		}
 
 		void stop() noexcept
@@ -141,6 +147,7 @@ namespace
 
 	private:
 		const SampledEnvelope& _envelope;
+		float _magnitude = 0.f;
 		float _baseValue = 0.f;
 		const SampledEnvelope::Point* _nextPoint = _envelope.end();
 		size_t _offset = 0;
@@ -150,19 +157,16 @@ namespace
 	class FrequencyModulator
 	{
 	public:
-		FrequencyModulator(const SampledEnvelope& envelope, size_t samplingRate) noexcept
-			: _envelope{ envelope }, _samplingRate{ static_cast<double>(samplingRate) } {}
-
-		double currentPeriodSamples() const noexcept { return _samplingRate / _currentValue; }
+		FrequencyModulator(const SampledEnvelope& envelope) noexcept
+			: _envelope{ envelope } {}
 
 		void start(double magnitude) noexcept
 		{
 			_magnitude = magnitude;
 			_baseValue = 1.0;
-			_nextPoint = _envelope.begin();
+			_nextPoint = std::find_if(_envelope.begin(), _envelope.end(), [](const SampledEnvelope::Point& point) { return point._delay > 0; });
 			_offset = 0;
-			_currentValue = _baseValue * _magnitude;
-			advance(0);
+			_currentValue = _baseValue;
 		}
 
 		void advance(size_t samples) noexcept
@@ -174,20 +178,24 @@ namespace
 				{
 					_offset += samples;
 					const auto progress = static_cast<double>(_offset) / _nextPoint->_delay;
-					_currentValue = (_baseValue * (1.0 - progress) + _nextPoint->_value * progress) * _magnitude;
+					_currentValue = (_baseValue * (1.0 - progress) + _nextPoint->_value * progress);
 					break;
 				}
 				samples -= remainingSamples;
 				_baseValue = _nextPoint->_value;
 				++_nextPoint;
 				_offset = 0;
-				_currentValue = _baseValue * _magnitude;
+				_currentValue = _baseValue;
 			}
+		}
+
+		constexpr double value() const noexcept
+		{
+			return _currentValue * _magnitude;
 		}
 
 	private:
 		const SampledEnvelope& _envelope;
-		const double _samplingRate;
 		double _magnitude = 0.0;
 		double _baseValue = 1.0;
 		const SampledEnvelope::Point* _nextPoint = _envelope.end();
@@ -211,7 +219,8 @@ namespace
 			: _asymmetry{ (1.0 + std::clamp(asymmetry, -1.0, 1.0)) / 2.0 }
 			, _oscillation{ oscillation }
 			, _amplitudeModulator{ amplitude }
-			, _frequencyModulator{ frequency, samplingRate }
+			, _frequencyModulator{ frequency }
+			, _samplingRate{ static_cast<double>(samplingRate) }
 		{
 		}
 
@@ -222,23 +231,16 @@ namespace
 				_amplitudeModulator.stop();
 				return;
 			}
-			const auto clampedAmplitude = std::clamp(amplitude, -1.f, 1.f);
 			double partRemaining;
-			if (_amplitudeModulator.start())
+			if (_amplitudeModulator.start(std::clamp(amplitude, -1.f, 1.f)))
 			{
-				_baseAmplitude = clampedAmplitude;
 				_partIndex = 0;
 				partRemaining = 1.0;
 			}
 			else
-			{
-				_baseAmplitude = std::copysign(clampedAmplitude, _baseAmplitude);
 				partRemaining = _partSamplesRemaining / _partSamples[_partIndex];
-			}
 			_frequencyModulator.start(frequency);
-			const auto periodSamples = _frequencyModulator.currentPeriodSamples();
-			_partSamples[0] = periodSamples * _asymmetry;
-			_partSamples[1] = periodSamples - _partSamples[0];
+			updatePeriodParts();
 			_partSamplesRemaining = _partSamples[_partIndex] * partRemaining;
 			advance(0);
 		}
@@ -250,17 +252,20 @@ namespace
 			auto remaining = _partSamplesRemaining - samples;
 			while (remaining <= 0.0)
 			{
-				_baseAmplitude = -_baseAmplitude;
+				_amplitudeModulator.negateMagnitude();
 				_partIndex = 1 - _partIndex;
 				if (!_partIndex)
-				{
-					const auto periodSamples = _frequencyModulator.currentPeriodSamples();
-					_partSamples[0] = periodSamples * _asymmetry;
-					_partSamples[1] = periodSamples - _partSamples[0];
-				}
+					updatePeriodParts();
 				remaining += _partSamples[_partIndex];
 			}
 			_partSamplesRemaining = remaining;
+		}
+
+		void updatePeriodParts() noexcept
+		{
+			const auto periodSamples = _samplingRate / _frequencyModulator.value();
+			_partSamples[0] = periodSamples * _asymmetry;
+			_partSamples[1] = periodSamples - _partSamples[0];
 		}
 
 	protected:
@@ -268,7 +273,7 @@ namespace
 		const double _oscillation;
 		AmplitudeModulator _amplitudeModulator;
 		FrequencyModulator _frequencyModulator;
-		float _baseAmplitude = 0.f;
+		const double _samplingRate;
 		size_t _partIndex = 0;
 		std::array<double, 2> _partSamples{};
 		double _partSamplesRemaining = 0.0;
@@ -288,7 +293,7 @@ namespace
 				const auto samplesToGenerate = std::min(static_cast<size_t>(std::ceil(_partSamplesRemaining)), std::min(maxSamples, _amplitudeModulator.partSamplesRemaining()));
 				Oscillator oscillator{ _partSamplesRemaining, _partSamples[_partIndex], _oscillation };
 				for (size_t i = 0; i < samplesToGenerate; ++i)
-					buffer[i] += _baseAmplitude * oscillator() * _amplitudeModulator.advance();
+					buffer[i] += oscillator() * _amplitudeModulator.advance();
 				advance(samplesToGenerate);
 				buffer += samplesToGenerate;
 				maxSamples -= samplesToGenerate;
