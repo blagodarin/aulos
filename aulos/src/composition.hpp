@@ -58,7 +58,6 @@ namespace aulos
 	struct Wave
 	{
 		WaveType _type = WaveType::Linear;
-		double _asymmetry = 0.0;
 		double _oscillation = 0.0;
 	};
 
@@ -81,13 +80,9 @@ namespace aulos
 		Wave _wave;
 		Envelope _amplitude;
 		Envelope _frequency;
+		Envelope _asymmetry;
 		unsigned _weight = 1;
 		std::vector<NoteInfo> _notes;
-
-		Track()
-		{
-			_frequency._points.emplace_back(0.f, 1.f);
-		}
 	};
 
 	struct CompositionImpl final : public Composition

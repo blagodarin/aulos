@@ -250,6 +250,15 @@ namespace aulos
 				else
 					throw CompositionError{ location(), "Bad envelope type" };
 			}
+			else if (command == "asymmetry")
+			{
+				auto& track = readTrack();
+				std::vector<Envelope::Point> points;
+				points.emplace_back(0.f, readFloat(0.f, 1.f));
+				while (const auto delay = tryReadFloat(0.f, 1.f))
+					points.emplace_back(*delay, readFloat(0.f, 1.f));
+				track._asymmetry._points = std::move(points);
+			}
 			else if (command == "frequency")
 			{
 				constexpr auto minFrequency = std::numeric_limits<float>::min();
@@ -269,24 +278,18 @@ namespace aulos
 				auto& track = readTrack();
 				if (const auto type = readIdentifier(); type == "linear")
 				{
-					const auto asymmetry = tryReadFloat(-1.f, 1.f);
 					const auto oscillation = tryReadFloat(0.f, 1.f);
 					track._wave._type = WaveType::Linear;
-					track._wave._asymmetry = asymmetry ? *asymmetry : 0.f;
 					track._wave._oscillation = oscillation ? *oscillation : 0.f;
 				}
 				else if (type == "rectangle")
 				{
-					const auto asymmetry = tryReadFloat(-1.f, 1.f);
 					track._wave._type = WaveType::Linear;
-					track._wave._asymmetry = asymmetry ? *asymmetry : 0.f;
 					track._wave._oscillation = 0.0;
 				}
 				else if (type == "triangle")
 				{
-					const auto asymmetry = tryReadFloat(-1.f, 1.f);
 					track._wave._type = WaveType::Linear;
-					track._wave._asymmetry = asymmetry ? *asymmetry : 0.f;
 					track._wave._oscillation = 1.0;
 				}
 				else

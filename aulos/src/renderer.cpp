@@ -93,8 +93,8 @@ namespace
 
 		void start(float value) noexcept
 		{
-			_baseValue = value;
 			_nextPoint = std::find_if(_envelope.begin(), _envelope.end(), [](const SampledEnvelope::Point& point) { return point._delay > 0; });
+			_baseValue = _nextPoint != _envelope.begin() ? std::prev(_nextPoint)->_value : value;
 			_offset = 0;
 			_currentValue = _baseValue;
 		}
@@ -155,16 +155,16 @@ namespace
 		float _currentValue = 0.f;
 	};
 
-	class FrequencyModulator
+	class LinearModulator
 	{
 	public:
-		FrequencyModulator(const SampledEnvelope& envelope) noexcept
+		LinearModulator(const SampledEnvelope& envelope) noexcept
 			: _envelope{ envelope } {}
 
 		void start(double value) noexcept
 		{
-			_baseValue = value;
 			_nextPoint = std::find_if(_envelope.begin(), _envelope.end(), [](const SampledEnvelope::Point& point) { return point._delay > 0; });
+			_baseValue = _nextPoint != _envelope.begin() ? std::prev(_nextPoint)->_value : value;
 			_offset = 0;
 			_currentValue = _baseValue;
 		}
@@ -214,11 +214,11 @@ namespace
 	class TwoPartWaveBase : public Voice
 	{
 	public:
-		TwoPartWaveBase(double asymmetry, double oscillation, const SampledEnvelope& amplitude, const SampledEnvelope& frequency, size_t samplingRate) noexcept
-			: _asymmetry{ (1.0 + std::clamp(asymmetry, -1.0, 1.0)) / 2.0 }
-			, _oscillation{ oscillation }
+		TwoPartWaveBase(double oscillation, const SampledEnvelope& amplitude, const SampledEnvelope& frequency, const SampledEnvelope& asymmetry, size_t samplingRate) noexcept
+			: _oscillation{ oscillation }
 			, _amplitudeModulator{ amplitude }
 			, _frequencyModulator{ frequency }
+			, _asymmetryModulator{ asymmetry }
 			, _samplingRate{ static_cast<double>(samplingRate) }
 		{
 		}
@@ -246,6 +246,7 @@ namespace
 				partRemaining = _partSamplesRemaining / _partSamples[_partIndex];
 			}
 			_frequencyModulator.start(1.0);
+			_asymmetryModulator.start(0.0);
 			_frequency = frequency;
 			updatePeriodParts();
 			_partSamplesRemaining = _partSamples[_partIndex] * partRemaining;
@@ -256,6 +257,7 @@ namespace
 		void advance(size_t samples) noexcept
 		{
 			_frequencyModulator.advance(samples);
+			_asymmetryModulator.advance(samples);
 			auto remaining = _partSamplesRemaining - samples;
 			while (remaining <= 0.0)
 			{
@@ -271,15 +273,15 @@ namespace
 		void updatePeriodParts() noexcept
 		{
 			const auto periodSamples = _samplingRate / (_frequency * _frequencyModulator.value());
-			_partSamples[0] = periodSamples * _asymmetry;
+			_partSamples[0] = periodSamples * (_asymmetryModulator.value() * 0.5 + 0.5);
 			_partSamples[1] = periodSamples - _partSamples[0];
 		}
 
 	protected:
-		const double _asymmetry;
 		const double _oscillation;
 		AmplitudeModulator _amplitudeModulator;
-		FrequencyModulator _frequencyModulator;
+		LinearModulator _frequencyModulator;
+		LinearModulator _asymmetryModulator;
 		const double _samplingRate;
 		float _amplitude = 0.f;
 		double _frequency = 0.0;
@@ -326,11 +328,11 @@ namespace
 		}
 	};
 
-	std::unique_ptr<Voice> createVoice(const aulos::Wave& wave, const SampledEnvelope& amplitude, const SampledEnvelope& frequency, unsigned samplingRate)
+	std::unique_ptr<Voice> createVoice(const aulos::Wave& wave, const SampledEnvelope& amplitude, const SampledEnvelope& frequency, const SampledEnvelope& asymmetry, unsigned samplingRate)
 	{
 		switch (wave._type)
 		{
-		case aulos::WaveType::Linear: return std::make_unique<TwoPartWave<LinearOscillator>>(wave._asymmetry, wave._oscillation, amplitude, frequency, samplingRate);
+		case aulos::WaveType::Linear: return std::make_unique<TwoPartWave<LinearOscillator>>(wave._oscillation, amplitude, frequency, asymmetry, samplingRate);
 		}
 		return {};
 	}
@@ -348,7 +350,7 @@ namespace aulos
 			const auto totalWeight = static_cast<float>(std::reduce(_composition._tracks.cbegin(), _composition._tracks.cend(), 0u, [](unsigned weight, const Track& track) { return weight + track._weight; }));
 			_tracks.reserve(_composition._tracks.size());
 			for (const auto& track : _composition._tracks)
-				_tracks.emplace_back(std::make_unique<RendererImpl::TrackState>(track._wave, track._amplitude, track._frequency, track._weight / totalWeight, track._notes, samplingRate));
+				_tracks.emplace_back(std::make_unique<RendererImpl::TrackState>(track._wave, track._amplitude, track._frequency, track._asymmetry, track._weight / totalWeight, track._notes, samplingRate));
 		}
 
 		size_t render(void* buffer, size_t bufferBytes) noexcept override
@@ -391,6 +393,7 @@ namespace aulos
 		{
 			SampledEnvelope _amplitude;
 			SampledEnvelope _frequency;
+			SampledEnvelope _asymmetry;
 			std::unique_ptr<Voice> _voice;
 			const float _normalizedWeight;
 			std::vector<NoteInfo>::const_iterator _note;
@@ -398,10 +401,11 @@ namespace aulos
 			bool _noteStarted = false;
 			size_t _noteSamplesRemaining = 0;
 
-			TrackState(const Wave& wave, const Envelope& amplitude, const Envelope& frequency, float normalizedWeight, const std::vector<NoteInfo>& notes, unsigned samplingRate)
+			TrackState(const Wave& wave, const Envelope& amplitude, const Envelope& frequency, const Envelope& asymmetry, float normalizedWeight, const std::vector<NoteInfo>& notes, unsigned samplingRate)
 				: _amplitude{ amplitude, samplingRate }
 				, _frequency{ frequency, samplingRate }
-				, _voice{ createVoice(wave, _amplitude, _frequency, samplingRate) }
+				, _asymmetry{ asymmetry, samplingRate }
+				, _voice{ createVoice(wave, _amplitude, _frequency, _asymmetry, samplingRate) }
 				, _normalizedWeight{ normalizedWeight }
 				, _note{ notes.cbegin() }
 				, _end{ notes.cend() }
