@@ -24,7 +24,7 @@ namespace aulos
 	class Composition
 	{
 	public:
-		static std::unique_ptr<Composition> create(const char* source);
+		[[nodiscard]] static std::unique_ptr<Composition> create(const char* source);
 
 		virtual ~Composition() noexcept = default;
 	};
@@ -32,7 +32,7 @@ namespace aulos
 	class Renderer
 	{
 	public:
-		static std::unique_ptr<Renderer> create(const Composition&, unsigned samplingRate);
+		[[nodiscard]] static std::unique_ptr<Renderer> create(const Composition&, unsigned samplingRate);
 
 		virtual ~Renderer() noexcept = default;
 

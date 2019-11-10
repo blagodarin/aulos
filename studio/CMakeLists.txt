@@ -21,9 +21,11 @@ set(CMAKE_AUTOUIC ON)
 
 set(_src
 	src/main.cpp
+	src/main_window.cpp
+	src/main_window.hpp
 	)
 source_group("src" FILES ${_src})
 
 add_executable(aulos_studio WIN32 ${_src})
 target_compile_options(aulos_studio PRIVATE /wd5054)
-target_link_libraries(aulos_studio PRIVATE aulos Qt5::Widgets)
+target_link_libraries(aulos_studio PRIVATE aulos Qt5::Multimedia Qt5::Widgets)

@@ -15,15 +15,29 @@
 // limitations under the License.
 //
 
-#include "main_window.hpp"
+#pragma once
 
-#include <QtWidgets/QApplication>
+#include <memory>
 
-int main(int argc, char** argv)
+#include <QByteArray>
+#include <QBuffer>
+#include <QWidget>
+
+class QAudioOutput;
+
+class MainWindow : public QWidget
 {
-	QApplication app{ argc, argv };
-	QCoreApplication::setApplicationName("Aulos Studio");
-	MainWindow widget;
-	widget.show();
-	return app.exec();
-}
+	Q_OBJECT
+
+public:
+	MainWindow();
+	~MainWindow() override;
+
+private slots:
+	void onNoteClicked();
+
+private:
+	QByteArray _audioData;
+	QBuffer _audioBuffer;
+	std::unique_ptr<QAudioOutput> _audioOutput;
+};

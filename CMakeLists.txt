@@ -37,6 +37,6 @@ add_subdirectory(aulos)
 add_subdirectory(aulete)
 
 if(WITH_STUDIO)
-	find_package(Qt5 COMPONENTS Widgets REQUIRED)
+	find_package(Qt5 COMPONENTS Multimedia Widgets REQUIRED)
 	add_subdirectory(studio)
 endif()
