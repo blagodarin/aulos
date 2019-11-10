@@ -64,7 +64,7 @@ namespace
 		struct Point
 		{
 			size_t _delay;
-			float _value;
+			double _value;
 		};
 
 		SampledEnvelope(const aulos::Envelope& envelope, size_t samplingRate) noexcept
@@ -82,7 +82,7 @@ namespace
 
 	private:
 		size_t _size = 0;
-		std::array<Point, 4> _points{};
+		std::array<Point, 5> _points{};
 	};
 
 	class AmplitudeModulator
@@ -91,7 +91,7 @@ namespace
 		AmplitudeModulator(const SampledEnvelope& envelope) noexcept
 			: _envelope{ envelope } {}
 
-		void start(float value) noexcept
+		void start(double value) noexcept
 		{
 			_nextPoint = std::find_if(_envelope.begin(), _envelope.end(), [](const SampledEnvelope::Point& point) { return point._delay > 0; });
 			_baseValue = _nextPoint != _envelope.begin() ? std::prev(_nextPoint)->_value : value;
@@ -99,12 +99,12 @@ namespace
 			_currentValue = _baseValue;
 		}
 
-		float advance() noexcept
+		double advance() noexcept
 		{
 			assert(_nextPoint != _envelope.end());
 			assert(_nextPoint->_delay > 0);
 			assert(_offset < _nextPoint->_delay);
-			const auto progress = static_cast<float>(_offset) / _nextPoint->_delay;
+			const auto progress = static_cast<double>(_offset) / _nextPoint->_delay;
 			_currentValue = _baseValue * (1.f - progress) + _nextPoint->_value * progress;
 			++_offset;
 			return _currentValue;
@@ -142,17 +142,17 @@ namespace
 			}
 		}
 
-		constexpr float value() const noexcept
+		constexpr double value() const noexcept
 		{
 			return _currentValue;
 		}
 
 	private:
 		const SampledEnvelope& _envelope;
-		float _baseValue = 0.f;
+		double _baseValue = 0.f;
 		const SampledEnvelope::Point* _nextPoint = _envelope.end();
 		size_t _offset = 0;
-		float _currentValue = 0.f;
+		double _currentValue = 0.f;
 	};
 
 	class LinearModulator
@@ -207,7 +207,7 @@ namespace
 	public:
 		virtual ~Voice() noexcept = default;
 
-		virtual void start(double frequency, float amplitude) noexcept = 0;
+		virtual void start(double frequency, double amplitude) noexcept = 0;
 		virtual void generate(float* buffer, size_t maxSamples) noexcept = 0;
 	};
 
@@ -223,14 +223,14 @@ namespace
 		{
 		}
 
-		void start(double frequency, float amplitude) noexcept override
+		void start(double frequency, double amplitude) noexcept override
 		{
 			if (frequency <= 0.0)
 			{
 				_amplitudeModulator.stop();
 				return;
 			}
-			const auto clampedAmplitude = std::clamp(amplitude, -1.f, 1.f);
+			const auto clampedAmplitude = std::clamp(amplitude, -1.0, 1.0);
 			double partRemaining;
 			if (_amplitudeModulator.stopped())
 			{
@@ -243,13 +243,13 @@ namespace
 			{
 				_amplitudeModulator.start(_amplitudeModulator.value());
 				_amplitude = std::copysign(clampedAmplitude, _amplitude);
-				partRemaining = _partSamplesRemaining / _partSamples[_partIndex];
+				partRemaining = _partSamplesRemaining / _partLength;
 			}
 			_frequencyModulator.start(1.0);
 			_asymmetryModulator.start(0.0);
 			_frequency = frequency;
 			updatePeriodParts();
-			_partSamplesRemaining = _partSamples[_partIndex] * partRemaining;
+			_partSamplesRemaining = _partLength * partRemaining;
 			advance(0);
 		}
 
@@ -263,9 +263,8 @@ namespace
 			{
 				_amplitude = -_amplitude;
 				_partIndex = 1 - _partIndex;
-				if (!_partIndex)
-					updatePeriodParts();
-				remaining += _partSamples[_partIndex];
+				updatePeriodParts();
+				remaining += _partLength;
 			}
 			_partSamplesRemaining = remaining;
 		}
@@ -273,8 +272,8 @@ namespace
 		void updatePeriodParts() noexcept
 		{
 			const auto periodSamples = _samplingRate / (_frequency * _frequencyModulator.value());
-			_partSamples[0] = periodSamples * (_asymmetryModulator.value() * 0.5 + 0.5);
-			_partSamples[1] = periodSamples - _partSamples[0];
+			const auto dutyCycle = _asymmetryModulator.value() * 0.5 + 0.5;
+			_partLength = periodSamples * (_partIndex == 0 ? dutyCycle : 1.0 - dutyCycle);
 		}
 
 	protected:
@@ -283,10 +282,10 @@ namespace
 		LinearModulator _frequencyModulator;
 		LinearModulator _asymmetryModulator;
 		const double _samplingRate;
-		float _amplitude = 0.f;
+		double _amplitude = 0.0;
 		double _frequency = 0.0;
 		size_t _partIndex = 0;
-		std::array<double, 2> _partSamples{};
+		double _partLength = 0.0;
 		double _partSamplesRemaining = 0.0;
 	};
 
@@ -302,9 +301,9 @@ namespace
 			while (_amplitudeModulator.update())
 			{
 				const auto samplesToGenerate = std::min(static_cast<size_t>(std::ceil(_partSamplesRemaining)), std::min(maxSamples, _amplitudeModulator.partSamplesRemaining()));
-				Oscillator oscillator{ _partSamplesRemaining, _partSamples[_partIndex], _oscillation };
+				Oscillator oscillator{ _partSamplesRemaining, _partLength, _oscillation };
 				for (size_t i = 0; i < samplesToGenerate; ++i)
-					buffer[i] += _amplitude * oscillator() * _amplitudeModulator.advance();
+					buffer[i] += static_cast<float>(_amplitude * oscillator() * _amplitudeModulator.advance());
 				advance(samplesToGenerate);
 				buffer += samplesToGenerate;
 				maxSamples -= samplesToGenerate;
@@ -322,9 +321,9 @@ namespace
 		constexpr LinearOscillator(double remainingSamples, double totalSamples, double oscillation) noexcept
 			: _increment{ 2.0 * oscillation / totalSamples }, _value{ 1.0 - _increment * (remainingSamples - 1.0) } {}
 
-		constexpr float operator()() noexcept
+		constexpr double operator()() noexcept
 		{
-			return static_cast<float>(_value += _increment);
+			return _value += _increment;
 		}
 	};
 
@@ -347,7 +346,7 @@ namespace aulos
 			: _composition{ composition }
 			, _samplingRate{ samplingRate }
 		{
-			const auto totalWeight = static_cast<float>(std::reduce(_composition._tracks.cbegin(), _composition._tracks.cend(), 0u, [](unsigned weight, const Track& track) { return weight + track._weight; }));
+			const auto totalWeight = static_cast<double>(std::reduce(_composition._tracks.cbegin(), _composition._tracks.cend(), 0u, [](unsigned weight, const Track& track) { return weight + track._weight; }));
 			_tracks.reserve(_composition._tracks.size());
 			for (const auto& track : _composition._tracks)
 				_tracks.emplace_back(std::make_unique<RendererImpl::TrackState>(track._wave, track._amplitude, track._frequency, track._asymmetry, track._weight / totalWeight, track._notes, samplingRate));
@@ -395,13 +394,13 @@ namespace aulos
 			SampledEnvelope _frequency;
 			SampledEnvelope _asymmetry;
 			std::unique_ptr<Voice> _voice;
-			const float _normalizedWeight;
+			const double _normalizedWeight;
 			std::vector<NoteInfo>::const_iterator _note;
 			const std::vector<NoteInfo>::const_iterator _end;
 			bool _noteStarted = false;
 			size_t _noteSamplesRemaining = 0;
 
-			TrackState(const Wave& wave, const Envelope& amplitude, const Envelope& frequency, const Envelope& asymmetry, float normalizedWeight, const std::vector<NoteInfo>& notes, unsigned samplingRate)
+			TrackState(const Wave& wave, const Envelope& amplitude, const Envelope& frequency, const Envelope& asymmetry, double normalizedWeight, const std::vector<NoteInfo>& notes, unsigned samplingRate)
 				: _amplitude{ amplitude, samplingRate }
 				, _frequency{ frequency, samplingRate }
 				, _asymmetry{ asymmetry, samplingRate }
