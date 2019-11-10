@@ -27,9 +27,16 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER ".cmake")
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
+option(WITH_STUDIO "Build Aulos Studio (requires Qt)" OFF)
+
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 	add_compile_options(/std:c++latest /WX /W4)
 endif()
 
 add_subdirectory(aulos)
 add_subdirectory(aulete)
+
+if(WITH_STUDIO)
+	find_package(Qt5 COMPONENTS Widgets REQUIRED)
+	add_subdirectory(studio)
+endif()
