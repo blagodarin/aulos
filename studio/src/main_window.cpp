@@ -26,15 +26,30 @@
 #include <QGridLayout>
 #include <QToolButton>
 
+#include "ui_main_window.h"
+
 namespace
 {
 	const std::array<const char*, 12> noteNames{ "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
 }
 
-MainWindow::MainWindow()
-	: _audioBuffer{ &_audioData }
+struct MainWindow::EnvelopePoint
 {
-	const auto layout = new QGridLayout{ this };
+	QCheckBox* _check = nullptr;
+	QDoubleSpinBox* _delay = nullptr;
+	QDoubleSpinBox* _value = nullptr;
+};
+
+MainWindow::MainWindow()
+	: _ui{ std::make_unique<Ui_MainWindow>() }
+	, _audioBuffer{ &_audioData }
+{
+	_ui->setupUi(this);
+
+	createEnvelopeEditor(_ui->frequencyGroup, _frequencyEnvelope, 0.5);
+	createEnvelopeEditor(_ui->asymmetryGroup, _asymmetryEnvelope, 0.0);
+
+	const auto noteLayout = new QGridLayout{ _ui->noteWidget };
 	for (int row = 0; row < 10; ++row)
 		for (int column = 0; column < 12; ++column)
 		{
@@ -44,7 +59,7 @@ MainWindow::MainWindow()
 			button->setFixedSize({ 40, 30 });
 			button->setStyleSheet(name[1] == '#' ? "background-color: black; color: white" : "background-color: white; color: black");
 			connect(button, &QAbstractButton::clicked, this, &MainWindow::onNoteClicked);
-			layout->addWidget(button, row, column);
+			noteLayout->addWidget(button, row, column);
 		}
 
 	QAudioFormat format;
@@ -61,14 +76,41 @@ MainWindow::~MainWindow() = default;
 
 void MainWindow::onNoteClicked()
 {
+	const auto printDouble = [](double value) {
+		return QStringLiteral(" %1").arg(value, 0, 'f', 2).toUtf8();
+	};
+
 	const auto button = qobject_cast<QAbstractButton*>(sender());
 	assert(button);
 
 	QByteArray buffer;
-	buffer += "wave 1 rectangle\n";
-	buffer += "amplitude 1 adsr 0.01 0.04 0.5 0.95\n";
-	buffer += "frequency 1 1.0\n";
-	buffer += "asymmetry 1 0.0\n";
+	buffer += "wave 1 linear" + printDouble(_ui->oscillationSpin->value()) + "\n";
+	buffer += "amplitude 1 ";
+	buffer += _ui->holdCheck->isChecked() ? "ahdsr" : "adsr";
+	buffer += QStringLiteral(" %1").arg(_ui->attackSpin->value(), 0, 'f', 2).toUtf8();
+	if (_ui->holdCheck->isChecked())
+		buffer += QStringLiteral(" %1").arg(_ui->holdSpin->value(), 0, 'f', 2).toUtf8();
+	buffer += QStringLiteral(" %1 %2 %3\n").arg(_ui->decaySpin->value(), 0, 'f', 2).arg(_ui->sustainSpin->value(), 0, 'f', 2).arg(_ui->releaseSpin->value(), 0, 'f', 2).toUtf8();
+	if (auto i = _frequencyEnvelope.begin(); i->_check->isChecked())
+	{
+		buffer += "frequency 1" + printDouble(i->_value->value());
+		for (++i; i != _frequencyEnvelope.end() && i->_check->isChecked(); ++i)
+		{
+			buffer += printDouble(i->_delay->value());
+			buffer += printDouble(i->_value->value());
+		}
+		buffer += '\n';
+	}
+	if (auto i = _asymmetryEnvelope.begin(); i->_check->isChecked())
+	{
+		buffer += "asymmetry 1" + printDouble(i->_value->value());
+		for (++i; i != _asymmetryEnvelope.end() && i->_check->isChecked(); ++i)
+		{
+			buffer += printDouble(i->_delay->value());
+			buffer += printDouble(i->_value->value());
+		}
+		buffer += '\n';
+	}
 	buffer += "| " + button->text().toUtf8();
 
 	const auto composition = aulos::Composition::create(buffer.constData());
@@ -94,4 +136,47 @@ void MainWindow::onNoteClicked()
 		}
 	_audioBuffer.open(QIODevice::ReadOnly);
 	_audioOutput->start(&_audioBuffer);
+}
+
+void MainWindow::createEnvelopeEditor(QWidget* parent, std::vector<EnvelopePoint>& envelope, double minimum)
+{
+	const auto layout = new QGridLayout{ parent };
+	layout->addWidget(new QLabel{ tr("Delay"), parent }, 0, 1);
+	layout->addWidget(new QLabel{ tr("Value"), parent }, 0, 2);
+
+	for (int i = 1; i <= 5; ++i)
+	{
+		auto& point = envelope.emplace_back();
+
+		point._check = new QCheckBox{ tr("Point %1").arg(i), parent };
+		point._check->setEnabled(i == 1);
+		layout->addWidget(point._check, i, 0);
+
+		point._delay = new QDoubleSpinBox{ parent };
+		point._delay->setDecimals(2);
+		point._delay->setEnabled(false);
+		point._delay->setMaximum(60.0);
+		point._delay->setMinimum(0.0);
+		point._delay->setSingleStep(0.01);
+		point._delay->setValue(0.0);
+		layout->addWidget(point._delay, i, 1);
+
+		point._value = new QDoubleSpinBox{ parent };
+		point._value->setDecimals(2);
+		point._value->setEnabled(false);
+		point._value->setMaximum(1.0);
+		point._value->setMinimum(minimum);
+		point._value->setSingleStep(0.01);
+		point._value->setValue(1.0);
+		layout->addWidget(point._value, i, 2);
+
+		if (i > 1)
+		{
+			const auto previousCheck = envelope[i - 2]._check;
+			connect(previousCheck, &QCheckBox::toggled, point._check, &QWidget::setEnabled);
+			connect(point._check, &QCheckBox::toggled, point._delay, &QWidget::setEnabled);
+			connect(point._check, &QCheckBox::toggled, previousCheck, &QWidget::setDisabled);
+		}
+		connect(point._check, &QCheckBox::toggled, point._value, &QWidget::setEnabled);
+	}
 }

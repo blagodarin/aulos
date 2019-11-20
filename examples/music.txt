@@ -1,0 +1,80 @@
+speed 10
+
+wave 1 triangle
+amplitude 1 adsr 0.01 0.04 0.5 0.95
+frequency 1 0.8 0.01 0.8 0.04 1.0 0.95 0.99
+asymmetry 1 0.5 0.05 0.9 0.95 0.0
+weight 1 2
+
+wave 2 triangle
+amplitude 2 adsr 0.02 0.08 0.25 0.9
+frequency 2 0.8 0.02 1.0 0.08 1.0 0.9 0.99
+asymmetry 2 0.1 0.02 0.8 0.08 0.8 0.9 0.1
+weight 2 3
+
+wave 3 triangle
+amplitude 3 ahdsr 0.01 0.04 0.05 0.5 0.9
+asymmetry 3 1.0
+weight 3 1
+
+; Part 1
+
+| B2 . F#3 . E3 . F#3 . C#3 . D3 . E3 . D3 .
+
+| A#2 . B2 . C#3 . D3 . E3 . D3 . C#3 . F#3 .
+
+| G3 . F#3 . E3 . D3 . E3 . D3 . C#3 . B2 .
+
+| F#2 . G#2 . A#2 . B2 . A#2 . B2 . C#3 . D3 .
+
+; Part 2
+
+| B2 . F#3 . E3 . F#3 . C#3 . D3 . E3 . D3 .
+| B1 . B1 B1 B1 . B1 . B1 . B1 B1 B1 . B1 .
+
+| A#2 . B2 . C#3 . D3 . E3 . D3 . C#3 . F#3 .
+| D2 . D2 D2 D2 . D2 . C#2 . C#2 C#2 C#2 . C#2 .
+
+| G3 . F#3 . E3 . D3 . E3 . D3 . C#3 . B2 .
+| B1 . B1 B1 B1 . B1 . B1 . B1 B1 B1 . B1 .
+
+| F#2 . G#2 . A#2 . B2 . A#2 . B2 . C#3 . D3 .
+| G1 . G1 G1 G1 . G1 . A1 . A1 A1 A1 . A1 .
+
+; Part 3
+
+| B2 . F#3 . E3 . F#3 . C#3 . D3 . E3 . D3 .
+| B1 . B1 B1 B1 . B1 . B1 . B1 B1 B1 . B1 .
+| B3 . . . . . . . . . . . . . . .
+
+| A#2 . B2 . C#3 . D3 . E3 . D3 . C#3 . F#3 .
+| D2 . D2 D2 D2 . D2 . C#2 . C#2 C#2 C#2 . C#2 .
+| D4 . . . . . . . C#4 . . . . . . .
+
+| G3 . F#3 . E3 . D3 . E3 . D3 . C#3 . B2 .
+| B1 . B1 B1 B1 . B1 . B1 . B1 B1 B1 . B1 .
+| B3 . . . . . . . . . . . . . . .
+
+| F#2 . G#2 . A#2 . B2 . A#2 . B2 . C#3 . D3 .
+| G1 . G1 G1 G1 . G1 . A1 . A1 A1 A1 . A1 .
+| G3 . . . . . . . A3 . . . . . . .
+
+| B2 . F#3 . E3 . F#3 . C#3 . D3 . E3 . D3 .
+| B1 . B1 B1 B1 . B1 . B1 . B1 B1 B1 . B1 .
+| B3 . . . . . . . . . . . . . . .
+
+| A#2 . B2 . C#3 . D3 . E3 . D3 . C#3 . F#3 .
+| D2 . D2 D2 D2 . D2 . C#2 . C#2 C#2 C#2 . C#2 .
+| D4 . . . . . . . C#4 . . . . . . .
+
+| G3 . F#3 . E3 . D3 . E3 . D3 . C#3 . B2 .
+| B1 . B1 B1 B1 . B1 . B1 . B1 B1 B1 . B1 .
+| B3 . . . . . . . . . . . . . . .
+
+| F#2 . G#2 . A#2 . B2 . A#2 . B2 . C#3 . D3 .
+| G1 . G1 G1 G1 . G1 . A1 . A1 A1 A1 . A1 .
+| G3 . . . . . . . A3 . . . . . . .
+
+| B2
+| B1
+| B3 . . . . . . . . . . . . . . .

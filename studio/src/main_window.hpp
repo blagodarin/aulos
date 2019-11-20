@@ -25,6 +25,8 @@
 
 class QAudioOutput;
 
+class Ui_MainWindow;
+
 class MainWindow : public QWidget
 {
 	Q_OBJECT
@@ -37,6 +39,14 @@ private slots:
 	void onNoteClicked();
 
 private:
+	struct EnvelopePoint;
+
+	void createEnvelopeEditor(QWidget*, std::vector<EnvelopePoint>&, double minimum);
+
+private:
+	const std::unique_ptr<Ui_MainWindow> _ui;
+	std::vector<EnvelopePoint> _frequencyEnvelope;
+	std::vector<EnvelopePoint> _asymmetryEnvelope;
 	QByteArray _audioData;
 	QBuffer _audioBuffer;
 	std::unique_ptr<QAudioOutput> _audioOutput;

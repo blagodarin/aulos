@@ -255,7 +255,7 @@ namespace aulos
 				auto& track = readTrack();
 				std::vector<Envelope::Point> points;
 				points.emplace_back(0.f, readFloat(0.f, 1.f));
-				while (const auto delay = tryReadFloat(0.f, 1.f))
+				while (const auto delay = tryReadFloat(0.f, 60.f))
 					points.emplace_back(*delay, readFloat(0.f, 1.f));
 				track._asymmetry._points = std::move(points);
 			}
@@ -265,7 +265,7 @@ namespace aulos
 				auto& track = readTrack();
 				std::vector<Envelope::Point> points;
 				points.emplace_back(0.f, readFloat(minFrequency, 1.f));
-				while (const auto delay = tryReadFloat(minFrequency, 1.f))
+				while (const auto delay = tryReadFloat(0.f, 60.f))
 					points.emplace_back(*delay, readFloat(minFrequency, 1.f));
 				track._frequency._points = std::move(points);
 			}

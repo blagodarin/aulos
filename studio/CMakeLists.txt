@@ -23,6 +23,7 @@ set(_src
 	src/main.cpp
 	src/main_window.cpp
 	src/main_window.hpp
+	src/main_window.ui
 	)
 source_group("src" FILES ${_src})
 
