@@ -87,10 +87,13 @@ void MainWindow::onNoteClicked()
 	buffer += "wave 1 linear" + printDouble(_ui->oscillationSpin->value()) + "\n";
 	buffer += "amplitude 1 ";
 	buffer += _ui->holdCheck->isChecked() ? "ahdsr" : "adsr";
-	buffer += QStringLiteral(" %1").arg(_ui->attackSpin->value(), 0, 'f', 2).toUtf8();
+	buffer += printDouble(_ui->attackSpin->value());
 	if (_ui->holdCheck->isChecked())
-		buffer += QStringLiteral(" %1").arg(_ui->holdSpin->value(), 0, 'f', 2).toUtf8();
-	buffer += QStringLiteral(" %1 %2 %3\n").arg(_ui->decaySpin->value(), 0, 'f', 2).arg(_ui->sustainSpin->value(), 0, 'f', 2).arg(_ui->releaseSpin->value(), 0, 'f', 2).toUtf8();
+		buffer += printDouble(_ui->holdSpin->value());
+	buffer += printDouble(_ui->decaySpin->value());
+	buffer += printDouble(_ui->sustainSpin->value());
+	buffer += printDouble(_ui->releaseSpin->value());
+	buffer += '\n';
 	if (auto i = _frequencyEnvelope.begin(); i->_check->isChecked())
 	{
 		buffer += "frequency 1" + printDouble(i->_value->value());

@@ -43,7 +43,7 @@ namespace
 
 namespace aulos
 {
-	CompositionImpl::CompositionImpl(const char* source)
+	void CompositionImpl::load(const char* source)
 	{
 		size_t line = 1;
 		const char* lineBase = source;
@@ -271,7 +271,7 @@ namespace aulos
 			}
 			else if (command == "speed")
 			{
-				_speed = readFloat(1.f, 32.f);
+				setSpeed(readFloat(kMinSpeed, kMaxSpeed));
 			}
 			else if (command == "wave")
 			{
@@ -355,8 +355,23 @@ namespace aulos
 		}
 	}
 
+	bool CompositionImpl::setSpeed(float speed)
+	{
+		if (speed < kMinSpeed || speed > kMaxSpeed)
+			return false;
+		_speed = speed;
+		return true;
+	}
+
+	std::unique_ptr<Composition> Composition::create()
+	{
+		return std::make_unique<CompositionImpl>();
+	}
+
 	std::unique_ptr<Composition> Composition::create(const char* source)
 	{
-		return std::make_unique<CompositionImpl>(source);
+		auto composition = std::make_unique<CompositionImpl>();
+		composition->load(source);
+		return composition;
 	}
 }

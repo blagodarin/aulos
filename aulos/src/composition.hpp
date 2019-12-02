@@ -85,11 +85,17 @@ namespace aulos
 		std::vector<NoteInfo> _notes;
 	};
 
+	constexpr float kMinSpeed = 1.f;
+	constexpr float kMaxSpeed = 32.f;
+
 	struct CompositionImpl final : public Composition
 	{
-		float _speed = 1.f;
+		float _speed = kMinSpeed;
 		std::vector<Track> _tracks;
 
-		CompositionImpl(const char* source);
+		void load(const char* source);
+
+		float speed() const noexcept override { return _speed; }
+		bool setSpeed(float speed) override;
 	};
 }

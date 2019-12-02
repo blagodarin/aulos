@@ -24,9 +24,13 @@ namespace aulos
 	class Composition
 	{
 	public:
+		[[nodiscard]] static std::unique_ptr<Composition> create();
 		[[nodiscard]] static std::unique_ptr<Composition> create(const char* source);
 
 		virtual ~Composition() noexcept = default;
+
+		virtual float speed() const noexcept = 0;
+		virtual bool setSpeed(float speed) = 0;
 	};
 
 	class Renderer
