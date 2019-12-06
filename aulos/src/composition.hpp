@@ -75,14 +75,23 @@ namespace aulos
 		std::vector<Point> _points;
 	};
 
-	struct Track
+	struct VoiceData
 	{
 		Wave _wave;
 		Envelope _amplitude;
 		Envelope _frequency;
 		Envelope _asymmetry;
 		unsigned _weight = 1;
-		std::vector<NoteInfo> _notes;
+	};
+
+	struct Fragment
+	{
+		size_t _delay = 0; // Relative to the beginning of the previous fragment.
+		size_t _trackIndex = 0;
+		size_t _sequenceIndex = 0;
+
+		Fragment(size_t delay, size_t trackIndex, size_t sequenceIndex) noexcept
+			: _delay{ delay }, _trackIndex{ trackIndex }, _sequenceIndex{ sequenceIndex } {}
 	};
 
 	constexpr float kMinSpeed = 1.f;
@@ -91,7 +100,9 @@ namespace aulos
 	struct CompositionImpl final : public Composition
 	{
 		float _speed = kMinSpeed;
-		std::vector<Track> _tracks;
+		std::vector<VoiceData> _voices;
+		std::vector<std::vector<NoteInfo>> _sequences;
+		std::vector<Fragment> _fragments;
 
 		void load(const char* source);
 

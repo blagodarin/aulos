@@ -343,13 +343,55 @@ namespace aulos
 	{
 	public:
 		RendererImpl(const CompositionImpl& composition, unsigned samplingRate)
-			: _composition{ composition }
-			, _samplingRate{ samplingRate }
+			: _samplingRate{ samplingRate }
+			, _stepSamples{ static_cast<size_t>(std::lround(_samplingRate / composition._speed)) }
 		{
-			const auto totalWeight = static_cast<double>(std::reduce(_composition._tracks.cbegin(), _composition._tracks.cend(), 0u, [](unsigned weight, const Track& track) { return weight + track._weight; }));
-			_tracks.reserve(_composition._tracks.size());
-			for (const auto& track : _composition._tracks)
-				_tracks.emplace_back(std::make_unique<RendererImpl::TrackState>(track._wave, track._amplitude, track._frequency, track._asymmetry, track._weight / totalWeight, track._notes, samplingRate));
+			const auto totalWeight = static_cast<double>(std::reduce(composition._voices.cbegin(), composition._voices.cend(), 0u, [](unsigned weight, const VoiceData& voice) { return weight + voice._weight; }));
+			_tracks.reserve(composition._voices.size());
+			for (const auto& track : composition._voices)
+				_tracks.emplace_back(std::make_unique<Track>(track, totalWeight, samplingRate));
+			size_t offset = 0;
+			for (const auto& fragment : composition._fragments)
+			{
+				offset += fragment._delay;
+				auto& track = _tracks[fragment._trackIndex];
+				if (track->_notes.empty())
+				{
+					if (offset > 0)
+					{
+						track->_notes.emplace_back(Note::Silence, offset);
+						track->_duration = offset;
+					}
+				}
+				else if (offset < track->_duration)
+				{
+					for (auto extra = track->_duration - offset; extra > 0;)
+					{
+						const auto lastNoteDuration = track->_notes.back()._duration;
+						if (lastNoteDuration > extra)
+						{
+							track->_notes.back()._duration -= extra;
+							break;
+						}
+						extra -= lastNoteDuration;
+						track->_notes.pop_back();
+					}
+				}
+				else
+					track->_notes.back()._duration += offset - track->_duration;
+				const auto& sequence = composition._sequences[fragment._sequenceIndex];
+				track->_notes.reserve(track->_notes.size() + sequence.size());
+				for (const auto& note : sequence)
+				{
+					track->_notes.emplace_back(note);
+					track->_duration += note._duration;
+				}
+			}
+			for (auto& track : _tracks)
+			{
+				track->_note = track->_notes.begin();
+				track->_end = track->_notes.end();
+			}
 		}
 
 		size_t render(void* buffer, size_t bufferBytes) noexcept override
@@ -388,7 +430,7 @@ namespace aulos
 		}
 
 	public:
-		struct TrackState
+		struct Track
 		{
 			SampledEnvelope _amplitude;
 			SampledEnvelope _frequency;
@@ -396,26 +438,26 @@ namespace aulos
 			std::unique_ptr<Voice> _voice;
 			const double _normalizedWeight;
 			std::vector<NoteInfo>::const_iterator _note;
-			const std::vector<NoteInfo>::const_iterator _end;
+			std::vector<NoteInfo>::const_iterator _end;
 			bool _noteStarted = false;
 			size_t _noteSamplesRemaining = 0;
 
-			TrackState(const Wave& wave, const Envelope& amplitude, const Envelope& frequency, const Envelope& asymmetry, double normalizedWeight, const std::vector<NoteInfo>& notes, unsigned samplingRate)
-				: _amplitude{ amplitude, samplingRate }
-				, _frequency{ frequency, samplingRate }
-				, _asymmetry{ asymmetry, samplingRate }
-				, _voice{ createVoice(wave, _amplitude, _frequency, _asymmetry, samplingRate) }
-				, _normalizedWeight{ normalizedWeight }
-				, _note{ notes.cbegin() }
-				, _end{ notes.cend() }
+			std::vector<NoteInfo> _notes;
+			size_t _duration = 0;
+
+			Track(const VoiceData& voice, double totalWeight, unsigned samplingRate)
+				: _amplitude{ voice._amplitude, samplingRate }
+				, _frequency{ voice._frequency, samplingRate }
+				, _asymmetry{ voice._asymmetry, samplingRate }
+				, _voice{ createVoice(voice._wave, _amplitude, _frequency, _asymmetry, samplingRate) }
+				, _normalizedWeight{ voice._weight / totalWeight }
 			{
 			}
 		};
 
-		const CompositionImpl& _composition;
 		const unsigned _samplingRate;
-		const size_t _stepSamples = static_cast<size_t>(std::lround(_samplingRate / _composition._speed));
-		std::vector<std::unique_ptr<TrackState>> _tracks;
+		const size_t _stepSamples;
+		std::vector<std::unique_ptr<Track>> _tracks;
 	};
 
 	std::unique_ptr<Renderer> Renderer::create(const Composition& composition, unsigned samplingRate)
