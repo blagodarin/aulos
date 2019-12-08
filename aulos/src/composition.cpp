@@ -57,6 +57,7 @@ namespace aulos
 		const char* lineBase = source;
 		Section currentSection = Section::Initial;
 		VoiceData* currentVoice = nullptr;
+		unsigned lastFragmentDelay = 0;
 
 		const auto location = [&]() -> Location { return { line, source - lineBase }; };
 
@@ -357,7 +358,7 @@ namespace aulos
 					break;
 				case Section::Fragments:
 				{
-					auto delay = readUnsigned();
+					const auto nextFragmentDelay = readUnsigned();
 					for (auto trackIndex = readUnsigned();;)
 					{
 						if (!trackIndex || trackIndex > _voices.size())
@@ -365,15 +366,13 @@ namespace aulos
 						const auto sequenceIndex = readUnsigned();
 						if (!sequenceIndex || sequenceIndex > _sequences.size())
 							throw CompositionError{ location(), "Bad fragment sequence index" };
-						_fragments.emplace_back(delay, trackIndex - 1, sequenceIndex - 1);
+						_fragments.emplace_back(std::exchange(lastFragmentDelay, 0), trackIndex - 1, sequenceIndex - 1);
 						if (const auto nextIndex = tryReadUnsigned())
-						{
-							delay = 0;
 							trackIndex = *nextIndex;
-						}
 						else
 							break;
 					}
+					lastFragmentDelay = nextFragmentDelay;
 					break;
 				}
 				default:
