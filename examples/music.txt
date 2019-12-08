@@ -1,38 +1,36 @@
 speed 10
 
-voice 0 wave triangle
-voice 0 amplitude adsr 0.01 0.04 0.5 0.95
-voice 0 frequency 0.8 0.01 0.8 0.04 1.0 0.95 0.99
-voice 0 asymmetry 0.5 0.05 0.9 0.95 0.0
-voice 0 weight 2
+@voice 1
+wave triangle
+amplitude adsr 0.01 0.04 0.5 0.95
+frequency 0.8 0.01 0.8 0.04 1.0 0.95 0.99
+asymmetry 0.5 0.05 0.9 0.95 0.0
+weight 2
 
-voice 1 wave triangle
-voice 1 amplitude adsr 0.02 0.08 0.25 0.9
-voice 1 frequency 0.8 0.02 1.0 0.08 1.0 0.9 0.99
-voice 1 asymmetry 0.1 0.02 0.8 0.08 0.8 0.9 0.1
-voice 1 weight 3
+@voice 2
+wave triangle
+amplitude adsr 0.02 0.08 0.25 0.9
+frequency 0.8 0.02 1.0 0.08 1.0 0.9 0.99
+asymmetry 0.1 0.02 0.8 0.08 0.8 0.9 0.1
+weight 3
 
-voice 2 wave triangle
-voice 2 amplitude ahdsr 0.01 0.04 0.05 0.5 0.9
-voice 2 asymmetry 1.0
-voice 2 weight 1
+@voice 3
+wave triangle
+amplitude ahdsr 0.01 0.04 0.05 0.5 0.9
+asymmetry 1.0
+weight 1
 
-sequence 0 B2 . F#3 . E3 . F#3 . C#3 . D3 . E3 . D3 . A#2 . B2 . C#3 . D3 . E3 . D3 . C#3 . F#3 . G3 . F#3 . E3 . D3 . E3 . D3 . C#3 . B2 . F#2 . G#2 . A#2 . B2 . A#2 . B2 . C#3 . D3 .
-sequence 1 B1 . B1 B1 B1 . B1 . B1 . B1 B1 B1 . B1 . D2 . D2 D2 D2 . D2 . C#2 . C#2 C#2 C#2 . C#2 . B1 . B1 B1 B1 . B1 . B1 . B1 B1 B1 . B1 . G1 . G1 G1 G1 . G1 . A1 . A1 A1 A1 . A1 .
-sequence 2 B3 . . . . . . . . . . . . . . . D4 . . . . . . . C#4 . . . . . . . B3 . . . . . . . . . . . . . . . G3 . . . . . . . A3 . . . . . . .
-sequence 3 B2 . . . . . . . . . . . . . . .
-sequence 4 B1 . . . . . . . . . . . . . . .
-sequence 5 B3 . . . . . . . . . . . . . . .
+@sequences
+1 B2 . F#3 . E3 . F#3 . C#3 . D3 . E3 . D3 . A#2 . B2 . C#3 . D3 . E3 . D3 . C#3 . F#3 . G3 . F#3 . E3 . D3 . E3 . D3 . C#3 . B2 . F#2 . G#2 . A#2 . B2 . A#2 . B2 . C#3 . D3 .
+2 B1 . B1 B1 B1 . B1 . B1 . B1 B1 B1 . B1 . D2 . D2 D2 D2 . D2 . C#2 . C#2 C#2 C#2 . C#2 . B1 . B1 B1 B1 . B1 . B1 . B1 B1 B1 . B1 . G1 . G1 G1 G1 . G1 . A1 . A1 A1 A1 . A1 .
+3 B3 . . . . . . . . . . . . . . . D4 . . . . . . . C#4 . . . . . . . B3 . . . . . . . . . . . . . . . G3 . . . . . . . A3 . . . . . . .
+4 B2 . . . . . . . . . . . . . . .
+5 B1 . . . . . . . . . . . . . . .
+6 B3 . . . . . . . . . . . . . . .
 
-fragment 0 0 0
-fragment 64 0 0
-fragment 0 1 1
-fragment 64 0 0
-fragment 0 1 1
-fragment 0 2 2
-fragment 64 0 0
-fragment 0 1 1
-fragment 0 2 2
-fragment 64 0 3
-fragment 0 1 4
-fragment 0 2 5
+@fragments
+0 1 1
+64 1 1 2 2
+64 1 1 2 2 3 3
+64 1 1 2 2 3 3
+64 1 4 2 5 3 6

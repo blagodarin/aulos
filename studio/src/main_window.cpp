@@ -84,8 +84,9 @@ void MainWindow::onNoteClicked()
 	assert(button);
 
 	QByteArray buffer;
-	buffer += "voice 0 wave linear" + printDouble(_ui->oscillationSpin->value()) + "\n";
-	buffer += "voice 0 amplitude ";
+	buffer += "@voice 1\n";
+	buffer += "wave linear" + printDouble(_ui->oscillationSpin->value()) + "\n";
+	buffer += "amplitude ";
 	buffer += _ui->holdCheck->isChecked() ? "ahdsr" : "adsr";
 	buffer += printDouble(_ui->attackSpin->value());
 	if (_ui->holdCheck->isChecked())
@@ -96,7 +97,7 @@ void MainWindow::onNoteClicked()
 	buffer += '\n';
 	if (auto i = _frequencyEnvelope.begin(); i->_check->isChecked())
 	{
-		buffer += "voice 0 frequency" + printDouble(i->_value->value());
+		buffer += "frequency" + printDouble(i->_value->value());
 		for (++i; i != _frequencyEnvelope.end() && i->_check->isChecked(); ++i)
 		{
 			buffer += printDouble(i->_delay->value());
@@ -106,7 +107,7 @@ void MainWindow::onNoteClicked()
 	}
 	if (auto i = _asymmetryEnvelope.begin(); i->_check->isChecked())
 	{
-		buffer += "voice 0 asymmetry" + printDouble(i->_value->value());
+		buffer += "asymmetry" + printDouble(i->_value->value());
 		for (++i; i != _asymmetryEnvelope.end() && i->_check->isChecked(); ++i)
 		{
 			buffer += printDouble(i->_delay->value());
@@ -114,8 +115,10 @@ void MainWindow::onNoteClicked()
 		}
 		buffer += '\n';
 	}
-	buffer += "sequence 0 " + button->text().toUtf8() + "\n";
-	buffer += "fragment 0 0 0\n";
+	buffer += "@sequences\n";
+	buffer += "1 " + button->text().toUtf8() + "\n";
+	buffer += "@fragments\n";
+	buffer += "0 1 1\n";
 
 	const auto composition = aulos::Composition::create(buffer.constData());
 	assert(composition);

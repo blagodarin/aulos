@@ -45,17 +45,45 @@ namespace aulos
 {
 	void CompositionImpl::load(const char* source)
 	{
+		enum class Section
+		{
+			Initial,
+			Voice,
+			Sequences,
+			Fragments,
+		};
+
 		size_t line = 1;
 		const char* lineBase = source;
+		Section currentSection = Section::Initial;
+		VoiceData* currentVoice = nullptr;
 
 		const auto location = [&]() -> Location { return { line, source - lineBase }; };
 
 		const auto skipSpaces = [&] {
 			if (*source != ' ' && *source != '\t' && *source != '\n' && *source != '\r' && *source)
 				throw CompositionError{ location(), "Space expected" };
-			do
+			while (*source == ' ' || *source == '\t')
 				++source;
-			while (*source == ' ' || *source == '\t');
+		};
+
+		const auto consumeEndOfLine = [&] {
+			if (*source == '\r')
+			{
+				++source;
+				if (*source == '\n')
+					++source;
+			}
+			else if (*source == '\n')
+				++source;
+			else
+			{
+				if (*source)
+					throw CompositionError{ location(), "End of line expected" };
+				return;
+			}
+			++line;
+			lineBase = source;
 		};
 
 		const auto readIdentifier = [&] {
@@ -70,9 +98,9 @@ namespace aulos
 			return result;
 		};
 
-		const auto readUnsigned = [&] {
+		const auto tryReadUnsigned = [&]() -> std::optional<unsigned> {
 			if (*source < '0' || *source > '9')
-				throw CompositionError{ location(), "Number expected" };
+				return {};
 			const auto begin = source;
 			do
 				++source;
@@ -82,6 +110,13 @@ namespace aulos
 				throw CompositionError{ { line, begin - lineBase }, "Number expected" };
 			skipSpaces();
 			return result;
+		};
+
+		const auto readUnsigned = [&] {
+			const auto result = tryReadUnsigned();
+			if (!result)
+				throw CompositionError{ location(), "Number expected" };
+			return *result;
 		};
 
 		const auto tryReadFloat = [&](float min, float max) -> std::optional<float> {
@@ -185,114 +220,101 @@ namespace aulos
 		};
 
 		const auto parseCommand = [&](std::string_view command) {
-			if (command == "voice")
+			if (command == "amplitude")
 			{
-				const auto voiceIndex = readUnsigned();
-				if (voiceIndex > _voices.size())
-					throw CompositionError{ location(), "Bad voice index" };
-				auto& voice = voiceIndex == _voices.size() ? _voices.emplace_back() : _voices[voiceIndex];
-				if (const auto subcommand = readIdentifier(); subcommand == "amplitude")
+				if (currentSection != Section::Voice)
+					throw CompositionError{ location(), "Unexpected command" };
+				constexpr auto maxPartDuration = 60.f;
+				auto& envelope = currentVoice->_amplitude._points;
+				if (const auto type = readIdentifier(); type == "adsr")
 				{
-					constexpr auto maxPartDuration = 60.f;
-					auto& envelope = voice._amplitude._points;
-					if (const auto type = readIdentifier(); type == "adsr")
-					{
-						const auto attack = readFloat(0.f, maxPartDuration);
-						const auto decay = readFloat(0.f, maxPartDuration);
-						const auto sustain = readFloat(0.f, 1.f);
-						const auto release = readFloat(0.f, maxPartDuration);
-						envelope.reserve(3);
-						envelope.clear();
-						envelope.emplace_back(attack, 1.f);
-						envelope.emplace_back(decay, sustain);
-						envelope.emplace_back(release, 0.f);
-					}
-					else if (type == "ahdsr")
-					{
-						const auto attack = readFloat(0.f, maxPartDuration);
-						const auto hold = readFloat(0.f, maxPartDuration);
-						const auto decay = readFloat(0.f, maxPartDuration);
-						const auto sustain = readFloat(0.f, 1.f);
-						const auto release = readFloat(0.f, maxPartDuration);
-						envelope.reserve(4);
-						envelope.clear();
-						envelope.emplace_back(attack, 1.f);
-						envelope.emplace_back(hold, 1.f);
-						envelope.emplace_back(decay, sustain);
-						envelope.emplace_back(release, 0.f);
-					}
-					else
-						throw CompositionError{ location(), "Bad envelope type" };
+					const auto attack = readFloat(0.f, maxPartDuration);
+					const auto decay = readFloat(0.f, maxPartDuration);
+					const auto sustain = readFloat(0.f, 1.f);
+					const auto release = readFloat(0.f, maxPartDuration);
+					envelope.reserve(3);
+					envelope.clear();
+					envelope.emplace_back(attack, 1.f);
+					envelope.emplace_back(decay, sustain);
+					envelope.emplace_back(release, 0.f);
 				}
-				else if (subcommand == "asymmetry")
+				else if (type == "ahdsr")
 				{
-					std::vector<Envelope::Point> points;
-					points.emplace_back(0.f, readFloat(0.f, 1.f));
-					while (const auto delay = tryReadFloat(0.f, 60.f))
-						points.emplace_back(*delay, readFloat(0.f, 1.f));
-					voice._asymmetry._points = std::move(points);
-				}
-				else if (subcommand == "frequency")
-				{
-					constexpr auto minFrequency = std::numeric_limits<float>::min();
-					std::vector<Envelope::Point> points;
-					points.emplace_back(0.f, readFloat(minFrequency, 1.f));
-					while (const auto delay = tryReadFloat(0.f, 60.f))
-						points.emplace_back(*delay, readFloat(minFrequency, 1.f));
-					voice._frequency._points = std::move(points);
-				}
-				else if (subcommand == "wave")
-				{
-					if (const auto type = readIdentifier(); type == "linear")
-					{
-						const auto oscillation = tryReadFloat(0.f, 1.f);
-						voice._wave._type = WaveType::Linear;
-						voice._wave._oscillation = oscillation ? *oscillation : 0.f;
-					}
-					else if (type == "rectangle")
-					{
-						voice._wave._type = WaveType::Linear;
-						voice._wave._oscillation = 0.0;
-					}
-					else if (type == "triangle")
-					{
-						voice._wave._type = WaveType::Linear;
-						voice._wave._oscillation = 1.0;
-					}
-					else
-						throw CompositionError{ location(), "Bad voice wave type" };
-				}
-				else if (subcommand == "weight")
-				{
-					const auto weight = readUnsigned();
-					if (!weight || weight > 256)
-						throw CompositionError{ location(), "Bad voice weight" };
-					voice._weight = weight;
+					const auto attack = readFloat(0.f, maxPartDuration);
+					const auto hold = readFloat(0.f, maxPartDuration);
+					const auto decay = readFloat(0.f, maxPartDuration);
+					const auto sustain = readFloat(0.f, 1.f);
+					const auto release = readFloat(0.f, maxPartDuration);
+					envelope.reserve(4);
+					envelope.clear();
+					envelope.emplace_back(attack, 1.f);
+					envelope.emplace_back(hold, 1.f);
+					envelope.emplace_back(decay, sustain);
+					envelope.emplace_back(release, 0.f);
 				}
 				else
-					throw CompositionError{ location(), "Bad voice subcommand" };
+					throw CompositionError{ location(), "Bad envelope type" };
 			}
-			else if (command == "sequence")
+			else if (command == "asymmetry")
 			{
-				const auto index = readUnsigned();
-				if (index != _sequences.size())
-					throw CompositionError{ location(), "Bad sequence index" };
-				parseNotes(_sequences.emplace_back());
+				if (currentSection != Section::Voice)
+					throw CompositionError{ location(), "Unexpected command" };
+				std::vector<Envelope::Point> points;
+				points.emplace_back(0.f, readFloat(0.f, 1.f));
+				while (const auto delay = tryReadFloat(0.f, 60.f))
+					points.emplace_back(*delay, readFloat(0.f, 1.f));
+				currentVoice->_asymmetry._points = std::move(points);
 			}
-			else if (command == "fragment")
+			else if (command == "frequency")
 			{
-				const auto delay = readUnsigned();
-				const auto trackIndex = readUnsigned();
-				if (trackIndex >= _voices.size())
-					throw CompositionError{ location(), "Bad fragment track index" };
-				const auto sequenceIndex = readUnsigned();
-				if (sequenceIndex >= _sequences.size())
-					throw CompositionError{ location(), "Bad fragment sequence index" };
-				_fragments.emplace_back(delay, trackIndex, sequenceIndex);
+				if (currentSection != Section::Voice)
+					throw CompositionError{ location(), "Unexpected command" };
+				constexpr auto minFrequency = std::numeric_limits<float>::min();
+				std::vector<Envelope::Point> points;
+				points.emplace_back(0.f, readFloat(minFrequency, 1.f));
+				while (const auto delay = tryReadFloat(0.f, 60.f))
+					points.emplace_back(*delay, readFloat(minFrequency, 1.f));
+				currentVoice->_frequency._points = std::move(points);
+			}
+			else if (command == "wave")
+			{
+				if (currentSection != Section::Voice)
+					throw CompositionError{ location(), "Unexpected command" };
+				if (const auto type = readIdentifier(); type == "linear")
+				{
+					const auto oscillation = tryReadFloat(0.f, 1.f);
+					currentVoice->_wave._type = WaveType::Linear;
+					currentVoice->_wave._oscillation = oscillation ? *oscillation : 0.f;
+				}
+				else if (type == "rectangle")
+				{
+					currentVoice->_wave._type = WaveType::Linear;
+					currentVoice->_wave._oscillation = 0.0;
+				}
+				else if (type == "triangle")
+				{
+					currentVoice->_wave._type = WaveType::Linear;
+					currentVoice->_wave._oscillation = 1.0;
+				}
+				else
+					throw CompositionError{ location(), "Bad voice wave type" };
+			}
+			else if (command == "weight")
+			{
+				if (currentSection != Section::Voice)
+					throw CompositionError{ location(), "Unexpected command" };
+				const auto weight = readUnsigned();
+				if (!weight || weight > 256)
+					throw CompositionError{ location(), "Bad voice weight" };
+				consumeEndOfLine();
+				currentVoice->_weight = weight;
 			}
 			else if (command == "speed")
 			{
+				if (currentSection != Section::Initial)
+					throw CompositionError{ location(), "Unexpected command" };
 				setSpeed(readFloat(kMinSpeed, kMaxSpeed));
+				consumeEndOfLine();
 			}
 			else
 				throw CompositionError{ location(), "Unknown command \"" + std::string{ command } + "\"" };
@@ -307,13 +329,8 @@ namespace aulos
 			case '\0':
 				return;
 			case '\r':
-				if (source[1] == '\n')
-					++source;
-				[[fallthrough]];
 			case '\n':
-				++source;
-				++line;
-				lineBase = source;
+				consumeEndOfLine();
 				break;
 			case '\t':
 			case ' ':
@@ -321,10 +338,77 @@ namespace aulos
 					++source;
 				while (*source == ' ' || *source == '\t');
 				break;
+			case '0':
+			case '1':
+			case '2':
+			case '3':
+			case '4':
+			case '5':
+			case '6':
+			case '7':
+			case '8':
+			case '9':
+				switch (currentSection)
+				{
+				case Section::Sequences:
+					if (readUnsigned() != _sequences.size() + 1)
+						throw CompositionError{ location(), "Bad sequence index" };
+					parseNotes(_sequences.emplace_back());
+					break;
+				case Section::Fragments:
+				{
+					auto delay = readUnsigned();
+					for (auto trackIndex = readUnsigned();;)
+					{
+						if (!trackIndex || trackIndex > _voices.size())
+							throw CompositionError{ location(), "Bad fragment track index" };
+						const auto sequenceIndex = readUnsigned();
+						if (!sequenceIndex || sequenceIndex > _sequences.size())
+							throw CompositionError{ location(), "Bad fragment sequence index" };
+						_fragments.emplace_back(delay, trackIndex - 1, sequenceIndex - 1);
+						if (const auto nextIndex = tryReadUnsigned())
+						{
+							delay = 0;
+							trackIndex = *nextIndex;
+						}
+						else
+							break;
+					}
+					break;
+				}
+				default:
+					throw CompositionError{ location(), "Unexpected token" };
+				}
+				break;
 			case ';':
 				do
 					++source;
 				while (*source && *source != '\n' && *source != '\r');
+				break;
+			case '@':
+				++source;
+				if (const auto section = readIdentifier(); section == "voice")
+				{
+					const auto voiceIndex = readUnsigned();
+					if (voiceIndex != _voices.size() + 1)
+						throw CompositionError{ location(), "Bad voice index" };
+					_voices.emplace_back();
+					consumeEndOfLine();
+					currentSection = Section::Voice;
+					currentVoice = &_voices.back();
+				}
+				else if (section == "sequences")
+				{
+					consumeEndOfLine();
+					currentSection = Section::Sequences;
+				}
+				else if (section == "fragments")
+				{
+					consumeEndOfLine();
+					currentSection = Section::Fragments;
+				}
+				else
+					throw CompositionError{ location(), "Unknown section \"@" + std::string{ section } + "\"" };
 				break;
 			default:
 				parseCommand(readIdentifier());
