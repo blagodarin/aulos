@@ -354,38 +354,33 @@ namespace aulos
 			for (const auto& fragment : composition._fragments)
 			{
 				offset += fragment._delay;
-				auto& track = _tracks[fragment._trackIndex];
-				if (track->_notes.empty())
+				auto& track = _tracks[fragment._track];
+				if (!track->_notes.empty())
 				{
-					if (offset > 0)
+					const auto trackDuration = std::reduce(track->_notes.cbegin(), track->_notes.cend(), size_t{}, [](size_t duration, const NoteInfo& note) { return duration + note._duration; });
+					if (offset < trackDuration)
 					{
-						track->_notes.emplace_back(Note::Silence, offset);
-						track->_duration = offset;
-					}
-				}
-				else if (offset < track->_duration)
-				{
-					for (auto extra = track->_duration - offset; extra > 0;)
-					{
-						const auto lastNoteDuration = track->_notes.back()._duration;
-						if (lastNoteDuration > extra)
+						for (auto extra = trackDuration - offset; extra > 0;)
 						{
-							track->_notes.back()._duration -= extra;
-							break;
+							const auto lastNoteDuration = track->_notes.back()._duration;
+							if (lastNoteDuration > extra)
+							{
+								track->_notes.back()._duration -= extra;
+								break;
+							}
+							extra -= lastNoteDuration;
+							track->_notes.pop_back();
 						}
-						extra -= lastNoteDuration;
-						track->_notes.pop_back();
 					}
+					else
+						track->_notes.back()._duration += offset - trackDuration;
 				}
-				else
-					track->_notes.back()._duration += offset - track->_duration;
-				const auto& sequence = composition._sequences[fragment._sequenceIndex];
+				else if (offset > 0)
+					track->_notes.emplace_back(Note::Silence, offset);
+				const auto& sequence = composition._sequences[fragment._sequence];
 				track->_notes.reserve(track->_notes.size() + sequence.size());
 				for (const auto& note : sequence)
-				{
 					track->_notes.emplace_back(note);
-					track->_duration += note._duration;
-				}
 			}
 			for (auto& track : _tracks)
 			{
@@ -437,13 +432,11 @@ namespace aulos
 			SampledEnvelope _asymmetry;
 			std::unique_ptr<Voice> _voice;
 			const double _normalizedWeight;
+			std::vector<NoteInfo> _notes;
 			std::vector<NoteInfo>::const_iterator _note;
 			std::vector<NoteInfo>::const_iterator _end;
 			bool _noteStarted = false;
 			size_t _noteSamplesRemaining = 0;
-
-			std::vector<NoteInfo> _notes;
-			size_t _duration = 0;
 
 			Track(const VoiceData& voice, double totalWeight, unsigned samplingRate)
 				: _amplitude{ voice._amplitude, samplingRate }

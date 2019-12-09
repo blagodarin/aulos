@@ -99,7 +99,7 @@ namespace aulos
 			return result;
 		};
 
-		const auto tryReadUnsigned = [&]() -> std::optional<unsigned> {
+		const auto tryReadUnsigned = [&](unsigned min, unsigned max) -> std::optional<unsigned> {
 			if (*source < '0' || *source > '9')
 				return {};
 			const auto begin = source;
@@ -109,12 +109,14 @@ namespace aulos
 			unsigned result;
 			if (std::from_chars(begin, source, result).ec != std::errc{})
 				throw CompositionError{ { line, begin - lineBase }, "Number expected" };
+			if (result < min || result > max)
+				throw CompositionError{ { line, begin - lineBase }, "Number is out of range" };
 			skipSpaces();
 			return result;
 		};
 
-		const auto readUnsigned = [&] {
-			const auto result = tryReadUnsigned();
+		const auto readUnsigned = [&](unsigned min, unsigned max) {
+			const auto result = tryReadUnsigned(min, max);
 			if (!result)
 				throw CompositionError{ location(), "Number expected" };
 			return *result;
@@ -177,10 +179,8 @@ namespace aulos
 				case '\0':
 					return false;
 				case '\r':
-					if (*source == '\n')
-						++source;
-					[[fallthrough]];
 				case '\n':
+					consumeEndOfLine();
 					return true;
 				case '\t':
 				case ' ':
@@ -304,11 +304,8 @@ namespace aulos
 			{
 				if (currentSection != Section::Voice)
 					throw CompositionError{ location(), "Unexpected command" };
-				const auto weight = readUnsigned();
-				if (!weight || weight > 256)
-					throw CompositionError{ location(), "Bad voice weight" };
+				currentVoice->_weight = readUnsigned(1, 256);
 				consumeEndOfLine();
-				currentVoice->_weight = weight;
 			}
 			else if (command == "speed")
 			{
@@ -352,27 +349,21 @@ namespace aulos
 				switch (currentSection)
 				{
 				case Section::Sequences:
-					if (readUnsigned() != _sequences.size() + 1)
-						throw CompositionError{ location(), "Bad sequence index" };
+				{
+					const auto sequenceIndex = static_cast<unsigned>(_sequences.size() + 1);
+					readUnsigned(sequenceIndex, sequenceIndex);
 					parseNotes(_sequences.emplace_back());
 					break;
+				}
 				case Section::Fragments:
 				{
-					const auto nextFragmentDelay = readUnsigned();
-					for (auto trackIndex = readUnsigned();;)
+					const auto nextFragmentDelay = readUnsigned(0, std::numeric_limits<unsigned>::max());
+					while (const auto trackIndex = tryReadUnsigned(1, static_cast<unsigned>(_voices.size())))
 					{
-						if (!trackIndex || trackIndex > _voices.size())
-							throw CompositionError{ location(), "Bad fragment track index" };
-						const auto sequenceIndex = readUnsigned();
-						if (!sequenceIndex || sequenceIndex > _sequences.size())
-							throw CompositionError{ location(), "Bad fragment sequence index" };
-						_fragments.emplace_back(std::exchange(lastFragmentDelay, 0), trackIndex - 1, sequenceIndex - 1);
-						if (const auto nextIndex = tryReadUnsigned())
-							trackIndex = *nextIndex;
-						else
-							break;
+						const auto sequenceIndex = readUnsigned(1, static_cast<unsigned>(_sequences.size()));
+						_fragments.emplace_back(std::exchange(lastFragmentDelay, 0), *trackIndex - 1, sequenceIndex - 1);
 					}
-					lastFragmentDelay = nextFragmentDelay;
+					lastFragmentDelay += nextFragmentDelay;
 					break;
 				}
 				default:
@@ -388,13 +379,11 @@ namespace aulos
 				++source;
 				if (const auto section = readIdentifier(); section == "voice")
 				{
-					const auto voiceIndex = readUnsigned();
-					if (voiceIndex != _voices.size() + 1)
-						throw CompositionError{ location(), "Bad voice index" };
-					_voices.emplace_back();
+					const auto voiceIndex = static_cast<unsigned>(_voices.size() + 1);
+					readUnsigned(voiceIndex, voiceIndex);
 					consumeEndOfLine();
 					currentSection = Section::Voice;
-					currentVoice = &_voices.back();
+					currentVoice = &_voices.emplace_back();
 				}
 				else if (section == "sequences")
 				{

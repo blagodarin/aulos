@@ -87,11 +87,11 @@ namespace aulos
 	struct Fragment
 	{
 		size_t _delay = 0; // Relative to the beginning of the previous fragment.
-		size_t _trackIndex = 0;
-		size_t _sequenceIndex = 0;
+		size_t _track = 0;
+		size_t _sequence = 0;
 
-		Fragment(size_t delay, size_t trackIndex, size_t sequenceIndex) noexcept
-			: _delay{ delay }, _trackIndex{ trackIndex }, _sequenceIndex{ sequenceIndex } {}
+		Fragment(size_t delay, size_t track, size_t sequence) noexcept
+			: _delay{ delay }, _track{ track }, _sequence{ sequence } {}
 	};
 
 	constexpr float kMinSpeed = 1.f;
