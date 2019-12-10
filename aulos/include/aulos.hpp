@@ -21,16 +21,67 @@
 
 namespace aulos
 {
+	enum class Note : uint8_t
+	{
+		Silence,
+		// clang-format off
+		C0, Db0, D0, Eb0, E0, F0, Gb0, G0, Ab0, A0, Bb0, B0,
+		C1, Db1, D1, Eb1, E1, F1, Gb1, G1, Ab1, A1, Bb1, B1,
+		C2, Db2, D2, Eb2, E2, F2, Gb2, G2, Ab2, A2, Bb2, B2,
+		C3, Db3, D3, Eb3, E3, F3, Gb3, G3, Ab3, A3, Bb3, B3,
+		C4, Db4, D4, Eb4, E4, F4, Gb4, G4, Ab4, A4, Bb4, B4,
+		C5, Db5, D5, Eb5, E5, F5, Gb5, G5, Ab5, A5, Bb5, B5,
+		C6, Db6, D6, Eb6, E6, F6, Gb6, G6, Ab6, A6, Bb6, B6,
+		C7, Db7, D7, Eb7, E7, F7, Gb7, G7, Ab7, A7, Bb7, B7,
+		C8, Db8, D8, Eb8, E8, F8, Gb8, G8, Ab8, A8, Bb8, B8,
+		C9, Db9, D9, Eb9, E9, F9, Gb9, G9, Ab9, A9, Bb9, B9,
+		// clang-format on
+	};
+
+	struct Sound
+	{
+		Note _note = Note::Silence;
+		size_t _duration = 1;
+
+		constexpr Sound(Note note, size_t duration = 1) noexcept
+			: _note{ note }, _duration{ duration } {}
+	};
+
+	struct Sequence
+	{
+		const Sound* _data = nullptr;
+		size_t _size = 0;
+
+		constexpr Sequence() noexcept = default;
+		constexpr Sequence(const Sound* data, size_t size) noexcept
+			: _data{ data }, _size{ size } {}
+	};
+
+	// A fragment specifies when and how to play a sequence.
+	struct Fragment
+	{
+		size_t _delay = 0;    // Steps from the beginning of the previous fragment.
+		size_t _track = 0;    // Track index.
+		size_t _sequence = 0; // Sequence index.
+
+		constexpr Fragment() noexcept = default;
+		constexpr Fragment(size_t delay, size_t track, size_t sequence) noexcept
+			: _delay{ delay }, _track{ track }, _sequence{ sequence } {}
+	};
+
+	// A composition combines all audio elements in a single piece of audio stored in a playback-optimal format.
 	class Composition
 	{
 	public:
-		[[nodiscard]] static std::unique_ptr<Composition> create();
-		[[nodiscard]] static std::unique_ptr<Composition> create(const char* source);
+		[[nodiscard]] static std::unique_ptr<Composition> create(const char* textSource);
 
 		virtual ~Composition() noexcept = default;
 
+		virtual Fragment fragment(size_t index) const noexcept = 0;
+		virtual size_t fragmentCount() const noexcept = 0;
 		virtual float speed() const noexcept = 0;
-		virtual bool setSpeed(float speed) = 0;
+		virtual Sequence sequence(size_t index) const noexcept = 0;
+		virtual size_t sequenceCount() const noexcept = 0;
 	};
 
 	class Renderer

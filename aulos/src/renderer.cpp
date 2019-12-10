@@ -36,7 +36,7 @@ namespace
 			_frequencies[static_cast<size_t>(aulos::Note::A0)] = 27.5; // A0 for the standard A440 pitch (A4 = 440 Hz).
 			for (auto a = static_cast<size_t>(aulos::Note::A1); a <= static_cast<size_t>(aulos::Note::A9); a += 12)
 				_frequencies[a] = _frequencies[a - 12] * 2.0;
-			for (size_t base = 0; base < _frequencies.size() - 1; base += 12)
+			for (size_t base = static_cast<size_t>(aulos::Note::C0); base < _frequencies.size() - 1; base += 12)
 			{
 				const auto a = base + static_cast<size_t>(aulos::Note::A0) - static_cast<size_t>(aulos::Note::C0);
 				for (auto note = a; note > base; --note)
@@ -67,7 +67,7 @@ namespace
 			double _value;
 		};
 
-		SampledEnvelope(const aulos::Envelope& envelope, size_t samplingRate) noexcept
+		SampledEnvelope(const aulos::EnvelopeData& envelope, size_t samplingRate) noexcept
 		{
 			assert(envelope._points.size() <= _points.size());
 			for (const auto& point : envelope._points)
@@ -355,37 +355,37 @@ namespace aulos
 			{
 				offset += fragment._delay;
 				auto& track = _tracks[fragment._track];
-				if (!track->_notes.empty())
+				if (!track->_sounds.empty())
 				{
-					const auto trackDuration = std::reduce(track->_notes.cbegin(), track->_notes.cend(), size_t{}, [](size_t duration, const NoteInfo& note) { return duration + note._duration; });
+					const auto trackDuration = std::reduce(track->_sounds.cbegin(), track->_sounds.cend(), size_t{}, [](size_t duration, const Sound& sound) { return duration + sound._duration; });
 					if (offset < trackDuration)
 					{
 						for (auto extra = trackDuration - offset; extra > 0;)
 						{
-							const auto lastNoteDuration = track->_notes.back()._duration;
+							const auto lastNoteDuration = track->_sounds.back()._duration;
 							if (lastNoteDuration > extra)
 							{
-								track->_notes.back()._duration -= extra;
+								track->_sounds.back()._duration -= extra;
 								break;
 							}
 							extra -= lastNoteDuration;
-							track->_notes.pop_back();
+							track->_sounds.pop_back();
 						}
 					}
 					else
-						track->_notes.back()._duration += offset - trackDuration;
+						track->_sounds.back()._duration += offset - trackDuration;
 				}
 				else if (offset > 0)
-					track->_notes.emplace_back(Note::Silence, offset);
+					track->_sounds.emplace_back(Note::Silence, offset);
 				const auto& sequence = composition._sequences[fragment._sequence];
-				track->_notes.reserve(track->_notes.size() + sequence.size());
+				track->_sounds.reserve(track->_sounds.size() + sequence.size());
 				for (const auto& note : sequence)
-					track->_notes.emplace_back(note);
+					track->_sounds.emplace_back(note);
 			}
 			for (auto& track : _tracks)
 			{
-				track->_note = track->_notes.begin();
-				track->_end = track->_notes.end();
+				track->_currentSound = track->_sounds.begin();
+				track->_end = track->_sounds.end();
 			}
 		}
 
@@ -398,13 +398,13 @@ namespace aulos
 			for (auto& track : _tracks)
 			{
 				size_t trackSamplesRendered = 0;
-				while (track->_note != track->_end)
+				while (track->_currentSound != track->_end)
 				{
 					if (!track->_noteStarted)
 					{
 						track->_noteStarted = true;
-						track->_noteSamplesRemaining = _stepSamples * track->_note->_duration;
-						track->_voice->start(kNoteTable[track->_note->_note], track->_normalizedWeight);
+						track->_noteSamplesRemaining = _stepSamples * track->_currentSound->_duration;
+						track->_voice->start(kNoteTable[track->_currentSound->_note], track->_normalizedWeight);
 					}
 					const auto samplesToGenerate = bufferBytes / kSampleSize - trackSamplesRendered;
 					if (!samplesToGenerate)
@@ -415,7 +415,7 @@ namespace aulos
 					trackSamplesRendered += samplesGenerated;
 					if (!track->_noteSamplesRemaining)
 					{
-						++track->_note;
+						++track->_currentSound;
 						track->_noteStarted = false;
 					}
 				}
@@ -432,9 +432,9 @@ namespace aulos
 			SampledEnvelope _asymmetry;
 			std::unique_ptr<Voice> _voice;
 			const double _normalizedWeight;
-			std::vector<NoteInfo> _notes;
-			std::vector<NoteInfo>::const_iterator _note;
-			std::vector<NoteInfo>::const_iterator _end;
+			std::vector<Sound> _sounds;
+			std::vector<Sound>::const_iterator _currentSound;
+			std::vector<Sound>::const_iterator _end;
 			bool _noteStarted = false;
 			size_t _noteSamplesRemaining = 0;
 

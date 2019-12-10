@@ -27,6 +27,9 @@
 
 namespace
 {
+	constexpr float kMinSpeed = 1.f;
+	constexpr float kMaxSpeed = 32.f;
+
 	struct Location
 	{
 		size_t _line = 1;
@@ -43,6 +46,11 @@ namespace
 
 namespace aulos
 {
+	CompositionImpl::CompositionImpl()
+		: _speed{ kMinSpeed }
+	{
+	}
+
 	void CompositionImpl::load(const char* source)
 	{
 		enum class Section
@@ -149,7 +157,7 @@ namespace aulos
 			return *result;
 		};
 
-		const auto parseNote = [&](std::vector<NoteInfo>& track, const char* data, size_t baseOffset) {
+		const auto parseNote = [&](std::vector<Sound>& sequence, const char* data, size_t baseOffset) {
 			assert(baseOffset >= 0 && baseOffset < 12);
 			if (*data == '#')
 			{
@@ -167,11 +175,11 @@ namespace aulos
 			}
 			if (*data < '0' || *data > '9')
 				throw CompositionError{ location(), "Bad note" };
-			track.emplace_back(static_cast<Note>((*data - '0') * 12 + baseOffset));
+			sequence.emplace_back(static_cast<Note>((*data - '0') * 12 + baseOffset));
 			return data + 1;
 		};
 
-		const auto parseNotes = [&](std::vector<NoteInfo>& track) {
+		const auto parseNotes = [&](std::vector<Sound>& sequence) {
 			for (;;)
 			{
 				switch (*source++)
@@ -188,31 +196,31 @@ namespace aulos
 						++source;
 					break;
 				case '.':
-					if (track.empty())
-						track.emplace_back(Note::Silence);
+					if (sequence.empty())
+						sequence.emplace_back(Note::Silence);
 					else
-						++track.back()._duration;
+						++sequence.back()._duration;
 					break;
 				case 'A':
-					source = parseNote(track, source, 9);
+					source = parseNote(sequence, source, 9);
 					break;
 				case 'B':
-					source = parseNote(track, source, 11);
+					source = parseNote(sequence, source, 11);
 					break;
 				case 'C':
-					source = parseNote(track, source, 0);
+					source = parseNote(sequence, source, 0);
 					break;
 				case 'D':
-					source = parseNote(track, source, 2);
+					source = parseNote(sequence, source, 2);
 					break;
 				case 'E':
-					source = parseNote(track, source, 4);
+					source = parseNote(sequence, source, 4);
 					break;
 				case 'F':
-					source = parseNote(track, source, 5);
+					source = parseNote(sequence, source, 5);
 					break;
 				case 'G':
-					source = parseNote(track, source, 7);
+					source = parseNote(sequence, source, 7);
 					break;
 				default:
 					throw CompositionError{ location(), "Bad note" };
@@ -221,37 +229,27 @@ namespace aulos
 		};
 
 		const auto parseCommand = [&](std::string_view command) {
+			constexpr auto kMaxEnvelopePartDuration = 60.f;
 			if (command == "amplitude")
 			{
 				if (currentSection != Section::Voice)
 					throw CompositionError{ location(), "Unexpected command" };
-				constexpr auto maxPartDuration = 60.f;
-				auto& envelope = currentVoice->_amplitude._points;
 				if (const auto type = readIdentifier(); type == "adsr")
 				{
-					const auto attack = readFloat(0.f, maxPartDuration);
-					const auto decay = readFloat(0.f, maxPartDuration);
+					const auto attack = readFloat(0.f, kMaxEnvelopePartDuration);
+					const auto decay = readFloat(0.f, kMaxEnvelopePartDuration);
 					const auto sustain = readFloat(0.f, 1.f);
-					const auto release = readFloat(0.f, maxPartDuration);
-					envelope.reserve(3);
-					envelope.clear();
-					envelope.emplace_back(attack, 1.f);
-					envelope.emplace_back(decay, sustain);
-					envelope.emplace_back(release, 0.f);
+					const auto release = readFloat(0.f, kMaxEnvelopePartDuration);
+					currentVoice->_amplitude._points = { { attack, 1.f }, { decay, sustain }, { release, 0.f } };
 				}
 				else if (type == "ahdsr")
 				{
-					const auto attack = readFloat(0.f, maxPartDuration);
-					const auto hold = readFloat(0.f, maxPartDuration);
-					const auto decay = readFloat(0.f, maxPartDuration);
+					const auto attack = readFloat(0.f, kMaxEnvelopePartDuration);
+					const auto hold = readFloat(0.f, kMaxEnvelopePartDuration);
+					const auto decay = readFloat(0.f, kMaxEnvelopePartDuration);
 					const auto sustain = readFloat(0.f, 1.f);
-					const auto release = readFloat(0.f, maxPartDuration);
-					envelope.reserve(4);
-					envelope.clear();
-					envelope.emplace_back(attack, 1.f);
-					envelope.emplace_back(hold, 1.f);
-					envelope.emplace_back(decay, sustain);
-					envelope.emplace_back(release, 0.f);
+					const auto release = readFloat(0.f, kMaxEnvelopePartDuration);
+					currentVoice->_amplitude._points = { { attack, 1.f }, { hold, 1.f }, { decay, sustain }, { release, 0.f } };
 				}
 				else
 					throw CompositionError{ location(), "Bad envelope type" };
@@ -260,9 +258,9 @@ namespace aulos
 			{
 				if (currentSection != Section::Voice)
 					throw CompositionError{ location(), "Unexpected command" };
-				std::vector<Envelope::Point> points;
+				std::vector<EnvelopeData::Point> points;
 				points.emplace_back(0.f, readFloat(0.f, 1.f));
-				while (const auto delay = tryReadFloat(0.f, 60.f))
+				while (const auto delay = tryReadFloat(0.f, kMaxEnvelopePartDuration))
 					points.emplace_back(*delay, readFloat(0.f, 1.f));
 				currentVoice->_asymmetry._points = std::move(points);
 			}
@@ -271,9 +269,9 @@ namespace aulos
 				if (currentSection != Section::Voice)
 					throw CompositionError{ location(), "Unexpected command" };
 				constexpr auto minFrequency = std::numeric_limits<float>::min();
-				std::vector<Envelope::Point> points;
+				std::vector<EnvelopeData::Point> points;
 				points.emplace_back(0.f, readFloat(minFrequency, 1.f));
-				while (const auto delay = tryReadFloat(0.f, 60.f))
+				while (const auto delay = tryReadFloat(0.f, kMaxEnvelopePartDuration))
 					points.emplace_back(*delay, readFloat(minFrequency, 1.f));
 				currentVoice->_frequency._points = std::move(points);
 			}
@@ -311,12 +309,12 @@ namespace aulos
 			{
 				if (currentSection != Section::Initial)
 					throw CompositionError{ location(), "Unexpected command" };
-				setSpeed(readFloat(kMinSpeed, kMaxSpeed));
+				_speed = readFloat(kMinSpeed, kMaxSpeed);
 				consumeEndOfLine();
 			}
 			else
 				throw CompositionError{ location(), "Unknown command \"" + std::string{ command } + "\"" };
-			if (*source && *source == '\n' && *source == '\r')
+			if (*source && *source != '\n' && *source != '\r')
 				throw CompositionError{ location(), "End of line expected" };
 		};
 
@@ -348,15 +346,13 @@ namespace aulos
 			case '9':
 				switch (currentSection)
 				{
-				case Section::Sequences:
-				{
+				case Section::Sequences: {
 					const auto sequenceIndex = static_cast<unsigned>(_sequences.size() + 1);
 					readUnsigned(sequenceIndex, sequenceIndex);
 					parseNotes(_sequences.emplace_back());
 					break;
 				}
-				case Section::Fragments:
-				{
+				case Section::Fragments: {
 					const auto nextFragmentDelay = readUnsigned(0, std::numeric_limits<unsigned>::max());
 					while (const auto trackIndex = tryReadUnsigned(1, static_cast<unsigned>(_voices.size())))
 					{
@@ -404,23 +400,18 @@ namespace aulos
 		}
 	}
 
-	bool CompositionImpl::setSpeed(float speed)
+	Sequence CompositionImpl::sequence(size_t index) const noexcept
 	{
-		if (speed < kMinSpeed || speed > kMaxSpeed)
-			return false;
-		_speed = speed;
-		return true;
+		if (index >= _sequences.size())
+			return {};
+		auto& value = _sequences[index];
+		return { value.data(), value.size() };
 	}
 
-	std::unique_ptr<Composition> Composition::create()
-	{
-		return std::make_unique<CompositionImpl>();
-	}
-
-	std::unique_ptr<Composition> Composition::create(const char* source)
+	std::unique_ptr<Composition> Composition::create(const char* textSource)
 	{
 		auto composition = std::make_unique<CompositionImpl>();
-		composition->load(source);
+		composition->load(textSource);
 		return composition;
 	}
 }
