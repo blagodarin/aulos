@@ -23,7 +23,6 @@ namespace aulos
 {
 	enum class Note : uint8_t
 	{
-		Silence,
 		// clang-format off
 		C0, Db0, D0, Eb0, E0, F0, Gb0, G0, Ab0, A0, Bb0, B0,
 		C1, Db1, D1, Eb1, E1, F1, Gb1, G1, Ab1, A1, Bb1, B1,
@@ -40,11 +39,11 @@ namespace aulos
 
 	struct Sound
 	{
-		Note _note = Note::Silence;
-		size_t _duration = 1;
+		size_t _delay = 0; // Steps from the beginning of the previous sound in a sequence.
+		Note _note = Note::C0;
 
-		constexpr Sound(Note note, size_t duration = 1) noexcept
-			: _note{ note }, _duration{ duration } {}
+		constexpr Sound(size_t delay, Note note) noexcept
+			: _delay{ delay }, _note{ note } {}
 	};
 
 	struct Sequence

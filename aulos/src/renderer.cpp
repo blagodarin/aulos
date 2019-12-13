@@ -44,7 +44,6 @@ namespace
 				for (auto note = a; note < base + static_cast<size_t>(aulos::Note::B0) - static_cast<size_t>(aulos::Note::C0); ++note)
 					_frequencies[note + 1] = _frequencies[note] * kNoteRatio;
 			}
-			_frequencies[static_cast<size_t>(aulos::Note::Silence)] = 0.0;
 		}
 
 		constexpr double operator[](aulos::Note note) const noexcept
@@ -53,7 +52,7 @@ namespace
 		}
 
 	private:
-		std::array<double, 121> _frequencies;
+		std::array<double, 120> _frequencies;
 	};
 
 	const NoteTable kNoteTable;
@@ -77,8 +76,22 @@ namespace
 			}
 		}
 
-		const Point* begin() const noexcept { return _points.data(); }
-		const Point* end() const noexcept { return _points.data() + _size; }
+		const Point* begin() const noexcept
+		{
+			return _points.data();
+		}
+
+		size_t duration() const noexcept
+		{
+			return std::reduce(_points.begin(), _points.end(), size_t{}, [](size_t duration, const Point& point) {
+				return duration + point._delay;
+			});
+		}
+
+		const Point* end() const noexcept
+		{
+			return _points.data() + _size;
+		}
 
 	private:
 		size_t _size = 0;
@@ -108,6 +121,11 @@ namespace
 			_currentValue = _baseValue * (1.f - progress) + _nextPoint->_value * progress;
 			++_offset;
 			return _currentValue;
+		}
+
+		size_t duration() const noexcept
+		{
+			return _envelope.duration();
 		}
 
 		size_t partSamplesRemaining() const noexcept
@@ -207,6 +225,7 @@ namespace
 	public:
 		virtual ~Voice() noexcept = default;
 
+		virtual size_t duration() const noexcept = 0;
 		virtual void start(double frequency, double amplitude) noexcept = 0;
 		virtual void generate(float* buffer, size_t maxSamples) noexcept = 0;
 	};
@@ -221,6 +240,11 @@ namespace
 			, _asymmetryModulator{ asymmetry }
 			, _samplingRate{ static_cast<double>(samplingRate) }
 		{
+		}
+
+		size_t duration() const noexcept override
+		{
+			return _amplitudeModulator.duration();
 		}
 
 		void start(double frequency, double amplitude) noexcept override
@@ -350,43 +374,32 @@ namespace aulos
 			_tracks.reserve(composition._voices.size());
 			for (const auto& track : composition._voices)
 				_tracks.emplace_back(std::make_unique<Track>(track, totalWeight, samplingRate));
-			size_t offset = 0;
+			size_t fragmentOffset = 0;
 			for (const auto& fragment : composition._fragments)
 			{
-				offset += fragment._delay;
-				auto& track = _tracks[fragment._track];
-				if (!track->_sounds.empty())
+				fragmentOffset += fragment._delay;
+				auto& trackSounds = _tracks[fragment._track]->_sounds;
+				auto lastSoundOffset = std::reduce(trackSounds.cbegin(), trackSounds.cend(), size_t{}, [](size_t offset, const Sound& sound) { return offset + sound._delay; });
+				while (!trackSounds.empty() && lastSoundOffset >= fragmentOffset)
 				{
-					const auto trackDuration = std::reduce(track->_sounds.cbegin(), track->_sounds.cend(), size_t{}, [](size_t duration, const Sound& sound) { return duration + sound._duration; });
-					if (offset < trackDuration)
-					{
-						for (auto extra = trackDuration - offset; extra > 0;)
-						{
-							const auto lastNoteDuration = track->_sounds.back()._duration;
-							if (lastNoteDuration > extra)
-							{
-								track->_sounds.back()._duration -= extra;
-								break;
-							}
-							extra -= lastNoteDuration;
-							track->_sounds.pop_back();
-						}
-					}
-					else
-						track->_sounds.back()._duration += offset - trackDuration;
+					lastSoundOffset -= trackSounds.back()._delay;
+					trackSounds.pop_back();
 				}
-				else if (offset > 0)
-					track->_sounds.emplace_back(Note::Silence, offset);
-				const auto& sequence = composition._sequences[fragment._sequence];
-				track->_sounds.reserve(track->_sounds.size() + sequence.size());
-				for (const auto& note : sequence)
-					track->_sounds.emplace_back(note);
+				if (const auto& sequence = composition._sequences[fragment._sequence]; !sequence.empty())
+				{
+					trackSounds.reserve(trackSounds.size() + sequence.size());
+					trackSounds.emplace_back(fragmentOffset - lastSoundOffset + sequence.front()._delay, sequence.front()._note);
+					std::copy(std::next(sequence.begin()), sequence.cend(), std::back_inserter(trackSounds));
+				}
 			}
 			for (auto& track : _tracks)
-			{
-				track->_currentSound = track->_sounds.begin();
-				track->_end = track->_sounds.end();
-			}
+				if (!track->_sounds.empty())
+					if (const auto delay = track->_sounds.front()._delay; delay > 0)
+					{
+						track->_soundIndex = std::numeric_limits<size_t>::max();
+						track->_soundStarted = true;
+						track->_soundSamplesRemaining = _stepSamples * delay;
+					}
 		}
 
 		size_t render(void* buffer, size_t bufferBytes) noexcept override
@@ -398,25 +411,26 @@ namespace aulos
 			for (auto& track : _tracks)
 			{
 				size_t trackSamplesRendered = 0;
-				while (track->_currentSound != track->_end)
+				while (track->_soundIndex != track->_sounds.size())
 				{
-					if (!track->_noteStarted)
+					if (!track->_soundStarted)
 					{
-						track->_noteStarted = true;
-						track->_noteSamplesRemaining = _stepSamples * track->_currentSound->_duration;
-						track->_voice->start(kNoteTable[track->_currentSound->_note], track->_normalizedWeight);
+						track->_soundStarted = true;
+						const auto nextIndex = track->_soundIndex + 1;
+						track->_soundSamplesRemaining = nextIndex != track->_sounds.size() ? _stepSamples * track->_sounds[nextIndex]._delay : track->_voice->duration();
+						track->_voice->start(kNoteTable[track->_sounds[track->_soundIndex]._note], track->_normalizedWeight);
 					}
 					const auto samplesToGenerate = bufferBytes / kSampleSize - trackSamplesRendered;
 					if (!samplesToGenerate)
 						break;
-					const auto samplesGenerated = std::min(track->_noteSamplesRemaining, samplesToGenerate);
+					const auto samplesGenerated = std::min(track->_soundSamplesRemaining, samplesToGenerate);
 					track->_voice->generate(static_cast<float*>(buffer) + trackSamplesRendered, samplesGenerated);
-					track->_noteSamplesRemaining -= samplesGenerated;
+					track->_soundSamplesRemaining -= samplesGenerated;
 					trackSamplesRendered += samplesGenerated;
-					if (!track->_noteSamplesRemaining)
+					if (!track->_soundSamplesRemaining)
 					{
-						++track->_currentSound;
-						track->_noteStarted = false;
+						++track->_soundIndex;
+						track->_soundStarted = false;
 					}
 				}
 				samplesRendered = std::max(samplesRendered, trackSamplesRendered);
@@ -433,10 +447,9 @@ namespace aulos
 			std::unique_ptr<Voice> _voice;
 			const double _normalizedWeight;
 			std::vector<Sound> _sounds;
-			std::vector<Sound>::const_iterator _currentSound;
-			std::vector<Sound>::const_iterator _end;
-			bool _noteStarted = false;
-			size_t _noteSamplesRemaining = 0;
+			size_t _soundIndex = 0;
+			bool _soundStarted = false;
+			size_t _soundSamplesRemaining = 0;
 
 			Track(const VoiceData& voice, double totalWeight, unsigned samplingRate)
 				: _amplitude{ voice._amplitude, samplingRate }
