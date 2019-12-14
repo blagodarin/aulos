@@ -68,7 +68,7 @@ namespace aulos
 			: _delay{ delay }, _track{ track }, _sequence{ sequence } {}
 	};
 
-	// A composition combines all audio elements in a single piece of audio stored in a playback-optimal format.
+	// Combines all audio elements in a single piece of audio stored in a playback-optimal format.
 	class Composition
 	{
 	public:
@@ -83,6 +83,18 @@ namespace aulos
 		virtual size_t sequenceCount() const noexcept = 0;
 	};
 
+	// Generates audio data for a voice.
+	class VoiceRenderer
+	{
+	public:
+		virtual ~VoiceRenderer() noexcept = default;
+
+		virtual size_t duration() const noexcept = 0;
+		virtual void start(Note, float amplitude) noexcept = 0;
+		virtual void render(float* buffer, size_t maxSamples) noexcept = 0;
+	};
+
+	// Generates audio data for a composition.
 	class Renderer
 	{
 	public:
