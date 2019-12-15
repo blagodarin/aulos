@@ -131,7 +131,7 @@ namespace aulos
 
 		virtual size_t duration() const noexcept = 0;
 		virtual void start(Note, float amplitude) noexcept = 0;
-		virtual void render(float* buffer, size_t maxSamples) noexcept = 0;
+		virtual size_t render(void* buffer, size_t maxSamples) noexcept = 0;
 	};
 
 	// Generates audio data for a composition.

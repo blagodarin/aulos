@@ -53,11 +53,13 @@ MainWindow::MainWindow()
 	for (int row = 0; row < 10; ++row)
 		for (int column = 0; column < 12; ++column)
 		{
+			const auto octave = 9 - row;
 			const auto name = noteNames[column];
 			const auto button = new QToolButton{ this };
-			button->setText(QStringLiteral("%1%2").arg(name).arg(9 - row));
+			button->setText(QStringLiteral("%1%2").arg(name).arg(octave));
 			button->setFixedSize({ 40, 30 });
 			button->setStyleSheet(name[1] == '#' ? "background-color: black; color: white" : "background-color: white; color: black");
+			button->setProperty("note", octave * 12 + column);
 			connect(button, &QAbstractButton::clicked, this, &MainWindow::onNoteClicked);
 			noteLayout->addWidget(button, row, column);
 		}
@@ -76,63 +78,41 @@ MainWindow::~MainWindow() = default;
 
 void MainWindow::onNoteClicked()
 {
-	const auto printDouble = [](double value) {
-		return QStringLiteral(" %1").arg(value, 0, 'f', 2).toUtf8();
-	};
-
-	const auto button = qobject_cast<QAbstractButton*>(sender());
-	assert(button);
-
-	QByteArray buffer;
-	buffer += "@voice 1\n";
-	buffer += "wave linear" + printDouble(_ui->oscillationSpin->value()) + "\n";
-	buffer += "amplitude ";
-	buffer += _ui->holdCheck->isChecked() ? "ahdsr" : "adsr";
-	buffer += printDouble(_ui->attackSpin->value());
+	aulos::Voice voice;
+	voice._wave = aulos::Wave::Linear;
+	voice._oscillation = static_cast<float>(_ui->oscillationSpin->value());
+	voice._amplitudeEnvelope.emplace_back(_ui->attackSpin->value(), 1.f);
 	if (_ui->holdCheck->isChecked())
-		buffer += printDouble(_ui->holdSpin->value());
-	buffer += printDouble(_ui->decaySpin->value());
-	buffer += printDouble(_ui->sustainSpin->value());
-	buffer += printDouble(_ui->releaseSpin->value());
-	buffer += '\n';
+		voice._amplitudeEnvelope.emplace_back(_ui->holdSpin->value(), 1.f);
+	voice._amplitudeEnvelope.emplace_back(_ui->decaySpin->value(), _ui->sustainSpin->value());
+	voice._amplitudeEnvelope.emplace_back(_ui->releaseSpin->value(), 0.f);
 	if (auto i = _frequencyEnvelope.begin(); i->_check->isChecked())
 	{
-		buffer += "frequency" + printDouble(i->_value->value());
+		voice._frequencyEnvelope.emplace_back(0.f, static_cast<float>(i->_value->value()));
 		for (++i; i != _frequencyEnvelope.end() && i->_check->isChecked(); ++i)
-		{
-			buffer += printDouble(i->_delay->value());
-			buffer += printDouble(i->_value->value());
-		}
-		buffer += '\n';
+			voice._frequencyEnvelope.emplace_back(static_cast<float>(i->_delay->value()), static_cast<float>(i->_value->value()));
 	}
 	if (auto i = _asymmetryEnvelope.begin(); i->_check->isChecked())
 	{
-		buffer += "asymmetry" + printDouble(i->_value->value());
+		voice._asymmetryEnvelope.emplace_back(0.f, static_cast<float>(i->_value->value()));
 		for (++i; i != _asymmetryEnvelope.end() && i->_check->isChecked(); ++i)
-		{
-			buffer += printDouble(i->_delay->value());
-			buffer += printDouble(i->_value->value());
-		}
-		buffer += '\n';
+			voice._asymmetryEnvelope.emplace_back(static_cast<float>(i->_delay->value()), static_cast<float>(i->_value->value()));
 	}
-	buffer += "@tracks\n";
-	buffer += "1 1 1\n";
-	buffer += "@sequences\n";
-	buffer += "1 " + button->text().toUtf8() + "\n";
-	buffer += "@fragments\n";
-	buffer += "0 1 1\n";
 
-	const auto composition = aulos::Composition::create(buffer.constData());
-	assert(composition);
-
-	const auto renderer = aulos::Renderer::create(*composition, 48'000);
+	const auto renderer = aulos::VoiceRenderer::create(voice, 48'000);
 	assert(renderer);
+
+	const auto button = qobject_cast<QAbstractButton*>(sender());
+	assert(button);
+	renderer->start(static_cast<aulos::Note>(button->property("note").toInt()), 1.f);
 
 	_audioOutput->stop();
 	_audioBuffer.close();
 	_audioData.clear();
 	_audioData.resize(65'536);
 	for (int totalRendered = 0;;)
+	{
+		std::memset(_audioData.data() + totalRendered, 0, _audioData.size() - totalRendered);
 		if (const auto rendered = renderer->render(_audioData.data() + totalRendered, _audioData.size() - totalRendered); rendered > 0)
 		{
 			totalRendered += static_cast<int>(rendered);
@@ -143,6 +123,7 @@ void MainWindow::onNoteClicked()
 			_audioData.resize(totalRendered);
 			break;
 		}
+	}
 	_audioBuffer.open(QIODevice::ReadOnly);
 	_audioOutput->start(&_audioBuffer);
 }

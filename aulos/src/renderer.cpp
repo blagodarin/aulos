@@ -226,7 +226,7 @@ namespace
 
 		size_t duration() const noexcept override
 		{
-			return _amplitudeModulator.duration();
+			return _amplitudeModulator.duration() * kSampleSize;
 		}
 
 	protected:
@@ -313,21 +313,21 @@ namespace
 	public:
 		using TwoPartWaveBase::TwoPartWaveBase;
 
-		void render(float* buffer, size_t maxSamples) noexcept override
+		size_t render(void* buffer, size_t bufferSize) noexcept override
 		{
-			assert(maxSamples > 0);
-			while (_amplitudeModulator.update())
+			bufferSize -= bufferSize % kSampleSize;
+			size_t offset = 0;
+			while (offset < bufferSize && _amplitudeModulator.update())
 			{
-				const auto samplesToGenerate = std::min(static_cast<size_t>(std::ceil(_partSamplesRemaining)), std::min(maxSamples, _amplitudeModulator.partSamplesRemaining()));
+				const auto samplesToGenerate = std::min(static_cast<size_t>(std::ceil(_partSamplesRemaining)), std::min((bufferSize - offset) / kSampleSize, _amplitudeModulator.partSamplesRemaining()));
 				Oscillator oscillator{ _partSamplesRemaining, _partLength, _oscillation };
+				const auto base = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
 				for (size_t i = 0; i < samplesToGenerate; ++i)
-					buffer[i] += static_cast<float>(_amplitude * oscillator() * _amplitudeModulator.advance());
+					base[i] += static_cast<float>(_amplitude * oscillator() * _amplitudeModulator.advance());
 				advance(samplesToGenerate);
-				buffer += samplesToGenerate;
-				maxSamples -= samplesToGenerate;
-				if (!maxSamples)
-					break;
+				offset += samplesToGenerate * kSampleSize;
 			}
+			return offset;
 		}
 	};
 
@@ -350,7 +350,7 @@ namespace
 	public:
 		RendererImpl(const aulos::CompositionImpl& composition, unsigned samplingRate)
 			: _samplingRate{ samplingRate }
-			, _stepSamples{ static_cast<size_t>(std::lround(_samplingRate / composition._speed)) }
+			, _stepBytes{ static_cast<size_t>(std::lround(_samplingRate / composition._speed)) * kSampleSize }
 		{
 			const auto totalWeight = static_cast<float>(std::reduce(composition._tracks.cbegin(), composition._tracks.cend(), 0u, [](unsigned weight, const aulos::Track& track) { return weight + track._weight; }));
 			_tracks.reserve(composition._tracks.size());
@@ -379,45 +379,40 @@ namespace
 					if (const auto delay = track->_sounds.front()._delay; delay > 0)
 					{
 						track->_soundIndex = std::numeric_limits<size_t>::max();
-						track->_soundStarted = true;
-						track->_soundSamplesRemaining = _stepSamples * delay;
+						track->_soundBytesRemaining = _stepBytes * delay;
 					}
 		}
 
 		size_t render(void* buffer, size_t bufferBytes) noexcept override
 		{
-			if (_tracks.empty())
-				return 0;
 			std::memset(buffer, 0, bufferBytes);
-			size_t samplesRendered = 0;
+			size_t offset = 0;
 			for (auto& track : _tracks)
 			{
-				size_t trackSamplesRendered = 0;
+				size_t trackOffset = 0;
 				while (track->_soundIndex != track->_sounds.size())
 				{
-					if (!track->_soundStarted)
+					if (!track->_soundBytesRemaining)
 					{
-						track->_soundStarted = true;
 						const auto nextIndex = track->_soundIndex + 1;
-						track->_soundSamplesRemaining = nextIndex != track->_sounds.size() ? _stepSamples * track->_sounds[nextIndex]._delay : track->_voice->duration();
+						track->_soundBytesRemaining = nextIndex != track->_sounds.size()
+							? _stepBytes * track->_sounds[nextIndex]._delay
+							: track->_voice->duration();
+						assert(track->_soundBytesRemaining % kSampleSize == 0);
 						track->_voice->start(track->_sounds[track->_soundIndex]._note, track->_normalizedWeight);
 					}
-					const auto samplesToGenerate = bufferBytes / kSampleSize - trackSamplesRendered;
-					if (!samplesToGenerate)
+					const auto bytesToGenerate = std::min(track->_soundBytesRemaining, bufferBytes - trackOffset);
+					if (!bytesToGenerate)
 						break;
-					const auto samplesGenerated = std::min(track->_soundSamplesRemaining, samplesToGenerate);
-					track->_voice->render(static_cast<float*>(buffer) + trackSamplesRendered, samplesGenerated);
-					track->_soundSamplesRemaining -= samplesGenerated;
-					trackSamplesRendered += samplesGenerated;
-					if (!track->_soundSamplesRemaining)
-					{
+					track->_voice->render(static_cast<std::byte*>(buffer) + trackOffset, bytesToGenerate);
+					track->_soundBytesRemaining -= bytesToGenerate;
+					trackOffset += bytesToGenerate;
+					if (!track->_soundBytesRemaining)
 						++track->_soundIndex;
-						track->_soundStarted = false;
-					}
 				}
-				samplesRendered = std::max(samplesRendered, trackSamplesRendered);
+				offset = std::max(offset, trackOffset);
 			}
-			return samplesRendered * kSampleSize;
+			return offset;
 		}
 
 	public:
@@ -427,8 +422,7 @@ namespace
 			const float _normalizedWeight;
 			std::vector<aulos::Sound> _sounds;
 			size_t _soundIndex = 0;
-			bool _soundStarted = false;
-			size_t _soundSamplesRemaining = 0;
+			size_t _soundBytesRemaining = 0;
 
 			TrackState(const aulos::Voice& voice, float normalizedWeight, unsigned samplingRate)
 				: _voice{ aulos::VoiceRenderer::create(voice, samplingRate) }
@@ -438,7 +432,7 @@ namespace
 		};
 
 		const unsigned _samplingRate;
-		const size_t _stepSamples;
+		const size_t _stepBytes;
 		std::vector<std::unique_ptr<TrackState>> _tracks;
 	};
 }
