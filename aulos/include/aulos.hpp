@@ -18,6 +18,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 namespace aulos
 {
@@ -56,6 +57,31 @@ namespace aulos
 			: _data{ data }, _size{ size } {}
 	};
 
+	enum class Wave
+	{
+		Linear,
+	};
+
+	struct Point
+	{
+		float _delay = 0.f;
+		float _value = 0.f;
+
+		constexpr Point() noexcept = default;
+		constexpr Point(float delay, float value) noexcept
+			: _delay{ delay }, _value{ value } {}
+	};
+
+	// Specifies how to generate a waveform for a sound.
+	struct Voice
+	{
+		Wave _wave = Wave::Linear;
+		float _oscillation = 0.f;
+		std::vector<Point> _amplitudeEnvelope;
+		std::vector<Point> _frequencyEnvelope;
+		std::vector<Point> _asymmetryEnvelope;
+	};
+
 	struct Track
 	{
 		size_t _voice = 0;
@@ -66,7 +92,7 @@ namespace aulos
 			: _voice{ voice }, _weight{ weight } {}
 	};
 
-	// A fragment specifies when and how to play a sequence.
+	// Specifies when and how to play a sequence.
 	struct Fragment
 	{
 		size_t _delay = 0;    // Steps from the beginning of the previous fragment.
@@ -99,6 +125,8 @@ namespace aulos
 	class VoiceRenderer
 	{
 	public:
+		[[nodiscard]] static std::unique_ptr<VoiceRenderer> create(const Voice&, unsigned samplingRate);
+
 		virtual ~VoiceRenderer() noexcept = default;
 
 		virtual size_t duration() const noexcept = 0;

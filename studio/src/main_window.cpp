@@ -115,6 +115,8 @@ void MainWindow::onNoteClicked()
 		}
 		buffer += '\n';
 	}
+	buffer += "@tracks\n";
+	buffer += "1 1 1\n";
 	buffer += "@sequences\n";
 	buffer += "1 " + button->text().toUtf8() + "\n";
 	buffer += "@fragments\n";

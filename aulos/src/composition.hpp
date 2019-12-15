@@ -19,48 +19,12 @@
 
 #include <aulos.hpp>
 
-#include <limits>
-#include <vector>
-
 namespace aulos
 {
-	enum class WaveType
-	{
-		Linear,
-	};
-
-	struct Wave
-	{
-		WaveType _type = WaveType::Linear;
-		double _oscillation = 0.0;
-	};
-
-	struct EnvelopeData
-	{
-		struct Point
-		{
-			float _delay;
-			float _value;
-
-			constexpr Point(float delay, float value) noexcept
-				: _delay{ delay }, _value{ value } {}
-		};
-
-		std::vector<Point> _points;
-	};
-
-	struct VoiceData
-	{
-		Wave _wave;
-		EnvelopeData _amplitude;
-		EnvelopeData _frequency;
-		EnvelopeData _asymmetry;
-	};
-
 	struct CompositionImpl final : public Composition
 	{
 		float _speed;
-		std::vector<VoiceData> _voices;
+		std::vector<Voice> _voices;
 		std::vector<Track> _tracks;
 		std::vector<std::vector<Sound>> _sequences;
 		std::vector<Fragment> _fragments;

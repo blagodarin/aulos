@@ -66,10 +66,10 @@ namespace
 			double _value;
 		};
 
-		SampledEnvelope(const aulos::EnvelopeData& envelope, size_t samplingRate) noexcept
+		SampledEnvelope(const std::vector<aulos::Point>& envelope, size_t samplingRate) noexcept
 		{
-			assert(envelope._points.size() <= _points.size());
-			for (const auto& point : envelope._points)
+			assert(envelope.size() <= _points.size());
+			for (const auto& point : envelope)
 			{
 				assert(point._delay >= 0.f);
 				_points[_size++] = { static_cast<size_t>(double{ point._delay } * samplingRate), point._value };
@@ -218,9 +218,9 @@ namespace
 	class VoiceRendererImpl : public aulos::VoiceRenderer
 	{
 	public:
-		VoiceRendererImpl(unsigned samplingRate, const aulos::EnvelopeData& amplitudeEnvelope, const aulos::EnvelopeData& frequencyEnvelope)
-			: _amplitudeEnvelope{ amplitudeEnvelope, samplingRate }
-			, _frequencyEnvelope{ frequencyEnvelope, samplingRate }
+		VoiceRendererImpl(const aulos::Voice& voice, unsigned samplingRate)
+			: _amplitudeEnvelope{ voice._amplitudeEnvelope, samplingRate }
+			, _frequencyEnvelope{ voice._frequencyEnvelope, samplingRate }
 		{
 		}
 
@@ -231,7 +231,7 @@ namespace
 
 	protected:
 		SampledEnvelope _amplitudeEnvelope;
-		AmplitudeModulator _amplitudeModulator{_amplitudeEnvelope};
+		AmplitudeModulator _amplitudeModulator{ _amplitudeEnvelope };
 		SampledEnvelope _frequencyEnvelope;
 		LinearModulator _frequencyModulator{ _frequencyEnvelope };
 	};
@@ -239,10 +239,10 @@ namespace
 	class TwoPartWaveBase : public VoiceRendererImpl
 	{
 	public:
-		TwoPartWaveBase(unsigned samplingRate, const aulos::EnvelopeData& amplitudeEnvelope, const aulos::EnvelopeData& frequencyEnvelope, const aulos::EnvelopeData& asymmetryEnvelope, double oscillation) noexcept
-			: VoiceRendererImpl{ samplingRate, amplitudeEnvelope, frequencyEnvelope }
-			, _asymmetryEnvelope{ asymmetryEnvelope, samplingRate }
-			, _oscillation{ oscillation }
+		TwoPartWaveBase(const aulos::Voice& voice, unsigned samplingRate) noexcept
+			: VoiceRendererImpl{ voice, samplingRate }
+			, _asymmetryEnvelope{ voice._asymmetryEnvelope, samplingRate }
+			, _oscillation{ voice._oscillation }
 			, _samplingRate{ static_cast<double>(samplingRate) }
 		{
 		}
@@ -345,26 +345,14 @@ namespace
 		}
 	};
 
-	std::unique_ptr<aulos::VoiceRenderer> createVoiceRenderer(const aulos::VoiceData& voice, unsigned samplingRate)
-	{
-		switch (voice._wave._type)
-		{
-		case aulos::WaveType::Linear: return std::make_unique<TwoPartWave<LinearOscillator>>(samplingRate, voice._amplitude, voice._frequency, voice._asymmetry, voice._wave._oscillation);
-		}
-		return {};
-	}
-}
-
-namespace aulos
-{
-	class RendererImpl final : public Renderer
+	class RendererImpl final : public aulos::Renderer
 	{
 	public:
-		RendererImpl(const CompositionImpl& composition, unsigned samplingRate)
+		RendererImpl(const aulos::CompositionImpl& composition, unsigned samplingRate)
 			: _samplingRate{ samplingRate }
 			, _stepSamples{ static_cast<size_t>(std::lround(_samplingRate / composition._speed)) }
 		{
-			const auto totalWeight = static_cast<float>(std::reduce(composition._tracks.cbegin(), composition._tracks.cend(), 0u, [](unsigned weight, const Track& track) { return weight + track._weight; }));
+			const auto totalWeight = static_cast<float>(std::reduce(composition._tracks.cbegin(), composition._tracks.cend(), 0u, [](unsigned weight, const aulos::Track& track) { return weight + track._weight; }));
 			_tracks.reserve(composition._tracks.size());
 			for (const auto& track : composition._tracks)
 				_tracks.emplace_back(std::make_unique<TrackState>(composition._voices[track._voice], track._weight / totalWeight, samplingRate));
@@ -373,7 +361,7 @@ namespace aulos
 			{
 				fragmentOffset += fragment._delay;
 				auto& trackSounds = _tracks[fragment._track]->_sounds;
-				auto lastSoundOffset = std::reduce(trackSounds.cbegin(), trackSounds.cend(), size_t{}, [](size_t offset, const Sound& sound) { return offset + sound._delay; });
+				auto lastSoundOffset = std::reduce(trackSounds.cbegin(), trackSounds.cend(), size_t{}, [](size_t offset, const aulos::Sound& sound) { return offset + sound._delay; });
 				while (!trackSounds.empty() && lastSoundOffset >= fragmentOffset)
 				{
 					lastSoundOffset -= trackSounds.back()._delay;
@@ -435,15 +423,15 @@ namespace aulos
 	public:
 		struct TrackState
 		{
-			std::unique_ptr<VoiceRenderer> _voice;
+			std::unique_ptr<aulos::VoiceRenderer> _voice;
 			const float _normalizedWeight;
-			std::vector<Sound> _sounds;
+			std::vector<aulos::Sound> _sounds;
 			size_t _soundIndex = 0;
 			bool _soundStarted = false;
 			size_t _soundSamplesRemaining = 0;
 
-			TrackState(const VoiceData& voice, float normalizedWeight, unsigned samplingRate)
-				: _voice{ createVoiceRenderer(voice, samplingRate) }
+			TrackState(const aulos::Voice& voice, float normalizedWeight, unsigned samplingRate)
+				: _voice{ aulos::VoiceRenderer::create(voice, samplingRate) }
 				, _normalizedWeight{ normalizedWeight }
 			{
 			}
@@ -453,6 +441,18 @@ namespace aulos
 		const size_t _stepSamples;
 		std::vector<std::unique_ptr<TrackState>> _tracks;
 	};
+}
+
+namespace aulos
+{
+	std::unique_ptr<VoiceRenderer> VoiceRenderer::create(const Voice& voice, unsigned samplingRate)
+	{
+		switch (voice._wave)
+		{
+		case Wave::Linear: return std::make_unique<TwoPartWave<LinearOscillator>>(voice, samplingRate);
+		}
+		return {};
+	}
 
 	std::unique_ptr<Renderer> Renderer::create(const Composition& composition, unsigned samplingRate)
 	{

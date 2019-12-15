@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <cassert>
 #include <charconv>
+#include <limits>
 #include <numeric>
 #include <optional>
 #include <stdexcept>
@@ -65,7 +66,7 @@ namespace aulos
 		size_t line = 1;
 		const char* lineBase = source;
 		Section currentSection = Section::Initial;
-		VoiceData* currentVoice = nullptr;
+		Voice* currentVoice = nullptr;
 		unsigned lastFragmentDelay = 0;
 
 		const auto location = [&]() -> Location { return { line, source - lineBase }; };
@@ -158,33 +159,35 @@ namespace aulos
 			return *result;
 		};
 
-		const auto parseNote = [&](std::vector<Sound>& sequence, size_t& delay, const char* data, size_t baseOffset) {
+		const auto parseNote = [&](std::vector<Sound>& sequence, size_t& delay, size_t baseOffset) {
+			assert(*source >= 'A' && *source <= 'G');
 			assert(baseOffset >= 0 && baseOffset < 12);
-			if (*data == '#')
+			++source;
+			if (*source == '#')
 			{
 				if (baseOffset == 11)
 					throw CompositionError{ location(), "Note overflow" };
 				++baseOffset;
-				++data;
+				++source;
 			}
-			else if (*data == 'b')
+			else if (*source == 'b')
 			{
 				if (!baseOffset)
 					throw CompositionError{ location(), "Note underflow" };
 				--baseOffset;
-				++data;
+				++source;
 			}
-			if (*data < '0' || *data > '9')
+			if (*source < '0' || *source > '9')
 				throw CompositionError{ location(), "Bad note" };
-			sequence.emplace_back(delay, static_cast<Note>((*data - '0') * 12 + baseOffset));
+			sequence.emplace_back(delay, static_cast<Note>((*source - '0') * 12 + baseOffset));
 			delay = 1;
-			return data + 1;
+			++source;
 		};
 
-		const auto parseNotes = [&](std::vector<Sound>& sequence) {
+		const auto parseSequence = [&](std::vector<Sound>& sequence) {
 			for (size_t delay = 0;;)
 			{
-				switch (*source++)
+				switch (*source)
 				{
 				case '\0':
 					return false;
@@ -194,36 +197,36 @@ namespace aulos
 					return true;
 				case '\t':
 				case ' ':
-					while (*source == ' ' || *source == '\t')
-						++source;
 					break;
 				case '.':
 					++delay;
+					++source;
 					break;
 				case 'A':
-					source = parseNote(sequence, delay, source, 9);
+					parseNote(sequence, delay, 9);
 					break;
 				case 'B':
-					source = parseNote(sequence, delay, source, 11);
+					parseNote(sequence, delay, 11);
 					break;
 				case 'C':
-					source = parseNote(sequence, delay, source, 0);
+					parseNote(sequence, delay, 0);
 					break;
 				case 'D':
-					source = parseNote(sequence, delay, source, 2);
+					parseNote(sequence, delay, 2);
 					break;
 				case 'E':
-					source = parseNote(sequence, delay, source, 4);
+					parseNote(sequence, delay, 4);
 					break;
 				case 'F':
-					source = parseNote(sequence, delay, source, 5);
+					parseNote(sequence, delay, 5);
 					break;
 				case 'G':
-					source = parseNote(sequence, delay, source, 7);
+					parseNote(sequence, delay, 7);
 					break;
 				default:
 					throw CompositionError{ location(), "Bad note" };
 				}
+				skipSpaces();
 			}
 		};
 
@@ -239,7 +242,7 @@ namespace aulos
 					const auto decay = readFloat(0.f, kMaxEnvelopePartDuration);
 					const auto sustain = readFloat(0.f, 1.f);
 					const auto release = readFloat(0.f, kMaxEnvelopePartDuration);
-					currentVoice->_amplitude._points = { { attack, 1.f }, { decay, sustain }, { release, 0.f } };
+					currentVoice->_amplitudeEnvelope = { { attack, 1.f }, { decay, sustain }, { release, 0.f } };
 				}
 				else if (type == "ahdsr")
 				{
@@ -248,7 +251,7 @@ namespace aulos
 					const auto decay = readFloat(0.f, kMaxEnvelopePartDuration);
 					const auto sustain = readFloat(0.f, 1.f);
 					const auto release = readFloat(0.f, kMaxEnvelopePartDuration);
-					currentVoice->_amplitude._points = { { attack, 1.f }, { hold, 1.f }, { decay, sustain }, { release, 0.f } };
+					currentVoice->_amplitudeEnvelope = { { attack, 1.f }, { hold, 1.f }, { decay, sustain }, { release, 0.f } };
 				}
 				else
 					throw CompositionError{ location(), "Bad envelope type" };
@@ -257,22 +260,22 @@ namespace aulos
 			{
 				if (currentSection != Section::Voice)
 					throw CompositionError{ location(), "Unexpected command" };
-				std::vector<EnvelopeData::Point> points;
+				std::vector<Point> points;
 				points.emplace_back(0.f, readFloat(0.f, 1.f));
 				while (const auto delay = tryReadFloat(0.f, kMaxEnvelopePartDuration))
 					points.emplace_back(*delay, readFloat(0.f, 1.f));
-				currentVoice->_asymmetry._points = std::move(points);
+				currentVoice->_asymmetryEnvelope = std::move(points);
 			}
 			else if (command == "frequency")
 			{
 				if (currentSection != Section::Voice)
 					throw CompositionError{ location(), "Unexpected command" };
 				constexpr auto minFrequency = std::numeric_limits<float>::min();
-				std::vector<EnvelopeData::Point> points;
+				std::vector<Point> points;
 				points.emplace_back(0.f, readFloat(minFrequency, 1.f));
 				while (const auto delay = tryReadFloat(0.f, kMaxEnvelopePartDuration))
 					points.emplace_back(*delay, readFloat(minFrequency, 1.f));
-				currentVoice->_frequency._points = std::move(points);
+				currentVoice->_frequencyEnvelope = std::move(points);
 			}
 			else if (command == "wave")
 			{
@@ -281,18 +284,18 @@ namespace aulos
 				if (const auto type = readIdentifier(); type == "linear")
 				{
 					const auto oscillation = tryReadFloat(0.f, 1.f);
-					currentVoice->_wave._type = WaveType::Linear;
-					currentVoice->_wave._oscillation = oscillation ? *oscillation : 0.f;
+					currentVoice->_wave = Wave::Linear;
+					currentVoice->_oscillation = oscillation ? *oscillation : 1.f;
 				}
 				else if (type == "rectangle")
 				{
-					currentVoice->_wave._type = WaveType::Linear;
-					currentVoice->_wave._oscillation = 0.0;
+					currentVoice->_wave = Wave::Linear;
+					currentVoice->_oscillation = 0.f;
 				}
 				else if (type == "triangle")
 				{
-					currentVoice->_wave._type = WaveType::Linear;
-					currentVoice->_wave._oscillation = 1.0;
+					currentVoice->_wave = Wave::Linear;
+					currentVoice->_oscillation = 1.f;
 				}
 				else
 					throw CompositionError{ location(), "Bad voice wave type" };
@@ -341,7 +344,7 @@ namespace aulos
 				case Section::Sequences: {
 					const auto sequenceIndex = static_cast<unsigned>(_sequences.size() + 1);
 					readUnsigned(sequenceIndex, sequenceIndex);
-					parseNotes(_sequences.emplace_back());
+					parseSequence(_sequences.emplace_back());
 					break;
 				}
 				case Section::Tracks: {
