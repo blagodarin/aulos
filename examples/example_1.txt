@@ -1,3 +1,5 @@
+; Sergei Blagodarin - Example 1
+
 speed 10
 
 @voice 1
@@ -5,20 +7,22 @@ wave triangle
 amplitude adsr 0.01 0.04 0.5 0.95
 frequency 0.8 0.01 0.8 0.04 1.0 0.95 0.99
 asymmetry 0.5 0.05 0.9 0.95 0.0
-weight 2
 
 @voice 2
 wave triangle
 amplitude adsr 0.02 0.08 0.25 0.9
 frequency 0.8 0.02 1.0 0.08 1.0 0.9 0.99
 asymmetry 0.1 0.02 0.8 0.08 0.8 0.9 0.1
-weight 3
 
 @voice 3
 wave triangle
 amplitude ahdsr 0.01 0.04 0.05 0.5 0.9
 asymmetry 1.0
-weight 1
+
+@tracks
+1 1 2
+2 2 3
+3 3 1
 
 @sequences
 1 B2 . F#3 . E3 . F#3 . C#3 . D3 . E3 . D3 . A#2 . B2 . C#3 . D3 . E3 . D3 . C#3 . F#3 . G3 . F#3 . E3 . D3 . E3 . D3 . C#3 . B2 . F#2 . G#2 . A#2 . B2 . A#2 . B2 . C#3 . D3 .

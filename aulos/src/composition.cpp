@@ -57,6 +57,7 @@ namespace aulos
 		{
 			Initial,
 			Voice,
+			Tracks,
 			Sequences,
 			Fragments,
 		};
@@ -296,13 +297,6 @@ namespace aulos
 				else
 					throw CompositionError{ location(), "Bad voice wave type" };
 			}
-			else if (command == "weight")
-			{
-				if (currentSection != Section::Voice)
-					throw CompositionError{ location(), "Unexpected command" };
-				currentVoice->_weight = readUnsigned(1, 256);
-				consumeEndOfLine();
-			}
 			else if (command == "speed")
 			{
 				if (currentSection != Section::Initial)
@@ -350,9 +344,17 @@ namespace aulos
 					parseNotes(_sequences.emplace_back());
 					break;
 				}
+				case Section::Tracks: {
+					const auto trackIndex = static_cast<unsigned>(_tracks.size() + 1);
+					readUnsigned(trackIndex, trackIndex);
+					const auto voiceIndex = readUnsigned(1, static_cast<unsigned>(_voices.size()));
+					const auto weight = tryReadUnsigned(1, 256);
+					_tracks.emplace_back(voiceIndex - 1, weight ? *weight : 1);
+					break;
+				}
 				case Section::Fragments: {
 					const auto nextFragmentDelay = readUnsigned(0, std::numeric_limits<unsigned>::max());
-					while (const auto trackIndex = tryReadUnsigned(1, static_cast<unsigned>(_voices.size())))
+					while (const auto trackIndex = tryReadUnsigned(1, static_cast<unsigned>(_tracks.size())))
 					{
 						const auto sequenceIndex = readUnsigned(1, static_cast<unsigned>(_sequences.size()));
 						_fragments.emplace_back(std::exchange(lastFragmentDelay, 0), *trackIndex - 1, sequenceIndex - 1);
@@ -378,6 +380,11 @@ namespace aulos
 					consumeEndOfLine();
 					currentSection = Section::Voice;
 					currentVoice = &_voices.emplace_back();
+				}
+				else if (section == "tracks")
+				{
+					consumeEndOfLine();
+					currentSection = Section::Tracks;
 				}
 				else if (section == "sequences")
 				{

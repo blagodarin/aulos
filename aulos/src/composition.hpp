@@ -55,13 +55,13 @@ namespace aulos
 		EnvelopeData _amplitude;
 		EnvelopeData _frequency;
 		EnvelopeData _asymmetry;
-		unsigned _weight = 1;
 	};
 
 	struct CompositionImpl final : public Composition
 	{
 		float _speed;
 		std::vector<VoiceData> _voices;
+		std::vector<Track> _tracks;
 		std::vector<std::vector<Sound>> _sequences;
 		std::vector<Fragment> _fragments;
 
@@ -74,5 +74,7 @@ namespace aulos
 		float speed() const noexcept override { return _speed; }
 		Sequence sequence(size_t index) const noexcept override;
 		size_t sequenceCount() const noexcept override { return _sequences.size(); }
+		Track track(size_t index) const noexcept override { return index < _tracks.size() ? _tracks[index] : Track{}; }
+		size_t trackCount() const noexcept override { return _tracks.size(); }
 	};
 }

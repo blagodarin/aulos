@@ -364,10 +364,10 @@ namespace aulos
 			: _samplingRate{ samplingRate }
 			, _stepSamples{ static_cast<size_t>(std::lround(_samplingRate / composition._speed)) }
 		{
-			const auto totalWeight = static_cast<float>(std::reduce(composition._voices.cbegin(), composition._voices.cend(), 0u, [](unsigned weight, const VoiceData& voice) { return weight + voice._weight; }));
-			_tracks.reserve(composition._voices.size());
-			for (const auto& track : composition._voices)
-				_tracks.emplace_back(std::make_unique<Track>(track, totalWeight, samplingRate));
+			const auto totalWeight = static_cast<float>(std::reduce(composition._tracks.cbegin(), composition._tracks.cend(), 0u, [](unsigned weight, const Track& track) { return weight + track._weight; }));
+			_tracks.reserve(composition._tracks.size());
+			for (const auto& track : composition._tracks)
+				_tracks.emplace_back(std::make_unique<TrackState>(composition._voices[track._voice], track._weight / totalWeight, samplingRate));
 			size_t fragmentOffset = 0;
 			for (const auto& fragment : composition._fragments)
 			{
@@ -433,7 +433,7 @@ namespace aulos
 		}
 
 	public:
-		struct Track
+		struct TrackState
 		{
 			std::unique_ptr<VoiceRenderer> _voice;
 			const float _normalizedWeight;
@@ -442,16 +442,16 @@ namespace aulos
 			bool _soundStarted = false;
 			size_t _soundSamplesRemaining = 0;
 
-			Track(const VoiceData& voice, float totalWeight, unsigned samplingRate)
+			TrackState(const VoiceData& voice, float normalizedWeight, unsigned samplingRate)
 				: _voice{ createVoiceRenderer(voice, samplingRate) }
-				, _normalizedWeight{ voice._weight / totalWeight }
+				, _normalizedWeight{ normalizedWeight }
 			{
 			}
 		};
 
 		const unsigned _samplingRate;
 		const size_t _stepSamples;
-		std::vector<std::unique_ptr<Track>> _tracks;
+		std::vector<std::unique_ptr<TrackState>> _tracks;
 	};
 
 	std::unique_ptr<Renderer> Renderer::create(const Composition& composition, unsigned samplingRate)

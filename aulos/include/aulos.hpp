@@ -56,6 +56,16 @@ namespace aulos
 			: _data{ data }, _size{ size } {}
 	};
 
+	struct Track
+	{
+		size_t _voice = 0;
+		unsigned _weight = 0;
+
+		constexpr Track() noexcept = default;
+		constexpr Track(size_t voice, unsigned weight) noexcept
+			: _voice{ voice }, _weight{ weight } {}
+	};
+
 	// A fragment specifies when and how to play a sequence.
 	struct Fragment
 	{
@@ -81,6 +91,8 @@ namespace aulos
 		virtual float speed() const noexcept = 0;
 		virtual Sequence sequence(size_t index) const noexcept = 0;
 		virtual size_t sequenceCount() const noexcept = 0;
+		virtual Track track(size_t index) const noexcept = 0;
+		virtual size_t trackCount() const noexcept = 0;
 	};
 
 	// Generates audio data for a voice.
