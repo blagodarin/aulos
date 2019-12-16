@@ -81,22 +81,23 @@ void MainWindow::onNoteClicked()
 	aulos::Voice voice;
 	voice._wave = aulos::Wave::Linear;
 	voice._oscillation = static_cast<float>(_ui->oscillationSpin->value());
-	voice._amplitudeEnvelope.emplace_back(_ui->attackSpin->value(), 1.f);
+	voice._amplitudeEnvelope._initial = 0.f;
+	voice._amplitudeEnvelope._changes.emplace_back(_ui->attackSpin->value(), 1.f);
 	if (_ui->holdCheck->isChecked())
-		voice._amplitudeEnvelope.emplace_back(_ui->holdSpin->value(), 1.f);
-	voice._amplitudeEnvelope.emplace_back(_ui->decaySpin->value(), _ui->sustainSpin->value());
-	voice._amplitudeEnvelope.emplace_back(_ui->releaseSpin->value(), 0.f);
+		voice._amplitudeEnvelope._changes.emplace_back(_ui->holdSpin->value(), 1.f);
+	voice._amplitudeEnvelope._changes.emplace_back(_ui->decaySpin->value(), _ui->sustainSpin->value());
+	voice._amplitudeEnvelope._changes.emplace_back(_ui->releaseSpin->value(), 0.f);
 	if (auto i = _frequencyEnvelope.begin(); i->_check->isChecked())
 	{
-		voice._frequencyEnvelope.emplace_back(0.f, static_cast<float>(i->_value->value()));
+		voice._frequencyEnvelope._initial = static_cast<float>(i->_value->value());
 		for (++i; i != _frequencyEnvelope.end() && i->_check->isChecked(); ++i)
-			voice._frequencyEnvelope.emplace_back(static_cast<float>(i->_delay->value()), static_cast<float>(i->_value->value()));
+			voice._frequencyEnvelope._changes.emplace_back(static_cast<float>(i->_delay->value()), static_cast<float>(i->_value->value()));
 	}
 	if (auto i = _asymmetryEnvelope.begin(); i->_check->isChecked())
 	{
-		voice._asymmetryEnvelope.emplace_back(0.f, static_cast<float>(i->_value->value()));
+		voice._asymmetryEnvelope._initial = static_cast<float>(i->_value->value());
 		for (++i; i != _asymmetryEnvelope.end() && i->_check->isChecked(); ++i)
-			voice._asymmetryEnvelope.emplace_back(static_cast<float>(i->_delay->value()), static_cast<float>(i->_value->value()));
+			voice._asymmetryEnvelope._changes.emplace_back(static_cast<float>(i->_delay->value()), static_cast<float>(i->_value->value()));
 	}
 
 	const auto renderer = aulos::VoiceRenderer::create(voice, 48'000);

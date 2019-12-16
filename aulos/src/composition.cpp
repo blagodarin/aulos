@@ -236,13 +236,15 @@ namespace aulos
 			{
 				if (currentSection != Section::Voice)
 					throw CompositionError{ location(), "Unexpected command" };
+				auto& envelope = currentVoice->_amplitudeEnvelope;
+				envelope._initial = 0.f;
 				if (const auto type = readIdentifier(); type == "adsr")
 				{
 					const auto attack = readFloat(0.f, kMaxEnvelopePartDuration);
 					const auto decay = readFloat(0.f, kMaxEnvelopePartDuration);
 					const auto sustain = readFloat(0.f, 1.f);
 					const auto release = readFloat(0.f, kMaxEnvelopePartDuration);
-					currentVoice->_amplitudeEnvelope = { { attack, 1.f }, { decay, sustain }, { release, 0.f } };
+					envelope._changes = { { attack, 1.f }, { decay, sustain }, { release, 0.f } };
 				}
 				else if (type == "ahdsr")
 				{
@@ -251,7 +253,7 @@ namespace aulos
 					const auto decay = readFloat(0.f, kMaxEnvelopePartDuration);
 					const auto sustain = readFloat(0.f, 1.f);
 					const auto release = readFloat(0.f, kMaxEnvelopePartDuration);
-					currentVoice->_amplitudeEnvelope = { { attack, 1.f }, { hold, 1.f }, { decay, sustain }, { release, 0.f } };
+					envelope._changes = { { attack, 1.f }, { hold, 1.f }, { decay, sustain }, { release, 0.f } };
 				}
 				else
 					throw CompositionError{ location(), "Bad envelope type" };
@@ -260,22 +262,21 @@ namespace aulos
 			{
 				if (currentSection != Section::Voice)
 					throw CompositionError{ location(), "Unexpected command" };
-				std::vector<Point> points;
-				points.emplace_back(0.f, readFloat(0.f, 1.f));
+				auto& envelope = currentVoice->_asymmetryEnvelope;
+				envelope._initial = readFloat(0.f, 1.f);
+				envelope._changes.clear();
 				while (const auto delay = tryReadFloat(0.f, kMaxEnvelopePartDuration))
-					points.emplace_back(*delay, readFloat(0.f, 1.f));
-				currentVoice->_asymmetryEnvelope = std::move(points);
+					envelope._changes.emplace_back(*delay, readFloat(0.f, 1.f));
 			}
 			else if (command == "frequency")
 			{
 				if (currentSection != Section::Voice)
 					throw CompositionError{ location(), "Unexpected command" };
 				constexpr auto minFrequency = std::numeric_limits<float>::min();
-				std::vector<Point> points;
-				points.emplace_back(0.f, readFloat(minFrequency, 1.f));
+				auto& envelope = currentVoice->_frequencyEnvelope;
+				envelope._initial = readFloat(minFrequency, 1.f);
 				while (const auto delay = tryReadFloat(0.f, kMaxEnvelopePartDuration))
-					points.emplace_back(*delay, readFloat(minFrequency, 1.f));
-				currentVoice->_frequencyEnvelope = std::move(points);
+					envelope._changes.emplace_back(*delay, readFloat(minFrequency, 1.f));
 			}
 			else if (command == "wave")
 			{

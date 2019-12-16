@@ -66,10 +66,11 @@ namespace
 			double _value;
 		};
 
-		SampledEnvelope(const std::vector<aulos::Point>& envelope, size_t samplingRate) noexcept
+		SampledEnvelope(const aulos::Envelope& envelope, size_t samplingRate) noexcept
 		{
-			assert(envelope.size() <= _points.size());
-			for (const auto& point : envelope)
+			assert(envelope._changes.size() < _points.size());
+			_points[_size++] = { 0, envelope._initial };
+			for (const auto& point : envelope._changes)
 			{
 				assert(point._delay >= 0.f);
 				_points[_size++] = { static_cast<size_t>(double{ point._delay } * samplingRate), point._value };

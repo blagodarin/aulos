@@ -72,14 +72,23 @@ namespace aulos
 			: _delay{ delay }, _value{ value } {}
 	};
 
+	struct Envelope
+	{
+		float _initial = 0.f;
+		std::vector<Point> _changes;
+
+		Envelope(float initial) noexcept
+			: _initial{ initial } {}
+	};
+
 	// Specifies how to generate a waveform for a sound.
 	struct Voice
 	{
 		Wave _wave = Wave::Linear;
-		float _oscillation = 0.f;
-		std::vector<Point> _amplitudeEnvelope;
-		std::vector<Point> _frequencyEnvelope;
-		std::vector<Point> _asymmetryEnvelope;
+		float _oscillation = 1.f;
+		Envelope _amplitudeEnvelope{ 0.f };
+		Envelope _frequencyEnvelope{ 1.f };
+		Envelope _asymmetryEnvelope{ 0.f };
 	};
 
 	struct Track
