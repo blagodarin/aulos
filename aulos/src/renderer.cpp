@@ -108,7 +108,7 @@ namespace
 		void start(double value) noexcept
 		{
 			_nextPoint = std::find_if(_envelope.begin(), _envelope.end(), [](const SampledEnvelope::Point& point) { return point._delay > 0; });
-			_baseValue = _nextPoint != _envelope.begin() ? std::prev(_nextPoint)->_value : value;
+			_baseValue = value;
 			_offset = 0;
 			_currentValue = _baseValue;
 		}

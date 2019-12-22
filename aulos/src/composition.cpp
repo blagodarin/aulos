@@ -237,26 +237,10 @@ namespace aulos
 				if (currentSection != Section::Voice)
 					throw CompositionError{ location(), "Unexpected command" };
 				auto& envelope = currentVoice->_amplitudeEnvelope;
-				envelope._initial = 0.f;
-				if (const auto type = readIdentifier(); type == "adsr")
-				{
-					const auto attack = readFloat(0.f, kMaxEnvelopePartDuration);
-					const auto decay = readFloat(0.f, kMaxEnvelopePartDuration);
-					const auto sustain = readFloat(0.f, 1.f);
-					const auto release = readFloat(0.f, kMaxEnvelopePartDuration);
-					envelope._changes = { { attack, 1.f }, { decay, sustain }, { release, 0.f } };
-				}
-				else if (type == "ahdsr")
-				{
-					const auto attack = readFloat(0.f, kMaxEnvelopePartDuration);
-					const auto hold = readFloat(0.f, kMaxEnvelopePartDuration);
-					const auto decay = readFloat(0.f, kMaxEnvelopePartDuration);
-					const auto sustain = readFloat(0.f, 1.f);
-					const auto release = readFloat(0.f, kMaxEnvelopePartDuration);
-					envelope._changes = { { attack, 1.f }, { hold, 1.f }, { decay, sustain }, { release, 0.f } };
-				}
-				else
-					throw CompositionError{ location(), "Bad envelope type" };
+				envelope._initial = readFloat(0.f, 1.f);
+				envelope._changes.clear();
+				while (const auto delay = tryReadFloat(0.f, kMaxEnvelopePartDuration))
+					envelope._changes.emplace_back(*delay, readFloat(0.f, 1.f));
 			}
 			else if (command == "asymmetry")
 			{
@@ -287,16 +271,6 @@ namespace aulos
 					const auto oscillation = tryReadFloat(0.f, 1.f);
 					currentVoice->_wave = Wave::Linear;
 					currentVoice->_oscillation = oscillation ? *oscillation : 1.f;
-				}
-				else if (type == "rectangle")
-				{
-					currentVoice->_wave = Wave::Linear;
-					currentVoice->_oscillation = 0.f;
-				}
-				else if (type == "triangle")
-				{
-					currentVoice->_wave = Wave::Linear;
-					currentVoice->_oscillation = 1.f;
 				}
 				else
 					throw CompositionError{ location(), "Bad voice wave type" };
