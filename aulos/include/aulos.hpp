@@ -128,6 +128,8 @@ namespace aulos
 		virtual size_t sequenceCount() const noexcept = 0;
 		virtual Track track(size_t index) const noexcept = 0;
 		virtual size_t trackCount() const noexcept = 0;
+		virtual Voice voice(size_t index) const noexcept = 0;
+		virtual size_t voiceCount() const noexcept = 0;
 	};
 
 	// Generates audio data for a voice.

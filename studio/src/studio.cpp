@@ -46,7 +46,14 @@ Studio::Studio()
 		tr("E&xit"), [this] { close(); }, Qt::ALT + Qt::Key_F4);
 
 	const auto toolsMenu = menuBar->addMenu(tr("&Tools"));
-	toolsMenu->addAction(tr("&Voice Editor"), [this] { _voiceEditor->open(); });
+	toolsMenu->addAction(tr("&Voice Editor"), [this] {
+		aulos::Voice voice;
+		voice._amplitudeEnvelope._changes.emplace_back(.1f, 1.f);
+		voice._amplitudeEnvelope._changes.emplace_back(.4f, .5f);
+		voice._amplitudeEnvelope._changes.emplace_back(.5f, 0.f);
+		_voiceEditor->setVoice(voice);
+		_voiceEditor->open();
+	});
 
 	updateStatus();
 }

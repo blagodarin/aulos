@@ -23,7 +23,10 @@
 #include <cassert>
 
 #include <QAudioOutput>
+#include <QCheckBox>
+#include <QDoubleSpinBox>
 #include <QGridLayout>
+#include <QLabel>
 #include <QToolButton>
 
 #include "ui_voice_editor.h"
@@ -47,6 +50,7 @@ VoiceEditor::VoiceEditor(QWidget* parent)
 {
 	_ui->setupUi(this);
 
+	createEnvelopeEditor(_ui->amplitudeGroup, _amplitudeEnvelope, 0.0);
 	createEnvelopeEditor(_ui->frequencyGroup, _frequencyEnvelope, 0.5);
 	createEnvelopeEditor(_ui->asymmetryGroup, _asymmetryEnvelope, 0.0);
 
@@ -77,31 +81,66 @@ VoiceEditor::VoiceEditor(QWidget* parent)
 
 VoiceEditor::~VoiceEditor() = default;
 
-void VoiceEditor::onNoteClicked()
+void VoiceEditor::setVoice(const aulos::Voice& voice)
 {
-	aulos::Voice voice;
-	voice._wave = aulos::Wave::Linear;
-	voice._oscillation = static_cast<float>(_ui->oscillationSpin->value());
-	voice._amplitudeEnvelope._initial = 0.f;
-	voice._amplitudeEnvelope._changes.emplace_back(_ui->attackSpin->value(), 1.f);
-	if (_ui->holdCheck->isChecked())
-		voice._amplitudeEnvelope._changes.emplace_back(_ui->holdSpin->value(), 1.f);
-	voice._amplitudeEnvelope._changes.emplace_back(_ui->decaySpin->value(), _ui->sustainSpin->value());
-	voice._amplitudeEnvelope._changes.emplace_back(_ui->releaseSpin->value(), 0.f);
+	const auto setEnvelope = [](std::vector<EnvelopePoint>& dst, const aulos::Envelope& src) {
+		assert(dst[0]._check->isChecked());
+		dst[0]._delay->setValue(0.0);
+		dst[0]._value->setValue(src._initial);
+		for (size_t i = 1; i < dst.size(); ++i)
+		{
+			auto& dstPoint = dst[i];
+			const auto use = i <= src._changes.size();
+			dstPoint._check->setChecked(use);
+			if (use)
+			{
+				auto& srcPoint = src._changes[i - 1];
+				dstPoint._delay->setValue(srcPoint._delay);
+				dstPoint._value->setValue(srcPoint._value);
+			}
+			else
+			{
+				dstPoint._delay->setValue(0.0);
+				dstPoint._value->setValue(0.0);
+			}
+		}
+	};
+
+	_ui->oscillationSpin->setValue(voice._oscillation);
+	setEnvelope(_amplitudeEnvelope, voice._amplitudeEnvelope);
+	setEnvelope(_frequencyEnvelope, voice._frequencyEnvelope);
+	setEnvelope(_asymmetryEnvelope, voice._asymmetryEnvelope);
+}
+
+aulos::Voice VoiceEditor::voice()
+{
+	aulos::Voice result;
+	result._wave = aulos::Wave::Linear;
+	result._oscillation = static_cast<float>(_ui->oscillationSpin->value());
+	if (auto i = _amplitudeEnvelope.begin(); i->_check->isChecked())
+	{
+		result._amplitudeEnvelope._initial = static_cast<float>(i->_value->value());
+		for (++i; i != _amplitudeEnvelope.end() && i->_check->isChecked(); ++i)
+			result._amplitudeEnvelope._changes.emplace_back(static_cast<float>(i->_delay->value()), static_cast<float>(i->_value->value()));
+	}
 	if (auto i = _frequencyEnvelope.begin(); i->_check->isChecked())
 	{
-		voice._frequencyEnvelope._initial = static_cast<float>(i->_value->value());
+		result._frequencyEnvelope._initial = static_cast<float>(i->_value->value());
 		for (++i; i != _frequencyEnvelope.end() && i->_check->isChecked(); ++i)
-			voice._frequencyEnvelope._changes.emplace_back(static_cast<float>(i->_delay->value()), static_cast<float>(i->_value->value()));
+			result._frequencyEnvelope._changes.emplace_back(static_cast<float>(i->_delay->value()), static_cast<float>(i->_value->value()));
 	}
 	if (auto i = _asymmetryEnvelope.begin(); i->_check->isChecked())
 	{
-		voice._asymmetryEnvelope._initial = static_cast<float>(i->_value->value());
+		result._asymmetryEnvelope._initial = static_cast<float>(i->_value->value());
 		for (++i; i != _asymmetryEnvelope.end() && i->_check->isChecked(); ++i)
-			voice._asymmetryEnvelope._changes.emplace_back(static_cast<float>(i->_delay->value()), static_cast<float>(i->_value->value()));
+			result._asymmetryEnvelope._changes.emplace_back(static_cast<float>(i->_delay->value()), static_cast<float>(i->_value->value()));
 	}
+	return result;
+}
 
-	const auto renderer = aulos::VoiceRenderer::create(voice, 48'000);
+void VoiceEditor::onNoteClicked()
+{
+	const auto renderer = aulos::VoiceRenderer::create(voice(), 48'000);
 	assert(renderer);
 
 	const auto button = qobject_cast<QAbstractButton*>(sender());
@@ -136,13 +175,14 @@ void VoiceEditor::createEnvelopeEditor(QWidget* parent, std::vector<EnvelopePoin
 	layout->addWidget(new QLabel{ tr("Delay"), parent }, 0, 1);
 	layout->addWidget(new QLabel{ tr("Value"), parent }, 0, 2);
 
-	for (int i = 1; i <= 5; ++i)
+	for (int i = 0; i < 5; ++i)
 	{
 		auto& point = envelope.emplace_back();
 
 		point._check = new QCheckBox{ tr("Point %1").arg(i), parent };
+		point._check->setChecked(i == 0);
 		point._check->setEnabled(i == 1);
-		layout->addWidget(point._check, i, 0);
+		layout->addWidget(point._check, i + 1, 0);
 
 		point._delay = new QDoubleSpinBox{ parent };
 		point._delay->setDecimals(2);
@@ -151,23 +191,30 @@ void VoiceEditor::createEnvelopeEditor(QWidget* parent, std::vector<EnvelopePoin
 		point._delay->setMinimum(0.0);
 		point._delay->setSingleStep(0.01);
 		point._delay->setValue(0.0);
-		layout->addWidget(point._delay, i, 1);
+		layout->addWidget(point._delay, i + 1, 1);
 
 		point._value = new QDoubleSpinBox{ parent };
 		point._value->setDecimals(2);
-		point._value->setEnabled(false);
+		point._value->setEnabled(i == 0);
 		point._value->setMaximum(1.0);
 		point._value->setMinimum(minimum);
 		point._value->setSingleStep(0.01);
 		point._value->setValue(1.0);
-		layout->addWidget(point._value, i, 2);
+		layout->addWidget(point._value, i + 1, 2);
 
-		if (i > 1)
+		if (i == 0)
 		{
-			const auto previousCheck = envelope[i - 2]._check;
+			point._delay->setButtonSymbols(QAbstractSpinBox::NoButtons);
+			point._delay->setFrame(false);
+			point._delay->setStyleSheet("background: transparent");
+		}
+		else
+		{
+			const auto previousCheck = envelope[i - 1]._check;
 			connect(previousCheck, &QCheckBox::toggled, point._check, &QWidget::setEnabled);
 			connect(point._check, &QCheckBox::toggled, point._delay, &QWidget::setEnabled);
-			connect(point._check, &QCheckBox::toggled, previousCheck, &QWidget::setDisabled);
+			if (i > 1)
+				connect(point._check, &QCheckBox::toggled, previousCheck, &QWidget::setDisabled);
 		}
 		connect(point._check, &QCheckBox::toggled, point._value, &QWidget::setEnabled);
 	}

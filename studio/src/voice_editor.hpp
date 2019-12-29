@@ -23,6 +23,11 @@
 #include <QBuffer>
 #include <QDialog>
 
+namespace aulos
+{
+	struct Voice;
+}
+
 class QAudioOutput;
 
 class Ui_VoiceEditor;
@@ -35,6 +40,9 @@ public:
 	VoiceEditor(QWidget*);
 	~VoiceEditor() override;
 
+	void setVoice(const aulos::Voice&);
+	aulos::Voice voice();
+
 private slots:
 	void onNoteClicked();
 
@@ -45,6 +53,7 @@ private:
 
 private:
 	const std::unique_ptr<Ui_VoiceEditor> _ui;
+	std::vector<EnvelopePoint> _amplitudeEnvelope;
 	std::vector<EnvelopePoint> _frequencyEnvelope;
 	std::vector<EnvelopePoint> _asymmetryEnvelope;
 	QByteArray _audioData;

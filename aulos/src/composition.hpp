@@ -40,5 +40,7 @@ namespace aulos
 		size_t sequenceCount() const noexcept override { return _sequences.size(); }
 		Track track(size_t index) const noexcept override { return index < _tracks.size() ? _tracks[index] : Track{}; }
 		size_t trackCount() const noexcept override { return _tracks.size(); }
+		Voice voice(size_t index) const noexcept override { return index < _voices.size() ? _voices[index] : Voice{}; }
+		size_t voiceCount() const noexcept override { return _voices.size(); }
 	};
 }
