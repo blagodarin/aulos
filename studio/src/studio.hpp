@@ -15,15 +15,39 @@
 // limitations under the License.
 //
 
-#include "studio.hpp"
+#include <memory>
 
-#include <QApplication>
+#include <QWidget>
 
-int main(int argc, char** argv)
+namespace aulos
 {
-	QApplication app{ argc, argv };
-	QCoreApplication::setApplicationName("Aulos Studio");
-	Studio studio;
-	studio.show();
-	return app.exec();
+	class Composition;
 }
+
+class VoiceEditor;
+
+class Studio : public QWidget
+{
+	Q_OBJECT
+
+public:
+	Studio();
+	~Studio() override;
+
+private:
+	void updateStatus();
+
+	void openComposition();
+	void closeComposition();
+
+private:
+	std::unique_ptr<aulos::Composition> _composition;
+	QString _compositionName;
+
+	std::unique_ptr<VoiceEditor> _voiceEditor;
+
+	QAction* _openAction;
+	QAction* _saveAction;
+	QAction* _saveAsAction;
+	QAction* _closeAction;
+};

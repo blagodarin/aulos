@@ -21,19 +21,19 @@
 
 #include <QByteArray>
 #include <QBuffer>
-#include <QWidget>
+#include <QDialog>
 
 class QAudioOutput;
 
-class Ui_MainWindow;
+class Ui_VoiceEditor;
 
-class MainWindow : public QWidget
+class VoiceEditor : public QDialog
 {
 	Q_OBJECT
 
 public:
-	MainWindow();
-	~MainWindow() override;
+	VoiceEditor(QWidget*);
+	~VoiceEditor() override;
 
 private slots:
 	void onNoteClicked();
@@ -44,7 +44,7 @@ private:
 	void createEnvelopeEditor(QWidget*, std::vector<EnvelopePoint>&, double minimum);
 
 private:
-	const std::unique_ptr<Ui_MainWindow> _ui;
+	const std::unique_ptr<Ui_VoiceEditor> _ui;
 	std::vector<EnvelopePoint> _frequencyEnvelope;
 	std::vector<EnvelopePoint> _asymmetryEnvelope;
 	QByteArray _audioData;

@@ -21,9 +21,11 @@ set(CMAKE_AUTOUIC ON)
 
 set(_src
 	src/main.cpp
-	src/main_window.cpp
-	src/main_window.hpp
-	src/main_window.ui
+	src/studio.cpp
+	src/studio.hpp
+	src/voice_editor.cpp
+	src/voice_editor.hpp
+	src/voice_editor.ui
 	)
 source_group("src" FILES ${_src})
 

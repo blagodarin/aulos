@@ -15,7 +15,7 @@
 // limitations under the License.
 //
 
-#include "main_window.hpp"
+#include "voice_editor.hpp"
 
 #include <aulos.hpp>
 
@@ -26,22 +26,23 @@
 #include <QGridLayout>
 #include <QToolButton>
 
-#include "ui_main_window.h"
+#include "ui_voice_editor.h"
 
 namespace
 {
 	const std::array<const char*, 12> noteNames{ "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
 }
 
-struct MainWindow::EnvelopePoint
+struct VoiceEditor::EnvelopePoint
 {
 	QCheckBox* _check = nullptr;
 	QDoubleSpinBox* _delay = nullptr;
 	QDoubleSpinBox* _value = nullptr;
 };
 
-MainWindow::MainWindow()
-	: _ui{ std::make_unique<Ui_MainWindow>() }
+VoiceEditor::VoiceEditor(QWidget* parent)
+	: QDialog{ parent }
+	, _ui{ std::make_unique<Ui_VoiceEditor>() }
 	, _audioBuffer{ &_audioData }
 {
 	_ui->setupUi(this);
@@ -60,7 +61,7 @@ MainWindow::MainWindow()
 			button->setFixedSize({ 40, 30 });
 			button->setStyleSheet(name[1] == '#' ? "background-color: black; color: white" : "background-color: white; color: black");
 			button->setProperty("note", octave * 12 + column);
-			connect(button, &QAbstractButton::clicked, this, &MainWindow::onNoteClicked);
+			connect(button, &QAbstractButton::clicked, this, &VoiceEditor::onNoteClicked);
 			noteLayout->addWidget(button, row, column);
 		}
 
@@ -74,9 +75,9 @@ MainWindow::MainWindow()
 	_audioOutput = std::make_unique<QAudioOutput>(format);
 }
 
-MainWindow::~MainWindow() = default;
+VoiceEditor::~VoiceEditor() = default;
 
-void MainWindow::onNoteClicked()
+void VoiceEditor::onNoteClicked()
 {
 	aulos::Voice voice;
 	voice._wave = aulos::Wave::Linear;
@@ -129,7 +130,7 @@ void MainWindow::onNoteClicked()
 	_audioOutput->start(&_audioBuffer);
 }
 
-void MainWindow::createEnvelopeEditor(QWidget* parent, std::vector<EnvelopePoint>& envelope, double minimum)
+void VoiceEditor::createEnvelopeEditor(QWidget* parent, std::vector<EnvelopePoint>& envelope, double minimum)
 {
 	const auto layout = new QGridLayout{ parent };
 	layout->addWidget(new QLabel{ tr("Delay"), parent }, 0, 1);
