@@ -26,6 +26,8 @@ set(_src
 	src/voice_editor.cpp
 	src/voice_editor.hpp
 	src/voice_editor.ui
+	src/voices_model.hpp
+	src/voices_model.cpp
 	)
 source_group("src" FILES ${_src})
 

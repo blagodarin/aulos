@@ -18,21 +18,23 @@
 #include "studio.hpp"
 
 #include "voice_editor.hpp"
+#include "voices_model.hpp"
 
 #include <aulos.hpp>
 
 #include <QCoreApplication>
 #include <QFileDialog>
+#include <QGridLayout>
+#include <QHeaderView>
 #include <QMenuBar>
+#include <QStatusBar>
+#include <QTableView>
 
 Studio::Studio()
-	: _voiceEditor{ std::make_unique<VoiceEditor>(this) }
+	: _voicesModel{ std::make_unique<VoicesModel>() }
+	, _voiceEditor{ std::make_unique<VoiceEditor>(this) }
 {
-	setMinimumSize({ 400, 300 });
-
-	const auto menuBar = new QMenuBar{ this };
-
-	const auto fileMenu = menuBar->addMenu(tr("&File"));
+	const auto fileMenu = menuBar()->addMenu(tr("&File"));
 	_openAction = fileMenu->addAction(
 		tr("&Open..."), [this] { openComposition(); }, Qt::CTRL + Qt::Key_O);
 	_saveAction = fileMenu->addAction(
@@ -45,7 +47,7 @@ Studio::Studio()
 	fileMenu->addAction(
 		tr("E&xit"), [this] { close(); }, Qt::ALT + Qt::Key_F4);
 
-	const auto toolsMenu = menuBar->addMenu(tr("&Tools"));
+	const auto toolsMenu = menuBar()->addMenu(tr("&Tools"));
 	toolsMenu->addAction(tr("&Voice Editor"), [this] {
 		aulos::Voice voice;
 		voice._amplitudeEnvelope._changes.emplace_back(.1f, 1.f);
@@ -55,6 +57,19 @@ Studio::Studio()
 		_voiceEditor->open();
 	});
 
+	const auto centralWidget = new QWidget{ this };
+	setCentralWidget(centralWidget);
+
+	const auto layout = new QGridLayout{ centralWidget };
+
+	const auto voicesView = new QTableView{ centralWidget };
+	voicesView->setModel(_voicesModel.get());
+	voicesView->setSelectionBehavior(QAbstractItemView::SelectRows);
+	voicesView->setSelectionMode(QAbstractItemView::SingleSelection);
+	voicesView->horizontalHeader()->setStretchLastSection(true);
+	voicesView->horizontalHeader()->setVisible(false);
+	layout->addWidget(voicesView, 0, 0);
+
 	updateStatus();
 }
 
@@ -62,10 +77,15 @@ Studio::~Studio() = default;
 
 void Studio::updateStatus()
 {
-	setWindowTitle(_compositionName.isEmpty() ? QCoreApplication::applicationName() : QStringLiteral("%1 - %2").arg(_compositionName, QCoreApplication::applicationName()));
+	setWindowTitle(_composition ? QStringLiteral("%1 - %2").arg(_compositionName, QCoreApplication::applicationName()) : QCoreApplication::applicationName());
 	_saveAction->setDisabled(true);
 	_saveAsAction->setDisabled(true);
 	_closeAction->setDisabled(!_composition);
+	_voicesModel->reset(_composition.get());
+	if (_composition)
+		statusBar()->showMessage(_compositionPath);
+	else
+		statusBar()->clearMessage();
 }
 
 void Studio::openComposition()
@@ -89,13 +109,15 @@ void Studio::openComposition()
 		return;
 	}
 
-	_compositionName = filePath;
+	_compositionPath = filePath;
+	_compositionName = QFileInfo{ file }.fileName();
 	updateStatus();
 }
 
 void Studio::closeComposition()
 {
 	_compositionName.clear();
+	_compositionPath.clear();
 	_composition.reset();
 	updateStatus();
 }

@@ -15,42 +15,30 @@
 // limitations under the License.
 //
 
-#include <memory>
+#pragma once
 
-#include <QMainWindow>
+#include <QAbstractItemModel>
 
 namespace aulos
 {
 	class Composition;
 }
 
-class VoiceEditor;
-class VoicesModel;
-
-class Studio : public QMainWindow
+class VoicesModel : public QAbstractItemModel
 {
 	Q_OBJECT
 
 public:
-	Studio();
-	~Studio() override;
+	void reset(const aulos::Composition*);
 
 private:
-	void updateStatus();
-
-	void openComposition();
-	void closeComposition();
+	int columnCount(const QModelIndex& parent) const override { return parent.isValid() ? 0 : 1; }
+	QVariant data(const QModelIndex& index, int role) const override;
+	QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
+	QModelIndex index(int row, int column, const QModelIndex& parent) const override;
+	QModelIndex parent(const QModelIndex&) const override { return {}; }
+	int rowCount(const QModelIndex& parent) const override { return parent.isValid() ? 0 : _voiceCount; }
 
 private:
-	std::unique_ptr<aulos::Composition> _composition;
-	QString _compositionPath;
-	QString _compositionName;
-	std::unique_ptr<VoicesModel> _voicesModel;
-
-	std::unique_ptr<VoiceEditor> _voiceEditor;
-
-	QAction* _openAction;
-	QAction* _saveAction;
-	QAction* _saveAsAction;
-	QAction* _closeAction;
+	int _voiceCount = 0;
 };
