@@ -19,6 +19,32 @@
 
 #include <aulos.hpp>
 
+void VoicesModel::reset(const aulos::Composition* composition)
+{
+	beginResetModel();
+	if (composition)
+	{
+		for (size_t i = 0; i < composition->voiceCount(); ++i)
+			_voices << composition->voice(i);
+	}
+	else
+		_voices.clear();
+	endResetModel();
+}
+
+void VoicesModel::setVoice(const QModelIndex& index, const aulos::Voice& voice)
+{
+	if (!index.isValid())
+		return;
+	_voices[index.row()] = voice;
+	emit dataChanged(index, index);
+}
+
+const aulos::Voice* VoicesModel::voice(const QModelIndex& index) const
+{
+	return index.isValid() ? &_voices[index.row()] : nullptr;
+}
+
 QVariant VoicesModel::data(const QModelIndex& index, int role) const
 {
 	return index.isValid() && role == Qt::DisplayRole ? tr("Voice %1").arg(index.row() + 1) : QVariant{};
@@ -33,12 +59,5 @@ QVariant VoicesModel::headerData(int section, Qt::Orientation orientation, int r
 
 QModelIndex VoicesModel::index(int row, int column, const QModelIndex& parent) const
 {
-	return !parent.isValid() && row >= 0 && row < _voiceCount && column == 0 ? createIndex(row, column) : QModelIndex{};
-}
-
-void VoicesModel::reset(const aulos::Composition* composition)
-{
-	beginResetModel();
-	_voiceCount = composition ? static_cast<int>(composition->voiceCount()) : 0;
-	endResetModel();
+	return !parent.isValid() && row >= 0 && row < _voices.size() && column == 0 ? createIndex(row, column) : QModelIndex{};
 }

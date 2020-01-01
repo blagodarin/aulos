@@ -48,6 +48,7 @@ private:
 	QString _compositionPath;
 	QString _compositionName;
 	std::unique_ptr<VoicesModel> _voicesModel;
+	bool _changed = false;
 
 	std::unique_ptr<VoiceEditor> _voiceEditor;
 

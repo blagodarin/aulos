@@ -22,6 +22,7 @@
 namespace aulos
 {
 	class Composition;
+	struct Voice;
 }
 
 class VoicesModel : public QAbstractItemModel
@@ -30,6 +31,8 @@ class VoicesModel : public QAbstractItemModel
 
 public:
 	void reset(const aulos::Composition*);
+	void setVoice(const QModelIndex&, const aulos::Voice&);
+	const aulos::Voice* voice(const QModelIndex&) const;
 
 private:
 	int columnCount(const QModelIndex& parent) const override { return parent.isValid() ? 0 : 1; }
@@ -37,8 +40,8 @@ private:
 	QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
 	QModelIndex index(int row, int column, const QModelIndex& parent) const override;
 	QModelIndex parent(const QModelIndex&) const override { return {}; }
-	int rowCount(const QModelIndex& parent) const override { return parent.isValid() ? 0 : _voiceCount; }
+	int rowCount(const QModelIndex& parent) const override { return parent.isValid() ? 0 : _voices.size(); }
 
 private:
-	int _voiceCount = 0;
+	QList<aulos::Voice> _voices;
 };

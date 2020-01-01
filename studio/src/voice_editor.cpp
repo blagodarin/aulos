@@ -49,6 +49,8 @@ VoiceEditor::VoiceEditor(QWidget* parent)
 	, _audioBuffer{ &_audioData }
 {
 	_ui->setupUi(this);
+	connect(_ui->buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
+	connect(_ui->buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
 	createEnvelopeEditor(_ui->amplitudeGroup, _amplitudeEnvelope, 0.0);
 	createEnvelopeEditor(_ui->frequencyGroup, _frequencyEnvelope, 0.5);

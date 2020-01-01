@@ -48,16 +48,6 @@ Studio::Studio()
 	fileMenu->addAction(
 		tr("E&xit"), [this] { close(); }, Qt::ALT + Qt::Key_F4);
 
-	const auto toolsMenu = menuBar()->addMenu(tr("&Tools"));
-	toolsMenu->addAction(tr("&Voice Editor"), [this] {
-		aulos::Voice voice;
-		voice._amplitudeEnvelope._changes.emplace_back(.1f, 1.f);
-		voice._amplitudeEnvelope._changes.emplace_back(.4f, .5f);
-		voice._amplitudeEnvelope._changes.emplace_back(.5f, 0.f);
-		_voiceEditor->setVoice(voice);
-		_voiceEditor->open();
-	});
-
 	const auto centralWidget = new QWidget{ this };
 	setCentralWidget(centralWidget);
 
@@ -70,12 +60,22 @@ Studio::Studio()
 	voicesView->horizontalHeader()->setStretchLastSection(true);
 	voicesView->horizontalHeader()->setVisible(false);
 	layout->addWidget(voicesView, 0, 0);
+	connect(voicesView, &QAbstractItemView::doubleClicked, this, [this](const QModelIndex& index) {
+		if (const auto voice = _voicesModel->voice(index))
+		{
+			_voiceEditor->setVoice(*voice);
+			_voiceEditor->open();
+		}
+	});
+	connect(_voiceEditor.get(), &QDialog::accepted, this, [this, voicesView] {
+		_voicesModel->setVoice(voicesView->currentIndex(), _voiceEditor->voice());
+		_changed = true;
+		updateStatus();
+	});
 
 	_statusPath = new QLabel{ statusBar() };
 	_statusPath->setTextFormat(Qt::RichText);
 	statusBar()->addWidget(_statusPath);
-
-	statusBar()->setSizeGripEnabled(false);
 
 	updateStatus();
 }
@@ -84,11 +84,10 @@ Studio::~Studio() = default;
 
 void Studio::updateStatus()
 {
-	setWindowTitle(_composition ? QStringLiteral("%1 - %2").arg(_compositionName, QCoreApplication::applicationName()) : QCoreApplication::applicationName());
-	_saveAction->setDisabled(true);
-	_saveAsAction->setDisabled(true);
+	setWindowTitle(_composition ? QStringLiteral("%1 - %2").arg(_changed ? '*' + _compositionName : _compositionName, QCoreApplication::applicationName()) : QCoreApplication::applicationName());
+	_saveAction->setDisabled(!_changed);
+	_saveAsAction->setDisabled(!_composition);
 	_closeAction->setDisabled(!_composition);
-	_voicesModel->reset(_composition.get());
 	_statusPath->setText(_composition ? _compositionPath : QStringLiteral("<i>%1</i>").arg(tr("no file")));
 }
 
@@ -115,13 +114,16 @@ void Studio::openComposition()
 
 	_compositionPath = filePath;
 	_compositionName = QFileInfo{ file }.fileName();
+	_voicesModel->reset(_composition.get());
 	updateStatus();
 }
 
 void Studio::closeComposition()
 {
-	_compositionName.clear();
-	_compositionPath.clear();
 	_composition.reset();
+	_compositionPath.clear();
+	_compositionName.clear();
+	_voicesModel->reset(nullptr);
+	_changed = false;
 	updateStatus();
 }
