@@ -1,6 +1,6 @@
 #
 # This file is part of the Aulos toolkit.
-# Copyright (C) 2019 Sergei Blagodarin.
+# Copyright (C) 2020 Sergei Blagodarin.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
