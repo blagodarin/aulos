@@ -19,6 +19,8 @@
 
 #include <QMainWindow>
 
+class QLabel;
+
 namespace aulos
 {
 	class Composition;
@@ -53,4 +55,5 @@ private:
 	QAction* _saveAction;
 	QAction* _saveAsAction;
 	QAction* _closeAction;
+	QLabel* _statusPath;
 };

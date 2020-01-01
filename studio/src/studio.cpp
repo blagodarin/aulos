@@ -26,6 +26,7 @@
 #include <QFileDialog>
 #include <QGridLayout>
 #include <QHeaderView>
+#include <QLabel>
 #include <QMenuBar>
 #include <QStatusBar>
 #include <QTableView>
@@ -70,6 +71,12 @@ Studio::Studio()
 	voicesView->horizontalHeader()->setVisible(false);
 	layout->addWidget(voicesView, 0, 0);
 
+	_statusPath = new QLabel{ statusBar() };
+	_statusPath->setTextFormat(Qt::RichText);
+	statusBar()->addWidget(_statusPath);
+
+	statusBar()->setSizeGripEnabled(false);
+
 	updateStatus();
 }
 
@@ -82,10 +89,7 @@ void Studio::updateStatus()
 	_saveAsAction->setDisabled(true);
 	_closeAction->setDisabled(!_composition);
 	_voicesModel->reset(_composition.get());
-	if (_composition)
-		statusBar()->showMessage(_compositionPath);
-	else
-		statusBar()->clearMessage();
+	_statusPath->setText(_composition ? _compositionPath : QStringLiteral("<i>%1</i>").arg(tr("no file")));
 }
 
 void Studio::openComposition()
