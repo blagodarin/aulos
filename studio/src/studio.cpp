@@ -24,58 +24,43 @@
 
 #include <QCoreApplication>
 #include <QFileDialog>
-#include <QGridLayout>
-#include <QHeaderView>
+#include <QGraphicsView>
 #include <QLabel>
 #include <QMenuBar>
 #include <QStatusBar>
-#include <QTableView>
 
 Studio::Studio()
 	: _voicesModel{ std::make_unique<VoicesModel>() }
-	, _voiceEditor{ std::make_unique<VoiceEditor>(this) }
+	, _voiceEditor{ std::make_unique<VoiceEditor>(*_voicesModel, this) }
 {
 	const auto fileMenu = menuBar()->addMenu(tr("&File"));
-	_openAction = fileMenu->addAction(
+	_fileOpenAction = fileMenu->addAction(
 		tr("&Open..."), [this] { openComposition(); }, Qt::CTRL + Qt::Key_O);
-	_saveAction = fileMenu->addAction(
+	_fileSaveAction = fileMenu->addAction(
 		tr("&Save"), [this] {}, Qt::CTRL + Qt::Key_S);
-	_saveAsAction = fileMenu->addAction(
+	_fileSaveAsAction = fileMenu->addAction(
 		tr("Save &As..."), [this] {}, Qt::CTRL + Qt::ALT + Qt::Key_S);
-	_closeAction = fileMenu->addAction(
+	_fileCloseAction = fileMenu->addAction(
 		tr("&Close"), [this] { closeComposition(); }, Qt::CTRL + Qt::Key_W);
 	fileMenu->addSeparator();
 	fileMenu->addAction(
 		tr("E&xit"), [this] { close(); }, Qt::ALT + Qt::Key_F4);
 
-	const auto centralWidget = new QWidget{ this };
+	const auto toolsMenu = menuBar()->addMenu(tr("&Tools"));
+	_toolsVoiceEditorAction = toolsMenu->addAction(
+		tr("&Voice Editor"), [this] { _voiceEditor->show(); });
+
+	const auto centralWidget = new QGraphicsView{ this };
 	setCentralWidget(centralWidget);
-
-	const auto layout = new QGridLayout{ centralWidget };
-
-	const auto voicesView = new QTableView{ centralWidget };
-	voicesView->setModel(_voicesModel.get());
-	voicesView->setSelectionBehavior(QAbstractItemView::SelectRows);
-	voicesView->setSelectionMode(QAbstractItemView::SingleSelection);
-	voicesView->horizontalHeader()->setStretchLastSection(true);
-	voicesView->horizontalHeader()->setVisible(false);
-	layout->addWidget(voicesView, 0, 0);
-	connect(voicesView, &QAbstractItemView::doubleClicked, this, [this](const QModelIndex& index) {
-		if (const auto voice = _voicesModel->voice(index))
-		{
-			_voiceEditor->setVoice(*voice);
-			_voiceEditor->open();
-		}
-	});
-	connect(_voiceEditor.get(), &QDialog::accepted, this, [this, voicesView] {
-		_voicesModel->setVoice(voicesView->currentIndex(), _voiceEditor->voice());
-		_changed = true;
-		updateStatus();
-	});
 
 	_statusPath = new QLabel{ statusBar() };
 	_statusPath->setTextFormat(Qt::RichText);
 	statusBar()->addWidget(_statusPath);
+
+	connect(_voicesModel.get(), &QAbstractItemModel::dataChanged, [this] {
+		_changed = true;
+		updateStatus();
+	});
 
 	updateStatus();
 }
@@ -85,9 +70,10 @@ Studio::~Studio() = default;
 void Studio::updateStatus()
 {
 	setWindowTitle(_composition ? QStringLiteral("%1 - %2").arg(_changed ? '*' + _compositionName : _compositionName, QCoreApplication::applicationName()) : QCoreApplication::applicationName());
-	_saveAction->setDisabled(!_changed);
-	_saveAsAction->setDisabled(!_composition);
-	_closeAction->setDisabled(!_composition);
+	_fileSaveAction->setDisabled(!_changed);
+	_fileSaveAsAction->setDisabled(!_composition);
+	_fileCloseAction->setDisabled(!_composition);
+	_toolsVoiceEditorAction->setDisabled(!_composition);
 	_statusPath->setText(_composition ? _compositionPath : QStringLiteral("<i>%1</i>").arg(tr("no file")));
 }
 

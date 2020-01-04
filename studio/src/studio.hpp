@@ -52,9 +52,10 @@ private:
 
 	std::unique_ptr<VoiceEditor> _voiceEditor;
 
-	QAction* _openAction;
-	QAction* _saveAction;
-	QAction* _saveAsAction;
-	QAction* _closeAction;
+	QAction* _fileOpenAction;
+	QAction* _fileSaveAction;
+	QAction* _fileSaveAsAction;
+	QAction* _fileCloseAction;
+	QAction* _toolsVoiceEditorAction;
 	QLabel* _statusPath;
 };
