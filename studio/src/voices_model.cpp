@@ -22,13 +22,10 @@
 void VoicesModel::reset(const aulos::Composition* composition)
 {
 	beginResetModel();
+	_voices.clear();
 	if (composition)
-	{
 		for (size_t i = 0; i < composition->voiceCount(); ++i)
 			_voices << composition->voice(i);
-	}
-	else
-		_voices.clear();
 	endResetModel();
 }
 
@@ -47,7 +44,7 @@ const aulos::Voice* VoicesModel::voice(const QModelIndex& index) const
 
 QVariant VoicesModel::data(const QModelIndex& index, int role) const
 {
-	return index.isValid() && role == Qt::DisplayRole ? tr("Voice %1").arg(index.row() + 1) : QVariant{};
+	return index.isValid() && role == Qt::DisplayRole ? QString::fromStdString(_voices[index.row()]._name) : QVariant{};
 }
 
 QVariant VoicesModel::headerData(int section, Qt::Orientation orientation, int role) const

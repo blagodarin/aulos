@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <memory>
+#include <vector>
 
 #include <QByteArray>
 #include <QBuffer>
@@ -29,8 +29,8 @@ namespace aulos
 }
 
 class QAudioOutput;
-
-class Ui_VoiceEditor;
+class QDoubleSpinBox;
+class QLineEdit;
 
 class VoiceEditor : public QDialog
 {
@@ -52,7 +52,8 @@ private:
 	void createEnvelopeEditor(QWidget*, std::vector<EnvelopePoint>&, double minimum);
 
 private:
-	const std::unique_ptr<Ui_VoiceEditor> _ui;
+	QLineEdit* _nameEdit;
+	QDoubleSpinBox* _oscillationSpin;
 	std::vector<EnvelopePoint> _amplitudeEnvelope;
 	std::vector<EnvelopePoint> _frequencyEnvelope;
 	std::vector<EnvelopePoint> _asymmetryEnvelope;

@@ -159,6 +159,19 @@ namespace aulos
 			return *result;
 		};
 
+		const auto tryReadString = [&]() -> std::optional<std::string> {
+			if (*source != '"')
+				return {};
+			const auto begin = ++source;
+			while (*source && *source != '"')
+				++source;
+			if (!*source)
+				throw CompositionError{ { line, begin - lineBase }, "Unexpected end of file" };
+			const auto end = source++;
+			skipSpaces();
+			return std::string{ begin, end };
+		};
+
 		const auto parseNote = [&](std::vector<Sound>& sequence, size_t& delay, size_t baseOffset) {
 			assert(*source >= 'A' && *source <= 'G');
 			assert(baseOffset >= 0 && baseOffset < 12);
@@ -355,9 +368,12 @@ namespace aulos
 				{
 					const auto voiceIndex = static_cast<unsigned>(_voices.size() + 1);
 					readUnsigned(voiceIndex, voiceIndex);
+					auto name = tryReadString();
 					consumeEndOfLine();
 					currentSection = Section::Voice;
 					currentVoice = &_voices.emplace_back();
+					if (name)
+						currentVoice->_name = std::move(*name);
 				}
 				else if (section == "tracks")
 				{

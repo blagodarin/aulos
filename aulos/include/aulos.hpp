@@ -18,6 +18,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 #include <vector>
 
 namespace aulos
@@ -89,6 +90,7 @@ namespace aulos
 		Envelope _amplitudeEnvelope{ 0.f };
 		Envelope _frequencyEnvelope{ 1.f };
 		Envelope _asymmetryEnvelope{ 0.f };
+		std::string _name;
 	};
 
 	struct Track

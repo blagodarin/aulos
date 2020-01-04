@@ -24,12 +24,17 @@
 
 #include <QAudioOutput>
 #include <QCheckBox>
+#include <QComboBox>
+#include <QDialogButtonBox>
 #include <QDoubleSpinBox>
 #include <QGridLayout>
+#include <QGroupBox>
+#include <QHBoxLayout>
 #include <QLabel>
+#include <QLineEdit>
+#include <QPushButton>
 #include <QToolButton>
-
-#include "ui_voice_editor.h"
+#include <QVBoxLayout>
 
 namespace
 {
@@ -45,32 +50,8 @@ struct VoiceEditor::EnvelopePoint
 
 VoiceEditor::VoiceEditor(QWidget* parent)
 	: QDialog{ parent }
-	, _ui{ std::make_unique<Ui_VoiceEditor>() }
 	, _audioBuffer{ &_audioData }
 {
-	_ui->setupUi(this);
-	connect(_ui->buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
-	connect(_ui->buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
-
-	createEnvelopeEditor(_ui->amplitudeGroup, _amplitudeEnvelope, 0.0);
-	createEnvelopeEditor(_ui->frequencyGroup, _frequencyEnvelope, 0.5);
-	createEnvelopeEditor(_ui->asymmetryGroup, _asymmetryEnvelope, 0.0);
-
-	const auto noteLayout = new QGridLayout{ _ui->noteWidget };
-	for (int row = 0; row < 10; ++row)
-		for (int column = 0; column < 12; ++column)
-		{
-			const auto octave = 9 - row;
-			const auto name = noteNames[column];
-			const auto button = new QToolButton{ this };
-			button->setText(QStringLiteral("%1%2").arg(name).arg(octave));
-			button->setFixedSize({ 40, 30 });
-			button->setStyleSheet(name[1] == '#' ? "background-color: black; color: white" : "background-color: white; color: black");
-			button->setProperty("note", octave * 12 + column);
-			connect(button, &QAbstractButton::clicked, this, &VoiceEditor::onNoteClicked);
-			noteLayout->addWidget(button, row, column);
-		}
-
 	QAudioFormat format;
 	format.setByteOrder(QAudioFormat::LittleEndian);
 	format.setChannelCount(1);
@@ -79,6 +60,82 @@ VoiceEditor::VoiceEditor(QWidget* parent)
 	format.setSampleSize(32);
 	format.setSampleType(QAudioFormat::Float);
 	_audioOutput = std::make_unique<QAudioOutput>(format);
+
+	const auto createOscillationWidgets = [this](QWidget* parent) {
+		const auto layout = new QGridLayout{ parent };
+
+		const auto typeCombo = new QComboBox{ parent };
+		typeCombo->addItem(tr("Linear"));
+		layout->addWidget(typeCombo, 0, 0);
+
+		_oscillationSpin = new QDoubleSpinBox{ parent };
+		_oscillationSpin->setRange(0.0, 1.0);
+		_oscillationSpin->setSingleStep(0.01);
+		layout->addWidget(_oscillationSpin, 0, 1);
+	};
+
+	setWindowTitle(tr("Voice Editor"));
+
+	const auto layout = new QHBoxLayout{ this };
+
+	const auto leftLayout = new QVBoxLayout{};
+	layout->addLayout(leftLayout);
+
+	_nameEdit = new QLineEdit{ this };
+	_nameEdit->setMaxLength(64);
+	_nameEdit->setValidator(new QRegExpValidator{ QRegExp{ "\\w+" }, _nameEdit });
+	leftLayout->addWidget(_nameEdit);
+
+	const auto oscillationGroup = new QGroupBox{ tr("Oscillation"), this };
+	createOscillationWidgets(oscillationGroup);
+	leftLayout->addWidget(oscillationGroup);
+
+	const auto amplitudeGroup = new QGroupBox{ tr("Amplitude"), this };
+	createEnvelopeEditor(amplitudeGroup, _amplitudeEnvelope, 0.0);
+	leftLayout->addWidget(amplitudeGroup);
+
+	const auto frequencyGroup = new QGroupBox{ tr("Frequency"), this };
+	createEnvelopeEditor(frequencyGroup, _frequencyEnvelope, 0.5);
+	leftLayout->addWidget(frequencyGroup);
+
+	const auto asymmetryGroup = new QGroupBox{ tr("Asymmetry"), this };
+	createEnvelopeEditor(asymmetryGroup, _asymmetryEnvelope, 0.0);
+	leftLayout->addWidget(asymmetryGroup);
+
+	leftLayout->addItem(new QSpacerItem{ 0, 0, QSizePolicy::Minimum, QSizePolicy::Expanding });
+
+	const auto rightLayout = new QVBoxLayout{};
+	layout->addLayout(rightLayout, 1);
+
+	const auto noteWidget = new QWidget{ this };
+	noteWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+	const auto noteLayout = new QGridLayout{ noteWidget };
+	for (int row = 0; row < 10; ++row)
+		for (int column = 0; column < 12; ++column)
+		{
+			const auto octave = 9 - row;
+			const auto name = noteNames[column];
+			const auto button = new QToolButton{ noteWidget };
+			button->setText(QStringLiteral("%1%2").arg(name).arg(octave));
+			button->setFixedSize({ 40, 30 });
+			button->setStyleSheet(name[1] == '#' ? "background-color: black; color: white" : "background-color: white; color: black");
+			button->setProperty("note", octave * 12 + column);
+			connect(button, &QAbstractButton::clicked, this, &VoiceEditor::onNoteClicked);
+			noteLayout->addWidget(button, row, column);
+		}
+	rightLayout->addWidget(noteWidget);
+
+	const auto buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
+	rightLayout->addWidget(buttonBox);
+
+	connect(_nameEdit, &QLineEdit::textChanged, [this, buttonBox](const QString& text) {
+		auto input = text;
+		int pos = 0;
+		buttonBox->button(QDialogButtonBox::Ok)->setEnabled(_nameEdit->validator()->validate(input, pos) == QValidator::Acceptable);
+	});
+	connect(buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
+	connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
+	connect(this, &QDialog::finished, _audioOutput.get(), &QAudioOutput::stop);
 }
 
 VoiceEditor::~VoiceEditor() = default;
@@ -108,17 +165,18 @@ void VoiceEditor::setVoice(const aulos::Voice& voice)
 		}
 	};
 
-	_ui->oscillationSpin->setValue(voice._oscillation);
+	_oscillationSpin->setValue(voice._oscillation);
 	setEnvelope(_amplitudeEnvelope, voice._amplitudeEnvelope);
 	setEnvelope(_frequencyEnvelope, voice._frequencyEnvelope);
 	setEnvelope(_asymmetryEnvelope, voice._asymmetryEnvelope);
+	_nameEdit->setText(QString::fromStdString(voice._name));
 }
 
 aulos::Voice VoiceEditor::voice()
 {
 	aulos::Voice result;
 	result._wave = aulos::Wave::Linear;
-	result._oscillation = static_cast<float>(_ui->oscillationSpin->value());
+	result._oscillation = static_cast<float>(_oscillationSpin->value());
 	if (auto i = _amplitudeEnvelope.begin(); i->_check->isChecked())
 	{
 		result._amplitudeEnvelope._initial = static_cast<float>(i->_value->value());
@@ -137,6 +195,7 @@ aulos::Voice VoiceEditor::voice()
 		for (++i; i != _asymmetryEnvelope.end() && i->_check->isChecked(); ++i)
 			result._asymmetryEnvelope._changes.emplace_back(static_cast<float>(i->_delay->value()), static_cast<float>(i->_value->value()));
 	}
+	result._name = _nameEdit->text().toStdString();
 	return result;
 }
 
