@@ -20,6 +20,7 @@
 #include <QMainWindow>
 
 class QLabel;
+class QSpinBox;
 
 namespace aulos
 {
@@ -48,6 +49,7 @@ private:
 	QString _compositionPath;
 	QString _compositionName;
 	std::unique_ptr<VoicesModel> _voicesModel;
+	bool _hasComposition = false;
 	bool _changed = false;
 
 	std::unique_ptr<VoiceEditor> _voiceEditor;
@@ -57,5 +59,6 @@ private:
 	QAction* _fileSaveAsAction;
 	QAction* _fileCloseAction;
 	QAction* _toolsVoiceEditorAction;
+	QSpinBox* _speedSpin;
 	QLabel* _statusPath;
 };
