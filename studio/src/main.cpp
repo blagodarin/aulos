@@ -23,6 +23,8 @@ int main(int argc, char** argv)
 {
 	QApplication app{ argc, argv };
 	QCoreApplication::setApplicationName("Aulos Studio");
+	QCoreApplication::setOrganizationDomain("blagodarin.me");
+	QCoreApplication::setOrganizationName("blagodarin.me");
 	Studio studio;
 	studio.show();
 	return app.exec();

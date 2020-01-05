@@ -27,9 +27,46 @@
 #include <QGraphicsView>
 #include <QLabel>
 #include <QMenuBar>
+#include <QSettings>
 #include <QSpinBox>
 #include <QStatusBar>
 #include <QToolBar>
+
+namespace
+{
+	const auto recentFileKeyBase = QStringLiteral("RecentFile%1");
+
+	QStringList loadRecentFileList()
+	{
+		QSettings settings;
+		QStringList result;
+		for (int index = 0;;)
+		{
+			const auto value = settings.value(recentFileKeyBase.arg(index));
+			if (!value.isValid())
+				break;
+			result << value.toString();
+			++index;
+		}
+		return result;
+	}
+
+	void saveRecentFileList(const QStringList& files)
+	{
+		QSettings settings;
+		int index = 0;
+		for (const auto& file : files)
+			settings.setValue(recentFileKeyBase.arg(index++), file);
+		for (;;)
+		{
+			const auto key = recentFileKeyBase.arg(index);
+			if (!settings.contains(key))
+				break;
+			settings.remove(key);
+			++index;
+		}
+	}
+}
 
 Studio::Studio()
 	: _voicesModel{ std::make_unique<VoicesModel>() }
@@ -44,6 +81,12 @@ Studio::Studio()
 		tr("Save &As..."), [this] {}, Qt::CTRL + Qt::ALT + Qt::Key_S);
 	_fileCloseAction = fileMenu->addAction(
 		tr("&Close"), [this] { closeComposition(); }, Qt::CTRL + Qt::Key_W);
+	fileMenu->addSeparator();
+	_recentFilesMenu = fileMenu->addMenu(tr("&Recent Files"));
+	for (const auto& recentFile : loadRecentFileList())
+		setRecentFile(recentFile);
+	_recentFilesMenu->addSeparator();
+	_recentFilesMenu->addAction(tr("Clear"), [this] { clearRecentFiles(); });
 	fileMenu->addSeparator();
 	fileMenu->addAction(
 		tr("E&xit"), [this] { close(); }, Qt::ALT + Qt::Key_F4);
@@ -92,44 +135,15 @@ Studio::Studio()
 
 Studio::~Studio() = default;
 
-void Studio::updateStatus()
+void Studio::clearRecentFiles()
 {
-	setWindowTitle(_hasComposition ? QStringLiteral("%1 - %2").arg(_changed ? '*' + _compositionName : _compositionName, QCoreApplication::applicationName()) : QCoreApplication::applicationName());
-	_fileSaveAction->setEnabled(_changed);
-	_fileSaveAsAction->setEnabled(_hasComposition);
-	_fileCloseAction->setEnabled(_hasComposition);
-	_toolsVoiceEditorAction->setEnabled(_hasComposition);
-	_speedSpin->setEnabled(_hasComposition);
-	_statusPath->setText(_hasComposition ? _compositionPath : QStringLiteral("<i>%1</i>").arg(tr("no file")));
-}
-
-void Studio::openComposition()
-{
-	const auto filePath = QFileDialog::getOpenFileName(this, tr("Open Composition"), {}, tr("Aulos Files (*.txt)"));
-	if (filePath.isNull())
-		return;
-
-	closeComposition();
-
-	QFile file{ filePath };
-	if (!file.open(QIODevice::ReadOnly))
-		return;
-
-	try
+	for (const auto action : _recentFilesActions)
 	{
-		_composition = aulos::Composition::create(file.readAll().constData());
+		_recentFilesMenu->removeAction(action);
+		action->deleteLater();
 	}
-	catch (const std::runtime_error&)
-	{
-		return;
-	}
-
-	_compositionPath = filePath;
-	_compositionName = QFileInfo{ file }.fileName();
-	_speedSpin->setValue(static_cast<int>(_composition->speed()));
-	_voicesModel->reset(_composition.get());
-	_hasComposition = true;
-	updateStatus();
+	_recentFilesActions.clear();
+	::saveRecentFileList({});
 }
 
 void Studio::closeComposition()
@@ -142,4 +156,82 @@ void Studio::closeComposition()
 	_voicesModel->reset(nullptr);
 	_changed = false;
 	updateStatus();
+}
+
+void Studio::openComposition()
+{
+	const auto path = QFileDialog::getOpenFileName(this, tr("Open Composition"), {}, tr("Aulos Files (*.txt)"));
+	if (!path.isNull())
+		openComposition(path);
+}
+
+void Studio::openComposition(const QString& path)
+{
+	closeComposition();
+
+	QFile file{ path };
+	if (!file.open(QIODevice::ReadOnly))
+		return;
+
+	try
+	{
+		_composition = aulos::Composition::create(file.readAll().constData());
+	}
+	catch (const std::runtime_error&)
+	{
+		return;
+	}
+
+	_compositionPath = path;
+	_compositionName = QFileInfo{ file }.fileName();
+	_speedSpin->setValue(static_cast<int>(_composition->speed()));
+	_voicesModel->reset(_composition.get());
+	_hasComposition = true;
+	setRecentFile(path);
+	saveRecentFiles();
+	updateStatus();
+}
+
+void Studio::setRecentFile(const QString& path)
+{
+	if (const auto i = std::find_if(_recentFilesActions.begin(), _recentFilesActions.end(), [this, &path](const QAction* action) { return action->text() == path; }); i != _recentFilesActions.end())
+	{
+		const auto action = *i;
+		_recentFilesActions.erase(i);
+		_recentFilesActions.prepend(action);
+		_recentFilesMenu->removeAction(action);
+		_recentFilesMenu->insertAction(_recentFilesMenu->actions().first(), action);
+	}
+	else
+	{
+		const auto action = new QAction{ path, this };
+		connect(action, &QAction::triggered, [this, path] { openComposition(path); });
+		_recentFilesActions.prepend(action);
+		_recentFilesMenu->insertAction(_recentFilesMenu->actions().value(0, nullptr), action);
+		while (_recentFilesActions.size() > 10)
+		{
+			const auto oldAction = _recentFilesActions.takeLast();
+			_recentFilesMenu->removeAction(oldAction);
+			delete oldAction;
+		}
+	}
+}
+
+void Studio::saveRecentFiles()
+{
+	QStringList recentFiles;
+	for (const auto action : _recentFilesActions)
+		recentFiles << action->text();
+	::saveRecentFileList(recentFiles);
+}
+
+void Studio::updateStatus()
+{
+	setWindowTitle(_hasComposition ? QStringLiteral("%1 - %2").arg(_changed ? '*' + _compositionName : _compositionName, QCoreApplication::applicationName()) : QCoreApplication::applicationName());
+	_fileSaveAction->setEnabled(_changed);
+	_fileSaveAsAction->setEnabled(_hasComposition);
+	_fileCloseAction->setEnabled(_hasComposition);
+	_toolsVoiceEditorAction->setEnabled(_hasComposition);
+	_speedSpin->setEnabled(_hasComposition);
+	_statusPath->setText(_hasComposition ? _compositionPath : QStringLiteral("<i>%1</i>").arg(tr("no file")));
 }

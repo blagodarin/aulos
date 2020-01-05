@@ -39,10 +39,13 @@ public:
 	~Studio() override;
 
 private:
-	void updateStatus();
-
-	void openComposition();
+	void clearRecentFiles();
 	void closeComposition();
+	void openComposition();
+	void openComposition(const QString& path);
+	void saveRecentFiles();
+	void setRecentFile(const QString& path);
+	void updateStatus();
 
 private:
 	std::unique_ptr<aulos::Composition> _composition;
@@ -58,6 +61,8 @@ private:
 	QAction* _fileSaveAction;
 	QAction* _fileSaveAsAction;
 	QAction* _fileCloseAction;
+	QMenu* _recentFilesMenu;
+	QList<QAction*> _recentFilesActions;
 	QAction* _toolsVoiceEditorAction;
 	QSpinBox* _speedSpin;
 	QLabel* _statusPath;
