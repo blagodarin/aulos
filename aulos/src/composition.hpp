@@ -21,12 +21,20 @@
 
 namespace aulos
 {
+	struct TrackData
+	{
+		Track _track;
+		std::vector<std::vector<Sound>> _sequences;
+
+		TrackData(size_t voice, unsigned weight) noexcept
+			: _track{ voice, weight } {}
+	};
+
 	struct CompositionImpl final : public Composition
 	{
 		float _speed;
 		std::vector<Voice> _voices;
-		std::vector<Track> _tracks;
-		std::vector<std::vector<Sound>> _sequences;
+		std::vector<TrackData> _tracks;
 		std::vector<Fragment> _fragments;
 
 		CompositionImpl();
@@ -36,9 +44,9 @@ namespace aulos
 		Fragment fragment(size_t index) const noexcept override { return index < _fragments.size() ? _fragments[index] : Fragment{}; }
 		size_t fragmentCount() const noexcept override { return _fragments.size(); }
 		float speed() const noexcept override { return _speed; }
-		Sequence sequence(size_t index) const noexcept override;
-		size_t sequenceCount() const noexcept override { return _sequences.size(); }
-		Track track(size_t index) const noexcept override { return index < _tracks.size() ? _tracks[index] : Track{}; }
+		Sequence sequence(size_t track, size_t index) const noexcept override;
+		size_t sequenceCount(size_t track) const noexcept override { return track < _tracks.size() ? _tracks[track]._sequences.size() : 0; }
+		Track track(size_t index) const noexcept override { return index < _tracks.size() ? _tracks[index]._track : Track{}; }
 		size_t trackCount() const noexcept override { return _tracks.size(); }
 		Voice voice(size_t index) const noexcept override { return index < _voices.size() ? _voices[index] : Voice{}; }
 		size_t voiceCount() const noexcept override { return _voices.size(); }

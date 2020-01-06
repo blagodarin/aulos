@@ -353,10 +353,10 @@ namespace
 			: _samplingRate{ samplingRate }
 			, _stepBytes{ static_cast<size_t>(std::lround(_samplingRate / composition._speed)) * kSampleSize }
 		{
-			const auto totalWeight = static_cast<float>(std::reduce(composition._tracks.cbegin(), composition._tracks.cend(), 0u, [](unsigned weight, const aulos::Track& track) { return weight + track._weight; }));
+			const auto totalWeight = static_cast<float>(std::reduce(composition._tracks.cbegin(), composition._tracks.cend(), 0u, [](unsigned weight, const aulos::TrackData& track) { return weight + track._track._weight; }));
 			_tracks.reserve(composition._tracks.size());
 			for (const auto& track : composition._tracks)
-				_tracks.emplace_back(std::make_unique<TrackState>(composition._voices[track._voice], track._weight / totalWeight, samplingRate));
+				_tracks.emplace_back(std::make_unique<TrackState>(composition._voices[track._track._voice], track._track._weight / totalWeight, samplingRate));
 			size_t fragmentOffset = 0;
 			for (const auto& fragment : composition._fragments)
 			{
@@ -368,7 +368,7 @@ namespace
 					lastSoundOffset -= trackSounds.back()._delay;
 					trackSounds.pop_back();
 				}
-				if (const auto& sequence = composition._sequences[fragment._sequence]; !sequence.empty())
+				if (const auto& sequence = composition._tracks[fragment._track]._sequences[fragment._sequence]; !sequence.empty())
 				{
 					trackSounds.reserve(trackSounds.size() + sequence.size());
 					trackSounds.emplace_back(fragmentOffset - lastSoundOffset + sequence.front()._delay, sequence.front()._note);

@@ -330,9 +330,10 @@ namespace aulos
 				switch (currentSection)
 				{
 				case Section::Sequences: {
-					const auto sequenceIndex = static_cast<unsigned>(_sequences.size() + 1);
+					const auto trackIndex = readUnsigned(1, static_cast<unsigned>(_tracks.size()));
+					const auto sequenceIndex = static_cast<unsigned>(_tracks[trackIndex - 1]._sequences.size() + 1);
 					readUnsigned(sequenceIndex, sequenceIndex);
-					parseSequence(_sequences.emplace_back());
+					parseSequence(_tracks[trackIndex - 1]._sequences.emplace_back());
 					break;
 				}
 				case Section::Tracks: {
@@ -347,7 +348,7 @@ namespace aulos
 					const auto nextFragmentDelay = readUnsigned(0, std::numeric_limits<unsigned>::max());
 					while (const auto trackIndex = tryReadUnsigned(1, static_cast<unsigned>(_tracks.size())))
 					{
-						const auto sequenceIndex = readUnsigned(1, static_cast<unsigned>(_sequences.size()));
+						const auto sequenceIndex = readUnsigned(1, static_cast<unsigned>(_tracks[*trackIndex - 1]._sequences.size()));
 						_fragments.emplace_back(std::exchange(lastFragmentDelay, 0), *trackIndex - 1, sequenceIndex - 1);
 					}
 					lastFragmentDelay += nextFragmentDelay;
@@ -399,11 +400,11 @@ namespace aulos
 		}
 	}
 
-	Sequence CompositionImpl::sequence(size_t index) const noexcept
+	Sequence CompositionImpl::sequence(size_t track, size_t index) const noexcept
 	{
-		if (index >= _sequences.size())
+		if (track >= _tracks.size() || index >= _tracks[track]._sequences.size())
 			return {};
-		auto& value = _sequences[index];
+		auto& value = _tracks[track]._sequences[index];
 		return { value.data(), value.size() };
 	}
 
