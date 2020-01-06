@@ -37,6 +37,7 @@
 #include <QLineEdit>
 #include <QPushButton>
 #include <QShowEvent>
+#include <QStyledItemDelegate>
 #include <QTableView>
 #include <QToolButton>
 #include <QVBoxLayout>
@@ -44,6 +45,31 @@
 namespace
 {
 	const std::array<const char*, 12> noteNames{ "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
+
+	class VoiceDelegate : public QStyledItemDelegate
+	{
+	public:
+		VoiceDelegate(QObject* parent)
+			: QStyledItemDelegate{ parent } {}
+
+		QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem&, const QModelIndex&) const override
+		{
+			const auto editor = new QLineEdit{ parent };
+			editor->setMaxLength(64);
+			editor->setValidator(new QRegExpValidator{ QRegExp{ "\\w+" }, editor });
+			return editor;
+		}
+
+		void setEditorData(QWidget* editor, const QModelIndex& index) const override
+		{
+			qobject_cast<QLineEdit*>(editor)->setText(index.data(Qt::EditRole).toString());
+		}
+
+		void setModelData(QWidget* editor, QAbstractItemModel* model, const QModelIndex& index) const override
+		{
+			model->setData(index, qobject_cast<QLineEdit*>(editor)->text(), Qt::EditRole);
+		}
+	};
 }
 
 struct VoiceEditor::EnvelopePoint
@@ -137,11 +163,12 @@ VoiceEditor::VoiceEditor(VoicesModel& model, QWidget* parent)
 
 	_voicesView = new QTableView{ this };
 	_voicesView->setModel(&_model);
+	_voicesView->setItemDelegateForColumn(0, new VoiceDelegate{ _voicesView });
 	_voicesView->setSelectionBehavior(QAbstractItemView::SelectRows);
 	_voicesView->setSelectionMode(QAbstractItemView::SingleSelection);
 	_voicesView->horizontalHeader()->setStretchLastSection(true);
 	_voicesView->horizontalHeader()->setVisible(false);
-	layout->addWidget(_voicesView, 0, 0);
+	layout->addWidget(_voicesView);
 	connect(_voicesView->selectionModel(), &QItemSelectionModel::currentChanged, [this](const QModelIndex& current, const QModelIndex& previous) {
 		if (previous.isValid())
 			_model.setVoice(previous, currentVoice());
@@ -151,11 +178,6 @@ VoiceEditor::VoiceEditor(VoicesModel& model, QWidget* parent)
 
 	const auto leftLayout = new QVBoxLayout{};
 	layout->addLayout(leftLayout);
-
-	_nameEdit = new QLineEdit{ this };
-	_nameEdit->setMaxLength(64);
-	_nameEdit->setValidator(new QRegExpValidator{ QRegExp{ "\\w+" }, _nameEdit });
-	leftLayout->addWidget(_nameEdit);
 
 	const auto oscillationGroup = new QGroupBox{ tr("Oscillation"), this };
 	createOscillationWidgets(oscillationGroup);
@@ -263,7 +285,6 @@ void VoiceEditor::resetVoice(const aulos::Voice& voice)
 	setEnvelope(_amplitudeEnvelope, voice._amplitudeEnvelope);
 	setEnvelope(_frequencyEnvelope, voice._frequencyEnvelope);
 	setEnvelope(_asymmetryEnvelope, voice._asymmetryEnvelope);
-	_nameEdit->setText(QString::fromStdString(voice._name));
 }
 
 aulos::Voice VoiceEditor::currentVoice()
@@ -289,6 +310,5 @@ aulos::Voice VoiceEditor::currentVoice()
 		for (++i; i != _asymmetryEnvelope.end() && i->_check->isChecked(); ++i)
 			result._asymmetryEnvelope._changes.emplace_back(static_cast<float>(i->_delay->value()), static_cast<float>(i->_value->value()));
 	}
-	result._name = _nameEdit->text().toStdString();
 	return result;
 }

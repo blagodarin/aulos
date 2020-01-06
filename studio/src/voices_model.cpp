@@ -33,8 +33,10 @@ void VoicesModel::setVoice(const QModelIndex& index, const aulos::Voice& voice)
 {
 	if (!index.isValid())
 		return;
+	const auto name = _voices[index.row()]._name;
 	_voices[index.row()] = voice;
-	emit dataChanged(index, index);
+	_voices[index.row()]._name = name;
+	emit dataChanged(index, index, { Qt::UserRole });
 }
 
 const aulos::Voice* VoicesModel::voice(const QModelIndex& index) const
@@ -44,7 +46,7 @@ const aulos::Voice* VoicesModel::voice(const QModelIndex& index) const
 
 QVariant VoicesModel::data(const QModelIndex& index, int role) const
 {
-	return index.isValid() && role == Qt::DisplayRole ? QString::fromStdString(_voices[index.row()]._name) : QVariant{};
+	return index.isValid() && (role == Qt::DisplayRole || role == Qt::EditRole) ? QString::fromStdString(_voices[index.row()]._name) : QVariant{};
 }
 
 QVariant VoicesModel::headerData(int section, Qt::Orientation orientation, int role) const
@@ -57,4 +59,13 @@ QVariant VoicesModel::headerData(int section, Qt::Orientation orientation, int r
 QModelIndex VoicesModel::index(int row, int column, const QModelIndex& parent) const
 {
 	return !parent.isValid() && row >= 0 && row < _voices.size() && column == 0 ? createIndex(row, column) : QModelIndex{};
+}
+
+bool VoicesModel::setData(const QModelIndex& index, const QVariant& value, int role)
+{
+	if (!index.isValid() || role != Qt::EditRole)
+		return false;
+	_voices[index.row()]._name = value.toString().toStdString();
+	emit dataChanged(index, index, { Qt::DisplayRole, Qt::EditRole });
+	return true;
 }

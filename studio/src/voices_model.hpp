@@ -35,12 +35,14 @@ public:
 	const aulos::Voice* voice(const QModelIndex&) const;
 
 private:
-	int columnCount(const QModelIndex& parent) const override { return parent.isValid() ? 0 : 1; }
+	int columnCount(const QModelIndex&) const override { return 1; }
 	QVariant data(const QModelIndex& index, int role) const override;
+	Qt::ItemFlags flags(const QModelIndex&) const override { return Qt::ItemIsSelectable | Qt::ItemIsEditable | Qt::ItemIsEnabled; }
 	QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
 	QModelIndex index(int row, int column, const QModelIndex& parent) const override;
 	QModelIndex parent(const QModelIndex&) const override { return {}; }
 	int rowCount(const QModelIndex& parent) const override { return parent.isValid() ? 0 : _voices.size(); }
+	bool setData(const QModelIndex& index, const QVariant& value, int role) override;
 
 private:
 	QList<aulos::Voice> _voices;

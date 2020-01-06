@@ -57,7 +57,6 @@ private:
 
 	VoicesModel& _model;
 	QTableView* _voicesView;
-	QLineEdit* _nameEdit;
 	QDoubleSpinBox* _oscillationSpin;
 	std::vector<EnvelopePoint> _amplitudeEnvelope;
 	std::vector<EnvelopePoint> _frequencyEnvelope;
