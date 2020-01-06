@@ -35,10 +35,12 @@
 #include <QHeaderView>
 #include <QLabel>
 #include <QLineEdit>
+#include <QMessageBox>
 #include <QPushButton>
 #include <QShowEvent>
 #include <QStyledItemDelegate>
 #include <QTableView>
+#include <QToolBar>
 #include <QToolButton>
 #include <QVBoxLayout>
 
@@ -159,7 +161,23 @@ VoiceEditor::VoiceEditor(VoicesModel& model, QWidget* parent)
 	setWindowModality(Qt::WindowModal);
 	setWindowTitle(tr("Voice Editor"));
 
-	const auto layout = new QHBoxLayout{ this };
+	const auto rootLayout = new QGridLayout{ this };
+
+	const auto toolBar = new QToolBar{ this };
+	rootLayout->addWidget(toolBar, 0, 0);
+
+	toolBar->addAction(tr("Add Voice"), [this] {
+		aulos::Voice voice;
+		voice._amplitudeEnvelope._changes = { { .1f, 1.f }, { .4f, .5f }, { .5f, 0.f } };
+		voice._name = tr("NewVoice").toStdString();
+		_voicesView->setCurrentIndex(_model.addVoice(voice));
+	});
+
+	const auto removeVoiceAction = toolBar->addAction(tr("Remove Voice"), [this] {
+		const auto index = _voicesView->currentIndex();
+		if (QMessageBox::question(this, {}, tr("Remove \"%1\"?").arg(index.data(Qt::EditRole).toString()), QMessageBox::Yes | QMessageBox::No, QMessageBox::No) == QMessageBox::Yes)
+			_model.removeVoice(index);
+	});
 
 	_voicesView = new QTableView{ this };
 	_voicesView->setModel(&_model);
@@ -168,46 +186,42 @@ VoiceEditor::VoiceEditor(VoicesModel& model, QWidget* parent)
 	_voicesView->setSelectionMode(QAbstractItemView::SingleSelection);
 	_voicesView->horizontalHeader()->setStretchLastSection(true);
 	_voicesView->horizontalHeader()->setVisible(false);
-	layout->addWidget(_voicesView);
-	connect(_voicesView->selectionModel(), &QItemSelectionModel::currentChanged, [this](const QModelIndex& current, const QModelIndex& previous) {
-		if (previous.isValid())
-			_model.setVoice(previous, currentVoice());
-		if (const auto voice = _model.voice(current))
-			resetVoice(*voice);
-	});
+	rootLayout->addWidget(_voicesView, 1, 0);
 
-	const auto leftLayout = new QVBoxLayout{};
-	layout->addLayout(leftLayout);
+	const auto currentVoiceWidget = new QWidget{ this };
+	rootLayout->addWidget(currentVoiceWidget, 0, 1, 2, 1);
 
-	const auto oscillationGroup = new QGroupBox{ tr("Oscillation"), this };
+	const auto currentVoiceLayout = new QHBoxLayout{ currentVoiceWidget };
+
+	const auto controlsLayout = new QVBoxLayout{};
+	currentVoiceLayout->addLayout(controlsLayout);
+
+	const auto oscillationGroup = new QGroupBox{ tr("Oscillation"), currentVoiceWidget };
 	createOscillationWidgets(oscillationGroup);
-	leftLayout->addWidget(oscillationGroup);
+	controlsLayout->addWidget(oscillationGroup);
 
-	const auto amplitudeGroup = new QGroupBox{ tr("Amplitude"), this };
+	const auto amplitudeGroup = new QGroupBox{ tr("Amplitude"), currentVoiceWidget };
 	createEnvelopeEditor(amplitudeGroup, _amplitudeEnvelope, 0.0);
-	leftLayout->addWidget(amplitudeGroup);
+	controlsLayout->addWidget(amplitudeGroup);
 
-	const auto frequencyGroup = new QGroupBox{ tr("Frequency"), this };
+	const auto frequencyGroup = new QGroupBox{ tr("Frequency"), currentVoiceWidget };
 	createEnvelopeEditor(frequencyGroup, _frequencyEnvelope, 0.5);
-	leftLayout->addWidget(frequencyGroup);
+	controlsLayout->addWidget(frequencyGroup);
 
-	const auto asymmetryGroup = new QGroupBox{ tr("Asymmetry"), this };
+	const auto asymmetryGroup = new QGroupBox{ tr("Asymmetry"), currentVoiceWidget };
 	createEnvelopeEditor(asymmetryGroup, _asymmetryEnvelope, 0.0);
-	leftLayout->addWidget(asymmetryGroup);
+	controlsLayout->addWidget(asymmetryGroup);
 
-	leftLayout->addItem(new QSpacerItem{ 0, 0, QSizePolicy::Minimum, QSizePolicy::Expanding });
-
-	const auto noteWidget = new QWidget{ this };
-	noteWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+	controlsLayout->addItem(new QSpacerItem{ 0, 0, QSizePolicy::Minimum, QSizePolicy::Expanding });
 
 	const auto noteLayout = new QGridLayout{};
-	layout->addLayout(noteLayout, 1);
+	currentVoiceLayout->addLayout(noteLayout, 1);
 	for (int row = 0; row < 10; ++row)
 		for (int column = 0; column < 12; ++column)
 		{
 			const auto octave = 9 - row;
 			const auto name = noteNames[column];
-			const auto button = new QToolButton{ noteWidget };
+			const auto button = new QToolButton{ currentVoiceWidget };
 			button->setText(QStringLiteral("%1%2").arg(name).arg(octave));
 			button->setFixedSize({ 40, 30 });
 			button->setStyleSheet(name[1] == '#' ? "background-color: black; color: white" : "background-color: white; color: black");
@@ -215,6 +229,14 @@ VoiceEditor::VoiceEditor(VoicesModel& model, QWidget* parent)
 			connect(button, &QAbstractButton::clicked, this, &VoiceEditor::onNoteClicked);
 			noteLayout->addWidget(button, row, column);
 		}
+
+	connect(_voicesView->selectionModel(), &QItemSelectionModel::currentChanged, [this, removeVoiceAction, currentVoiceWidget](const QModelIndex& current, const QModelIndex& previous) {
+		if (previous.isValid())
+			_model.setVoice(previous, currentVoice());
+		removeVoiceAction->setEnabled(current.isValid());
+		resetVoice(current.isValid() ? *_model.voice(current) : aulos::Voice{});
+		currentVoiceWidget->setEnabled(current.isValid());
+	});
 }
 
 VoiceEditor::~VoiceEditor() = default;

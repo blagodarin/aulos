@@ -30,6 +30,8 @@ class VoicesModel : public QAbstractItemModel
 	Q_OBJECT
 
 public:
+	QModelIndex addVoice(const aulos::Voice&);
+	void removeVoice(const QModelIndex&);
 	void reset(const aulos::Composition*);
 	void setVoice(const QModelIndex&, const aulos::Voice&);
 	const aulos::Voice* voice(const QModelIndex&) const;
