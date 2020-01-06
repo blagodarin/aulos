@@ -45,7 +45,7 @@ namespace
 			const auto value = settings.value(recentFileKeyBase.arg(index));
 			if (!value.isValid())
 				break;
-			result << value.toString();
+			result.prepend(value.toString());
 			++index;
 		}
 		return result;
