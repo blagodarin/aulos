@@ -22,7 +22,7 @@
 
 #include <aulos.hpp>
 
-#include <QCoreApplication>
+#include <QApplication>
 #include <QFileDialog>
 #include <QGraphicsView>
 #include <QLabel>
@@ -30,6 +30,7 @@
 #include <QSettings>
 #include <QSpinBox>
 #include <QStatusBar>
+#include <QStyle>
 #include <QToolBar>
 
 namespace
@@ -74,9 +75,9 @@ Studio::Studio()
 {
 	const auto fileMenu = menuBar()->addMenu(tr("&File"));
 	_fileOpenAction = fileMenu->addAction(
-		tr("&Open..."), [this] { openComposition(); }, Qt::CTRL + Qt::Key_O);
+		qApp->style()->standardIcon(QStyle::SP_DialogOpenButton), tr("&Open..."), [this] { openComposition(); }, Qt::CTRL + Qt::Key_O);
 	_fileSaveAction = fileMenu->addAction(
-		tr("&Save"), [this] {}, Qt::CTRL + Qt::Key_S);
+		qApp->style()->standardIcon(QStyle::SP_DialogSaveButton), tr("&Save"), [this] {}, Qt::CTRL + Qt::Key_S);
 	_fileSaveAsAction = fileMenu->addAction(
 		tr("Save &As..."), [this] {}, Qt::CTRL + Qt::ALT + Qt::Key_S);
 	_fileCloseAction = fileMenu->addAction(
@@ -93,7 +94,7 @@ Studio::Studio()
 
 	const auto toolsMenu = menuBar()->addMenu(tr("&Tools"));
 	_toolsVoiceEditorAction = toolsMenu->addAction(
-		tr("&Voice Editor"), [this] { _voiceEditor->show(); });
+		qApp->style()->standardIcon(QStyle::SP_MediaVolume), tr("&Voice Editor"), [this] { _voiceEditor->show(); });
 
 	_speedSpin = new QSpinBox{ this };
 	_speedSpin->setRange(1, 32);

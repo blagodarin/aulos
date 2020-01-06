@@ -166,14 +166,14 @@ VoiceEditor::VoiceEditor(VoicesModel& model, QWidget* parent)
 	const auto toolBar = new QToolBar{ this };
 	rootLayout->addWidget(toolBar, 0, 0);
 
-	toolBar->addAction(tr("Add Voice"), [this] {
+	toolBar->addAction(tr("Add"), [this] {
 		aulos::Voice voice;
 		voice._amplitudeEnvelope._changes = { { .1f, 1.f }, { .4f, .5f }, { .5f, 0.f } };
 		voice._name = tr("NewVoice").toStdString();
 		_voicesView->setCurrentIndex(_model.addVoice(voice));
 	});
 
-	const auto removeVoiceAction = toolBar->addAction(tr("Remove Voice"), [this] {
+	const auto removeVoiceAction = toolBar->addAction(tr("Remove"), [this] {
 		const auto index = _voicesView->currentIndex();
 		if (QMessageBox::question(this, {}, tr("Remove \"%1\"?").arg(index.data(Qt::EditRole).toString()), QMessageBox::Yes | QMessageBox::No, QMessageBox::No) == QMessageBox::Yes)
 			_model.removeVoice(index);
