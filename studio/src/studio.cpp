@@ -17,6 +17,7 @@
 
 #include "studio.hpp"
 
+#include "composition_scene.hpp"
 #include "voice_editor.hpp"
 #include "voices_model.hpp"
 
@@ -71,8 +72,11 @@ namespace
 
 Studio::Studio()
 	: _voicesModel{ std::make_unique<VoicesModel>() }
+	, _compositionScene{ std::make_unique<CompositionScene>() }
 	, _voiceEditor{ std::make_unique<VoiceEditor>(*_voicesModel, this) }
 {
+	resize(640, 480);
+
 	const auto fileMenu = menuBar()->addMenu(tr("&File"));
 	_fileOpenAction = fileMenu->addAction(
 		qApp->style()->standardIcon(QStyle::SP_DialogOpenButton), tr("&Open..."), [this] { openComposition(); }, Qt::CTRL + Qt::Key_O);
@@ -111,8 +115,9 @@ Studio::Studio()
 	toolBar->addAction(_toolsVoiceEditorAction);
 	addToolBar(toolBar);
 
-	const auto centralWidget = new QGraphicsView{ this };
-	setCentralWidget(centralWidget);
+	_compositionView = new QGraphicsView{ this };
+	_compositionView->setScene(_compositionScene.get());
+	setCentralWidget(_compositionView);
 
 	_statusPath = new QLabel{ statusBar() };
 	_statusPath->setTextFormat(Qt::RichText);
@@ -150,11 +155,11 @@ void Studio::clearRecentFiles()
 void Studio::closeComposition()
 {
 	_hasComposition = false;
-	_composition.reset();
 	_compositionPath.clear();
 	_compositionName.clear();
 	_speedSpin->setValue(_speedSpin->minimum());
 	_voicesModel->reset(nullptr);
+	_compositionScene->reset(nullptr);
 	_changed = false;
 	updateStatus();
 }
@@ -174,9 +179,10 @@ void Studio::openComposition(const QString& path)
 	if (!file.open(QIODevice::ReadOnly))
 		return;
 
+	std::unique_ptr<aulos::Composition> composition;
 	try
 	{
-		_composition = aulos::Composition::create(file.readAll().constData());
+		composition = aulos::Composition::create(file.readAll().constData());
 	}
 	catch (const std::runtime_error&)
 	{
@@ -185,8 +191,9 @@ void Studio::openComposition(const QString& path)
 
 	_compositionPath = path;
 	_compositionName = QFileInfo{ file }.fileName();
-	_speedSpin->setValue(static_cast<int>(_composition->speed()));
-	_voicesModel->reset(_composition.get());
+	_speedSpin->setValue(static_cast<int>(composition->speed()));
+	_voicesModel->reset(composition.get());
+	_compositionScene->reset(composition.get());
 	_hasComposition = true;
 	setRecentFile(path);
 	saveRecentFiles();
@@ -234,5 +241,6 @@ void Studio::updateStatus()
 	_fileCloseAction->setEnabled(_hasComposition);
 	_toolsVoiceEditorAction->setEnabled(_hasComposition);
 	_speedSpin->setEnabled(_hasComposition);
+	_compositionView->setEnabled(_hasComposition);
 	_statusPath->setText(_hasComposition ? _compositionPath : QStringLiteral("<i>%1</i>").arg(tr("no file")));
 }

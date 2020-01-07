@@ -19,6 +19,7 @@
 
 #include <QMainWindow>
 
+class QGraphicsView;
 class QLabel;
 class QSpinBox;
 
@@ -27,6 +28,7 @@ namespace aulos
 	class Composition;
 }
 
+class CompositionScene;
 class VoiceEditor;
 class VoicesModel;
 
@@ -48,14 +50,15 @@ private:
 	void updateStatus();
 
 private:
-	std::unique_ptr<aulos::Composition> _composition;
+	std::unique_ptr<VoicesModel> _voicesModel;
+	std::unique_ptr<CompositionScene> _compositionScene;
+	std::unique_ptr<VoiceEditor> _voiceEditor;
+
 	QString _compositionPath;
 	QString _compositionName;
-	std::unique_ptr<VoicesModel> _voicesModel;
+
 	bool _hasComposition = false;
 	bool _changed = false;
-
-	std::unique_ptr<VoiceEditor> _voiceEditor;
 
 	QAction* _fileOpenAction;
 	QAction* _fileSaveAction;
@@ -65,5 +68,6 @@ private:
 	QList<QAction*> _recentFilesActions;
 	QAction* _toolsVoiceEditorAction;
 	QSpinBox* _speedSpin;
+	QGraphicsView* _compositionView;
 	QLabel* _statusPath;
 };
