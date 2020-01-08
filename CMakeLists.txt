@@ -19,6 +19,9 @@ cmake_minimum_required(VERSION 3.15)
 
 project(aulos VERSION 0.0.1 LANGUAGES CXX)
 
+include(CMakePackageConfigHelpers)
+include(GNUInstallDirs)
+
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
@@ -40,3 +43,19 @@ if(WITH_STUDIO)
 	find_package(Qt5 COMPONENTS Multimedia Widgets REQUIRED)
 	add_subdirectory(studio)
 endif()
+
+if(WIN32)
+	set(_cmake_config_dir ${CMAKE_INSTALL_PREFIX}/cmake)
+else()
+	set(_cmake_config_dir ${CMAKE_INSTALL_LIBDIR}/cmake/Aulos)
+endif()
+
+configure_package_config_file(AulosConfig.cmake.in
+	${CMAKE_CURRENT_BINARY_DIR}/AulosConfig.cmake
+	INSTALL_DESTINATION ${_cmake_config_dir})
+
+write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/AulosConfigVersion.cmake
+	COMPATIBILITY SameMinorVersion)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/AulosConfig.cmake ${CMAKE_CURRENT_BINARY_DIR}/AulosConfigVersion.cmake DESTINATION ${_cmake_config_dir})
+install(EXPORT AulosTargets NAMESPACE Aulos:: DESTINATION ${_cmake_config_dir})

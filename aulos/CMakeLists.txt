@@ -30,3 +30,9 @@ source_group("src" FILES ${_src})
 add_library(aulos STATIC ${_include} ${_src})
 target_compile_definitions(aulos PRIVATE _USE_MATH_DEFINES)
 target_include_directories(aulos PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+
+install(FILES include/aulos.hpp DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(TARGETS aulos EXPORT AulosTargets
+	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

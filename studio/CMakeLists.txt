@@ -37,3 +37,5 @@ source_group("src" FILES ${_src})
 add_executable(aulos_studio WIN32 ${_src})
 target_compile_options(aulos_studio PRIVATE /wd5054)
 target_link_libraries(aulos_studio PRIVATE aulos Qt5::Multimedia Qt5::Widgets)
+
+install(TARGETS aulos_studio RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
