@@ -29,6 +29,7 @@
 #include <QGraphicsView>
 #include <QLabel>
 #include <QMenuBar>
+#include <QSaveFile>
 #include <QSettings>
 #include <QSpinBox>
 #include <QStatusBar>
@@ -69,6 +70,12 @@ namespace
 			++index;
 		}
 	}
+
+	template <typename T>
+	void writeValue(QIODevice& device, T value)
+	{
+		device.write(reinterpret_cast<const char*>(&value), sizeof value);
+	}
 }
 
 Studio::Studio()
@@ -86,6 +93,8 @@ Studio::Studio()
 		qApp->style()->standardIcon(QStyle::SP_DialogSaveButton), tr("&Save"), [this] {}, Qt::CTRL + Qt::Key_S);
 	_fileSaveAsAction = fileMenu->addAction(
 		tr("Save &As..."), [this] {}, Qt::CTRL + Qt::ALT + Qt::Key_S);
+	_fileExportAction = fileMenu->addAction(
+		tr("&Export..."), [this] { exportComposition(); });
 	_fileCloseAction = fileMenu->addAction(
 		tr("&Close"), [this] { closeComposition(); }, Qt::CTRL + Qt::Key_W);
 	fileMenu->addSeparator();
@@ -182,6 +191,42 @@ void Studio::closeComposition()
 	updateStatus();
 }
 
+void Studio::exportComposition()
+{
+	const auto path = QFileDialog::getSaveFileName(this, tr("Export Composition"), {}, tr("WAV Files (*.wav)"));
+	if (path.isNull())
+		return;
+
+	QSaveFile file{ path };
+	if (!file.open(QIODevice::WriteOnly))
+		return;
+
+	QByteArray rawData;
+	Player::renderData(rawData, *aulos::Renderer::create(*_composition, Player::SamplingRate));
+
+	constexpr size_t chunkHeaderSize = 8;
+	constexpr size_t fmtChunkSize = 16;
+	constexpr auto totalHeadersSize = chunkHeaderSize + 4 + chunkHeaderSize + fmtChunkSize + chunkHeaderSize;
+
+	file.write("RIFF");
+	::writeValue<uint32_t>(file, totalHeadersSize + rawData.size());
+	assert(file.pos() == chunkHeaderSize);
+	file.write("WAVE");
+	file.write("fmt ");
+	::writeValue<uint32_t>(file, fmtChunkSize);
+	::writeValue<uint16_t>(file, 3);                                    // Data format: IEEE float PCM samples.
+	::writeValue<uint16_t>(file, 1);                                    // Channels.
+	::writeValue<uint32_t>(file, Player::SamplingRate);                 // Samples per second.
+	::writeValue<uint32_t>(file, Player::SamplingRate * sizeof(float)); // Bytes per second.
+	::writeValue<uint16_t>(file, sizeof(float));                        // Bytes per frame.
+	::writeValue<uint16_t>(file, sizeof(float) * 8);                    // Bits per sample.
+	file.write("data");
+	::writeValue<uint32_t>(file, rawData.size());
+	assert(file.pos() == totalHeadersSize);
+	file.write(rawData);
+	file.commit();
+}
+
 void Studio::openComposition()
 {
 	const auto path = QFileDialog::getOpenFileName(this, tr("Open Composition"), {}, tr("Aulos Files (*.txt)"));
@@ -197,10 +242,9 @@ void Studio::openComposition(const QString& path)
 	if (!file.open(QIODevice::ReadOnly))
 		return;
 
-	std::unique_ptr<aulos::Composition> composition;
 	try
 	{
-		composition = aulos::Composition::create(file.readAll().constData());
+		_composition = aulos::Composition::create(file.readAll().constData());
 	}
 	catch (const std::runtime_error&)
 	{
@@ -209,10 +253,10 @@ void Studio::openComposition(const QString& path)
 
 	_compositionPath = path;
 	_compositionName = QFileInfo{ file }.fileName();
-	_speedSpin->setValue(static_cast<int>(composition->speed()));
-	_voicesModel->reset(composition.get());
-	_compositionScene->reset(composition.get());
-	_player->reset(*aulos::Renderer::create(*composition, Player::SamplingRate));
+	_speedSpin->setValue(static_cast<int>(_composition->speed()));
+	_voicesModel->reset(_composition.get());
+	_compositionScene->reset(_composition.get());
+	_player->reset(*aulos::Renderer::create(*_composition, Player::SamplingRate));
 	_hasComposition = true;
 	setRecentFile(path);
 	saveRecentFiles();
@@ -257,6 +301,7 @@ void Studio::updateStatus()
 	setWindowTitle(_hasComposition ? QStringLiteral("%1 - %2").arg(_changed ? '*' + _compositionName : _compositionName, QCoreApplication::applicationName()) : QCoreApplication::applicationName());
 	_fileSaveAction->setEnabled(_changed);
 	_fileSaveAsAction->setEnabled(_hasComposition);
+	_fileExportAction->setEnabled(_hasComposition);
 	_fileCloseAction->setEnabled(_hasComposition);
 	_playAction->setEnabled(_hasComposition && !_player->isPlaying());
 	_stopAction->setEnabled(_hasComposition && _player->isPlaying());

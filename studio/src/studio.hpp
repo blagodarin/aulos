@@ -44,6 +44,7 @@ public:
 private:
 	void clearRecentFiles();
 	void closeComposition();
+	void exportComposition();
 	void openComposition();
 	void openComposition(const QString& path);
 	void saveRecentFiles();
@@ -56,6 +57,7 @@ private:
 	std::unique_ptr<VoiceEditor> _voiceEditor;
 	std::unique_ptr<Player> _player;
 
+	std::unique_ptr<aulos::Composition> _composition;
 	QString _compositionPath;
 	QString _compositionName;
 
@@ -65,6 +67,7 @@ private:
 	QAction* _fileOpenAction;
 	QAction* _fileSaveAction;
 	QAction* _fileSaveAsAction;
+	QAction* _fileExportAction;
 	QAction* _fileCloseAction;
 	QMenu* _recentFilesMenu;
 	QList<QAction*> _recentFilesActions;

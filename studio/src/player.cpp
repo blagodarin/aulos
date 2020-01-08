@@ -39,26 +39,11 @@ Player::Player(QObject* parent)
 	});
 }
 
-void Player::reset(class aulos::Renderer& renderer)
+void Player::reset(aulos::Renderer& renderer)
 {
 	stop();
 	_buffer.close();
-	_data.clear();
-	_data.resize(65'536);
-	for (int totalRendered = 0;;)
-	{
-		std::memset(_data.data() + totalRendered, 0, _data.size() - totalRendered);
-		if (const auto rendered = renderer.render(_data.data() + totalRendered, _data.size() - totalRendered); rendered > 0)
-		{
-			totalRendered += static_cast<int>(rendered);
-			_data.resize(totalRendered + 65'536);
-		}
-		else
-		{
-			_data.resize(totalRendered);
-			break;
-		}
-	}
+	renderData(_data, renderer);
 	_buffer.open(QIODevice::ReadOnly);
 }
 
@@ -75,4 +60,24 @@ void Player::stop()
 	if (!_buffer.isOpen())
 		return;
 	_output->stop();
+}
+
+void Player::renderData(QByteArray& data, aulos::Renderer& renderer)
+{
+	data.clear();
+	data.resize(65'536);
+	for (int totalRendered = 0;;)
+	{
+		std::memset(data.data() + totalRendered, 0, data.size() - totalRendered);
+		if (const auto rendered = renderer.render(data.data() + totalRendered, data.size() - totalRendered); rendered > 0)
+		{
+			totalRendered += static_cast<int>(rendered);
+			data.resize(totalRendered + 65'536);
+		}
+		else
+		{
+			data.resize(totalRendered);
+			break;
+		}
+	}
 }

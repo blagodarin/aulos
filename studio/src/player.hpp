@@ -40,9 +40,11 @@ public:
 	Player(QObject* parent = nullptr);
 
 	constexpr bool isPlaying() const noexcept { return _state == State::Started; }
-	void reset(class aulos::Renderer&);
+	void reset(aulos::Renderer&);
 	void start();
 	void stop();
+
+	static void renderData(QByteArray&, aulos::Renderer&);
 
 signals:
 	void stateChanged();
