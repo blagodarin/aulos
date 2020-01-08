@@ -18,50 +18,45 @@
 #pragma once
 
 #include <memory>
-#include <vector>
 
 #include <QByteArray>
 #include <QBuffer>
-#include <QWidget>
+#include <QObject>
+
+class QAudioOutput;
 
 namespace aulos
 {
-	struct Voice;
+	class Renderer;
 }
 
-class QAudioOutput;
-class QDoubleSpinBox;
-class QLineEdit;
-class QTableView;
-
-class Player;
-class VoicesModel;
-
-class VoiceEditor : public QWidget
+class Player : public QObject
 {
 	Q_OBJECT
 
 public:
-	VoiceEditor(VoicesModel&, QWidget*);
-	~VoiceEditor() override;
+	static constexpr unsigned SamplingRate = 48'000;
 
-private slots:
-	void onNoteClicked();
+	Player(QObject* parent = nullptr);
+
+	constexpr bool isPlaying() const noexcept { return _state == State::Started; }
+	void reset(class aulos::Renderer&);
+	void start();
+	void stop();
+
+signals:
+	void stateChanged();
 
 private:
-	void hideEvent(QHideEvent*) override;
+	enum class State
+	{
+		Stopped,
+		Starting,
+		Started,
+	};
 
-	void resetVoice(const aulos::Voice&);
-	aulos::Voice currentVoice();
-
-private:
-	struct EnvelopePoint;
-
-	VoicesModel& _model;
-	QTableView* _voicesView;
-	QDoubleSpinBox* _oscillationSpin;
-	std::vector<EnvelopePoint> _amplitudeEnvelope;
-	std::vector<EnvelopePoint> _frequencyEnvelope;
-	std::vector<EnvelopePoint> _asymmetryEnvelope;
-	std::unique_ptr<Player> _player;
+	QByteArray _data;
+	QBuffer _buffer;
+	std::unique_ptr<QAudioOutput> _output;
+	State _state = State::Stopped;
 };

@@ -314,13 +314,13 @@ namespace
 	public:
 		using TwoPartWaveBase::TwoPartWaveBase;
 
-		size_t render(void* buffer, size_t bufferSize) noexcept override
+		size_t render(void* buffer, size_t bufferBytes) noexcept override
 		{
-			bufferSize -= bufferSize % kSampleSize;
+			bufferBytes -= bufferBytes % kSampleSize;
 			size_t offset = 0;
-			while (offset < bufferSize && _amplitudeModulator.update())
+			while (offset < bufferBytes && _amplitudeModulator.update())
 			{
-				const auto samplesToGenerate = std::min(static_cast<size_t>(std::ceil(_partSamplesRemaining)), std::min((bufferSize - offset) / kSampleSize, _amplitudeModulator.partSamplesRemaining()));
+				const auto samplesToGenerate = std::min(static_cast<size_t>(std::ceil(_partSamplesRemaining)), std::min((bufferBytes - offset) / kSampleSize, _amplitudeModulator.partSamplesRemaining()));
 				Oscillator oscillator{ _partSamplesRemaining, _partLength, _oscillation };
 				const auto base = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
 				for (size_t i = 0; i < samplesToGenerate; ++i)

@@ -130,20 +130,7 @@ namespace aulos
 		virtual size_t voiceCount() const noexcept = 0;
 	};
 
-	// Generates audio data for a voice.
-	class VoiceRenderer
-	{
-	public:
-		[[nodiscard]] static std::unique_ptr<VoiceRenderer> create(const Voice&, unsigned samplingRate);
-
-		virtual ~VoiceRenderer() noexcept = default;
-
-		virtual size_t duration() const noexcept = 0;
-		virtual void start(Note, float amplitude) noexcept = 0;
-		virtual size_t render(void* buffer, size_t maxSamples) noexcept = 0;
-	};
-
-	// Generates audio data for a composition.
+	// Generates audio data.
 	class Renderer
 	{
 	public:
@@ -152,5 +139,17 @@ namespace aulos
 		virtual ~Renderer() noexcept = default;
 
 		virtual size_t render(void* buffer, size_t bufferBytes) noexcept = 0;
+	};
+
+	// Generates audio data for a voice.
+	class VoiceRenderer : public Renderer
+	{
+	public:
+		[[nodiscard]] static std::unique_ptr<VoiceRenderer> create(const Voice&, unsigned samplingRate);
+
+		virtual ~VoiceRenderer() noexcept = default;
+
+		virtual size_t duration() const noexcept = 0;
+		virtual void start(Note, float amplitude) noexcept = 0;
 	};
 }

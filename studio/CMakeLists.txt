@@ -23,6 +23,8 @@ set(_src
 	src/composition_scene.cpp
 	src/composition_scene.hpp
 	src/main.cpp
+	src/player.cpp
+	src/player.hpp
 	src/studio.cpp
 	src/studio.hpp
 	src/voice_editor.cpp

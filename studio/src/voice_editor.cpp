@@ -17,6 +17,7 @@
 
 #include "voice_editor.hpp"
 
+#include "player.hpp"
 #include "voices_model.hpp"
 
 #include <aulos.hpp>
@@ -24,7 +25,6 @@
 #include <array>
 #include <cassert>
 
-#include <QAudioOutput>
 #include <QCheckBox>
 #include <QComboBox>
 #include <QDialogButtonBox>
@@ -84,17 +84,8 @@ struct VoiceEditor::EnvelopePoint
 VoiceEditor::VoiceEditor(VoicesModel& model, QWidget* parent)
 	: QWidget{ parent, Qt::Window | Qt::WindowTitleHint | Qt::CustomizeWindowHint | Qt::WindowCloseButtonHint }
 	, _model{ model }
-	, _audioBuffer{ &_audioData }
+	, _player{ std::make_unique<Player>() }
 {
-	QAudioFormat format;
-	format.setByteOrder(QAudioFormat::LittleEndian);
-	format.setChannelCount(1);
-	format.setCodec("audio/pcm");
-	format.setSampleRate(48'000);
-	format.setSampleSize(32);
-	format.setSampleType(QAudioFormat::Float);
-	_audioOutput = std::make_unique<QAudioOutput>(format);
-
 	const auto createOscillationWidgets = [this](QWidget* parent) {
 		const auto layout = new QGridLayout{ parent };
 
@@ -243,38 +234,20 @@ VoiceEditor::~VoiceEditor() = default;
 
 void VoiceEditor::onNoteClicked()
 {
-	const auto renderer = aulos::VoiceRenderer::create(currentVoice(), 48'000);
+	const auto renderer = aulos::VoiceRenderer::create(currentVoice(), Player::SamplingRate);
 	assert(renderer);
 
 	const auto button = qobject_cast<QAbstractButton*>(sender());
 	assert(button);
 	renderer->start(static_cast<aulos::Note>(button->property("note").toInt()), 1.f);
 
-	_audioOutput->stop();
-	_audioBuffer.close();
-	_audioData.clear();
-	_audioData.resize(65'536);
-	for (int totalRendered = 0;;)
-	{
-		std::memset(_audioData.data() + totalRendered, 0, _audioData.size() - totalRendered);
-		if (const auto rendered = renderer->render(_audioData.data() + totalRendered, _audioData.size() - totalRendered); rendered > 0)
-		{
-			totalRendered += static_cast<int>(rendered);
-			_audioData.resize(totalRendered + 65'536);
-		}
-		else
-		{
-			_audioData.resize(totalRendered);
-			break;
-		}
-	}
-	_audioBuffer.open(QIODevice::ReadOnly);
-	_audioOutput->start(&_audioBuffer);
+	_player->reset(*renderer);
+	_player->start();
 }
 
 void VoiceEditor::hideEvent(QHideEvent*)
 {
-	_audioOutput->stop();
+	_player->stop();
 	_model.setVoice(_voicesView->currentIndex(), currentVoice());
 }
 

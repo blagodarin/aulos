@@ -29,6 +29,7 @@ namespace aulos
 }
 
 class CompositionScene;
+class Player;
 class VoiceEditor;
 class VoicesModel;
 
@@ -53,6 +54,7 @@ private:
 	std::unique_ptr<VoicesModel> _voicesModel;
 	std::unique_ptr<CompositionScene> _compositionScene;
 	std::unique_ptr<VoiceEditor> _voiceEditor;
+	std::unique_ptr<Player> _player;
 
 	QString _compositionPath;
 	QString _compositionName;
@@ -66,6 +68,8 @@ private:
 	QAction* _fileCloseAction;
 	QMenu* _recentFilesMenu;
 	QList<QAction*> _recentFilesActions;
+	QAction* _playAction;
+	QAction* _stopAction;
 	QAction* _toolsVoiceEditorAction;
 	QSpinBox* _speedSpin;
 	QGraphicsView* _compositionView;

@@ -18,6 +18,7 @@
 #include "studio.hpp"
 
 #include "composition_scene.hpp"
+#include "player.hpp"
 #include "voice_editor.hpp"
 #include "voices_model.hpp"
 
@@ -74,6 +75,7 @@ Studio::Studio()
 	: _voicesModel{ std::make_unique<VoicesModel>() }
 	, _compositionScene{ std::make_unique<CompositionScene>() }
 	, _voiceEditor{ std::make_unique<VoiceEditor>(*_voicesModel, this) }
+	, _player{ std::make_unique<Player>() }
 {
 	resize(640, 480);
 
@@ -96,6 +98,18 @@ Studio::Studio()
 	fileMenu->addAction(
 		tr("E&xit"), [this] { close(); }, Qt::ALT + Qt::Key_F4);
 
+	const auto playbackMenu = menuBar()->addMenu(tr("&Playback"));
+	_playAction = playbackMenu->addAction(
+		qApp->style()->standardIcon(QStyle::SP_MediaPlay), tr("&Play"), [this] {
+			_player->start();
+			updateStatus();
+		});
+	_stopAction = playbackMenu->addAction(
+		qApp->style()->standardIcon(QStyle::SP_MediaStop), tr("&Stop"), [this] {
+			_player->stop();
+			updateStatus();
+		});
+
 	const auto toolsMenu = menuBar()->addMenu(tr("&Tools"));
 	_toolsVoiceEditorAction = toolsMenu->addAction(
 		qApp->style()->standardIcon(QStyle::SP_MediaVolume), tr("&Voice Editor"), [this] { _voiceEditor->show(); });
@@ -110,6 +124,8 @@ Studio::Studio()
 	toolBar->addAction(_fileOpenAction);
 	toolBar->addAction(_fileSaveAction);
 	toolBar->addSeparator();
+	toolBar->addAction(_playAction);
+	toolBar->addAction(_stopAction);
 	toolBar->addWidget(_speedSpin);
 	toolBar->addSeparator();
 	toolBar->addAction(_toolsVoiceEditorAction);
@@ -135,6 +151,7 @@ Studio::Studio()
 		_changed = true;
 		updateStatus();
 	});
+	connect(_player.get(), &Player::stateChanged, [this] { updateStatus(); });
 
 	updateStatus();
 }
@@ -160,6 +177,7 @@ void Studio::closeComposition()
 	_speedSpin->setValue(_speedSpin->minimum());
 	_voicesModel->reset(nullptr);
 	_compositionScene->reset(nullptr);
+	_player->stop();
 	_changed = false;
 	updateStatus();
 }
@@ -194,6 +212,7 @@ void Studio::openComposition(const QString& path)
 	_speedSpin->setValue(static_cast<int>(composition->speed()));
 	_voicesModel->reset(composition.get());
 	_compositionScene->reset(composition.get());
+	_player->reset(*aulos::Renderer::create(*composition, Player::SamplingRate));
 	_hasComposition = true;
 	setRecentFile(path);
 	saveRecentFiles();
@@ -239,6 +258,8 @@ void Studio::updateStatus()
 	_fileSaveAction->setEnabled(_changed);
 	_fileSaveAsAction->setEnabled(_hasComposition);
 	_fileCloseAction->setEnabled(_hasComposition);
+	_playAction->setEnabled(_hasComposition && !_player->isPlaying());
+	_stopAction->setEnabled(_hasComposition && _player->isPlaying());
 	_toolsVoiceEditorAction->setEnabled(_hasComposition);
 	_speedSpin->setEnabled(_hasComposition);
 	_compositionView->setEnabled(_hasComposition);
