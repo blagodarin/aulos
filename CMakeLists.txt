@@ -35,7 +35,6 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 endif()
 
 add_subdirectory(aulos)
-add_subdirectory(aulete)
 
 if(WITH_STUDIO)
 	find_package(Qt5 COMPONENTS Multimedia Widgets REQUIRED)
