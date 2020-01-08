@@ -1,0 +1,28 @@
+version: 0.0.{build}-{branch}
+image: Visual Studio 2019
+shallow_clone: true
+
+environment:
+  matrix:
+    - CONFIG: Release
+      ARCH: amd64
+      QTDIR: C:\Qt\5.13.2\msvc2017_64
+    - CONFIG: Debug
+      ARCH: amd64
+      QTDIR: C:\Qt\5.13.2\msvc2017_64
+    - CONFIG: Release
+      ARCH: x86
+      QTDIR: C:\Qt\5.13.2\msvc2017
+
+install:
+  - cmake --version
+  - call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat" %ARCH%
+  - cinst ninja
+
+build_script:
+  - set BUILD_DIR=%APPVEYOR_BUILD_FOLDER%\_build
+  - set INSTALL_DIR=%APPVEYOR_BUILD_FOLDER%\_install
+  - mkdir %BUILD_DIR% && cd %BUILD_DIR%
+  - cmake -G Ninja %APPVEYOR_BUILD_FOLDER% -DCMAKE_BUILD_TYPE=%CONFIG% -DCMAKE_INSTALL_PREFIX=%INSTALL_DIR% -DCMAKE_PREFIX_PATH=%QTDIR% -DWITH_STUDIO=ON
+  - cmake --build .
+  - cmake --build . --target install
