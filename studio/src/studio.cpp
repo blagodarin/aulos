@@ -160,7 +160,14 @@ Studio::Studio()
 		_changed = true;
 		updateStatus();
 	});
-	connect(_player.get(), &Player::stateChanged, [this] { updateStatus(); });
+	connect(_player.get(), &Player::stateChanged, [this] {
+		if (!_player->isPlaying())
+			_compositionScene->setCurrentStep(-1);
+		updateStatus();
+	});
+	connect(_player.get(), &Player::timeAdvanced, [this](qint64 microseconds) {
+		_compositionScene->setCurrentStep(microseconds * _speedSpin->value() / 1'000'000.0);
+	});
 
 	updateStatus();
 }

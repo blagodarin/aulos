@@ -48,6 +48,7 @@ public:
 
 signals:
 	void stateChanged();
+	void timeAdvanced(qint64 microseconds);
 
 private:
 	enum class State

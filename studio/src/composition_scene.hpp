@@ -19,6 +19,8 @@
 
 #include <QGraphicsScene>
 
+class QGraphicsLineItem;
+
 namespace aulos
 {
 	class Composition;
@@ -30,4 +32,8 @@ public:
 	CompositionScene();
 
 	void reset(const aulos::Composition*);
+	void setCurrentStep(double step);
+
+private:
+	QGraphicsLineItem* _cursorItem = nullptr;
 };

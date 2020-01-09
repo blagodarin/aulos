@@ -33,6 +33,10 @@ Player::Player(QObject* parent)
 	format.setSampleSize(32);
 	format.setSampleType(QAudioFormat::Float);
 	_output = std::make_unique<QAudioOutput>(format);
+	_output->setNotifyInterval(20);
+	connect(_output.get(), &QAudioOutput::notify, this, [this] {
+		emit timeAdvanced(_output->processedUSecs());
+	});
 	connect(_output.get(), &QAudioOutput::stateChanged, this, [this](QAudio::State state) {
 		_state = state == QAudio::ActiveState ? State::Started : State::Stopped;
 		emit stateChanged();
@@ -53,6 +57,7 @@ void Player::start()
 		return;
 	_buffer.seek(0);
 	_output->start(&_buffer);
+	emit timeAdvanced(0);
 }
 
 void Player::stop()

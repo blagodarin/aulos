@@ -28,7 +28,7 @@
 namespace
 {
 	constexpr auto kScaleX = 10.0;
-	constexpr auto kScaleY = 40.0;
+	constexpr auto kScaleY = 20.0;
 
 	const std::array<QColor, 2> kTrackBackgroundColor{ "#0fe", "#0ef" };
 	const std::array<QColor, 2> kFragmentBackgroundColor{ "#0ec", "#0ce" };
@@ -49,6 +49,7 @@ CompositionScene::CompositionScene()
 
 void CompositionScene::reset(const aulos::Composition* composition)
 {
+	_cursorItem = nullptr;
 	clear();
 
 	if (!composition)
@@ -109,5 +110,24 @@ void CompositionScene::reset(const aulos::Composition* composition)
 		addItem(item);
 	}
 
-	setSceneRect(0.0, 0.0, maxRight, sequenceOffsets.back() * kScaleY);
+	const auto totalHeight = sequenceOffsets.back() * kScaleY;
+	setSceneRect(0.0, 0.0, maxRight, totalHeight);
+
+	_cursorItem = new QGraphicsLineItem{ 0.0, 0.0, 0.0, totalHeight };
+	_cursorItem->setPen(QColor{ Qt::red });
+	_cursorItem->setVisible(false);
+	_cursorItem->setZValue(1.0);
+	addItem(_cursorItem);
+}
+
+void CompositionScene::setCurrentStep(double step)
+{
+	if (_cursorItem)
+	{
+		const auto x = step * kScaleX;
+		const auto isVisible = x >= 0.0 && x < sceneRect().right();
+		_cursorItem->setVisible(isVisible);
+		if (isVisible)
+			_cursorItem->setTransform(QTransform{ 1.0, 0.0, 0.0, 1.0, step * kScaleX, 0.0 });
+	}
 }
