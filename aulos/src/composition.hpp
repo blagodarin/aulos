@@ -25,6 +25,7 @@ namespace aulos
 	{
 		Track _track;
 		std::vector<std::vector<Sound>> _sequences;
+		std::vector<Fragment> _fragments;
 
 		TrackData(size_t voice, unsigned weight) noexcept
 			: _track{ voice, weight } {}
@@ -35,14 +36,13 @@ namespace aulos
 		float _speed;
 		std::vector<Voice> _voices;
 		std::vector<TrackData> _tracks;
-		std::vector<Fragment> _fragments;
 
 		CompositionImpl();
 
 		void load(const char* source);
 
-		Fragment fragment(size_t index) const noexcept override { return index < _fragments.size() ? _fragments[index] : Fragment{}; }
-		size_t fragmentCount() const noexcept override { return _fragments.size(); }
+		Fragment fragment(size_t track, size_t index) const noexcept override;
+		size_t fragmentCount(size_t track) const noexcept override { return track < _tracks.size() ? _tracks[track]._fragments.size() : 0; }
 		float speed() const noexcept override { return _speed; }
 		Sequence sequence(size_t track, size_t index) const noexcept override;
 		size_t sequenceCount(size_t track) const noexcept override { return track < _tracks.size() ? _tracks[track]._sequences.size() : 0; }

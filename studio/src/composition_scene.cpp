@@ -67,36 +67,38 @@ void CompositionScene::reset(const aulos::Composition* composition)
 	if (!sequenceOffsets.back())
 		return;
 
-	QHash<QPair<size_t, size_t>, size_t> sequenceLengths;
-	for (size_t t = 0; t < trackCount; ++t)
+	double maxRight = 0.0;
+	for (size_t trackIndex = 0; trackIndex < trackCount; ++trackIndex)
 	{
-		for (size_t s = 0; s < composition->sequenceCount(t); ++s)
+		std::unordered_map<size_t, size_t> sequenceLengths;
+		const auto sequenceCount = composition->sequenceCount(trackIndex);
+		sequenceLengths.reserve(sequenceCount);
+		for (size_t sequenceIndex = 0; sequenceIndex < sequenceCount; ++sequenceIndex)
 		{
-			const auto sequence = composition->sequence(t, s);
+			const auto sequence = composition->sequence(trackIndex, sequenceIndex);
 			size_t sequenceLength = 1;
 			for (size_t i = 0; i < sequence._size; ++i)
 				sequenceLength += sequence._data[i]._delay;
-			sequenceLengths.insert(qMakePair(t, s), sequenceLength);
+			sequenceLengths.emplace(sequenceIndex, sequenceLength);
 		}
-	}
 
-	const auto fragmentCount = composition->fragmentCount();
-	std::vector<aulos::Fragment> fragments;
-	fragments.reserve(fragmentCount);
-	for (size_t i = 0; i < fragmentCount; ++i)
-		fragments.emplace_back(composition->fragment(i));
+		std::vector<aulos::Fragment> fragments;
+		const auto fragmentCount = composition->fragmentCount(trackIndex);
+		fragments.reserve(fragmentCount);
+		for (size_t i = 0; i < fragmentCount; ++i)
+			fragments.emplace_back(composition->fragment(trackIndex, i));
 
-	size_t offset = 0;
-	double maxRight = 0.0;
-	for (const auto& fragment : fragments)
-	{
-		offset += fragment._delay;
-		const auto duration = sequenceLengths.value(qMakePair(fragment._track, fragment._sequence));
-		const auto item = new FragmentItem{ offset, sequenceOffsets[fragment._track] + fragment._sequence, duration };
-		item->setBrush(kFragmentBackgroundColor[fragment._track & 1]);
-		item->setPen(kFragmentFrameColor[fragment._track & 1]);
-		addItem(item);
-		maxRight = std::max(maxRight, item->rect().right());
+		size_t offset = 0;
+		for (const auto& fragment : fragments)
+		{
+			offset += fragment._delay;
+			const auto duration = sequenceLengths[fragment._sequence];
+			const auto item = new FragmentItem{ offset, sequenceOffsets[trackIndex] + fragment._sequence, duration };
+			item->setBrush(kFragmentBackgroundColor[trackIndex & 1]);
+			item->setPen(kFragmentFrameColor[trackIndex & 1]);
+			addItem(item);
+			maxRight = std::max(maxRight, item->rect().right());
+		}
 	}
 
 	maxRight += kScaleX; // So the end is clearly visible.

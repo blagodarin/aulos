@@ -356,23 +356,24 @@ namespace
 			const auto totalWeight = static_cast<float>(std::reduce(composition._tracks.cbegin(), composition._tracks.cend(), 0u, [](unsigned weight, const aulos::TrackData& track) { return weight + track._track._weight; }));
 			_tracks.reserve(composition._tracks.size());
 			for (const auto& track : composition._tracks)
-				_tracks.emplace_back(std::make_unique<TrackState>(composition._voices[track._track._voice], track._track._weight / totalWeight, samplingRate));
-			size_t fragmentOffset = 0;
-			for (const auto& fragment : composition._fragments)
 			{
-				fragmentOffset += fragment._delay;
-				auto& trackSounds = _tracks[fragment._track]->_sounds;
-				auto lastSoundOffset = std::reduce(trackSounds.cbegin(), trackSounds.cend(), size_t{}, [](size_t offset, const aulos::Sound& sound) { return offset + sound._delay; });
-				while (!trackSounds.empty() && lastSoundOffset >= fragmentOffset)
+				auto& trackSounds = _tracks.emplace_back(std::make_unique<TrackState>(composition._voices[track._track._voice], track._track._weight / totalWeight, samplingRate))->_sounds;
+				size_t fragmentOffset = 0;
+				for (const auto& fragment : track._fragments)
 				{
-					lastSoundOffset -= trackSounds.back()._delay;
-					trackSounds.pop_back();
-				}
-				if (const auto& sequence = composition._tracks[fragment._track]._sequences[fragment._sequence]; !sequence.empty())
-				{
-					trackSounds.reserve(trackSounds.size() + sequence.size());
-					trackSounds.emplace_back(fragmentOffset - lastSoundOffset + sequence.front()._delay, sequence.front()._note);
-					std::copy(std::next(sequence.begin()), sequence.cend(), std::back_inserter(trackSounds));
+					fragmentOffset += fragment._delay;
+					auto lastSoundOffset = std::reduce(trackSounds.cbegin(), trackSounds.cend(), size_t{}, [](size_t offset, const aulos::Sound& sound) { return offset + sound._delay; });
+					while (!trackSounds.empty() && lastSoundOffset >= fragmentOffset)
+					{
+						lastSoundOffset -= trackSounds.back()._delay;
+						trackSounds.pop_back();
+					}
+					if (const auto& sequence = track._sequences[fragment._sequence]; !sequence.empty())
+					{
+						trackSounds.reserve(trackSounds.size() + sequence.size());
+						trackSounds.emplace_back(fragmentOffset - lastSoundOffset + sequence.front()._delay, sequence.front()._note);
+						std::copy(std::next(sequence.begin()), sequence.cend(), std::back_inserter(trackSounds));
+					}
 				}
 			}
 			for (auto& track : _tracks)

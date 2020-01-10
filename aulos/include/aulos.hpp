@@ -103,12 +103,11 @@ namespace aulos
 	struct Fragment
 	{
 		size_t _delay = 0;    // Steps from the beginning of the previous fragment.
-		size_t _track = 0;    // Track index.
 		size_t _sequence = 0; // Sequence index.
 
 		constexpr Fragment() noexcept = default;
-		constexpr Fragment(size_t delay, size_t track, size_t sequence) noexcept
-			: _delay{ delay }, _track{ track }, _sequence{ sequence } {}
+		constexpr Fragment(size_t delay, size_t sequence) noexcept
+			: _delay{ delay }, _sequence{ sequence } {}
 	};
 
 	// Combines all audio elements in a single piece of audio stored in a playback-optimal format.
@@ -119,8 +118,8 @@ namespace aulos
 
 		virtual ~Composition() noexcept = default;
 
-		virtual Fragment fragment(size_t index) const noexcept = 0;
-		virtual size_t fragmentCount() const noexcept = 0;
+		virtual Fragment fragment(size_t track, size_t index) const noexcept = 0;
+		virtual size_t fragmentCount(size_t track) const noexcept = 0;
 		virtual float speed() const noexcept = 0;
 		virtual Sequence sequence(size_t track, size_t index) const noexcept = 0;
 		virtual size_t sequenceCount(size_t track) const noexcept = 0;
