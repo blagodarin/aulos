@@ -41,11 +41,11 @@ namespace aulos
 
 	struct Sound
 	{
-		size_t _delay = 0; // Steps from the beginning of the previous sound in a sequence.
 		Note _note = Note::C0;
+		size_t _pause = 0; // Pause before the next sound in a sequence.
 
-		constexpr Sound(size_t delay, Note note) noexcept
-			: _delay{ delay }, _note{ note } {}
+		constexpr Sound(Note note, size_t pause) noexcept
+			: _note{ note }, _pause{ pause } {}
 	};
 
 	struct Sequence

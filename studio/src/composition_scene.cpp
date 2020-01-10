@@ -76,9 +76,9 @@ void CompositionScene::reset(const aulos::Composition* composition)
 		for (size_t sequenceIndex = 0; sequenceIndex < sequenceCount; ++sequenceIndex)
 		{
 			const auto sequence = composition->sequence(trackIndex, sequenceIndex);
-			size_t sequenceLength = 1;
+			size_t sequenceLength = 0;
 			for (size_t i = 0; i < sequence._size; ++i)
-				sequenceLength += sequence._data[i]._delay;
+				sequenceLength += sequence._data[i]._pause;
 			sequenceLengths.emplace(sequenceIndex, sequenceLength);
 		}
 

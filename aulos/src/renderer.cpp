@@ -362,7 +362,7 @@ namespace
 				for (const auto& fragment : track._fragments)
 				{
 					fragmentOffset += fragment._delay;
-					auto lastSoundOffset = std::reduce(trackSounds.cbegin(), trackSounds.cend(), size_t{}, [](size_t offset, const aulos::Sound& sound) { return offset + sound._delay; });
+					auto lastSoundOffset = std::reduce(trackSounds.cbegin(), trackSounds.cend(), size_t{}, [](size_t offset, const TrackSound& sound) { return offset + sound._delay; });
 					while (!trackSounds.empty() && lastSoundOffset >= fragmentOffset)
 					{
 						lastSoundOffset -= trackSounds.back()._delay;
@@ -371,8 +371,12 @@ namespace
 					if (const auto& sequence = track._sequences[fragment._sequence]; !sequence.empty())
 					{
 						trackSounds.reserve(trackSounds.size() + sequence.size());
-						trackSounds.emplace_back(fragmentOffset - lastSoundOffset + sequence.front()._delay, sequence.front()._note);
-						std::copy(std::next(sequence.begin()), sequence.cend(), std::back_inserter(trackSounds));
+						auto delay = fragmentOffset - lastSoundOffset;
+						for (const auto& sound : sequence)
+						{
+							trackSounds.emplace_back(delay, sound._note);
+							delay = sound._pause;
+						}
 					}
 				}
 			}
@@ -418,11 +422,20 @@ namespace
 		}
 
 	public:
+		struct TrackSound
+		{
+			size_t _delay = 0;
+			aulos::Note _note = aulos::Note::C0;
+
+			constexpr TrackSound(size_t delay, aulos::Note note) noexcept
+				: _delay{ delay }, _note{ note } {}
+		};
+
 		struct TrackState
 		{
 			std::unique_ptr<aulos::VoiceRenderer> _voice;
 			const float _normalizedWeight;
-			std::vector<aulos::Sound> _sounds;
+			std::vector<TrackSound> _sounds;
 			size_t _soundIndex = 0;
 			size_t _soundBytesRemaining = 0;
 
