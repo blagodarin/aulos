@@ -24,27 +24,62 @@
 #include <vector>
 
 #include <QGraphicsRectItem>
+#include <QPainter>
 
 namespace
 {
 	constexpr auto kScaleX = 10.0;
-	constexpr auto kScaleY = 20.0;
+	constexpr auto kScaleY = 40.0;
 
-	const std::array<QColor, 2> kTrackBackgroundColor{ "#0fe", "#0ef" };
-	const std::array<QColor, 2> kFragmentBackgroundColor{ "#0ec", "#0ce" };
-	const std::array<QColor, 2> kFragmentFrameColor{ "#080", "#008" };
+	const QColor kBackgroundColor{ "#444" };
+	const std::array<QColor, 2> kTrackBackgroundColor{ "#999", "#888" };
+	const std::array<QColor, 5> kFragmentBackgroundColor{ "#f88", "#ff8", "#8f8", "#8ff", "#88f" };
+	const std::array<QColor, 5> kFragmentFrameColor{ "#800", "#880", "#080", "#088", "#008" };
+	const QColor kCursorColor{ "#000" };
 
-	class FragmentItem : public QGraphicsRectItem
+	class FragmentItem : public QGraphicsItem
 	{
 	public:
-		FragmentItem(size_t x, size_t y, size_t duration)
-			: QGraphicsRectItem{ x * kScaleX, y * kScaleY, duration * kScaleX, kScaleY } {}
+		FragmentItem(size_t sequenceIndex, size_t x, size_t y, size_t duration, QGraphicsItem* parent = nullptr)
+			: QGraphicsItem{ parent }
+			, _sequenceIndex{ QString::number(sequenceIndex + 1) }
+			, _rect{ x * kScaleX, y * kScaleY, duration * kScaleX, kScaleY }
+		{}
+
+		QRectF boundingRect() const override { return _rect; }
+		void setBrush(const QBrush& brush) { _brush = brush; }
+		void setPen(const QPen& pen) { _pen = pen; }
+
+		void paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*) override
+		{
+			painter->setBrush(_brush);
+			painter->setPen(_pen);
+			const auto right = _rect.right() - kScaleX / 2;
+			const std::array<QPointF, 5> points{
+				QPointF{ _rect.left(), _rect.top() },
+				QPointF{ right, _rect.top() },
+				QPointF{ _rect.right(), _rect.center().y() },
+				QPointF{ right, _rect.bottom() },
+				QPointF{ _rect.left(), _rect.bottom() },
+			};
+			painter->drawConvexPolygon(points.data(), static_cast<int>(points.size()));
+			auto font = painter->font();
+			font.setPixelSize(kScaleY / 2);
+			painter->setFont(font);
+			painter->drawText(QRectF{ QPointF{ _rect.left() + kScaleX / 2, _rect.top() }, QPointF{ right, _rect.bottom() } }, Qt::AlignVCenter, _sequenceIndex);
+		}
+
+	private:
+		const QString _sequenceIndex;
+		const QRectF _rect;
+		QBrush _brush{ Qt::white };
+		QPen _pen{ Qt::black };
 	};
 }
 
 CompositionScene::CompositionScene()
 {
-	setBackgroundBrush(Qt::darkGray);
+	setBackgroundBrush(kBackgroundColor);
 }
 
 void CompositionScene::reset(const aulos::Composition* composition)
@@ -57,14 +92,6 @@ void CompositionScene::reset(const aulos::Composition* composition)
 
 	const auto trackCount = composition->trackCount();
 	if (!trackCount)
-		return;
-
-	std::vector<size_t> sequenceOffsets;
-	sequenceOffsets.reserve(trackCount + 1);
-	sequenceOffsets.emplace_back(0);
-	for (size_t i = 0; i < trackCount; ++i)
-		sequenceOffsets.emplace_back(sequenceOffsets[i] + composition->sequenceCount(i));
-	if (!sequenceOffsets.back())
 		return;
 
 	double maxRight = 0.0;
@@ -93,11 +120,11 @@ void CompositionScene::reset(const aulos::Composition* composition)
 		{
 			offset += fragment._delay;
 			const auto duration = sequenceLengths[fragment._sequence];
-			const auto item = new FragmentItem{ offset, sequenceOffsets[trackIndex] + fragment._sequence, duration };
-			item->setBrush(kFragmentBackgroundColor[trackIndex & 1]);
-			item->setPen(kFragmentFrameColor[trackIndex & 1]);
+			const auto item = new FragmentItem{ fragment._sequence, offset, trackIndex, duration };
+			item->setBrush(kFragmentBackgroundColor[trackIndex % kFragmentBackgroundColor.size()]);
+			item->setPen(kFragmentFrameColor[trackIndex % kFragmentFrameColor.size()]);
 			addItem(item);
-			maxRight = std::max(maxRight, item->rect().right());
+			maxRight = std::max(maxRight, item->boundingRect().right());
 		}
 	}
 
@@ -105,18 +132,18 @@ void CompositionScene::reset(const aulos::Composition* composition)
 
 	for (size_t i = 0; i < trackCount; ++i)
 	{
-		const auto item = new QGraphicsRectItem{ 0.0, sequenceOffsets[i] * kScaleY, maxRight, (sequenceOffsets[i + 1] - sequenceOffsets[i]) * kScaleY };
-		item->setBrush(kTrackBackgroundColor[i & 1]);
+		const auto item = new QGraphicsRectItem{ 0.0, i * kScaleY, maxRight, kScaleY };
+		item->setBrush(kTrackBackgroundColor[i % kTrackBackgroundColor.size()]);
 		item->setPen(QColor{ Qt::transparent });
 		item->setZValue(-1.0);
 		addItem(item);
 	}
 
-	const auto totalHeight = sequenceOffsets.back() * kScaleY;
+	const auto totalHeight = trackCount * kScaleY;
 	setSceneRect(0.0, 0.0, maxRight, totalHeight);
 
 	_cursorItem = new QGraphicsLineItem{ 0.0, 0.0, 0.0, totalHeight };
-	_cursorItem->setPen(QColor{ Qt::red });
+	_cursorItem->setPen(kCursorColor);
 	_cursorItem->setVisible(false);
 	_cursorItem->setZValue(1.0);
 	addItem(_cursorItem);
