@@ -23,9 +23,7 @@ namespace aulos
 {
 	struct CompositionImpl final : public Composition
 	{
-		std::unique_ptr<CompositionData> _data;
-
-		CompositionImpl();
+		CompositionData _data;
 
 		void load(const char* source);
 	};

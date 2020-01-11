@@ -21,7 +21,7 @@
 
 namespace aulos
 {
-	// Contains audio data in a playback-optimized format.
+	// Contains audio data in an optimized format.
 	class Composition
 	{
 	public:
@@ -30,7 +30,7 @@ namespace aulos
 		virtual ~Composition() noexcept = default;
 	};
 
-	// Generates audio data.
+	// Generates PCM data for a composition.
 	class Renderer
 	{
 	public:

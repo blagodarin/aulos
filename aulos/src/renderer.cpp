@@ -465,6 +465,6 @@ namespace aulos
 
 	std::unique_ptr<Renderer> Renderer::create(const Composition& composition, unsigned samplingRate)
 	{
-		return std::make_unique<RendererImpl>(*static_cast<const CompositionImpl&>(composition)._data, samplingRate);
+		return std::make_unique<RendererImpl>(static_cast<const CompositionImpl&>(composition)._data, samplingRate);
 	}
 }

@@ -49,16 +49,6 @@ namespace aulos
 			: _note{ note }, _pause{ pause } {}
 	};
 
-	struct Sequence
-	{
-		const Sound* _data = nullptr;
-		size_t _size = 0;
-
-		constexpr Sequence() noexcept = default;
-		constexpr Sequence(const Sound* data, size_t size) noexcept
-			: _data{ data }, _size{ size } {}
-	};
-
 	enum class Wave
 	{
 		Linear,
@@ -105,6 +95,7 @@ namespace aulos
 			: _delay{ delay }, _sequence{ sequence } {}
 	};
 
+	// Specifies playback actions for a single voice instance.
 	struct Track
 	{
 		size_t _voice = 0;
@@ -116,18 +107,23 @@ namespace aulos
 			: _voice{ voice }, _weight{ weight } {}
 	};
 
-	// Combines all audio elements in a single piece of audio stored in a playback-optimal format.
+	constexpr float kMinSpeed = 1.f;  // Minimum composition playback speed (in steps per second).
+	constexpr float kMaxSpeed = 32.f; // Maximum composition playback speed (in steps per second).
+
+	// Contains composition data in an editable format.
 	struct CompositionData
 	{
-		float _speed = 0.f;
+		float _speed = kMinSpeed;
 		std::vector<Voice> _voices;
 		std::vector<Track> _tracks;
 
-		[[nodiscard]] static std::unique_ptr<CompositionData> decode(std::unique_ptr<Composition>&&);
-		[[nodiscard]] static std::unique_ptr<Composition> encode(std::unique_ptr<CompositionData>&&);
+		CompositionData() = default;
+		CompositionData(const Composition&);
+
+		[[nodiscard]] std::unique_ptr<Composition> pack() const;
 	};
 
-	// Generates audio data for a voice.
+	// Generates PCM data for a voice.
 	class VoiceRenderer : public Renderer
 	{
 	public:

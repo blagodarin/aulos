@@ -110,7 +110,7 @@ Studio::Studio()
 	const auto playbackMenu = menuBar()->addMenu(tr("&Playback"));
 	_playAction = playbackMenu->addAction(
 		qApp->style()->standardIcon(QStyle::SP_MediaPlay), tr("&Play"), [this] {
-			const auto composition = aulos::CompositionData::encode(std::make_unique<aulos::CompositionData>(*_composition));
+			const auto composition = _composition->pack();
 			if (!composition)
 				return;
 			_player->reset(*aulos::Renderer::create(*composition, Player::SamplingRate));
@@ -204,7 +204,7 @@ void Studio::closeComposition()
 
 void Studio::exportComposition()
 {
-	const auto composition = aulos::CompositionData::encode(std::make_unique<aulos::CompositionData>(*_composition));
+	const auto composition = _composition->pack();
 	if (!composition)
 		return;
 
@@ -267,7 +267,7 @@ void Studio::openComposition(const QString& path)
 		return;
 	}
 
-	_composition = aulos::CompositionData::decode(std::move(composition));
+	_composition = std::make_unique<aulos::CompositionData>(*composition);
 	_compositionPath = path;
 	_compositionName = QFileInfo{ file }.fileName();
 	_speedSpin->setValue(static_cast<int>(_composition->_speed));

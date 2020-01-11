@@ -28,9 +28,6 @@
 
 namespace
 {
-	constexpr float kMinSpeed = 1.f;
-	constexpr float kMaxSpeed = 32.f;
-
 	struct Location
 	{
 		size_t _line = 1;
@@ -47,12 +44,6 @@ namespace
 
 namespace aulos
 {
-	CompositionImpl::CompositionImpl()
-		: _data{ std::make_unique<CompositionData>() }
-	{
-		_data->_speed = kMinSpeed;
-	}
-
 	void CompositionImpl::load(const char* source)
 	{
 		enum class Section
@@ -294,7 +285,7 @@ namespace aulos
 			{
 				if (currentSection != Section::Initial)
 					throw CompositionError{ location(), "Unexpected command" };
-				_data->_speed = readFloat(kMinSpeed, kMaxSpeed);
+				_data._speed = readFloat(kMinSpeed, kMaxSpeed);
 				consumeEndOfLine();
 			}
 			else
@@ -332,18 +323,18 @@ namespace aulos
 				switch (currentSection)
 				{
 				case Section::Sequences: {
-					const auto trackIndex = readUnsigned(1, static_cast<unsigned>(_data->_tracks.size()));
-					const auto sequenceIndex = static_cast<unsigned>(_data->_tracks[trackIndex - 1]._sequences.size() + 1);
+					const auto trackIndex = readUnsigned(1, static_cast<unsigned>(_data._tracks.size()));
+					const auto sequenceIndex = static_cast<unsigned>(_data._tracks[trackIndex - 1]._sequences.size() + 1);
 					readUnsigned(sequenceIndex, sequenceIndex);
-					parseSequence(_data->_tracks[trackIndex - 1]._sequences.emplace_back());
+					parseSequence(_data._tracks[trackIndex - 1]._sequences.emplace_back());
 					break;
 				}
 				case Section::Tracks: {
-					const auto trackIndex = static_cast<unsigned>(_data->_tracks.size() + 1);
+					const auto trackIndex = static_cast<unsigned>(_data._tracks.size() + 1);
 					readUnsigned(trackIndex, trackIndex);
-					const auto voiceIndex = readUnsigned(1, static_cast<unsigned>(_data->_voices.size()));
+					const auto voiceIndex = readUnsigned(1, static_cast<unsigned>(_data._voices.size()));
 					const auto weight = tryReadUnsigned(1, 256);
-					_data->_tracks.emplace_back(voiceIndex - 1, weight ? *weight : 1);
+					_data._tracks.emplace_back(voiceIndex - 1, weight ? *weight : 1);
 					break;
 				}
 				case Section::Fragments: {
@@ -367,12 +358,12 @@ namespace aulos
 				++source;
 				if (const auto section = readIdentifier(); section == "voice")
 				{
-					const auto voiceIndex = static_cast<unsigned>(_data->_voices.size() + 1);
+					const auto voiceIndex = static_cast<unsigned>(_data._voices.size() + 1);
 					readUnsigned(voiceIndex, voiceIndex);
 					auto name = tryReadString();
 					consumeEndOfLine();
 					currentSection = Section::Voice;
-					currentVoice = &_data->_voices.emplace_back();
+					currentVoice = &_data._voices.emplace_back();
 					if (name)
 						currentVoice->_name = std::move(*name);
 				}
@@ -388,10 +379,10 @@ namespace aulos
 				}
 				else if (section == "fragments")
 				{
-					const auto trackIndex = readUnsigned(1, static_cast<unsigned>(_data->_tracks.size()));
+					const auto trackIndex = readUnsigned(1, static_cast<unsigned>(_data._tracks.size()));
 					consumeEndOfLine();
 					currentSection = Section::Fragments;
-					currentTrack = &_data->_tracks[trackIndex - 1];
+					currentTrack = &_data._tracks[trackIndex - 1];
 				}
 				else
 					throw CompositionError{ location(), "Unknown section \"@" + std::string{ section } + "\"" };
@@ -409,17 +400,15 @@ namespace aulos
 		return composition;
 	}
 
-	std::unique_ptr<CompositionData> CompositionData::decode(std::unique_ptr<Composition>&& composition)
+	CompositionData::CompositionData(const Composition& composition)
+		: CompositionData{ static_cast<const CompositionImpl&>(composition)._data }
 	{
-		auto data = std::move(static_cast<CompositionImpl*>(composition.get())->_data);
-		composition.reset();
-		return data;
 	}
 
-	std::unique_ptr<Composition> CompositionData::encode(std::unique_ptr<CompositionData>&& data)
+	std::unique_ptr<Composition> CompositionData::pack() const
 	{
 		auto composition = std::make_unique<CompositionImpl>();
-		composition->_data = std::move(data);
+		composition->_data = *this; // TODO: Verify.
 		return composition;
 	}
 }
