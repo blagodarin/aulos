@@ -17,6 +17,9 @@
 
 #pragma once
 
+#include <memory>
+#include <vector>
+
 #include <QGraphicsScene>
 
 class QGraphicsLineItem;
@@ -29,14 +32,28 @@ namespace aulos
 constexpr auto kScaleX = 10.0;
 constexpr auto kScaleY = 40.0;
 
+class CompositionItem;
+
 class CompositionScene : public QGraphicsScene
 {
+	Q_OBJECT
+
 public:
 	CompositionScene();
 
 	void reset(const aulos::Composition*);
 	void setCurrentStep(double step);
 
+private slots:
+	void onEditRequested(size_t trackIndex, size_t offset, size_t sequenceIndex);
+	void onInsertRequested(size_t trackIndex, size_t offset);
+	void onRemoveRequested(size_t trackIndex, size_t offset);
+
 private:
+	CompositionItem* addCompositionItem(size_t trackIndex, size_t offset, size_t sequenceIndex);
+
+private:
+	struct Track;
+	std::vector<std::unique_ptr<Track>> _tracks;
 	QGraphicsLineItem* _cursorItem = nullptr;
 };

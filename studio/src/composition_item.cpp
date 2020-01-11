@@ -96,18 +96,18 @@ void CompositionItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, 
 void CompositionItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
 {
 	QMenu menu;
-	const auto submenu = menu.addMenu(tr("Sequence %1").arg(_sequenceIndex + 1));
-	const auto editAction = submenu->addAction(tr("Edit..."));
-	const auto removeAction = submenu->addAction(tr("Remove"));
+	const auto editAction = menu.addAction(tr("Edit %1...").arg(_sequenceIndex + 1));
+	const auto removeAction = menu.addAction(tr("Remove"));
+	QAction* insertAction = nullptr;
 	if (e->pos().x() > _rect.left() + kScaleX)
 	{
 		menu.addSeparator();
-		menu.addAction(tr("Insert..."));
+		insertAction = menu.addAction(tr("Insert..."));
 	}
 	if (const auto action = menu.exec(e->screenPos()); action == editAction)
 		emit editRequested(_trackIndex, _offset, _sequenceIndex);
 	else if (action == removeAction)
 		emit removeRequested(_trackIndex, _offset);
-	else
+	else if (insertAction && action == insertAction)
 		emit insertRequested(_trackIndex, _offset + static_cast<size_t>(std::ceil(e->pos().x() - _rect.left()) / kScaleX));
 }

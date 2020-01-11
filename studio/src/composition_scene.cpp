@@ -34,6 +34,13 @@ namespace
 	const QColor kCursorColor{ "#000" };
 }
 
+struct CompositionScene::Track
+{
+	QGraphicsRectItem* _background = nullptr;
+	std::vector<size_t> _sequenceLengths;
+	std::map<size_t, CompositionItem*> _fragments;
+};
+
 CompositionScene::CompositionScene()
 {
 	setBackgroundBrush(kBackgroundColor);
@@ -41,6 +48,7 @@ CompositionScene::CompositionScene()
 
 void CompositionScene::reset(const aulos::Composition* composition)
 {
+	_tracks.clear();
 	_cursorItem = nullptr;
 	clear();
 
@@ -54,16 +62,17 @@ void CompositionScene::reset(const aulos::Composition* composition)
 	double maxRight = 0.0;
 	for (size_t trackIndex = 0; trackIndex < trackCount; ++trackIndex)
 	{
-		std::unordered_map<size_t, size_t> sequenceLengths;
+		auto& track = *_tracks.emplace_back(std::make_unique<Track>());
+
 		const auto sequenceCount = composition->sequenceCount(trackIndex);
-		sequenceLengths.reserve(sequenceCount);
+		track._sequenceLengths.reserve(sequenceCount);
 		for (size_t sequenceIndex = 0; sequenceIndex < sequenceCount; ++sequenceIndex)
 		{
 			const auto sequence = composition->sequence(trackIndex, sequenceIndex);
 			size_t sequenceLength = 0;
 			for (size_t i = 0; i < sequence._size; ++i)
 				sequenceLength += sequence._data[i]._pause;
-			sequenceLengths.emplace(sequenceIndex, sequenceLength);
+			track._sequenceLengths.emplace_back(sequenceLength);
 		}
 
 		std::vector<aulos::Fragment> fragments;
@@ -76,9 +85,7 @@ void CompositionScene::reset(const aulos::Composition* composition)
 		for (const auto& fragment : fragments)
 		{
 			offset += fragment._delay;
-			const auto duration = sequenceLengths[fragment._sequence];
-			const auto item = new CompositionItem{ trackIndex, offset, fragment._sequence, duration };
-			addItem(item);
+			const auto item = addCompositionItem(trackIndex, offset, fragment._sequence);
 			maxRight = std::max(maxRight, item->boundingRect().right());
 		}
 	}
@@ -92,6 +99,7 @@ void CompositionScene::reset(const aulos::Composition* composition)
 		item->setPen(QColor{ Qt::transparent });
 		item->setZValue(-1.0);
 		addItem(item);
+		_tracks[i]->_background = item;
 	}
 
 	const auto totalHeight = trackCount * kScaleY;
@@ -114,4 +122,52 @@ void CompositionScene::setCurrentStep(double step)
 		if (isVisible)
 			_cursorItem->setTransform(QTransform{ 1.0, 0.0, 0.0, 1.0, step * kScaleX, 0.0 });
 	}
+}
+
+void CompositionScene::onEditRequested(size_t trackIndex, size_t offset, size_t sequenceIndex)
+{
+	(void)trackIndex, offset, sequenceIndex;
+}
+
+void CompositionScene::onInsertRequested(size_t trackIndex, size_t offset)
+{
+	const auto newItem = addCompositionItem(trackIndex, offset, 0);
+	const auto maybeMaxRight = newItem->boundingRect().right() + kScaleX;
+	if (auto rect = sceneRect(); maybeMaxRight > rect.right())
+	{
+		rect.setRight(maybeMaxRight);
+		setSceneRect(rect);
+		for (const auto& track : _tracks)
+		{
+			auto trackRect = track->_background->rect();
+			trackRect.setRight(maybeMaxRight);
+			track->_background->setRect(trackRect);
+		}
+	}
+}
+
+void CompositionScene::onRemoveRequested(size_t trackIndex, size_t offset)
+{
+	auto& track = *_tracks[trackIndex];
+	const auto i = track._fragments.find(offset);
+	assert(i != track._fragments.end());
+	removeItem(i->second);
+	i->second->deleteLater();
+	track._fragments.erase(i);
+}
+
+CompositionItem* CompositionScene::addCompositionItem(size_t trackIndex, size_t offset, size_t sequenceIndex)
+{
+	auto& track = *_tracks[trackIndex];
+	const auto item = new CompositionItem{ trackIndex, offset, sequenceIndex, track._sequenceLengths[sequenceIndex] };
+	addItem(item);
+	connect(item, &CompositionItem::editRequested, this, &CompositionScene::onEditRequested);
+	connect(item, &CompositionItem::insertRequested, this, &CompositionScene::onInsertRequested);
+	connect(item, &CompositionItem::removeRequested, this, &CompositionScene::onRemoveRequested);
+	const auto i = track._fragments.emplace(offset, item).first;
+	if (i != track._fragments.begin())
+		std::prev(i)->second->stackBefore(i->second);
+	if (const auto next = std::next(i); next != track._fragments.end())
+		i->second->stackBefore(next->second);
+	return item;
 }
