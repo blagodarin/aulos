@@ -20,6 +20,8 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
 set(_src
+	src/composition_item.cpp
+	src/composition_item.hpp
 	src/composition_scene.cpp
 	src/composition_scene.hpp
 	src/main.cpp

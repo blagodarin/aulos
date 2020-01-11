@@ -26,6 +26,9 @@ namespace aulos
 	class Composition;
 }
 
+constexpr auto kScaleX = 10.0;
+constexpr auto kScaleY = 40.0;
+
 class CompositionScene : public QGraphicsScene
 {
 public:

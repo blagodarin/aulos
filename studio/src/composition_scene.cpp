@@ -17,6 +17,8 @@
 
 #include "composition_scene.hpp"
 
+#include "composition_item.hpp"
+
 #include <aulos.hpp>
 
 #include <array>
@@ -24,57 +26,12 @@
 #include <vector>
 
 #include <QGraphicsRectItem>
-#include <QPainter>
 
 namespace
 {
-	constexpr auto kScaleX = 10.0;
-	constexpr auto kScaleY = 40.0;
-
 	const QColor kBackgroundColor{ "#444" };
 	const std::array<QColor, 2> kTrackBackgroundColor{ "#999", "#888" };
-	const std::array<QColor, 5> kFragmentBackgroundColor{ "#f88", "#ff8", "#8f8", "#8ff", "#88f" };
-	const std::array<QColor, 5> kFragmentFrameColor{ "#800", "#880", "#080", "#088", "#008" };
 	const QColor kCursorColor{ "#000" };
-
-	class FragmentItem : public QGraphicsItem
-	{
-	public:
-		FragmentItem(size_t sequenceIndex, size_t x, size_t y, size_t duration, QGraphicsItem* parent = nullptr)
-			: QGraphicsItem{ parent }
-			, _sequenceIndex{ QString::number(sequenceIndex + 1) }
-			, _rect{ x * kScaleX, y * kScaleY, duration * kScaleX, kScaleY }
-		{}
-
-		QRectF boundingRect() const override { return _rect; }
-		void setBrush(const QBrush& brush) { _brush = brush; }
-		void setPen(const QPen& pen) { _pen = pen; }
-
-		void paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*) override
-		{
-			painter->setBrush(_brush);
-			painter->setPen(_pen);
-			const auto right = _rect.right() - kScaleX / 2;
-			const std::array<QPointF, 5> points{
-				QPointF{ _rect.left(), _rect.top() },
-				QPointF{ right, _rect.top() },
-				QPointF{ _rect.right(), _rect.center().y() },
-				QPointF{ right, _rect.bottom() },
-				QPointF{ _rect.left(), _rect.bottom() },
-			};
-			painter->drawConvexPolygon(points.data(), static_cast<int>(points.size()));
-			auto font = painter->font();
-			font.setPixelSize(kScaleY / 2);
-			painter->setFont(font);
-			painter->drawText(QRectF{ QPointF{ _rect.left() + kScaleX / 2, _rect.top() }, QPointF{ right, _rect.bottom() } }, Qt::AlignVCenter, _sequenceIndex);
-		}
-
-	private:
-		const QString _sequenceIndex;
-		const QRectF _rect;
-		QBrush _brush{ Qt::white };
-		QPen _pen{ Qt::black };
-	};
 }
 
 CompositionScene::CompositionScene()
@@ -120,9 +77,7 @@ void CompositionScene::reset(const aulos::Composition* composition)
 		{
 			offset += fragment._delay;
 			const auto duration = sequenceLengths[fragment._sequence];
-			const auto item = new FragmentItem{ fragment._sequence, offset, trackIndex, duration };
-			item->setBrush(kFragmentBackgroundColor[trackIndex % kFragmentBackgroundColor.size()]);
-			item->setPen(kFragmentFrameColor[trackIndex % kFragmentFrameColor.size()]);
+			const auto item = new CompositionItem{ trackIndex, offset, fragment._sequence, duration };
 			addItem(item);
 			maxRight = std::max(maxRight, item->boundingRect().right());
 		}
