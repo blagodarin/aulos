@@ -20,15 +20,17 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
 set(_src
-	src/composition_item.cpp
-	src/composition_item.hpp
 	src/composition_scene.cpp
 	src/composition_scene.hpp
+	src/fragment_item.cpp
+	src/fragment_item.hpp
 	src/main.cpp
 	src/player.cpp
 	src/player.hpp
 	src/studio.cpp
 	src/studio.hpp
+	src/track_item.cpp
+	src/track_item.hpp
 	src/voice_editor.cpp
 	src/voice_editor.hpp
 	src/voices_model.hpp

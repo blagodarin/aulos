@@ -32,7 +32,7 @@ namespace aulos
 constexpr auto kScaleX = 10.0;
 constexpr auto kScaleY = 40.0;
 
-class CompositionItem;
+class FragmentItem;
 
 class CompositionScene : public QGraphicsScene
 {
@@ -50,10 +50,11 @@ private slots:
 	void onRemoveRequested(size_t trackIndex, size_t offset);
 
 private:
-	CompositionItem* addCompositionItem(size_t trackIndex, size_t offset, size_t sequenceIndex);
+	FragmentItem* addFragmentItem(size_t trackIndex, size_t offset, size_t sequenceIndex);
 
 private:
 	struct Track;
+	size_t _compositionLength = 0;
 	std::vector<std::unique_ptr<Track>> _tracks;
 	QGraphicsLineItem* _cursorItem = nullptr;
 };

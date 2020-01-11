@@ -17,7 +17,8 @@
 
 #include "composition_scene.hpp"
 
-#include "composition_item.hpp"
+#include "fragment_item.hpp"
+#include "track_item.hpp"
 
 #include <aulos.hpp>
 
@@ -30,15 +31,15 @@
 namespace
 {
 	const QColor kBackgroundColor{ "#444" };
-	const std::array<QColor, 2> kTrackBackgroundColor{ "#999", "#888" };
 	const QColor kCursorColor{ "#000" };
+	constexpr size_t kExtraLength = 1;
 }
 
 struct CompositionScene::Track
 {
-	QGraphicsRectItem* _background = nullptr;
+	TrackItem* _background = nullptr;
 	std::vector<size_t> _sequenceLengths;
-	std::map<size_t, CompositionItem*> _fragments;
+	std::map<size_t, FragmentItem*> _fragments;
 };
 
 CompositionScene::CompositionScene()
@@ -48,6 +49,7 @@ CompositionScene::CompositionScene()
 
 void CompositionScene::reset(const aulos::Composition* composition)
 {
+	_compositionLength = 0;
 	_tracks.clear();
 	_cursorItem = nullptr;
 	clear();
@@ -59,7 +61,6 @@ void CompositionScene::reset(const aulos::Composition* composition)
 	if (!trackCount)
 		return;
 
-	double maxRight = 0.0;
 	for (size_t trackIndex = 0; trackIndex < trackCount; ++trackIndex)
 	{
 		auto& track = *_tracks.emplace_back(std::make_unique<Track>());
@@ -85,27 +86,26 @@ void CompositionScene::reset(const aulos::Composition* composition)
 		for (const auto& fragment : fragments)
 		{
 			offset += fragment._delay;
-			const auto item = addCompositionItem(trackIndex, offset, fragment._sequence);
-			maxRight = std::max(maxRight, item->boundingRect().right());
+			const auto item = addFragmentItem(trackIndex, offset, fragment._sequence);
+			_compositionLength = std::max(_compositionLength, offset + item->fragmentLength());
 		}
 	}
 
-	maxRight += kScaleX; // So the end is clearly visible.
+	_compositionLength += kExtraLength;
 
 	for (size_t i = 0; i < trackCount; ++i)
 	{
-		const auto item = new QGraphicsRectItem{ 0.0, i * kScaleY, maxRight, kScaleY };
-		item->setBrush(kTrackBackgroundColor[i % kTrackBackgroundColor.size()]);
-		item->setPen(QColor{ Qt::transparent });
+		const auto item = new TrackItem{ i, _compositionLength };
 		item->setZValue(-1.0);
 		addItem(item);
+		connect(item, &TrackItem::insertRequested, this, &CompositionScene::onInsertRequested);
 		_tracks[i]->_background = item;
 	}
 
-	const auto totalHeight = trackCount * kScaleY;
-	setSceneRect(0.0, 0.0, maxRight, totalHeight);
+	const auto bottomRight = _tracks.back()->_background->boundingRect().bottomRight();
+	setSceneRect(0.0, 0.0, bottomRight.x(), bottomRight.y());
 
-	_cursorItem = new QGraphicsLineItem{ 0.0, 0.0, 0.0, totalHeight };
+	_cursorItem = new QGraphicsLineItem{ 0.0, 0.0, 0.0, bottomRight.y() };
 	_cursorItem->setPen(kCursorColor);
 	_cursorItem->setVisible(false);
 	_cursorItem->setZValue(1.0);
@@ -131,19 +131,16 @@ void CompositionScene::onEditRequested(size_t trackIndex, size_t offset, size_t 
 
 void CompositionScene::onInsertRequested(size_t trackIndex, size_t offset)
 {
-	const auto newItem = addCompositionItem(trackIndex, offset, 0);
-	const auto maybeMaxRight = newItem->boundingRect().right() + kScaleX;
-	if (auto rect = sceneRect(); maybeMaxRight > rect.right())
-	{
-		rect.setRight(maybeMaxRight);
-		setSceneRect(rect);
-		for (const auto& track : _tracks)
-		{
-			auto trackRect = track->_background->rect();
-			trackRect.setRight(maybeMaxRight);
-			track->_background->setRect(trackRect);
-		}
-	}
+	const auto newItem = addFragmentItem(trackIndex, offset, 0);
+	const auto minCompositionLength = offset + newItem->fragmentLength() + kExtraLength;
+	if (minCompositionLength <= _compositionLength)
+		return;
+	_compositionLength = minCompositionLength;
+	auto compositionRect = sceneRect();
+	compositionRect.setWidth(_compositionLength * kScaleX);
+	setSceneRect(compositionRect);
+	for (const auto& track : _tracks)
+		track->_background->setTrackLength(_compositionLength);
 }
 
 void CompositionScene::onRemoveRequested(size_t trackIndex, size_t offset)
@@ -156,14 +153,13 @@ void CompositionScene::onRemoveRequested(size_t trackIndex, size_t offset)
 	track._fragments.erase(i);
 }
 
-CompositionItem* CompositionScene::addCompositionItem(size_t trackIndex, size_t offset, size_t sequenceIndex)
+FragmentItem* CompositionScene::addFragmentItem(size_t trackIndex, size_t offset, size_t sequenceIndex)
 {
 	auto& track = *_tracks[trackIndex];
-	const auto item = new CompositionItem{ trackIndex, offset, sequenceIndex, track._sequenceLengths[sequenceIndex] };
+	const auto item = new FragmentItem{ trackIndex, offset, sequenceIndex, track._sequenceLengths[sequenceIndex] };
 	addItem(item);
-	connect(item, &CompositionItem::editRequested, this, &CompositionScene::onEditRequested);
-	connect(item, &CompositionItem::insertRequested, this, &CompositionScene::onInsertRequested);
-	connect(item, &CompositionItem::removeRequested, this, &CompositionScene::onRemoveRequested);
+	connect(item, &FragmentItem::editRequested, this, &CompositionScene::onEditRequested);
+	connect(item, &FragmentItem::removeRequested, this, &CompositionScene::onRemoveRequested);
 	const auto i = track._fragments.emplace(offset, item).first;
 	if (i != track._fragments.begin())
 		std::prev(i)->second->stackBefore(i->second);

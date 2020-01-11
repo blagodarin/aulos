@@ -19,28 +19,26 @@
 
 #include <QGraphicsObject>
 
-class CompositionItem : public QGraphicsObject
+class TrackItem : public QGraphicsObject
 {
 	Q_OBJECT
 
 public:
-	CompositionItem(size_t trackIndex, size_t offset, size_t sequenceIndex, size_t duration, QGraphicsItem* parent = nullptr);
+	TrackItem(size_t trackIndex, size_t length, QGraphicsItem* parent = nullptr);
 
 	QRectF boundingRect() const override { return _rect; }
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
+	void setTrackLength(size_t length);
+	size_t trackLength() const noexcept { return _length; }
 
 signals:
-	void editRequested(size_t trackIndex, size_t offset, size_t sequenceIndex);
 	void insertRequested(size_t trackIndex, size_t offset);
-	void removeRequested(size_t trackIndex, size_t offset);
 
 private:
 	void contextMenuEvent(QGraphicsSceneContextMenuEvent*) override;
 
 private:
 	const size_t _trackIndex;
-	const size_t _offset;
-	const size_t _sequenceIndex;
-	const QRectF _rect;
-	const size_t _colorIndex;
+	size_t _length;
+	QRectF _rect;
 };
