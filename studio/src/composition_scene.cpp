@@ -138,6 +138,7 @@ void CompositionScene::onRemoveRequested(size_t trackIndex, size_t offset)
 	const auto i = track._fragments.find(offset);
 	assert(i != track._fragments.end());
 	removeItem(i->second);
+	update(i->second->boundingRect()); // The view doesn't update properly if it's inside a scroll area.
 	i->second->deleteLater();
 	track._fragments.erase(i);
 }
