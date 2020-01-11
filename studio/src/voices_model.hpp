@@ -21,7 +21,7 @@
 
 namespace aulos
 {
-	class Composition;
+	struct CompositionData;
 	struct Voice;
 }
 
@@ -32,7 +32,7 @@ class VoicesModel : public QAbstractItemModel
 public:
 	QModelIndex addVoice(const aulos::Voice&);
 	void removeVoice(const QModelIndex&);
-	void reset(const aulos::Composition*);
+	void reset(const aulos::CompositionData*);
 	void setVoice(const QModelIndex&, const aulos::Voice&);
 	const aulos::Voice* voice(const QModelIndex&) const;
 

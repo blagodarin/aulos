@@ -17,7 +17,8 @@
 
 #pragma once
 
-#include <memory>
+#include <aulos/playback.hpp>
+
 #include <string>
 #include <vector>
 
@@ -93,12 +94,6 @@ namespace aulos
 		std::string _name;
 	};
 
-	struct Track
-	{
-		size_t _voice = 0;
-		unsigned _weight = 0;
-	};
-
 	// Specifies when and how to play a sequence.
 	struct Fragment
 	{
@@ -110,34 +105,26 @@ namespace aulos
 			: _delay{ delay }, _sequence{ sequence } {}
 	};
 
-	// Combines all audio elements in a single piece of audio stored in a playback-optimal format.
-	class Composition
+	struct Track
 	{
-	public:
-		[[nodiscard]] static std::unique_ptr<Composition> create(const char* textSource);
+		size_t _voice = 0;
+		unsigned _weight = 0;
+		std::vector<std::vector<Sound>> _sequences;
+		std::vector<Fragment> _fragments;
 
-		virtual ~Composition() noexcept = default;
-
-		virtual Fragment fragment(size_t track, size_t index) const noexcept = 0;
-		virtual size_t fragmentCount(size_t track) const noexcept = 0;
-		virtual float speed() const noexcept = 0;
-		virtual Sequence sequence(size_t track, size_t index) const noexcept = 0;
-		virtual size_t sequenceCount(size_t track) const noexcept = 0;
-		virtual Track track(size_t index) const noexcept = 0;
-		virtual size_t trackCount() const noexcept = 0;
-		virtual Voice voice(size_t index) const noexcept = 0;
-		virtual size_t voiceCount() const noexcept = 0;
+		Track(size_t voice, unsigned weight) noexcept
+			: _voice{ voice }, _weight{ weight } {}
 	};
 
-	// Generates audio data.
-	class Renderer
+	// Combines all audio elements in a single piece of audio stored in a playback-optimal format.
+	struct CompositionData
 	{
-	public:
-		[[nodiscard]] static std::unique_ptr<Renderer> create(const Composition&, unsigned samplingRate);
+		float _speed = 0.f;
+		std::vector<Voice> _voices;
+		std::vector<Track> _tracks;
 
-		virtual ~Renderer() noexcept = default;
-
-		virtual size_t render(void* buffer, size_t bufferBytes) noexcept = 0;
+		[[nodiscard]] static std::unique_ptr<CompositionData> decode(std::unique_ptr<Composition>&&);
+		[[nodiscard]] static std::unique_ptr<Composition> encode(std::unique_ptr<CompositionData>&&);
 	};
 
 	// Generates audio data for a voice.

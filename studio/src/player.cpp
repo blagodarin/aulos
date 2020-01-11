@@ -17,7 +17,7 @@
 
 #include "player.hpp"
 
-#include <aulos.hpp>
+#include <aulos/playback.hpp>
 
 #include <QAudioOutput>
 

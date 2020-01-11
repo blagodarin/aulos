@@ -20,7 +20,7 @@
 #include "fragment_item.hpp"
 #include "track_item.hpp"
 
-#include <aulos.hpp>
+#include <aulos/data.hpp>
 
 #include <array>
 #include <numeric>
@@ -47,43 +47,32 @@ CompositionScene::CompositionScene()
 	setBackgroundBrush(kBackgroundColor);
 }
 
-void CompositionScene::reset(const aulos::Composition* composition)
+void CompositionScene::reset(const aulos::CompositionData* composition)
 {
 	_compositionLength = 0;
 	_tracks.clear();
 	_cursorItem = nullptr;
 	clear();
 
-	if (!composition)
+	if (!composition || composition->_tracks.empty())
 		return;
 
-	const auto trackCount = composition->trackCount();
-	if (!trackCount)
-		return;
-
-	for (size_t trackIndex = 0; trackIndex < trackCount; ++trackIndex)
+	for (size_t trackIndex = 0; trackIndex < composition->_tracks.size(); ++trackIndex)
 	{
+		const auto& trackData = composition->_tracks[trackIndex];
 		auto& track = *_tracks.emplace_back(std::make_unique<Track>());
 
-		const auto sequenceCount = composition->sequenceCount(trackIndex);
-		track._sequenceLengths.reserve(sequenceCount);
-		for (size_t sequenceIndex = 0; sequenceIndex < sequenceCount; ++sequenceIndex)
+		track._sequenceLengths.reserve(trackData._sequences.size());
+		for (const auto& sequenceData : trackData._sequences)
 		{
-			const auto sequence = composition->sequence(trackIndex, sequenceIndex);
 			size_t sequenceLength = 0;
-			for (size_t i = 0; i < sequence._size; ++i)
-				sequenceLength += sequence._data[i]._pause;
+			for (const auto& soundData : sequenceData)
+				sequenceLength += soundData._pause;
 			track._sequenceLengths.emplace_back(sequenceLength);
 		}
 
-		std::vector<aulos::Fragment> fragments;
-		const auto fragmentCount = composition->fragmentCount(trackIndex);
-		fragments.reserve(fragmentCount);
-		for (size_t i = 0; i < fragmentCount; ++i)
-			fragments.emplace_back(composition->fragment(trackIndex, i));
-
 		size_t offset = 0;
-		for (const auto& fragment : fragments)
+		for (const auto& fragment : trackData._fragments)
 		{
 			offset += fragment._delay;
 			const auto item = addFragmentItem(trackIndex, offset, fragment._sequence);
@@ -93,7 +82,7 @@ void CompositionScene::reset(const aulos::Composition* composition)
 
 	_compositionLength += kExtraLength;
 
-	for (size_t i = 0; i < trackCount; ++i)
+	for (size_t i = 0; i < composition->_tracks.size(); ++i)
 	{
 		const auto item = new TrackItem{ i, _compositionLength };
 		item->setZValue(-1.0);

@@ -26,7 +26,7 @@ class QGraphicsLineItem;
 
 namespace aulos
 {
-	class Composition;
+	struct CompositionData;
 }
 
 constexpr auto kScaleX = 10.0;
@@ -41,7 +41,7 @@ class CompositionScene : public QGraphicsScene
 public:
 	CompositionScene();
 
-	void reset(const aulos::Composition*);
+	void reset(const aulos::CompositionData*);
 	void setCurrentStep(double step);
 
 private slots:

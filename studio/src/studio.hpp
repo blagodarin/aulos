@@ -25,7 +25,7 @@ class QSpinBox;
 
 namespace aulos
 {
-	class Composition;
+	struct CompositionData;
 }
 
 class CompositionScene;
@@ -57,7 +57,7 @@ private:
 	std::unique_ptr<VoiceEditor> _voiceEditor;
 	std::unique_ptr<Player> _player;
 
-	std::unique_ptr<aulos::Composition> _composition;
+	std::unique_ptr<aulos::CompositionData> _composition;
 	QString _compositionPath;
 	QString _compositionName;
 

@@ -349,15 +349,15 @@ namespace
 	class RendererImpl final : public aulos::Renderer
 	{
 	public:
-		RendererImpl(const aulos::CompositionImpl& composition, unsigned samplingRate)
+		RendererImpl(const aulos::CompositionData& composition, unsigned samplingRate)
 			: _samplingRate{ samplingRate }
 			, _stepBytes{ static_cast<size_t>(std::lround(_samplingRate / composition._speed)) * kSampleSize }
 		{
-			const auto totalWeight = static_cast<float>(std::reduce(composition._tracks.cbegin(), composition._tracks.cend(), 0u, [](unsigned weight, const aulos::TrackData& track) { return weight + track._track._weight; }));
+			const auto totalWeight = static_cast<float>(std::reduce(composition._tracks.cbegin(), composition._tracks.cend(), 0u, [](unsigned weight, const aulos::Track& track) { return weight + track._weight; }));
 			_tracks.reserve(composition._tracks.size());
 			for (const auto& track : composition._tracks)
 			{
-				auto& trackSounds = _tracks.emplace_back(std::make_unique<TrackState>(composition._voices[track._track._voice], track._track._weight / totalWeight, samplingRate))->_sounds;
+				auto& trackSounds = _tracks.emplace_back(std::make_unique<TrackState>(composition._voices[track._voice], track._weight / totalWeight, samplingRate))->_sounds;
 				size_t fragmentOffset = 0;
 				for (const auto& fragment : track._fragments)
 				{
@@ -465,6 +465,6 @@ namespace aulos
 
 	std::unique_ptr<Renderer> Renderer::create(const Composition& composition, unsigned samplingRate)
 	{
-		return std::make_unique<RendererImpl>(static_cast<const CompositionImpl&>(composition), samplingRate);
+		return std::make_unique<RendererImpl>(*static_cast<const CompositionImpl&>(composition)._data, samplingRate);
 	}
 }

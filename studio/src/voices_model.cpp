@@ -17,7 +17,7 @@
 
 #include "voices_model.hpp"
 
-#include <aulos.hpp>
+#include <aulos/data.hpp>
 
 QModelIndex VoicesModel::addVoice(const aulos::Voice& voice)
 {
@@ -38,13 +38,13 @@ void VoicesModel::removeVoice(const QModelIndex& index)
 	endRemoveRows();
 }
 
-void VoicesModel::reset(const aulos::Composition* composition)
+void VoicesModel::reset(const aulos::CompositionData* composition)
 {
 	beginResetModel();
 	_voices.clear();
 	if (composition)
-		for (size_t i = 0; i < composition->voiceCount(); ++i)
-			_voices << composition->voice(i);
+		for (const auto& voice : composition->_voices)
+			_voices << voice;
 	endResetModel();
 }
 

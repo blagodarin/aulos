@@ -16,7 +16,8 @@
 #
 
 set(_include
-	include/aulos.hpp
+	data.hpp
+	playback.hpp
 	)
 source_group("include" FILES ${_include})
 
@@ -29,9 +30,9 @@ source_group("src" FILES ${_src})
 
 add_library(aulos STATIC ${_include} ${_src})
 target_compile_definitions(aulos PRIVATE _USE_MATH_DEFINES)
-target_include_directories(aulos PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+target_include_directories(aulos PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>)
 
-install(FILES include/aulos.hpp DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(FILES ${_include} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aulos)
 install(TARGETS aulos EXPORT AulosTargets
 	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}

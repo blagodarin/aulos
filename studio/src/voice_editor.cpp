@@ -20,7 +20,7 @@
 #include "player.hpp"
 #include "voices_model.hpp"
 
-#include <aulos.hpp>
+#include <aulos/data.hpp>
 
 #include <array>
 #include <cassert>

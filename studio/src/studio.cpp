@@ -22,7 +22,7 @@
 #include "voice_editor.hpp"
 #include "voices_model.hpp"
 
-#include <aulos.hpp>
+#include <aulos/data.hpp>
 
 #include <QApplication>
 #include <QFileDialog>
@@ -110,6 +110,10 @@ Studio::Studio()
 	const auto playbackMenu = menuBar()->addMenu(tr("&Playback"));
 	_playAction = playbackMenu->addAction(
 		qApp->style()->standardIcon(QStyle::SP_MediaPlay), tr("&Play"), [this] {
+			const auto composition = aulos::CompositionData::encode(std::make_unique<aulos::CompositionData>(*_composition));
+			if (!composition)
+				return;
+			_player->reset(*aulos::Renderer::create(*composition, Player::SamplingRate));
 			_player->start();
 			updateStatus();
 		});
@@ -200,6 +204,10 @@ void Studio::closeComposition()
 
 void Studio::exportComposition()
 {
+	const auto composition = aulos::CompositionData::encode(std::make_unique<aulos::CompositionData>(*_composition));
+	if (!composition)
+		return;
+
 	const auto path = QFileDialog::getSaveFileName(this, tr("Export Composition"), {}, tr("WAV Files (*.wav)"));
 	if (path.isNull())
 		return;
@@ -209,7 +217,7 @@ void Studio::exportComposition()
 		return;
 
 	QByteArray rawData;
-	Player::renderData(rawData, *aulos::Renderer::create(*_composition, Player::SamplingRate));
+	Player::renderData(rawData, *aulos::Renderer::create(*composition, Player::SamplingRate));
 
 	constexpr size_t chunkHeaderSize = 8;
 	constexpr size_t fmtChunkSize = 16;
@@ -249,21 +257,22 @@ void Studio::openComposition(const QString& path)
 	if (!file.open(QIODevice::ReadOnly))
 		return;
 
+	std::unique_ptr<aulos::Composition> composition;
 	try
 	{
-		_composition = aulos::Composition::create(file.readAll().constData());
+		composition = aulos::Composition::create(file.readAll().constData());
 	}
 	catch (const std::runtime_error&)
 	{
 		return;
 	}
 
+	_composition = aulos::CompositionData::decode(std::move(composition));
 	_compositionPath = path;
 	_compositionName = QFileInfo{ file }.fileName();
-	_speedSpin->setValue(static_cast<int>(_composition->speed()));
+	_speedSpin->setValue(static_cast<int>(_composition->_speed));
 	_voicesModel->reset(_composition.get());
 	_compositionScene->reset(_composition.get());
-	_player->reset(*aulos::Renderer::create(*_composition, Player::SamplingRate));
 	_hasComposition = true;
 	setRecentFile(path);
 	saveRecentFiles();

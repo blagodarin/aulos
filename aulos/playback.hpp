@@ -17,16 +17,27 @@
 
 #pragma once
 
-#include <aulos/data.hpp>
+#include <memory>
 
 namespace aulos
 {
-	struct CompositionImpl final : public Composition
+	// Contains audio data in a playback-optimized format.
+	class Composition
 	{
-		std::unique_ptr<CompositionData> _data;
+	public:
+		[[nodiscard]] static std::unique_ptr<Composition> create(const char* textSource);
 
-		CompositionImpl();
+		virtual ~Composition() noexcept = default;
+	};
 
-		void load(const char* source);
+	// Generates audio data.
+	class Renderer
+	{
+	public:
+		[[nodiscard]] static std::unique_ptr<Renderer> create(const Composition&, unsigned samplingRate);
+
+		virtual ~Renderer() noexcept = default;
+
+		virtual size_t render(void* buffer, size_t bufferBytes) noexcept = 0;
 	};
 }
