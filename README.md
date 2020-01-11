@@ -9,5 +9,11 @@
 Key concepts:
 * Fully synthetic sound ("vector audio" as a counterpart to vector graphics).
 * Suitable for realtime audio generation in performance-demanding applications (e. g. games).
-* Easy to integrate into existing codebases (as a static library with no external dependencies).
-* Provides a basic set of tools for audio playback and editing.
+* Easy to integrate into existing codebases (as a static library which only depends on the C++ standard library).
+* Includes a full-featured utility for audio creation, editing and playback.
+
+
+## Disclaimer
+
+**aulos** is in its early stages of development. Until it reaches version 0.1,
+*any* commit may change *anything* (API, ABI, file format) in an incompatible way.
