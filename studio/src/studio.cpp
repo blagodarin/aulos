@@ -236,7 +236,7 @@ void Studio::exportComposition()
 
 void Studio::openComposition()
 {
-	const auto path = QFileDialog::getOpenFileName(this, tr("Open Composition"), {}, tr("Aulos Files (*.txt)"));
+	const auto path = QFileDialog::getOpenFileName(this, tr("Open Composition"), {}, tr("Aulos Files (*.aulos)"));
 	if (!path.isNull())
 		openComposition(path);
 }
