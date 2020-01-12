@@ -19,7 +19,10 @@
 
 #include "composition_scene.hpp"
 
+#include <aulos/data.hpp>
+
 #include <array>
+#include <numeric>
 
 #include <QGraphicsSceneContextMenuEvent>
 #include <QMenu>
@@ -43,12 +46,12 @@ namespace
 	};
 }
 
-FragmentItem::FragmentItem(size_t trackIndex, size_t offset, size_t sequenceIndex, size_t length, QGraphicsItem* parent)
+FragmentItem::FragmentItem(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>& sequence, QGraphicsItem* parent)
 	: QGraphicsObject{ parent }
 	, _trackIndex{ trackIndex }
 	, _offset{ offset }
-	, _sequenceIndex{ sequenceIndex }
-	, _length{ length }
+	, _sequence{ sequence }
+	, _length{ std::reduce(sequence->_sounds.begin(), sequence->_sounds.end(), size_t{}, [](size_t length, const aulos::Sound& sound) { return length + sound._pause; }) }
 	, _rect{ _offset * kScaleX, _trackIndex * kScaleY, _length * kScaleX, kScaleY }
 	, _colorIndex{ _trackIndex % kFragmentColors.size() }
 {
@@ -72,17 +75,17 @@ void FragmentItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWi
 		auto font = painter->font();
 		font.setPixelSize(kScaleY / 2);
 		painter->setFont(font);
-		painter->drawText(QRectF{ QPointF{ _rect.left() + kScaleX / 2, _rect.top() }, QPointF{ right, _rect.bottom() } }, Qt::AlignVCenter, QString::number(_sequenceIndex + 1));
+		painter->drawText(QRectF{ QPointF{ _rect.left() + kScaleX / 2, _rect.top() }, QPointF{ right, _rect.bottom() } }, Qt::AlignVCenter, QString::number(_sequence->_id));
 	}
 }
 
 void FragmentItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
 {
 	QMenu menu;
-	const auto editAction = menu.addAction(tr("Edit %1...").arg(_sequenceIndex + 1));
+	const auto editAction = menu.addAction(tr("Edit..."));
 	const auto removeAction = menu.addAction(tr("Remove"));
 	if (const auto action = menu.exec(e->screenPos()); action == editAction)
-		emit editRequested(_trackIndex, _offset, _sequenceIndex);
+		emit editRequested(_trackIndex, _offset, _sequence);
 	else if (action == removeAction)
 		emit removeRequested(_trackIndex, _offset);
 }

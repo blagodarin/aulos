@@ -67,7 +67,7 @@ void CompositionScene::reset(const std::shared_ptr<const aulos::CompositionData>
 		for (const auto& sequenceData : trackData._sequences)
 		{
 			size_t sequenceLength = 0;
-			for (const auto& soundData : sequenceData)
+			for (const auto& soundData : sequenceData->_sounds)
 				sequenceLength += soundData._pause;
 			track._sequenceLengths.emplace_back(sequenceLength);
 		}
@@ -115,14 +115,14 @@ void CompositionScene::setCurrentStep(double step)
 	}
 }
 
-void CompositionScene::onEditRequested(size_t trackIndex, size_t offset, size_t sequenceIndex)
+void CompositionScene::onEditRequested(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>&)
 {
-	(void)trackIndex, offset, sequenceIndex;
+	(void)trackIndex, offset;
 }
 
-void CompositionScene::onInsertRequested(size_t trackIndex, size_t offset, size_t sequenceIndex)
+void CompositionScene::onInsertRequested(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>& sequence)
 {
-	const auto newItem = addFragmentItem(trackIndex, offset, sequenceIndex);
+	const auto newItem = addFragmentItem(trackIndex, offset, sequence);
 	const auto minCompositionLength = offset + newItem->fragmentLength() + kExtraLength;
 	if (minCompositionLength <= _compositionLength)
 		return;
@@ -145,10 +145,10 @@ void CompositionScene::onRemoveRequested(size_t trackIndex, size_t offset)
 	track._fragments.erase(i);
 }
 
-FragmentItem* CompositionScene::addFragmentItem(size_t trackIndex, size_t offset, size_t sequenceIndex)
+FragmentItem* CompositionScene::addFragmentItem(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>& sequence)
 {
 	auto& track = *_tracks[trackIndex];
-	const auto item = new FragmentItem{ trackIndex, offset, sequenceIndex, track._sequenceLengths[sequenceIndex] };
+	const auto item = new FragmentItem{ trackIndex, offset, sequence };
 	addItem(item);
 	connect(item, &FragmentItem::editRequested, this, &CompositionScene::onEditRequested);
 	connect(item, &FragmentItem::removeRequested, this, &CompositionScene::onRemoveRequested);

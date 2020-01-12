@@ -21,9 +21,31 @@
 
 namespace aulos
 {
+	struct Fragment
+	{
+		size_t _delay = 0;
+		size_t _sequence = 0;
+
+		constexpr Fragment(size_t delay, size_t sequence) noexcept
+			: _delay{ delay }, _sequence{ sequence } {}
+	};
+
+	struct Track
+	{
+		size_t _voice = 0;
+		unsigned _weight = 0;
+		std::vector<std::vector<Sound>> _sequences;
+		std::vector<Fragment> _fragments;
+
+		Track(size_t voice, unsigned weight) noexcept
+			: _voice{ voice }, _weight{ weight } {}
+	};
+
 	struct CompositionImpl final : public Composition
 	{
-		CompositionData _data;
+		float _speed = kMinSpeed;
+		std::vector<Voice> _voices;
+		std::vector<Track> _tracks;
 
 		void load(const char* source);
 	};

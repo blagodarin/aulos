@@ -27,6 +27,7 @@ class QGraphicsLineItem;
 namespace aulos
 {
 	struct CompositionData;
+	struct SequenceData;
 }
 
 constexpr auto kScaleX = 10.0;
@@ -48,12 +49,12 @@ signals:
 	void newSequenceRequested(size_t trackIndex, size_t offset);
 
 private slots:
-	void onEditRequested(size_t trackIndex, size_t offset, size_t sequenceIndex);
-	void onInsertRequested(size_t trackIndex, size_t offset, size_t sequenceIndex);
+	void onEditRequested(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>&);
+	void onInsertRequested(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>&);
 	void onRemoveRequested(size_t trackIndex, size_t offset);
 
 private:
-	FragmentItem* addFragmentItem(size_t trackIndex, size_t offset, size_t sequenceIndex);
+	FragmentItem* addFragmentItem(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>&);
 
 private:
 	struct Track;

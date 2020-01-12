@@ -19,19 +19,24 @@
 
 #include <QGraphicsObject>
 
+namespace aulos
+{
+	struct SequenceData;
+}
+
 class FragmentItem : public QGraphicsObject
 {
 	Q_OBJECT
 
 public:
-	FragmentItem(size_t trackIndex, size_t offset, size_t sequenceIndex, size_t length, QGraphicsItem* parent = nullptr);
+	FragmentItem(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>&, QGraphicsItem* parent = nullptr);
 
 	QRectF boundingRect() const override { return _rect; }
 	size_t fragmentLength() const noexcept { return _length; }
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
 
 signals:
-	void editRequested(size_t trackIndex, size_t offset, size_t sequenceIndex);
+	void editRequested(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>&);
 	void removeRequested(size_t trackIndex, size_t offset);
 
 private:
@@ -40,8 +45,8 @@ private:
 private:
 	const size_t _trackIndex;
 	const size_t _offset;
-	const size_t _sequenceIndex;
-	size_t _length;
+	const std::shared_ptr<const aulos::SequenceData> _sequence;
+	size_t _length = 0;
 	const QRectF _rect;
 	const size_t _colorIndex;
 };

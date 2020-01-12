@@ -349,7 +349,7 @@ namespace
 	class RendererImpl final : public aulos::Renderer
 	{
 	public:
-		RendererImpl(const aulos::CompositionData& composition, unsigned samplingRate)
+		RendererImpl(const aulos::CompositionImpl& composition, unsigned samplingRate)
 			: _samplingRate{ samplingRate }
 			, _stepBytes{ static_cast<size_t>(std::lround(_samplingRate / composition._speed)) * kSampleSize }
 		{
@@ -466,6 +466,6 @@ namespace aulos
 
 	std::unique_ptr<Renderer> Renderer::create(const Composition& composition, unsigned samplingRate)
 	{
-		return std::make_unique<RendererImpl>(static_cast<const CompositionImpl&>(composition)._data, samplingRate);
+		return std::make_unique<RendererImpl>(static_cast<const CompositionImpl&>(composition), samplingRate);
 	}
 }

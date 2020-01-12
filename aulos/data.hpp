@@ -87,25 +87,34 @@ namespace aulos
 		std::string _name;
 	};
 
-	// Specifies when to play a sequence.
-	struct Fragment
+	struct SequenceData
 	{
-		size_t _delay = 0;    // Steps from the beginning of the previous fragment.
-		size_t _sequence = 0; // Sequence index.
+		size_t _id = 0; // Identifier; should only be used for visual representation. TODO: Better way of visual sequence identification.
+		std::vector<Sound> _sounds;
 
-		constexpr Fragment(size_t delay, size_t sequence) noexcept
+		SequenceData(size_t id) noexcept
+			: _id{ id } {}
+	};
+
+	// Specifies when to play a sequence.
+	struct FragmentData
+	{
+		size_t _delay = 0; // Steps from the beginning of the previous fragment.
+		std::shared_ptr<const SequenceData> _sequence;
+
+		FragmentData(size_t delay, const std::shared_ptr<const SequenceData>& sequence) noexcept
 			: _delay{ delay }, _sequence{ sequence } {}
 	};
 
 	// Specifies playback actions for a single voice instance.
-	struct Track
+	struct TrackData
 	{
 		size_t _voice = 0;
 		unsigned _weight = 0;
-		std::vector<std::vector<Sound>> _sequences;
-		std::vector<Fragment> _fragments;
+		std::vector<std::shared_ptr<SequenceData>> _sequences;
+		std::vector<FragmentData> _fragments;
 
-		Track(size_t voice, unsigned weight) noexcept
+		TrackData(size_t voice, unsigned weight) noexcept
 			: _voice{ voice }, _weight{ weight } {}
 	};
 
@@ -117,7 +126,7 @@ namespace aulos
 	{
 		float _speed = kMinSpeed;
 		std::vector<Voice> _voices;
-		std::vector<Track> _tracks;
+		std::vector<TrackData> _tracks;
 
 		CompositionData() = default;
 		CompositionData(const Composition&);

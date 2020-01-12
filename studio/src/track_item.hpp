@@ -24,6 +24,7 @@
 namespace aulos
 {
 	struct CompositionData;
+	struct SequenceData;
 }
 
 class TrackItem : public QGraphicsObject
@@ -39,7 +40,7 @@ public:
 	size_t trackLength() const noexcept { return _length; }
 
 signals:
-	void insertRequested(size_t trackIndex, size_t offset, size_t sequenceIndex);
+	void insertRequested(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>&);
 	void newSequenceRequested(size_t trackIndex, size_t offset);
 
 private:

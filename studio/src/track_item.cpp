@@ -63,8 +63,8 @@ void TrackItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
 	const auto insertSubmenu = menu.addMenu(tr("Insert"));
 	const auto sequenceCount = _composition->_tracks[_trackIndex]._sequences.size();
 	for (size_t sequenceIndex = 0; sequenceIndex < sequenceCount; ++sequenceIndex)
-		insertSubmenu->addAction(tr("Sequence %1").arg(sequenceIndex + 1))->setData(sequenceIndex);
-	if (sequenceCount > 0)
+		insertSubmenu->addAction(tr("Sequence %1").arg(_composition->_tracks[_trackIndex]._sequences[sequenceIndex]->_id))->setData(sequenceIndex);
+	if (!_composition->_tracks[_trackIndex]._sequences.empty())
 		insertSubmenu->addSeparator();
 	const auto newSequenceAction = insertSubmenu->addAction(tr("New sequence..."));
 	const auto action = menu.exec(e->screenPos());
@@ -74,5 +74,5 @@ void TrackItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
 	if (action == newSequenceAction)
 		emit newSequenceRequested(_trackIndex, offset);
 	else
-		emit insertRequested(_trackIndex, offset, static_cast<size_t>(action->data().toInt()));
+		emit insertRequested(_trackIndex, offset, _composition->_tracks[_trackIndex]._sequences[action->data().toUInt()]);
 }
