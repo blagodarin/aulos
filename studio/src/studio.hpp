@@ -57,7 +57,7 @@ private:
 	std::unique_ptr<VoiceEditor> _voiceEditor;
 	std::unique_ptr<Player> _player;
 
-	std::unique_ptr<aulos::CompositionData> _composition;
+	std::shared_ptr<aulos::CompositionData> _composition;
 	QString _compositionPath;
 	QString _compositionName;
 

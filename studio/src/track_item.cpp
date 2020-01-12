@@ -19,6 +19,8 @@
 
 #include "composition_scene.hpp"
 
+#include <aulos/data.hpp>
+
 #include <array>
 
 #include <QGraphicsSceneContextMenuEvent>
@@ -30,8 +32,9 @@ namespace
 	const std::array<QColor, 2> kTrackColors{ "#999", "#888" };
 }
 
-TrackItem::TrackItem(size_t trackIndex, size_t length, QGraphicsItem* parent)
+TrackItem::TrackItem(const std::shared_ptr<const aulos::CompositionData>& composition, size_t trackIndex, size_t length, QGraphicsItem* parent)
 	: QGraphicsObject{ parent }
+	, _composition{ composition }
 	, _trackIndex{ trackIndex }
 	, _length{ length }
 	, _rect{ 0.0, _trackIndex * kScaleY, _length * kScaleX, kScaleY }
@@ -57,7 +60,19 @@ void TrackItem::setTrackLength(size_t length)
 void TrackItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
 {
 	QMenu menu;
-	menu.addAction(tr("Insert..."));
-	if (menu.exec(e->screenPos()))
-		emit insertRequested(_trackIndex, static_cast<size_t>(std::ceil(e->pos().x() - _rect.left()) / kScaleX));
+	const auto insertSubmenu = menu.addMenu(tr("Insert"));
+	const auto sequenceCount = _composition->_tracks[_trackIndex]._sequences.size();
+	for (size_t sequenceIndex = 0; sequenceIndex < sequenceCount; ++sequenceIndex)
+		insertSubmenu->addAction(tr("Sequence %1").arg(sequenceIndex + 1))->setData(sequenceIndex);
+	if (sequenceCount > 0)
+		insertSubmenu->addSeparator();
+	const auto newSequenceAction = insertSubmenu->addAction(tr("New sequence..."));
+	const auto action = menu.exec(e->screenPos());
+	if (!action)
+		return;
+	const auto offset = static_cast<size_t>(std::ceil(e->pos().x() - _rect.left()) / kScaleX);
+	if (action == newSequenceAction)
+		emit newSequenceRequested(_trackIndex, offset);
+	else
+		emit insertRequested(_trackIndex, offset, static_cast<size_t>(action->data().toInt()));
 }

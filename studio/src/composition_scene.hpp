@@ -41,12 +41,15 @@ class CompositionScene : public QGraphicsScene
 public:
 	CompositionScene();
 
-	void reset(const aulos::CompositionData*);
+	void reset(const std::shared_ptr<const aulos::CompositionData>&);
 	void setCurrentStep(double step);
+
+signals:
+	void newSequenceRequested(size_t trackIndex, size_t offset);
 
 private slots:
 	void onEditRequested(size_t trackIndex, size_t offset, size_t sequenceIndex);
-	void onInsertRequested(size_t trackIndex, size_t offset);
+	void onInsertRequested(size_t trackIndex, size_t offset, size_t sequenceIndex);
 	void onRemoveRequested(size_t trackIndex, size_t offset);
 
 private:
@@ -54,6 +57,7 @@ private:
 
 private:
 	struct Track;
+	std::shared_ptr<const aulos::CompositionData> _composition;
 	size_t _compositionLength = 0;
 	std::vector<std::unique_ptr<Track>> _tracks;
 	QGraphicsLineItem* _cursorItem = nullptr;

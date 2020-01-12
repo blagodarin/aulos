@@ -47,19 +47,20 @@ CompositionScene::CompositionScene()
 	setBackgroundBrush(kBackgroundColor);
 }
 
-void CompositionScene::reset(const aulos::CompositionData* composition)
+void CompositionScene::reset(const std::shared_ptr<const aulos::CompositionData>& composition)
 {
 	_compositionLength = 0;
 	_tracks.clear();
 	_cursorItem = nullptr;
 	clear();
 
-	if (!composition || composition->_tracks.empty())
+	_composition = composition;
+	if (!_composition || _composition->_tracks.empty())
 		return;
 
-	for (size_t trackIndex = 0; trackIndex < composition->_tracks.size(); ++trackIndex)
+	for (size_t trackIndex = 0; trackIndex < _composition->_tracks.size(); ++trackIndex)
 	{
-		const auto& trackData = composition->_tracks[trackIndex];
+		const auto& trackData = _composition->_tracks[trackIndex];
 		auto& track = *_tracks.emplace_back(std::make_unique<Track>());
 
 		track._sequenceLengths.reserve(trackData._sequences.size());
@@ -82,12 +83,13 @@ void CompositionScene::reset(const aulos::CompositionData* composition)
 
 	_compositionLength += kExtraLength;
 
-	for (size_t i = 0; i < composition->_tracks.size(); ++i)
+	for (size_t i = 0; i < _composition->_tracks.size(); ++i)
 	{
-		const auto item = new TrackItem{ i, _compositionLength };
+		const auto item = new TrackItem{ _composition, i, _compositionLength };
 		item->setZValue(-1.0);
 		addItem(item);
 		connect(item, &TrackItem::insertRequested, this, &CompositionScene::onInsertRequested);
+		connect(item, &TrackItem::newSequenceRequested, this, &CompositionScene::newSequenceRequested);
 		_tracks[i]->_background = item;
 	}
 
@@ -118,9 +120,9 @@ void CompositionScene::onEditRequested(size_t trackIndex, size_t offset, size_t 
 	(void)trackIndex, offset, sequenceIndex;
 }
 
-void CompositionScene::onInsertRequested(size_t trackIndex, size_t offset)
+void CompositionScene::onInsertRequested(size_t trackIndex, size_t offset, size_t sequenceIndex)
 {
-	const auto newItem = addFragmentItem(trackIndex, offset, 0);
+	const auto newItem = addFragmentItem(trackIndex, offset, sequenceIndex);
 	const auto minCompositionLength = offset + newItem->fragmentLength() + kExtraLength;
 	if (minCompositionLength <= _compositionLength)
 		return;

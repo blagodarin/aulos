@@ -17,14 +17,21 @@
 
 #pragma once
 
+#include <memory>
+
 #include <QGraphicsObject>
+
+namespace aulos
+{
+	struct CompositionData;
+}
 
 class TrackItem : public QGraphicsObject
 {
 	Q_OBJECT
 
 public:
-	TrackItem(size_t trackIndex, size_t length, QGraphicsItem* parent = nullptr);
+	TrackItem(const std::shared_ptr<const aulos::CompositionData>&, size_t trackIndex, size_t length, QGraphicsItem* parent = nullptr);
 
 	QRectF boundingRect() const override { return _rect; }
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
@@ -32,12 +39,14 @@ public:
 	size_t trackLength() const noexcept { return _length; }
 
 signals:
-	void insertRequested(size_t trackIndex, size_t offset);
+	void insertRequested(size_t trackIndex, size_t offset, size_t sequenceIndex);
+	void newSequenceRequested(size_t trackIndex, size_t offset);
 
 private:
 	void contextMenuEvent(QGraphicsSceneContextMenuEvent*) override;
 
 private:
+	const std::shared_ptr<const aulos::CompositionData> _composition;
 	const size_t _trackIndex;
 	size_t _length;
 	QRectF _rect;

@@ -267,12 +267,12 @@ void Studio::openComposition(const QString& path)
 		return;
 	}
 
-	_composition = std::make_unique<aulos::CompositionData>(*composition);
+	_composition = std::make_shared<aulos::CompositionData>(*composition);
 	_compositionPath = path;
 	_compositionName = QFileInfo{ file }.fileName();
 	_speedSpin->setValue(static_cast<int>(_composition->_speed));
 	_voicesModel->reset(_composition.get());
-	_compositionScene->reset(_composition.get());
+	_compositionScene->reset(_composition);
 	_hasComposition = true;
 	setRecentFile(path);
 	saveRecentFiles();
