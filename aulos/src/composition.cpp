@@ -237,7 +237,6 @@ namespace aulos
 		};
 
 		const auto parseCommand = [&](std::string_view command) {
-			constexpr auto kMaxEnvelopePartDuration = 60.f;
 			if (command == "amplitude")
 			{
 				if (currentSection != Section::Voice)

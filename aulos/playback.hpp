@@ -30,7 +30,7 @@ namespace aulos
 		virtual ~Composition() noexcept = default;
 	};
 
-	// Generates PCM data for a composition.
+	// Generates PCM audio for a composition.
 	class Renderer
 	{
 	public:
@@ -38,6 +38,6 @@ namespace aulos
 
 		virtual ~Renderer() noexcept = default;
 
-		virtual size_t render(void* buffer, size_t bufferBytes) noexcept = 0;
+		[[nodiscard]] virtual size_t render(void* buffer, size_t bufferBytes) noexcept = 0;
 	};
 }

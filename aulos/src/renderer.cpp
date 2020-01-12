@@ -410,7 +410,8 @@ namespace
 					const auto bytesToGenerate = std::min(track->_soundBytesRemaining, bufferBytes - trackOffset);
 					if (!bytesToGenerate)
 						break;
-					track->_voice->render(static_cast<std::byte*>(buffer) + trackOffset, bytesToGenerate);
+					const auto bytesGenerated = track->_voice->render(static_cast<std::byte*>(buffer) + trackOffset, bytesToGenerate);
+					assert(bytesGenerated <= bytesToGenerate); // Initial and inter-sound silence doesn't generate any data.
 					track->_soundBytesRemaining -= bytesToGenerate;
 					trackOffset += bytesToGenerate;
 					if (!track->_soundBytesRemaining)

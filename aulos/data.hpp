@@ -49,9 +49,10 @@ namespace aulos
 			: _note{ note }, _pause{ pause } {}
 	};
 
+	// Wave types.
 	enum class Wave
 	{
-		Linear,
+		Linear, // Linear wave (includes square, rectangular, sawtooth and triangle waveforms).
 	};
 
 	struct Point
@@ -59,15 +60,17 @@ namespace aulos
 		float _delay = 0.f;
 		float _value = 0.f;
 
-		constexpr Point() noexcept = default;
 		constexpr Point(float delay, float value) noexcept
 			: _delay{ delay }, _value{ value } {}
 	};
 
+	constexpr auto kMaxEnvelopePartDuration = 60.f; // Maximum delay between consecutive envelope points (in seconds).
+
+	// Specifies how a value changes over time.
 	struct Envelope
 	{
-		float _initial = 0.f;
-		std::vector<Point> _changes;
+		float _initial = 0.f;        // Initial value.
+		std::vector<Point> _changes; // List of consecutive value changes.
 
 		Envelope(float initial) noexcept
 			: _initial{ initial } {}
@@ -84,13 +87,12 @@ namespace aulos
 		std::string _name;
 	};
 
-	// Specifies when and how to play a sequence.
+	// Specifies when to play a sequence.
 	struct Fragment
 	{
 		size_t _delay = 0;    // Steps from the beginning of the previous fragment.
 		size_t _sequence = 0; // Sequence index.
 
-		constexpr Fragment() noexcept = default;
 		constexpr Fragment(size_t delay, size_t sequence) noexcept
 			: _delay{ delay }, _sequence{ sequence } {}
 	};
@@ -123,7 +125,7 @@ namespace aulos
 		[[nodiscard]] std::unique_ptr<Composition> pack() const;
 	};
 
-	// Generates PCM data for a voice.
+	// Generates PCM audio for a voice.
 	class VoiceRenderer : public Renderer
 	{
 	public:
@@ -131,7 +133,7 @@ namespace aulos
 
 		virtual ~VoiceRenderer() noexcept = default;
 
-		virtual size_t duration() const noexcept = 0;
+		[[nodiscard]] virtual size_t duration() const noexcept = 0;
 		virtual void start(Note, float amplitude) noexcept = 0;
 	};
 }
