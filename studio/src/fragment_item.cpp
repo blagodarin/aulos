@@ -52,7 +52,7 @@ FragmentItem::FragmentItem(size_t trackIndex, size_t offset, const std::shared_p
 	, _offset{ offset }
 	, _sequence{ sequence }
 	, _length{ std::reduce(sequence->_sounds.begin(), sequence->_sounds.end(), size_t{}, [](size_t length, const aulos::Sound& sound) { return length + sound._pause; }) }
-	, _rect{ _offset * kScaleX, _trackIndex * kScaleY, _length * kScaleX, kScaleY }
+	, _rect{ _offset * kScaleX, _trackIndex * kScaleY, std::max<size_t>(_length, 1) * kScaleX, kScaleY }
 	, _colorIndex{ _trackIndex % kFragmentColors.size() }
 {
 }

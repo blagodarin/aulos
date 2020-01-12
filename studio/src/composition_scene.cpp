@@ -47,6 +47,20 @@ CompositionScene::CompositionScene()
 	setBackgroundBrush(kBackgroundColor);
 }
 
+void CompositionScene::insertSequence(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>& sequence)
+{
+	const auto newItem = addFragmentItem(trackIndex, offset, sequence);
+	const auto minCompositionLength = offset + newItem->fragmentLength() + kExtraLength;
+	if (minCompositionLength <= _compositionLength)
+		return;
+	_compositionLength = minCompositionLength;
+	auto compositionRect = sceneRect();
+	compositionRect.setWidth(_compositionLength * kScaleX);
+	setSceneRect(compositionRect);
+	for (const auto& track : _tracks)
+		track->_background->setTrackLength(_compositionLength);
+}
+
 void CompositionScene::reset(const std::shared_ptr<const aulos::CompositionData>& composition)
 {
 	_compositionLength = 0;
@@ -88,7 +102,7 @@ void CompositionScene::reset(const std::shared_ptr<const aulos::CompositionData>
 		const auto item = new TrackItem{ _composition, i, _compositionLength };
 		item->setZValue(-1.0);
 		addItem(item);
-		connect(item, &TrackItem::insertRequested, this, &CompositionScene::onInsertRequested);
+		connect(item, &TrackItem::insertRequested, this, &CompositionScene::insertSequence);
 		connect(item, &TrackItem::newSequenceRequested, this, &CompositionScene::newSequenceRequested);
 		_tracks[i]->_background = item;
 	}
@@ -118,20 +132,6 @@ void CompositionScene::setCurrentStep(double step)
 void CompositionScene::onEditRequested(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>&)
 {
 	(void)trackIndex, offset;
-}
-
-void CompositionScene::onInsertRequested(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>& sequence)
-{
-	const auto newItem = addFragmentItem(trackIndex, offset, sequence);
-	const auto minCompositionLength = offset + newItem->fragmentLength() + kExtraLength;
-	if (minCompositionLength <= _compositionLength)
-		return;
-	_compositionLength = minCompositionLength;
-	auto compositionRect = sceneRect();
-	compositionRect.setWidth(_compositionLength * kScaleX);
-	setSceneRect(compositionRect);
-	for (const auto& track : _tracks)
-		track->_background->setTrackLength(_compositionLength);
 }
 
 void CompositionScene::onRemoveRequested(size_t trackIndex, size_t offset)

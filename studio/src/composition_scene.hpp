@@ -42,6 +42,7 @@ class CompositionScene : public QGraphicsScene
 public:
 	CompositionScene();
 
+	void insertSequence(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>&);
 	void reset(const std::shared_ptr<const aulos::CompositionData>&);
 	void setCurrentStep(double step);
 
@@ -50,7 +51,6 @@ signals:
 
 private slots:
 	void onEditRequested(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>&);
-	void onInsertRequested(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>&);
 	void onRemoveRequested(size_t trackIndex, size_t offset);
 
 private:
