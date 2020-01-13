@@ -31,6 +31,8 @@ set(_src
 	src/studio.hpp
 	src/track_item.cpp
 	src/track_item.hpp
+	src/utils.cpp
+	src/utils.hpp
 	src/voice_editor.cpp
 	src/voice_editor.hpp
 	src/voices_model.hpp

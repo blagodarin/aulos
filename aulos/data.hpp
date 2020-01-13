@@ -89,11 +89,7 @@ namespace aulos
 
 	struct SequenceData
 	{
-		size_t _id = 0; // Identifier; should only be used for visual representation. TODO: Better way of visual sequence identification.
 		std::vector<Sound> _sounds;
-
-		SequenceData(size_t id) noexcept
-			: _id{ id } {}
 	};
 
 	// Specifies when to play a sequence.

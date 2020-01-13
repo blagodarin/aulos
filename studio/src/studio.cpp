@@ -173,12 +173,9 @@ Studio::Studio()
 		_compositionScene->setCurrentStep(microseconds * _speedSpin->value() / 1'000'000.0);
 	});
 	connect(_compositionScene.get(), &CompositionScene::newSequenceRequested, [this](size_t trackIndex, size_t offset) {
-		auto& sequences = _composition->_tracks[trackIndex]._sequences;
-		size_t newSequenceId = 1;
-		for (const auto& sequence : sequences)
-			if (newSequenceId <= sequence->_id)
-				newSequenceId = sequence->_id + 1;
-		_compositionScene->insertSequence(trackIndex, offset, sequences.emplace_back(std::make_shared<aulos::SequenceData>(newSequenceId)));
+		const auto sequence = std::make_shared<aulos::SequenceData>();
+		_composition->_tracks[trackIndex]._sequences.emplace_back(sequence);
+		_compositionScene->insertSequence(trackIndex, offset, sequence);
 	});
 
 	updateStatus();

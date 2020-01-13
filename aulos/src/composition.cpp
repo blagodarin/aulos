@@ -410,7 +410,7 @@ namespace aulos
 			auto& trackData = _tracks.emplace_back(packedTrack._voice, packedTrack._weight);
 			trackData._sequences.reserve(packedTrack._sequences.size());
 			for (const auto& packedSequence : packedTrack._sequences)
-				trackData._sequences.emplace_back(std::make_shared<SequenceData>(trackData._sequences.size() + 1))->_sounds = packedSequence;
+				trackData._sequences.emplace_back(std::make_shared<SequenceData>())->_sounds = packedSequence;
 			trackData._fragments.reserve(packedTrack._fragments.size());
 			for (const auto& packedFragment : packedTrack._fragments)
 				trackData._fragments.emplace_back(packedFragment._delay, trackData._sequences[packedFragment._sequence]);

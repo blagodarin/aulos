@@ -18,6 +18,7 @@
 #include "fragment_item.hpp"
 
 #include "composition_scene.hpp"
+#include "utils.hpp"
 
 #include <aulos/data.hpp>
 
@@ -27,6 +28,7 @@
 #include <QGraphicsSceneContextMenuEvent>
 #include <QMenu>
 #include <QPainter>
+#include <QTextOption>
 
 namespace
 {
@@ -55,6 +57,16 @@ FragmentItem::FragmentItem(size_t trackIndex, size_t offset, const std::shared_p
 	, _rect{ _offset * kScaleX, _trackIndex * kScaleY, std::max<size_t>(_length, 1) * kScaleX, kScaleY }
 	, _colorIndex{ _trackIndex % kFragmentColors.size() }
 {
+	setToolTip(::makeSequenceName(*_sequence));
+	if (_length > 1)
+	{
+		QTextOption textOption{ Qt::AlignVCenter };
+		textOption.setWrapMode(QTextOption::NoWrap);
+		_name.setText(::makeSequenceName(*_sequence, true));
+		_name.setTextFormat(Qt::RichText);
+		_name.setTextOption(textOption);
+		_name.setTextWidth((_length - 1) * kScaleX);
+	}
 }
 
 void FragmentItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*)
@@ -75,7 +87,12 @@ void FragmentItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWi
 		auto font = painter->font();
 		font.setPixelSize(kScaleY / 2);
 		painter->setFont(font);
-		painter->drawText(QRectF{ QPointF{ _rect.left() + kScaleX / 2, _rect.top() }, QPointF{ right, _rect.bottom() } }, Qt::AlignVCenter, QString::number(_sequence->_id));
+		painter->save();
+		painter->setTransform(QTransform::fromScale(0.5, 1.0), true);
+		const QPointF topLeft{ 2.0 * _rect.left() + kScaleX, _rect.top() + 0.17 * kScaleY };
+		painter->setClipRect(QRectF{ topLeft, QPointF{ 2.0 * right, _rect.bottom() } });
+		painter->drawStaticText(topLeft, _name);
+		painter->restore();
 	}
 }
 

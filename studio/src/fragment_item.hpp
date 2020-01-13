@@ -18,6 +18,7 @@
 #pragma once
 
 #include <QGraphicsObject>
+#include <QStaticText>
 
 namespace aulos
 {
@@ -46,6 +47,7 @@ private:
 	const size_t _trackIndex;
 	const size_t _offset;
 	const std::shared_ptr<const aulos::SequenceData> _sequence;
+	QStaticText _name;
 	size_t _length = 0;
 	const QRectF _rect;
 	const size_t _colorIndex;

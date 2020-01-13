@@ -18,6 +18,7 @@
 #include "track_item.hpp"
 
 #include "composition_scene.hpp"
+#include "utils.hpp"
 
 #include <aulos/data.hpp>
 
@@ -63,7 +64,7 @@ void TrackItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
 	const auto insertSubmenu = menu.addMenu(tr("Insert"));
 	const auto sequenceCount = _composition->_tracks[_trackIndex]._sequences.size();
 	for (size_t sequenceIndex = 0; sequenceIndex < sequenceCount; ++sequenceIndex)
-		insertSubmenu->addAction(tr("Sequence %1").arg(_composition->_tracks[_trackIndex]._sequences[sequenceIndex]->_id))->setData(sequenceIndex);
+		insertSubmenu->addAction(::makeSequenceName(*_composition->_tracks[_trackIndex]._sequences[sequenceIndex]))->setData(sequenceIndex);
 	if (!_composition->_tracks[_trackIndex]._sequences.empty())
 		insertSubmenu->addSeparator();
 	const auto newSequenceAction = insertSubmenu->addAction(tr("New sequence..."));
