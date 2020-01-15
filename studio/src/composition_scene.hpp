@@ -30,8 +30,8 @@ namespace aulos
 	struct SequenceData;
 }
 
-constexpr auto kScaleX = 10.0;
-constexpr auto kScaleY = 40.0;
+constexpr auto kStepWidth = 15.0;
+constexpr auto kTrackHeight = 40.0;
 
 class FragmentItem;
 

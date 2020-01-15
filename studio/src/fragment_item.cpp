@@ -54,25 +54,25 @@ FragmentItem::FragmentItem(size_t trackIndex, size_t offset, const std::shared_p
 	, _offset{ offset }
 	, _sequence{ sequence }
 	, _length{ std::reduce(sequence->_sounds.begin(), sequence->_sounds.end(), size_t{}, [](size_t length, const aulos::Sound& sound) { return length + sound._pause; }) }
-	, _rect{ _offset * kScaleX, _trackIndex * kScaleY, std::max<size_t>(_length, 1) * kScaleX, kScaleY }
+	, _rect{ _offset * kStepWidth, _trackIndex * kTrackHeight, std::max<size_t>(_length, 1) * kStepWidth, kTrackHeight }
 	, _colorIndex{ _trackIndex % kFragmentColors.size() }
 {
 	setToolTip(::makeSequenceName(*_sequence));
 	if (_length > 1)
 	{
-		QTextOption textOption{ Qt::AlignVCenter };
+		QTextOption textOption;
 		textOption.setWrapMode(QTextOption::NoWrap);
 		_name.setText(::makeSequenceName(*_sequence, true));
 		_name.setTextFormat(Qt::RichText);
 		_name.setTextOption(textOption);
-		_name.setTextWidth((_length - 1) * kScaleX);
+		_name.setTextWidth((_length - 1) * kStepWidth);
 	}
 }
 
 void FragmentItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*)
 {
 	painter->setPen(kFragmentColors[_colorIndex]._outline);
-	const auto right = _rect.right() - kScaleX / 2;
+	const auto right = _rect.right() - kStepWidth / 2;
 	const std::array<QPointF, 5> shape{
 		_rect.topLeft(),
 		QPointF{ right, _rect.top() },
@@ -84,13 +84,17 @@ void FragmentItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWi
 	painter->drawConvexPolygon(shape.data(), static_cast<int>(shape.size()));
 	if (_length > 1)
 	{
-		auto font = painter->font();
-		font.setPixelSize(kScaleY / 2);
-		painter->setFont(font);
+		constexpr auto fontSize = kTrackHeight * 0.75;
+		constexpr auto xOffset = (kTrackHeight - fontSize) / 2.0;
+		constexpr auto xScale = 7.0 / 16.0;
 		painter->save();
-		painter->setTransform(QTransform::fromScale(0.5, 1.0), true);
-		const QPointF topLeft{ 2.0 * _rect.left() + kScaleX, _rect.top() + 0.17 * kScaleY };
-		painter->setClipRect(QRectF{ topLeft, QPointF{ 2.0 * right, _rect.bottom() } });
+		auto font = painter->font();
+		font.setPixelSize(fontSize);
+		painter->setFont(font);
+		painter->setTransform(QTransform::fromScale(xScale, 1.0), true);
+		_name.prepare(painter->transform(), font);
+		const QPointF topLeft{ (_rect.left() + xOffset) / xScale, _rect.top() + (kTrackHeight - _name.size().height()) / 2 };
+		painter->setClipRect(QRectF{ { topLeft.x(), _rect.top() }, QPointF{ right / xScale, _rect.bottom() } });
 		painter->drawStaticText(topLeft, _name);
 		painter->restore();
 	}

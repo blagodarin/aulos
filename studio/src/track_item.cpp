@@ -38,7 +38,7 @@ TrackItem::TrackItem(const std::shared_ptr<const aulos::CompositionData>& compos
 	, _composition{ composition }
 	, _trackIndex{ trackIndex }
 	, _length{ length }
-	, _rect{ 0.0, _trackIndex * kScaleY, _length * kScaleX, kScaleY }
+	, _rect{ 0.0, _trackIndex * kTrackHeight, _length * kStepWidth, kTrackHeight }
 {
 }
 
@@ -55,7 +55,7 @@ void TrackItem::setTrackLength(size_t length)
 		return;
 	prepareGeometryChange();
 	_length = length;
-	_rect.setWidth(_length * kScaleX);
+	_rect.setWidth(_length * kStepWidth);
 }
 
 void TrackItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
@@ -71,7 +71,7 @@ void TrackItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
 	const auto action = menu.exec(e->screenPos());
 	if (!action)
 		return;
-	const auto offset = static_cast<size_t>(std::ceil(e->pos().x() - _rect.left()) / kScaleX);
+	const auto offset = static_cast<size_t>(std::ceil(e->pos().x() - _rect.left()) / kStepWidth);
 	if (action == newSequenceAction)
 		emit newSequenceRequested(_trackIndex, offset);
 	else

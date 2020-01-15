@@ -55,7 +55,7 @@ void CompositionScene::insertSequence(size_t trackIndex, size_t offset, const st
 		return;
 	_compositionLength = minCompositionLength;
 	auto compositionRect = sceneRect();
-	compositionRect.setWidth(_compositionLength * kScaleX);
+	compositionRect.setWidth(_compositionLength * kStepWidth);
 	setSceneRect(compositionRect);
 	for (const auto& track : _tracks)
 		track->_background->setTrackLength(_compositionLength);
@@ -121,11 +121,11 @@ void CompositionScene::setCurrentStep(double step)
 {
 	if (_cursorItem)
 	{
-		const auto x = step * kScaleX;
+		const auto x = step * kStepWidth;
 		const auto isVisible = x >= 0.0 && x < sceneRect().right();
 		_cursorItem->setVisible(isVisible);
 		if (isVisible)
-			_cursorItem->setTransform(QTransform{ 1.0, 0.0, 0.0, 1.0, step * kScaleX, 0.0 });
+			_cursorItem->setTransform(QTransform{ 1.0, 0.0, 0.0, 1.0, step * kStepWidth, 0.0 });
 	}
 }
 
