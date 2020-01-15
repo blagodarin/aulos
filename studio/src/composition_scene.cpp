@@ -47,7 +47,7 @@ CompositionScene::CompositionScene()
 	setBackgroundBrush(kBackgroundColor);
 }
 
-void CompositionScene::insertSequence(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>& sequence)
+void CompositionScene::insertFragment(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>& sequence)
 {
 	const auto newItem = addFragmentItem(trackIndex, offset, sequence);
 	const auto minCompositionLength = offset + newItem->fragmentLength() + kExtraLength;
@@ -59,6 +59,17 @@ void CompositionScene::insertSequence(size_t trackIndex, size_t offset, const st
 	setSceneRect(compositionRect);
 	for (const auto& track : _tracks)
 		track->_background->setTrackLength(_compositionLength);
+}
+
+void CompositionScene::removeFragment(size_t trackIndex, size_t offset)
+{
+	auto& track = *_tracks[trackIndex];
+	const auto i = track._fragments.find(offset);
+	assert(i != track._fragments.end());
+	removeItem(i->second);
+	update(i->second->boundingRect()); // The view doesn't update properly if it's inside a scroll area.
+	i->second->deleteLater();
+	track._fragments.erase(i);
 }
 
 void CompositionScene::reset(const std::shared_ptr<const aulos::CompositionData>& composition)
@@ -86,12 +97,10 @@ void CompositionScene::reset(const std::shared_ptr<const aulos::CompositionData>
 			track._sequenceLengths.emplace_back(sequenceLength);
 		}
 
-		size_t offset = 0;
 		for (const auto& fragment : trackData._fragments)
 		{
-			offset += fragment._delay;
-			const auto item = addFragmentItem(trackIndex, offset, fragment._sequence);
-			_compositionLength = std::max(_compositionLength, offset + item->fragmentLength());
+			const auto item = addFragmentItem(trackIndex, fragment.first, fragment.second);
+			_compositionLength = std::max(_compositionLength, fragment.first + item->fragmentLength());
 		}
 	}
 
@@ -102,7 +111,7 @@ void CompositionScene::reset(const std::shared_ptr<const aulos::CompositionData>
 		const auto item = new TrackItem{ _composition, i, _compositionLength };
 		item->setZValue(-1.0);
 		addItem(item);
-		connect(item, &TrackItem::insertRequested, this, &CompositionScene::insertSequence);
+		connect(item, &TrackItem::insertRequested, this, &CompositionScene::insertFragmentRequested);
 		connect(item, &TrackItem::newSequenceRequested, this, &CompositionScene::newSequenceRequested);
 		_tracks[i]->_background = item;
 	}
@@ -134,24 +143,13 @@ void CompositionScene::onEditRequested(size_t trackIndex, size_t offset, const s
 	(void)trackIndex, offset;
 }
 
-void CompositionScene::onRemoveRequested(size_t trackIndex, size_t offset)
-{
-	auto& track = *_tracks[trackIndex];
-	const auto i = track._fragments.find(offset);
-	assert(i != track._fragments.end());
-	removeItem(i->second);
-	update(i->second->boundingRect()); // The view doesn't update properly if it's inside a scroll area.
-	i->second->deleteLater();
-	track._fragments.erase(i);
-}
-
 FragmentItem* CompositionScene::addFragmentItem(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>& sequence)
 {
 	auto& track = *_tracks[trackIndex];
 	const auto item = new FragmentItem{ trackIndex, offset, sequence };
 	addItem(item);
 	connect(item, &FragmentItem::editRequested, this, &CompositionScene::onEditRequested);
-	connect(item, &FragmentItem::removeRequested, this, &CompositionScene::onRemoveRequested);
+	connect(item, &FragmentItem::removeRequested, this, &CompositionScene::removeFragmentRequested);
 	const auto i = track._fragments.emplace(offset, item).first;
 	if (i != track._fragments.begin())
 		std::prev(i)->second->stackBefore(i->second);

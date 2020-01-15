@@ -19,6 +19,7 @@
 
 #include <aulos/playback.hpp>
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -92,23 +93,13 @@ namespace aulos
 		std::vector<Sound> _sounds;
 	};
 
-	// Specifies when to play a sequence.
-	struct FragmentData
-	{
-		size_t _delay = 0; // Steps from the beginning of the previous fragment.
-		std::shared_ptr<const SequenceData> _sequence;
-
-		FragmentData(size_t delay, const std::shared_ptr<const SequenceData>& sequence) noexcept
-			: _delay{ delay }, _sequence{ sequence } {}
-	};
-
 	// Specifies playback actions for a single voice instance.
 	struct TrackData
 	{
 		size_t _voice = 0;
 		unsigned _weight = 0;
 		std::vector<std::shared_ptr<SequenceData>> _sequences;
-		std::vector<FragmentData> _fragments;
+		std::map<size_t, std::shared_ptr<const SequenceData>> _fragments;
 
 		TrackData(size_t voice, unsigned weight) noexcept
 			: _voice{ voice }, _weight{ weight } {}

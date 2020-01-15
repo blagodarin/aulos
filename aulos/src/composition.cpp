@@ -411,9 +411,9 @@ namespace aulos
 			trackData._sequences.reserve(packedTrack._sequences.size());
 			for (const auto& packedSequence : packedTrack._sequences)
 				trackData._sequences.emplace_back(std::make_shared<SequenceData>())->_sounds = packedSequence;
-			trackData._fragments.reserve(packedTrack._fragments.size());
+			size_t offset = 0;
 			for (const auto& packedFragment : packedTrack._fragments)
-				trackData._fragments.emplace_back(packedFragment._delay, trackData._sequences[packedFragment._sequence]);
+				trackData._fragments.insert_or_assign(offset += packedFragment._delay, trackData._sequences[packedFragment._sequence]);
 		}
 	}
 
@@ -431,12 +431,14 @@ namespace aulos
 			for (const auto& sequenceData : trackData._sequences)
 				packedTrack._sequences.emplace_back(sequenceData->_sounds);
 			packedTrack._fragments.reserve(trackData._fragments.size());
+			size_t lastOffset = 0;
 			for (const auto& fragmentData : trackData._fragments)
 			{
-				const auto i = std::find(trackData._sequences.begin(), trackData._sequences.end(), fragmentData._sequence);
+				const auto i = std::find(trackData._sequences.begin(), trackData._sequences.end(), fragmentData.second);
 				if (i == trackData._sequences.end())
 					return {};
-				packedTrack._fragments.emplace_back(fragmentData._delay, i - trackData._sequences.begin());
+				packedTrack._fragments.emplace_back(fragmentData.first - lastOffset, i - trackData._sequences.begin());
+				lastOffset = fragmentData.first;
 			}
 		}
 		return packed;

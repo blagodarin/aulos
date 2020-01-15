@@ -42,16 +42,18 @@ class CompositionScene : public QGraphicsScene
 public:
 	CompositionScene();
 
-	void insertSequence(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>&);
+	void insertFragment(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>&);
+	void removeFragment(size_t trackIndex, size_t offset);
 	void reset(const std::shared_ptr<const aulos::CompositionData>&);
 	void setCurrentStep(double step);
 
 signals:
+	void insertFragmentRequested(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>&);
 	void newSequenceRequested(size_t trackIndex, size_t offset);
+	void removeFragmentRequested(size_t trackIndex, size_t offset);
 
 private slots:
 	void onEditRequested(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>&);
-	void onRemoveRequested(size_t trackIndex, size_t offset);
 
 private:
 	FragmentItem* addFragmentItem(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>&);
