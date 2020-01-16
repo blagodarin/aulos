@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <memory>
+
 #include <QAbstractItemModel>
 
 namespace aulos
@@ -32,9 +34,9 @@ class VoicesModel : public QAbstractItemModel
 public:
 	QModelIndex addVoice(const aulos::Voice&);
 	void removeVoice(const QModelIndex&);
-	void reset(const aulos::CompositionData*);
+	void reset(aulos::CompositionData*);
 	void setVoice(const QModelIndex&, const aulos::Voice&);
-	const aulos::Voice* voice(const QModelIndex&) const;
+	aulos::Voice voice(const QModelIndex&) const;
 
 private:
 	int columnCount(const QModelIndex&) const override { return 1; }
@@ -47,5 +49,5 @@ private:
 	bool setData(const QModelIndex& index, const QVariant& value, int role) override;
 
 private:
-	QList<aulos::Voice> _voices;
+	QList<std::shared_ptr<aulos::Voice>> _voices;
 };

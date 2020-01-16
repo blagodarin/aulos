@@ -225,7 +225,7 @@ VoiceEditor::VoiceEditor(VoicesModel& model, QWidget* parent)
 		if (previous.isValid())
 			_model.setVoice(previous, currentVoice());
 		removeVoiceAction->setEnabled(current.isValid());
-		resetVoice(current.isValid() ? *_model.voice(current) : aulos::Voice{});
+		resetVoice(_model.voice(current));
 		currentVoiceWidget->setEnabled(current.isValid());
 	});
 }

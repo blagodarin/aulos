@@ -403,11 +403,13 @@ namespace aulos
 	{
 		const auto& packed = static_cast<const CompositionImpl&>(composition);
 		_speed = packed._speed;
-		_voices = packed._voices;
+		_voices.reserve(packed._voices.size());
+		for (const auto& packedVoice : packed._voices)
+			_voices.emplace_back(std::make_unique<Voice>(packedVoice));
 		_tracks.reserve(packed._tracks.size());
 		for (const auto& packedTrack : packed._tracks)
 		{
-			auto& trackData = _tracks.emplace_back(packedTrack._voice, packedTrack._weight);
+			auto& trackData = _tracks.emplace_back(_voices[packedTrack._voice], packedTrack._weight);
 			trackData._sequences.reserve(packedTrack._sequences.size());
 			for (const auto& packedSequence : packedTrack._sequences)
 				trackData._sequences.emplace_back(std::make_shared<SequenceData>())->_sounds = packedSequence;
@@ -422,11 +424,16 @@ namespace aulos
 		// TODO: Verify values.
 		auto packed = std::make_unique<CompositionImpl>();
 		packed->_speed = _speed;
-		packed->_voices = _voices;
+		packed->_voices.reserve(_voices.size());
+		for (const auto& voiceData : _voices)
+			packed->_voices.emplace_back(*voiceData);
 		packed->_tracks.reserve(_tracks.size());
 		for (const auto& trackData : _tracks)
 		{
-			auto& packedTrack = packed->_tracks.emplace_back(trackData._voice, trackData._weight);
+			const auto v = std::find(_voices.begin(), _voices.end(), trackData._voice);
+			if (v == _voices.end())
+				return {};
+			auto& packedTrack = packed->_tracks.emplace_back(v - _voices.begin(), trackData._weight);
 			packedTrack._sequences.reserve(trackData._sequences.size());
 			for (const auto& sequenceData : trackData._sequences)
 				packedTrack._sequences.emplace_back(sequenceData->_sounds);
@@ -434,10 +441,10 @@ namespace aulos
 			size_t lastOffset = 0;
 			for (const auto& fragmentData : trackData._fragments)
 			{
-				const auto i = std::find(trackData._sequences.begin(), trackData._sequences.end(), fragmentData.second);
-				if (i == trackData._sequences.end())
+				const auto s = std::find(trackData._sequences.begin(), trackData._sequences.end(), fragmentData.second);
+				if (s == trackData._sequences.end())
 					return {};
-				packedTrack._fragments.emplace_back(fragmentData.first - lastOffset, i - trackData._sequences.begin());
+				packedTrack._fragments.emplace_back(fragmentData.first - lastOffset, s - trackData._sequences.begin());
 				lastOffset = fragmentData.first;
 			}
 		}

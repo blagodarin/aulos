@@ -23,7 +23,7 @@ QModelIndex VoicesModel::addVoice(const aulos::Voice& voice)
 {
 	const auto row = _voices.size();
 	beginInsertRows({}, row, row);
-	_voices << voice;
+	_voices << std::make_shared<aulos::Voice>(voice);
 	endInsertRows();
 	return createIndex(row, 0);
 }
@@ -38,7 +38,7 @@ void VoicesModel::removeVoice(const QModelIndex& index)
 	endRemoveRows();
 }
 
-void VoicesModel::reset(const aulos::CompositionData* composition)
+void VoicesModel::reset(aulos::CompositionData* composition)
 {
 	beginResetModel();
 	_voices.clear();
@@ -52,20 +52,20 @@ void VoicesModel::setVoice(const QModelIndex& index, const aulos::Voice& voice)
 {
 	if (!index.isValid())
 		return;
-	const auto name = _voices[index.row()]._name;
-	_voices[index.row()] = voice;
-	_voices[index.row()]._name = name;
+	const auto name = _voices[index.row()]->_name;
+	*_voices[index.row()] = voice;
+	_voices[index.row()]->_name = name;
 	emit dataChanged(index, index, { Qt::UserRole });
 }
 
-const aulos::Voice* VoicesModel::voice(const QModelIndex& index) const
+aulos::Voice VoicesModel::voice(const QModelIndex& index) const
 {
-	return index.isValid() ? &_voices[index.row()] : nullptr;
+	return index.isValid() ? *_voices[index.row()] : aulos::Voice{};
 }
 
 QVariant VoicesModel::data(const QModelIndex& index, int role) const
 {
-	return index.isValid() && (role == Qt::DisplayRole || role == Qt::EditRole) ? QString::fromStdString(_voices[index.row()]._name) : QVariant{};
+	return index.isValid() && (role == Qt::DisplayRole || role == Qt::EditRole) ? QString::fromStdString(_voices[index.row()]->_name) : QVariant{};
 }
 
 QVariant VoicesModel::headerData(int section, Qt::Orientation orientation, int role) const
@@ -84,7 +84,7 @@ bool VoicesModel::setData(const QModelIndex& index, const QVariant& value, int r
 {
 	if (!index.isValid() || role != Qt::EditRole)
 		return false;
-	_voices[index.row()]._name = value.toString().toStdString();
+	_voices[index.row()]->_name = value.toString().toStdString();
 	emit dataChanged(index, index, { Qt::DisplayRole, Qt::EditRole });
 	return true;
 }

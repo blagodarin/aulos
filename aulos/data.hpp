@@ -96,12 +96,12 @@ namespace aulos
 	// Specifies playback actions for a single voice instance.
 	struct TrackData
 	{
-		size_t _voice = 0;
+		std::shared_ptr<const Voice> _voice;
 		unsigned _weight = 0;
 		std::vector<std::shared_ptr<SequenceData>> _sequences;
 		std::map<size_t, std::shared_ptr<const SequenceData>> _fragments;
 
-		TrackData(size_t voice, unsigned weight) noexcept
+		TrackData(const std::shared_ptr<const Voice>& voice, unsigned weight) noexcept
 			: _voice{ voice }, _weight{ weight } {}
 	};
 
@@ -112,7 +112,7 @@ namespace aulos
 	struct CompositionData
 	{
 		float _speed = kMinSpeed;
-		std::vector<Voice> _voices;
+		std::vector<std::shared_ptr<Voice>> _voices;
 		std::vector<TrackData> _tracks;
 
 		CompositionData() = default;
