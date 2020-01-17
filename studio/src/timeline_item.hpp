@@ -17,15 +17,23 @@
 
 #pragma once
 
-class QString;
+#include <memory>
 
-namespace aulos
+#include <QGraphicsItem>
+
+class TimelineItem : public QGraphicsItem
 {
-	struct SequenceData;
-}
+public:
+	TimelineItem(size_t speed, size_t length, QGraphicsItem* parent = nullptr);
 
-constexpr auto kStepWidth = 15.0;
-constexpr auto kTrackHeight = 40.0;
-constexpr auto kTimelineHeight = 0.5 * kTrackHeight;
+	QRectF boundingRect() const override { return _rect; }
+	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
+	void setCompositionSpeed(size_t speed);
+	void setTrackLength(size_t length);
+	size_t trackLength() const noexcept { return _length; }
 
-QString makeSequenceName(const aulos::SequenceData&, bool rich = false);
+private:
+	size_t _speed;
+	size_t _length;
+	QRectF _rect;
+};

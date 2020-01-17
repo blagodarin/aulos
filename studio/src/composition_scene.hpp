@@ -30,10 +30,8 @@ namespace aulos
 	struct SequenceData;
 }
 
-constexpr auto kStepWidth = 15.0;
-constexpr auto kTrackHeight = 40.0;
-
 class FragmentItem;
+class TimelineItem;
 
 class CompositionScene : public QGraphicsScene
 {
@@ -62,6 +60,7 @@ private:
 	struct Track;
 	std::shared_ptr<const aulos::CompositionData> _composition;
 	size_t _compositionLength = 0;
+	std::unique_ptr<TimelineItem> _timeline;
 	std::vector<std::unique_ptr<Track>> _tracks;
 	QGraphicsLineItem* _cursorItem = nullptr;
 };

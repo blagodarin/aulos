@@ -17,7 +17,6 @@
 
 #include "fragment_item.hpp"
 
-#include "composition_scene.hpp"
 #include "utils.hpp"
 
 #include <aulos/data.hpp>

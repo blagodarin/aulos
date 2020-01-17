@@ -18,7 +18,9 @@
 #include "composition_scene.hpp"
 
 #include "fragment_item.hpp"
+#include "timeline_item.hpp"
 #include "track_item.hpp"
+#include "utils.hpp"
 
 #include <aulos/data.hpp>
 
@@ -43,6 +45,7 @@ struct CompositionScene::Track
 };
 
 CompositionScene::CompositionScene()
+	: _timeline{ std::make_unique<TimelineItem>(1, 0) }
 {
 	setBackgroundBrush(kBackgroundColor);
 }
@@ -74,6 +77,7 @@ void CompositionScene::removeFragment(size_t trackIndex, size_t offset)
 
 void CompositionScene::reset(const std::shared_ptr<const aulos::CompositionData>& composition)
 {
+	removeItem(_timeline.get());
 	_compositionLength = 0;
 	_tracks.clear();
 	_cursorItem = nullptr;
@@ -105,6 +109,9 @@ void CompositionScene::reset(const std::shared_ptr<const aulos::CompositionData>
 	}
 
 	_compositionLength += kExtraLength;
+	_timeline->setCompositionSpeed(static_cast<size_t>(_composition->_speed));
+	_timeline->setTrackLength(_compositionLength);
+	addItem(_timeline.get());
 
 	for (size_t i = 0; i < _composition->_tracks.size(); ++i)
 	{
@@ -117,9 +124,9 @@ void CompositionScene::reset(const std::shared_ptr<const aulos::CompositionData>
 	}
 
 	const auto bottomRight = _tracks.back()->_background->boundingRect().bottomRight();
-	setSceneRect(0.0, 0.0, bottomRight.x(), bottomRight.y());
+	setSceneRect(0.0, -kTimelineHeight, bottomRight.x(), kTimelineHeight + bottomRight.y());
 
-	_cursorItem = new QGraphicsLineItem{ 0.0, 0.0, 0.0, bottomRight.y() };
+	_cursorItem = new QGraphicsLineItem{ 0.0, -kTimelineHeight, 0.0, bottomRight.y() };
 	_cursorItem->setPen(kCursorColor);
 	_cursorItem->setVisible(false);
 	_cursorItem->setZValue(1.0);
