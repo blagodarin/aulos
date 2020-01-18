@@ -43,7 +43,7 @@ namespace aulos
 
 	struct CompositionImpl final : public Composition
 	{
-		float _speed = kMinSpeed;
+		unsigned _speed = kMinSpeed;
 		std::vector<Voice> _voices;
 		std::vector<Track> _tracks;
 

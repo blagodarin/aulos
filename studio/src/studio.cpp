@@ -155,6 +155,8 @@ Studio::Studio()
 	connect(_speedSpin, QOverload<int>::of(&QSpinBox::valueChanged), [this] {
 		if (!_hasComposition)
 			return;
+		_composition->_speed = static_cast<unsigned>(_speedSpin->value());
+		_compositionScene->setSpeed(_composition->_speed);
 		_changed = true;
 		updateStatus();
 	});
@@ -170,7 +172,7 @@ Studio::Studio()
 		updateStatus();
 	});
 	connect(_player.get(), &Player::timeAdvanced, [this](qint64 microseconds) {
-		_compositionScene->setCurrentStep(microseconds * _speedSpin->value() / 1'000'000.0);
+		_compositionScene->setCurrentStep(microseconds * _composition->_speed / 1'000'000.0);
 	});
 	connect(_compositionScene.get(), &CompositionScene::insertFragmentRequested, [this](size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>& sequence) {
 		auto& track = _composition->_tracks[trackIndex];
@@ -349,7 +351,7 @@ void Studio::updateStatus()
 	_playAction->setEnabled(_hasComposition && !_player->isPlaying());
 	_stopAction->setEnabled(_hasComposition && _player->isPlaying());
 	_toolsVoiceEditorAction->setEnabled(_hasComposition);
-	_speedSpin->setEnabled(_hasComposition);
+	_speedSpin->setEnabled(_hasComposition && !_player->isPlaying());
 	_compositionView->setEnabled(_hasComposition);
 	_statusPath->setText(_hasComposition ? _compositionPath : QStringLiteral("<i>%1</i>").arg(tr("no file")));
 }

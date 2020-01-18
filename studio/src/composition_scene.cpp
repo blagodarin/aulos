@@ -45,7 +45,7 @@ struct CompositionScene::Track
 };
 
 CompositionScene::CompositionScene()
-	: _timeline{ std::make_unique<TimelineItem>(1, 0) }
+	: _timeline{ std::make_unique<TimelineItem>() }
 {
 	setBackgroundBrush(kBackgroundColor);
 }
@@ -110,7 +110,7 @@ void CompositionScene::reset(const std::shared_ptr<const aulos::CompositionData>
 	}
 
 	_compositionLength += kExtraLength;
-	_timeline->setCompositionSpeed(static_cast<size_t>(_composition->_speed));
+	_timeline->setCompositionSpeed(_composition->_speed);
 	_timeline->setTrackLength(_compositionLength);
 	addItem(_timeline.get());
 
@@ -144,6 +144,11 @@ void CompositionScene::setCurrentStep(double step)
 		if (isVisible)
 			_cursorItem->setTransform(QTransform{ 1.0, 0.0, 0.0, 1.0, step * kStepWidth, 0.0 });
 	}
+}
+
+void CompositionScene::setSpeed(unsigned speed)
+{
+	_timeline->setCompositionSpeed(speed);
 }
 
 void CompositionScene::onEditRequested(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>&)

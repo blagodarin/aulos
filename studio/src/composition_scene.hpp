@@ -44,6 +44,7 @@ public:
 	void removeFragment(size_t trackIndex, size_t offset);
 	void reset(const std::shared_ptr<const aulos::CompositionData>&);
 	void setCurrentStep(double step);
+	void setSpeed(unsigned speed);
 
 signals:
 	void insertFragmentRequested(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>&);

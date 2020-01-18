@@ -105,13 +105,13 @@ namespace aulos
 			: _voice{ voice }, _weight{ weight } {}
 	};
 
-	constexpr float kMinSpeed = 1.f;  // Minimum composition playback speed (in steps per second).
-	constexpr float kMaxSpeed = 32.f; // Maximum composition playback speed (in steps per second).
+	constexpr unsigned kMinSpeed = 1;  // Minimum composition playback speed (in steps per second).
+	constexpr unsigned kMaxSpeed = 32; // Maximum composition playback speed (in steps per second).
 
 	// Contains composition data in an editable format.
 	struct CompositionData
 	{
-		float _speed = kMinSpeed;
+		unsigned _speed = kMinSpeed;
 		std::vector<std::shared_ptr<Voice>> _voices;
 		std::vector<TrackData> _tracks;
 

@@ -284,7 +284,7 @@ namespace aulos
 			{
 				if (currentSection != Section::Initial)
 					throw CompositionError{ location(), "Unexpected command" };
-				_speed = readFloat(kMinSpeed, kMaxSpeed);
+				_speed = readUnsigned(kMinSpeed, kMaxSpeed);
 				consumeEndOfLine();
 			}
 			else

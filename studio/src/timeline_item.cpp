@@ -38,10 +38,8 @@ namespace
 	};
 }
 
-TimelineItem::TimelineItem(size_t speed, size_t length, QGraphicsItem* parent)
+TimelineItem::TimelineItem(QGraphicsItem* parent)
 	: QGraphicsItem{ parent }
-	, _speed{ speed }
-	, _length{ length }
 	, _rect{ 0.0, -kTimelineHeight, _length * kStepWidth, kTimelineHeight }
 {
 	setFlag(QGraphicsItem::ItemUsesExtendedStyleOption);
@@ -72,7 +70,7 @@ void TimelineItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* opti
 		rect.moveLeft(rect.right());
 		++index;
 	}
-	if (const auto remainder = _length % _speed)
+	if (_length % _speed)
 	{
 		rect.setRight(_rect.right());
 		painter->setPen(Qt::transparent);
@@ -81,11 +79,12 @@ void TimelineItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* opti
 	}
 }
 
-void TimelineItem::setCompositionSpeed(size_t speed)
+void TimelineItem::setCompositionSpeed(unsigned speed)
 {
 	if (_speed == speed)
 		return;
 	_speed = speed;
+	update();
 }
 
 void TimelineItem::setTrackLength(size_t length)

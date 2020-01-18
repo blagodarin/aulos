@@ -24,16 +24,16 @@
 class TimelineItem : public QGraphicsItem
 {
 public:
-	TimelineItem(size_t speed, size_t length, QGraphicsItem* parent = nullptr);
+	TimelineItem(QGraphicsItem* parent = nullptr);
 
 	QRectF boundingRect() const override { return _rect; }
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
-	void setCompositionSpeed(size_t speed);
+	void setCompositionSpeed(unsigned speed);
 	void setTrackLength(size_t length);
 	size_t trackLength() const noexcept { return _length; }
 
 private:
-	size_t _speed;
-	size_t _length;
+	unsigned _speed = 1;
+	size_t _length = 0;
 	QRectF _rect;
 };
