@@ -26,10 +26,19 @@
 #include <QGraphicsSceneContextMenuEvent>
 #include <QMenu>
 #include <QPainter>
+#include <QStyleOptionGraphicsItem>
 
 namespace
 {
-	const std::array<QColor, 2> kTrackColors{ "#999", "#888" };
+	struct TrackColors
+	{
+		std::array<QColor, 2> _colors;
+	};
+
+	const std::array<TrackColors, 2> kTrackColors{
+		TrackColors{ "#888", "#999" },
+		TrackColors{ "#777", "#888" },
+	};
 }
 
 TrackItem::TrackItem(const std::shared_ptr<const aulos::CompositionData>& composition, size_t trackIndex, size_t length, QGraphicsItem* parent)
@@ -39,13 +48,29 @@ TrackItem::TrackItem(const std::shared_ptr<const aulos::CompositionData>& compos
 	, _length{ length }
 	, _rect{ 0.0, _trackIndex * kTrackHeight, _length * kStepWidth, kTrackHeight }
 {
+	setFlag(QGraphicsItem::ItemUsesExtendedStyleOption);
 }
 
-void TrackItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*)
+void TrackItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget*)
 {
-	painter->setBrush(kTrackColors[_trackIndex % kTrackColors.size()]);
+	if (!_length)
+		return;
+	const auto& colors = kTrackColors[_trackIndex % kTrackColors.size()]._colors;
+	auto step = static_cast<size_t>(std::floor((option->exposedRect.left() - _rect.left()) / kStepWidth));
+	QRectF rect{ { step * kStepWidth, _rect.top() }, QSizeF{ kStepWidth, kTrackHeight } };
 	painter->setPen(Qt::transparent);
-	painter->drawRect(_rect);
+	while (step < _length - 1)
+	{
+		painter->setBrush(colors[step % colors.size()]);
+		painter->drawRect(rect);
+		if (rect.right() > option->exposedRect.right())
+			return;
+		rect.moveLeft(rect.right());
+		++step;
+	}
+	rect.setRight(_rect.right());
+	painter->setBrush(colors[step % colors.size()]);
+	painter->drawRect(rect);
 }
 
 void TrackItem::setTrackLength(size_t length)

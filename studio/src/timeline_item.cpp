@@ -22,10 +22,20 @@
 #include <array>
 
 #include <QPainter>
+#include <QStyleOptionGraphicsItem>
 
 namespace
 {
-	const std::array<QColor, 2> kTimelineColors{ "#fff", "#ddd" };
+	struct TimelineColors
+	{
+		QColor _brush;
+		QColor _pen;
+	};
+
+	const std::array<TimelineColors, 2> kTimelineColors{
+		TimelineColors{ "#fff", "#000" },
+		TimelineColors{ "#ddd", "#000" },
+	};
 }
 
 TimelineItem::TimelineItem(size_t speed, size_t length, QGraphicsItem* parent)
@@ -34,9 +44,10 @@ TimelineItem::TimelineItem(size_t speed, size_t length, QGraphicsItem* parent)
 	, _length{ length }
 	, _rect{ 0.0, -kTimelineHeight, _length * kStepWidth, kTimelineHeight }
 {
+	setFlag(QGraphicsItem::ItemUsesExtendedStyleOption);
 }
 
-void TimelineItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*)
+void TimelineItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget*)
 {
 	size_t index = 0;
 	QRectF rect{ _rect.topLeft(), QSizeF{ _speed * kStepWidth, kTimelineHeight } };
@@ -47,18 +58,25 @@ void TimelineItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWi
 	painter->setFont(font);
 	while (index < _length / _speed)
 	{
-		painter->setPen(Qt::transparent);
-		painter->setBrush(kTimelineColors[index++ % kTimelineColors.size()]);
-		painter->drawRect(rect);
-		painter->setPen(Qt::black);
-		painter->drawText(rect.adjusted(-textOffset, 0.0, -textOffset, 0.0), Qt::AlignRight | Qt::AlignVCenter, QString::number(index));
+		if (rect.left() > option->exposedRect.right())
+			return;
+		if (rect.right() >= option->exposedRect.left())
+		{
+			const auto& colors = kTimelineColors[index % kTimelineColors.size()];
+			painter->setPen(Qt::transparent);
+			painter->setBrush(colors._brush);
+			painter->drawRect(rect);
+			painter->setPen(colors._pen);
+			painter->drawText(rect.adjusted(-textOffset, 0.0, -textOffset, 0.0), Qt::AlignRight | Qt::AlignVCenter, QString::number(index + 1));
+		}
 		rect.moveLeft(rect.right());
+		++index;
 	}
 	if (const auto remainder = _length % _speed)
 	{
 		rect.setRight(_rect.right());
 		painter->setPen(Qt::transparent);
-		painter->setBrush(kTimelineColors[index % kTimelineColors.size()]);
+		painter->setBrush(kTimelineColors[index % kTimelineColors.size()]._brush);
 		painter->drawRect(rect);
 	}
 }

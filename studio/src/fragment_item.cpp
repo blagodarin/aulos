@@ -33,17 +33,17 @@ namespace
 {
 	struct FragmentColors
 	{
-		QColor _background;
-		QColor _outline;
+		QColor _brush;
+		QColor _pen;
 	};
 
 	const std::array<FragmentColors, 6> kFragmentColors{
-		FragmentColors{ "#f88", "#800" },
-		FragmentColors{ "#ff8", "#880" },
-		FragmentColors{ "#8f8", "#080" },
-		FragmentColors{ "#8ff", "#088" },
-		FragmentColors{ "#88f", "#008" },
-		FragmentColors{ "#f8f", "#808" },
+		FragmentColors{ "#f88", "#400" },
+		FragmentColors{ "#ff8", "#440" },
+		FragmentColors{ "#8f8", "#040" },
+		FragmentColors{ "#8ff", "#044" },
+		FragmentColors{ "#88f", "#004" },
+		FragmentColors{ "#f8f", "#404" },
 	};
 }
 
@@ -70,7 +70,6 @@ FragmentItem::FragmentItem(size_t trackIndex, size_t offset, const std::shared_p
 
 void FragmentItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*)
 {
-	painter->setPen(kFragmentColors[_colorIndex]._outline);
 	const auto right = _rect.right() - kStepWidth / 2;
 	const std::array<QPointF, 5> shape{
 		_rect.topLeft(),
@@ -79,7 +78,8 @@ void FragmentItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWi
 		QPointF{ right, _rect.bottom() },
 		_rect.bottomLeft(),
 	};
-	painter->setBrush(kFragmentColors[_colorIndex]._background);
+	painter->setPen(kFragmentColors[_colorIndex]._pen);
+	painter->setBrush(kFragmentColors[_colorIndex]._brush);
 	painter->drawConvexPolygon(shape.data(), static_cast<int>(shape.size()));
 	if (_length > 1)
 	{

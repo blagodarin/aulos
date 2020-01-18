@@ -60,6 +60,7 @@ void CompositionScene::insertFragment(size_t trackIndex, size_t offset, const st
 	auto compositionRect = sceneRect();
 	compositionRect.setWidth(_compositionLength * kStepWidth);
 	setSceneRect(compositionRect);
+	_timeline->setTrackLength(_compositionLength);
 	for (const auto& track : _tracks)
 		track->_background->setTrackLength(_compositionLength);
 }
