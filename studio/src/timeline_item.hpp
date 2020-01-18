@@ -30,7 +30,6 @@ public:
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
 	void setCompositionSpeed(unsigned speed);
 	void setTrackLength(size_t length);
-	size_t trackLength() const noexcept { return _length; }
 
 private:
 	unsigned _speed = 1;

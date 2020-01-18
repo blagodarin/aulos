@@ -37,6 +37,8 @@ set(_src
 	src/utils.hpp
 	src/voice_editor.cpp
 	src/voice_editor.hpp
+	src/voice_item.cpp
+	src/voice_item.hpp
 	src/voices_model.hpp
 	src/voices_model.cpp
 	)

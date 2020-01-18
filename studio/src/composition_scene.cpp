@@ -21,6 +21,7 @@
 #include "timeline_item.hpp"
 #include "track_item.hpp"
 #include "utils.hpp"
+#include "voice_item.hpp"
 
 #include <aulos/data.hpp>
 
@@ -39,6 +40,7 @@ namespace
 
 struct CompositionScene::Track
 {
+	VoiceItem* _header = nullptr;
 	TrackItem* _background = nullptr;
 	std::vector<size_t> _sequenceLengths;
 	std::map<size_t, FragmentItem*> _fragments;
@@ -114,18 +116,27 @@ void CompositionScene::reset(const std::shared_ptr<const aulos::CompositionData>
 	_timeline->setTrackLength(_compositionLength);
 	addItem(_timeline.get());
 
+	qreal trackHeaderWidth = 0;
 	for (size_t i = 0; i < _composition->_tracks.size(); ++i)
 	{
+		const auto header = new VoiceItem{ _composition, i };
+		addItem(header);
+		trackHeaderWidth = std::max(trackHeaderWidth, header->requiredWidth());
+		_tracks[i]->_header = header;
+
 		const auto item = new TrackItem{ _composition, i, _compositionLength };
-		item->setZValue(-1.0);
 		addItem(item);
+		item->setZValue(-1.0);
 		connect(item, &TrackItem::insertRequested, this, &CompositionScene::insertFragmentRequested);
 		connect(item, &TrackItem::newSequenceRequested, this, &CompositionScene::newSequenceRequested);
 		_tracks[i]->_background = item;
 	}
 
+	for (const auto& track : _tracks)
+		track->_header->setWidth(trackHeaderWidth);
+
 	const auto bottomRight = _tracks.back()->_background->boundingRect().bottomRight();
-	setSceneRect(0.0, -kTimelineHeight, bottomRight.x(), kTimelineHeight + bottomRight.y());
+	setSceneRect(-trackHeaderWidth, -kTimelineHeight, trackHeaderWidth + bottomRight.x(), kTimelineHeight + bottomRight.y());
 
 	_cursorItem = new QGraphicsLineItem{ 0.0, -kTimelineHeight, 0.0, bottomRight.y() };
 	_cursorItem->setPen(kCursorColor);

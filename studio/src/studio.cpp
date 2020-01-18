@@ -30,10 +30,12 @@
 #include <QLabel>
 #include <QMenuBar>
 #include <QSaveFile>
+#include <QScrollBar>
 #include <QSettings>
 #include <QSpinBox>
 #include <QStatusBar>
 #include <QStyle>
+#include <QTimer>
 #include <QToolBar>
 
 namespace
@@ -302,6 +304,7 @@ void Studio::openComposition(const QString& path)
 	_speedSpin->setValue(static_cast<int>(_composition->_speed));
 	_voicesModel->reset(_composition.get());
 	_compositionScene->reset(_composition);
+	_compositionView->horizontalScrollBar()->setValue(_compositionView->horizontalScrollBar()->minimum());
 	_hasComposition = true;
 	setRecentFile(path);
 	saveRecentFiles();

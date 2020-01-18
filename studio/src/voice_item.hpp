@@ -19,35 +19,27 @@
 
 #include <memory>
 
-#include <QGraphicsObject>
+#include <QGraphicsItem>
+#include <QStaticText>
 
 namespace aulos
 {
 	struct CompositionData;
-	struct SequenceData;
 }
 
-class TrackItem : public QGraphicsObject
+class VoiceItem : public QGraphicsItem
 {
-	Q_OBJECT
-
 public:
-	TrackItem(const std::shared_ptr<const aulos::CompositionData>&, size_t trackIndex, size_t length, QGraphicsItem* parent = nullptr);
+	VoiceItem(const std::shared_ptr<const aulos::CompositionData>&, size_t trackIndex, QGraphicsItem* parent = nullptr);
 
 	QRectF boundingRect() const override { return _rect; }
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
-	void setTrackLength(size_t length);
-
-signals:
-	void insertRequested(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>&);
-	void newSequenceRequested(size_t trackIndex, size_t offset);
-
-private:
-	void contextMenuEvent(QGraphicsSceneContextMenuEvent*) override;
+	qreal requiredWidth() const;
+	void setWidth(qreal);
 
 private:
 	const std::shared_ptr<const aulos::CompositionData> _composition;
 	const size_t _trackIndex;
-	size_t _length;
+	QStaticText _name;
 	QRectF _rect;
 };
