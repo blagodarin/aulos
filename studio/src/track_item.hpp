@@ -37,6 +37,7 @@ public:
 	QRectF boundingRect() const override { return _rect; }
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
 	void setTrackLength(size_t length);
+	size_t trackIndex() const noexcept { return _trackIndex; }
 
 signals:
 	void insertRequested(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>&);

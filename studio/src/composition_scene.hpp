@@ -55,12 +55,12 @@ private slots:
 	void onEditRequested(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>&);
 
 private:
-	FragmentItem* addFragmentItem(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>&);
+	struct Track;
+	FragmentItem* addFragmentItem(Track&, size_t offset, const std::shared_ptr<const aulos::SequenceData>&);
 
 private:
-	struct Track;
 	std::shared_ptr<const aulos::CompositionData> _composition;
 	std::unique_ptr<TimelineItem> _timeline;
 	std::vector<std::unique_ptr<Track>> _tracks;
-	QGraphicsLineItem* _cursorItem = nullptr;
+	std::unique_ptr<QGraphicsLineItem> _cursorItem;
 };

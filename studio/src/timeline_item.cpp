@@ -88,11 +88,10 @@ void TimelineItem::setCompositionLength(size_t length)
 	_rect.setWidth(_length * kStepWidth);
 }
 
-
-void TimelineItem::setCompositionSpeed(unsigned speed)
+bool TimelineItem::setCompositionSpeed(unsigned speed)
 {
 	if (_speed == speed)
-		return;
+		return false;
 	_speed = speed;
-	update();
+	return true;
 }

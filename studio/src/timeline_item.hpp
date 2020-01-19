@@ -29,7 +29,7 @@ public:
 	QRectF boundingRect() const override { return _rect; }
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
 	void setCompositionLength(size_t length);
-	void setCompositionSpeed(unsigned speed);
+	bool setCompositionSpeed(unsigned speed);
 	size_t compositionLength() const noexcept { return _length; }
 
 private:

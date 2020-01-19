@@ -17,6 +17,7 @@
 
 #include "fragment_item.hpp"
 
+#include "track_item.hpp"
 #include "utils.hpp"
 
 #include <aulos/data.hpp>
@@ -47,14 +48,12 @@ namespace
 	};
 }
 
-FragmentItem::FragmentItem(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>& sequence, QGraphicsItem* parent)
-	: QGraphicsObject{ parent }
-	, _trackIndex{ trackIndex }
+FragmentItem::FragmentItem(TrackItem* track, size_t offset, const std::shared_ptr<const aulos::SequenceData>& sequence)
+	: QGraphicsObject{ track }
 	, _offset{ offset }
 	, _sequence{ sequence }
 	, _length{ std::reduce(sequence->_sounds.begin(), sequence->_sounds.end(), size_t{}, [](size_t length, const aulos::Sound& sound) { return length + sound._pause; }) }
-	, _rect{ _offset * kStepWidth, _trackIndex * kTrackHeight, std::max<size_t>(_length, 1) * kStepWidth, kTrackHeight }
-	, _colorIndex{ _trackIndex % kFragmentColors.size() }
+	, _rect{ _offset * kStepWidth, track->trackIndex() * kTrackHeight, std::max<size_t>(_length, 1) * kStepWidth, kTrackHeight }
 {
 	setToolTip(::makeSequenceName(*_sequence));
 	if (_length > 1)
@@ -78,8 +77,9 @@ void FragmentItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWi
 		QPointF{ right, _rect.bottom() },
 		_rect.bottomLeft(),
 	};
-	painter->setPen(kFragmentColors[_colorIndex]._pen);
-	painter->setBrush(kFragmentColors[_colorIndex]._brush);
+	const auto& colors = kFragmentColors[static_cast<const TrackItem*>(parentItem())->trackIndex() % kFragmentColors.size()];
+	painter->setPen(colors._pen);
+	painter->setBrush(colors._brush);
 	painter->drawConvexPolygon(shape.data(), static_cast<int>(shape.size()));
 	if (_length > 1)
 	{
@@ -104,8 +104,12 @@ void FragmentItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
 	QMenu menu;
 	const auto editAction = menu.addAction(tr("Edit..."));
 	const auto removeAction = menu.addAction(tr("Remove"));
-	if (const auto action = menu.exec(e->screenPos()); action == editAction)
-		emit editRequested(_trackIndex, _offset, _sequence);
-	else if (action == removeAction)
-		emit removeRequested(_trackIndex, _offset);
+	if (const auto action = menu.exec(e->screenPos()))
+	{
+		const auto trackIndex = static_cast<const TrackItem*>(parentItem())->trackIndex();
+		if (action == editAction)
+			emit editRequested(trackIndex, _offset, _sequence);
+		else if (action == removeAction)
+			emit removeRequested(trackIndex, _offset);
+	}
 }

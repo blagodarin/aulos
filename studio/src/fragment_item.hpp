@@ -25,12 +25,14 @@ namespace aulos
 	struct SequenceData;
 }
 
+class TrackItem;
+
 class FragmentItem : public QGraphicsObject
 {
 	Q_OBJECT
 
 public:
-	FragmentItem(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>&, QGraphicsItem* parent = nullptr);
+	FragmentItem(TrackItem* track, size_t offset, const std::shared_ptr<const aulos::SequenceData>&);
 
 	QRectF boundingRect() const override { return _rect; }
 	size_t fragmentLength() const noexcept { return _length; }
@@ -45,11 +47,9 @@ private:
 	void contextMenuEvent(QGraphicsSceneContextMenuEvent*) override;
 
 private:
-	const size_t _trackIndex;
 	const size_t _offset;
 	const std::shared_ptr<const aulos::SequenceData> _sequence;
 	QStaticText _name;
 	size_t _length = 0;
 	const QRectF _rect;
-	const size_t _colorIndex;
 };
