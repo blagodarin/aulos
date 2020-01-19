@@ -40,8 +40,8 @@ namespace
 
 struct CompositionScene::Track
 {
-	VoiceItem* _header = nullptr;
 	TrackItem* _background = nullptr;
+	VoiceItem* _header = nullptr;
 	std::map<size_t, FragmentItem*> _fragments;
 };
 
@@ -54,6 +54,8 @@ CompositionScene::CompositionScene()
 	_cursorItem->setVisible(false);
 	_cursorItem->setZValue(1.0);
 }
+
+CompositionScene::~CompositionScene() = default;
 
 void CompositionScene::insertFragment(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>& sequence)
 {
@@ -75,7 +77,6 @@ void CompositionScene::removeFragment(size_t trackIndex, size_t offset)
 	const auto i = track._fragments.find(offset);
 	assert(i != track._fragments.end());
 	removeItem(i->second);
-	update(i->second->boundingRect()); // The view doesn't update properly if it's inside a scroll area.
 	i->second->deleteLater();
 	track._fragments.erase(i);
 }
@@ -98,12 +99,13 @@ void CompositionScene::reset(const std::shared_ptr<const aulos::CompositionData>
 		const auto trackIndex = _tracks.size();
 		const auto& track = _tracks.emplace_back(std::make_unique<Track>());
 
-		track->_header = new VoiceItem{ _composition, trackIndex };
-		trackHeaderWidth = std::max(trackHeaderWidth, track->_header->requiredWidth());
-
 		track->_background = new TrackItem{ _composition, trackIndex };
+		track->_background->setPos(0, trackIndex * kTrackHeight);
 		connect(track->_background, &TrackItem::insertRequested, this, &CompositionScene::insertFragmentRequested);
 		connect(track->_background, &TrackItem::newSequenceRequested, this, &CompositionScene::newSequenceRequested);
+
+		track->_header = new VoiceItem{ _composition, trackIndex, track->_background };
+		trackHeaderWidth = std::max(trackHeaderWidth, track->_header->requiredWidth());
 
 		for (const auto& fragment : trackData->_fragments)
 		{
@@ -121,7 +123,7 @@ void CompositionScene::reset(const std::shared_ptr<const aulos::CompositionData>
 		track->_background->setTrackLength(compositionLength);
 	}
 
-	const auto bottomRight = _tracks.back()->_background->boundingRect().bottomRight();
+	const QPointF bottomRight{ compositionLength * kStepWidth, _tracks.size() * kTrackHeight };
 	setSceneRect({ { -trackHeaderWidth, -kTimelineHeight }, bottomRight });
 
 	auto cursorLine = _cursorItem->line();
@@ -131,10 +133,7 @@ void CompositionScene::reset(const std::shared_ptr<const aulos::CompositionData>
 
 	addItem(_timeline.get());
 	for (auto i = _tracks.crbegin(); i != _tracks.crend(); ++i)
-	{
-		addItem((*i)->_header);
 		addItem((*i)->_background);
-	}
 	addItem(_cursorItem.get());
 }
 
@@ -164,6 +163,7 @@ void CompositionScene::onEditRequested(size_t trackIndex, size_t offset, const s
 FragmentItem* CompositionScene::addFragmentItem(Track& track, size_t offset, const std::shared_ptr<const aulos::SequenceData>& sequence)
 {
 	const auto item = new FragmentItem{ track._background, offset, sequence };
+	item->setPos(offset * kStepWidth, 0);
 	connect(item, &FragmentItem::editRequested, this, &CompositionScene::onEditRequested);
 	connect(item, &FragmentItem::removeRequested, this, &CompositionScene::removeFragmentRequested);
 	const auto i = track._fragments.emplace(offset, item).first;

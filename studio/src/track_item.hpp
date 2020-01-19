@@ -27,14 +27,14 @@ namespace aulos
 	struct SequenceData;
 }
 
-class TrackItem : public QGraphicsObject
+class TrackItem final : public QGraphicsObject
 {
 	Q_OBJECT
 
 public:
 	TrackItem(const std::shared_ptr<const aulos::CompositionData>&, size_t trackIndex, QGraphicsItem* parent = nullptr);
 
-	QRectF boundingRect() const override { return _rect; }
+	QRectF boundingRect() const override;
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
 	void setTrackLength(size_t length);
 	size_t trackIndex() const noexcept { return _trackIndex; }
@@ -50,5 +50,4 @@ private:
 	const std::shared_ptr<const aulos::CompositionData> _composition;
 	const size_t _trackIndex;
 	size_t _length = 0;
-	QRectF _rect;
 };

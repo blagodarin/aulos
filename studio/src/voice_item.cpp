@@ -53,7 +53,6 @@ VoiceItem::VoiceItem(const std::shared_ptr<const aulos::CompositionData>& compos
 	: QGraphicsItem{ parent }
 	, _composition{ composition }
 	, _trackIndex{ trackIndex }
-	, _rect{ 0, _trackIndex * kTrackHeight, 0, kTrackHeight }
 {
 	QTextOption textOption;
 	textOption.setWrapMode(QTextOption::NoWrap);
@@ -63,15 +62,20 @@ VoiceItem::VoiceItem(const std::shared_ptr<const aulos::CompositionData>& compos
 	_name.prepare({}, ::defaultFont());
 }
 
+QRectF VoiceItem::boundingRect() const
+{
+	return { { -_width, 0 }, QSizeF{ _width, kTrackHeight } };
+}
+
 void VoiceItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*)
 {
 	const auto& colors = kVoiceColors[_trackIndex % kVoiceColors.size()];
 	painter->setBrush(colors._brush);
 	painter->setPen(Qt::transparent);
-	painter->drawRect(_rect);
+	painter->drawRect(boundingRect());
 	painter->setPen(colors._pen);
 	painter->setFont(::defaultFont());
-	painter->drawStaticText(QPointF{ _rect.left() + kMargin, _rect.top() + (kTrackHeight - _name.size().height()) / 2 }, _name);
+	painter->drawStaticText(QPointF{ kMargin - _width, (kTrackHeight - _name.size().height()) / 2 }, _name);
 }
 
 qreal VoiceItem::requiredWidth() const
@@ -82,5 +86,5 @@ qreal VoiceItem::requiredWidth() const
 void VoiceItem::setWidth(qreal width)
 {
 	prepareGeometryChange();
-	_rect.setLeft(-width);
+	_width = width;
 }

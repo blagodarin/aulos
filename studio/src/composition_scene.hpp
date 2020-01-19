@@ -33,12 +33,13 @@ namespace aulos
 class FragmentItem;
 class TimelineItem;
 
-class CompositionScene : public QGraphicsScene
+class CompositionScene final : public QGraphicsScene
 {
 	Q_OBJECT
 
 public:
 	CompositionScene();
+	~CompositionScene() override;
 
 	void insertFragment(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>&);
 	void removeFragment(size_t trackIndex, size_t offset);

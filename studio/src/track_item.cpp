@@ -45,9 +45,13 @@ TrackItem::TrackItem(const std::shared_ptr<const aulos::CompositionData>& compos
 	: QGraphicsObject{ parent }
 	, _composition{ composition }
 	, _trackIndex{ trackIndex }
-	, _rect{ 0, _trackIndex * kTrackHeight, 0, kTrackHeight }
 {
 	setFlag(QGraphicsItem::ItemUsesExtendedStyleOption);
+}
+
+QRectF TrackItem::boundingRect() const
+{
+	return { {}, QSizeF{ _length * kStepWidth, kTrackHeight } };
 }
 
 void TrackItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget*)
@@ -55,8 +59,8 @@ void TrackItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
 	if (!_length)
 		return;
 	const auto& colors = kTrackColors[_trackIndex % kTrackColors.size()]._colors;
-	auto step = static_cast<size_t>(std::floor((option->exposedRect.left() - _rect.left()) / kStepWidth));
-	QRectF rect{ { step * kStepWidth, _rect.top() }, QSizeF{ kStepWidth, kTrackHeight } };
+	auto step = static_cast<size_t>(std::floor(option->exposedRect.left() / kStepWidth));
+	QRectF rect{ { step * kStepWidth, 0 }, QSizeF{ kStepWidth, kTrackHeight } };
 	painter->setPen(Qt::transparent);
 	while (step < _length - 1)
 	{
@@ -67,7 +71,7 @@ void TrackItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
 		rect.moveLeft(rect.right());
 		++step;
 	}
-	rect.setRight(_rect.right());
+	rect.setRight(_length * kStepWidth);
 	painter->setBrush(colors[step % colors.size()]);
 	painter->drawRect(rect);
 }
@@ -78,7 +82,6 @@ void TrackItem::setTrackLength(size_t length)
 		return;
 	prepareGeometryChange();
 	_length = length;
-	_rect.setWidth(_length * kStepWidth);
 }
 
 void TrackItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
@@ -94,7 +97,7 @@ void TrackItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
 	const auto action = menu.exec(e->screenPos());
 	if (!action)
 		return;
-	const auto offset = static_cast<size_t>(std::ceil(e->pos().x() - _rect.left()) / kStepWidth);
+	const auto offset = static_cast<size_t>(std::ceil(e->pos().x()) / kStepWidth);
 	if (action == newSequenceAction)
 		emit newSequenceRequested(_trackIndex, offset);
 	else

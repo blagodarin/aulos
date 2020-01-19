@@ -52,8 +52,8 @@ FragmentItem::FragmentItem(TrackItem* track, size_t offset, const std::shared_pt
 	: QGraphicsObject{ track }
 	, _offset{ offset }
 	, _sequence{ sequence }
-	, _length{ std::reduce(sequence->_sounds.begin(), sequence->_sounds.end(), size_t{}, [](size_t length, const aulos::Sound& sound) { return length + sound._pause; }) }
-	, _rect{ _offset * kStepWidth, track->trackIndex() * kTrackHeight, std::max<size_t>(_length, 1) * kStepWidth, kTrackHeight }
+	, _length{ std::reduce(_sequence->_sounds.begin(), _sequence->_sounds.end(), size_t{}, [](size_t length, const aulos::Sound& sound) { return length + sound._pause; }) }
+	, _width{ std::max<size_t>(_length, 1) * kStepWidth }
 {
 	setToolTip(::makeSequenceName(*_sequence));
 	if (_length > 1)
@@ -67,15 +67,20 @@ FragmentItem::FragmentItem(TrackItem* track, size_t offset, const std::shared_pt
 	}
 }
 
+QRectF FragmentItem::boundingRect() const
+{
+	return { {}, QSizeF{ _width, kTrackHeight } };
+}
+
 void FragmentItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*)
 {
-	const auto right = _rect.right() - kStepWidth / 2;
+	const auto right = _width - kStepWidth / 2;
 	const std::array<QPointF, 5> shape{
-		_rect.topLeft(),
-		QPointF{ right, _rect.top() },
-		QPointF{ _rect.right(), _rect.center().y() },
-		QPointF{ right, _rect.bottom() },
-		_rect.bottomLeft(),
+		QPointF{ 0, 0 },
+		QPointF{ right, 0 },
+		QPointF{ _width, kTrackHeight / 2 },
+		QPointF{ right, kTrackHeight },
+		QPointF{ 0, kTrackHeight },
 	};
 	const auto& colors = kFragmentColors[static_cast<const TrackItem*>(parentItem())->trackIndex() % kFragmentColors.size()];
 	painter->setPen(colors._pen);
@@ -92,8 +97,8 @@ void FragmentItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWi
 		painter->setFont(font);
 		painter->setTransform(QTransform::fromScale(xScale, 1.0), true);
 		_name.prepare(painter->transform(), font);
-		const QPointF topLeft{ (_rect.left() + xOffset) / xScale, _rect.top() + (kTrackHeight - _name.size().height()) / 2 };
-		painter->setClipRect(QRectF{ { topLeft.x(), _rect.top() }, QPointF{ right / xScale, _rect.bottom() } });
+		const QPointF topLeft{ xOffset / xScale, (kTrackHeight - _name.size().height()) / 2 };
+		painter->setClipRect(QRectF{ { topLeft.x(), 0 }, QPointF{ right / xScale, kTrackHeight } });
 		painter->drawStaticText(topLeft, _name);
 		painter->restore();
 	}

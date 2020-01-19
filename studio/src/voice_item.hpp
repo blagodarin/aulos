@@ -27,12 +27,12 @@ namespace aulos
 	struct CompositionData;
 }
 
-class VoiceItem : public QGraphicsItem
+class VoiceItem final : public QGraphicsItem
 {
 public:
 	VoiceItem(const std::shared_ptr<const aulos::CompositionData>&, size_t trackIndex, QGraphicsItem* parent = nullptr);
 
-	QRectF boundingRect() const override { return _rect; }
+	QRectF boundingRect() const override;
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
 	qreal requiredWidth() const;
 	void setWidth(qreal);
@@ -41,5 +41,5 @@ private:
 	const std::shared_ptr<const aulos::CompositionData> _composition;
 	const size_t _trackIndex;
 	QStaticText _name;
-	QRectF _rect;
+	qreal _width = 0;
 };

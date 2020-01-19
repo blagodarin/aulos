@@ -21,12 +21,12 @@
 
 #include <QGraphicsItem>
 
-class TimelineItem : public QGraphicsItem
+class TimelineItem final : public QGraphicsItem
 {
 public:
 	TimelineItem(QGraphicsItem* parent = nullptr);
 
-	QRectF boundingRect() const override { return _rect; }
+	QRectF boundingRect() const override;
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
 	void setCompositionLength(size_t length);
 	bool setCompositionSpeed(unsigned speed);
@@ -35,5 +35,4 @@ public:
 private:
 	unsigned _speed = 1;
 	size_t _length = 0;
-	QRectF _rect;
 };

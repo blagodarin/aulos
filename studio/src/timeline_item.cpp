@@ -40,15 +40,19 @@ namespace
 
 TimelineItem::TimelineItem(QGraphicsItem* parent)
 	: QGraphicsItem{ parent }
-	, _rect{ 0.0, -kTimelineHeight, _length * kStepWidth, kTimelineHeight }
 {
 	setFlag(QGraphicsItem::ItemUsesExtendedStyleOption);
+}
+
+QRectF TimelineItem::boundingRect() const
+{
+	return { 0.0, -kTimelineHeight, _length * kStepWidth, kTimelineHeight };
 }
 
 void TimelineItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget*)
 {
 	size_t index = 0;
-	QRectF rect{ _rect.topLeft(), QSizeF{ _speed * kStepWidth, kTimelineHeight } };
+	QRectF rect{ { 0, -kTimelineHeight }, QSizeF{ _speed * kStepWidth, kTimelineHeight } };
 	constexpr auto fontSize = kTimelineHeight * 0.75;
 	constexpr auto textOffset = (kTimelineHeight - fontSize) / 2.0;
 	auto font = painter->font();
@@ -72,7 +76,7 @@ void TimelineItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* opti
 	}
 	if (_length % _speed)
 	{
-		rect.setRight(_rect.right());
+		rect.setRight(_length * kStepWidth);
 		painter->setPen(Qt::transparent);
 		painter->setBrush(kTimelineColors[index % kTimelineColors.size()]._brush);
 		painter->drawRect(rect);
@@ -85,7 +89,6 @@ void TimelineItem::setCompositionLength(size_t length)
 		return;
 	prepareGeometryChange();
 	_length = length;
-	_rect.setWidth(_length * kStepWidth);
 }
 
 bool TimelineItem::setCompositionSpeed(unsigned speed)
