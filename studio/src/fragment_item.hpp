@@ -34,6 +34,7 @@ public:
 
 	QRectF boundingRect() const override { return _rect; }
 	size_t fragmentLength() const noexcept { return _length; }
+	size_t fragmentOffset() const noexcept { return _offset; }
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
 
 signals:

@@ -113,7 +113,7 @@ namespace aulos
 	{
 		unsigned _speed = kMinSpeed;
 		std::vector<std::shared_ptr<Voice>> _voices;
-		std::vector<TrackData> _tracks;
+		std::vector<std::shared_ptr<TrackData>> _tracks;
 
 		CompositionData() = default;
 		CompositionData(const Composition&);

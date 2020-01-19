@@ -57,7 +57,7 @@ VoiceItem::VoiceItem(const std::shared_ptr<const aulos::CompositionData>& compos
 {
 	QTextOption textOption;
 	textOption.setWrapMode(QTextOption::NoWrap);
-	_name.setText(QString::fromStdString(_composition->_tracks[_trackIndex]._voice->_name));
+	_name.setText(QString::fromStdString(_composition->_tracks[_trackIndex]->_voice->_name));
 	_name.setTextFormat(Qt::PlainText);
 	_name.setTextOption(textOption);
 	_name.prepare({}, ::defaultFont());

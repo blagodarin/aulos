@@ -41,12 +41,11 @@ namespace
 	};
 }
 
-TrackItem::TrackItem(const std::shared_ptr<const aulos::CompositionData>& composition, size_t trackIndex, size_t length, QGraphicsItem* parent)
+TrackItem::TrackItem(const std::shared_ptr<const aulos::CompositionData>& composition, size_t trackIndex, QGraphicsItem* parent)
 	: QGraphicsObject{ parent }
 	, _composition{ composition }
 	, _trackIndex{ trackIndex }
-	, _length{ length }
-	, _rect{ 0.0, _trackIndex * kTrackHeight, _length * kStepWidth, kTrackHeight }
+	, _rect{ 0, _trackIndex * kTrackHeight, 0, kTrackHeight }
 {
 	setFlag(QGraphicsItem::ItemUsesExtendedStyleOption);
 }
@@ -86,10 +85,10 @@ void TrackItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
 {
 	QMenu menu;
 	const auto insertSubmenu = menu.addMenu(tr("Insert"));
-	const auto sequenceCount = _composition->_tracks[_trackIndex]._sequences.size();
+	const auto sequenceCount = _composition->_tracks[_trackIndex]->_sequences.size();
 	for (size_t sequenceIndex = 0; sequenceIndex < sequenceCount; ++sequenceIndex)
-		insertSubmenu->addAction(::makeSequenceName(*_composition->_tracks[_trackIndex]._sequences[sequenceIndex]))->setData(sequenceIndex);
-	if (!_composition->_tracks[_trackIndex]._sequences.empty())
+		insertSubmenu->addAction(::makeSequenceName(*_composition->_tracks[_trackIndex]->_sequences[sequenceIndex]))->setData(sequenceIndex);
+	if (!_composition->_tracks[_trackIndex]->_sequences.empty())
 		insertSubmenu->addSeparator();
 	const auto newSequenceAction = insertSubmenu->addAction(tr("New sequence..."));
 	const auto action = menu.exec(e->screenPos());
@@ -99,5 +98,5 @@ void TrackItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
 	if (action == newSequenceAction)
 		emit newSequenceRequested(_trackIndex, offset);
 	else
-		emit insertRequested(_trackIndex, offset, _composition->_tracks[_trackIndex]._sequences[action->data().toUInt()]);
+		emit insertRequested(_trackIndex, offset, _composition->_tracks[_trackIndex]->_sequences[action->data().toUInt()]);
 }

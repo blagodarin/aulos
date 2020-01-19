@@ -32,7 +32,7 @@ class TrackItem : public QGraphicsObject
 	Q_OBJECT
 
 public:
-	TrackItem(const std::shared_ptr<const aulos::CompositionData>&, size_t trackIndex, size_t length, QGraphicsItem* parent = nullptr);
+	TrackItem(const std::shared_ptr<const aulos::CompositionData>&, size_t trackIndex, QGraphicsItem* parent = nullptr);
 
 	QRectF boundingRect() const override { return _rect; }
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
@@ -48,6 +48,6 @@ private:
 private:
 	const std::shared_ptr<const aulos::CompositionData> _composition;
 	const size_t _trackIndex;
-	size_t _length;
+	size_t _length = 0;
 	QRectF _rect;
 };

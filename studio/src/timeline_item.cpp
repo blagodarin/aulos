@@ -79,19 +79,20 @@ void TimelineItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* opti
 	}
 }
 
-void TimelineItem::setCompositionSpeed(unsigned speed)
-{
-	if (_speed == speed)
-		return;
-	_speed = speed;
-	update();
-}
-
-void TimelineItem::setTrackLength(size_t length)
+void TimelineItem::setCompositionLength(size_t length)
 {
 	if (_length == length)
 		return;
 	prepareGeometryChange();
 	_length = length;
 	_rect.setWidth(_length * kStepWidth);
+}
+
+
+void TimelineItem::setCompositionSpeed(unsigned speed)
+{
+	if (_speed == speed)
+		return;
+	_speed = speed;
+	update();
 }
