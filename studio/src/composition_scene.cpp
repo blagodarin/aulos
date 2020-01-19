@@ -36,6 +36,11 @@ namespace
 	const QColor kBackgroundColor{ "#444" };
 	const QColor kCursorColor{ "#000" };
 	constexpr size_t kExtraLength = 1;
+
+	QLineF makeCursorLine(size_t height)
+	{
+		return { 0, -kTimelineHeight, 0, height * kTrackHeight };
+	}
 }
 
 struct CompositionScene::Track
@@ -46,8 +51,9 @@ struct CompositionScene::Track
 };
 
 CompositionScene::CompositionScene()
-	: _timeline{ std::make_unique<TimelineItem>() }
-	, _cursorItem{ std::make_unique<QGraphicsLineItem>(0, -kTimelineHeight, 0, 0) }
+	: _timelineItem{ std::make_unique<TimelineItem>() }
+	, _cursorItem{ std::make_unique<QGraphicsLineItem>(::makeCursorLine(0)) }
+	, _addVoiceItem{ std::make_unique<VoiceItem>(nullptr) }
 {
 	setBackgroundBrush(kBackgroundColor);
 	_cursorItem->setPen(kCursorColor);
@@ -61,12 +67,12 @@ void CompositionScene::insertFragment(size_t trackIndex, size_t offset, const st
 {
 	const auto newItem = addFragmentItem(*_tracks[trackIndex], offset, sequence);
 	const auto minCompositionLength = offset + newItem->fragmentLength() + kExtraLength;
-	if (minCompositionLength <= _timeline->compositionLength())
+	if (minCompositionLength <= _timelineItem->compositionLength())
 		return;
 	auto compositionRect = sceneRect();
 	compositionRect.setRight(minCompositionLength * kStepWidth);
 	setSceneRect(compositionRect);
-	_timeline->setCompositionLength(minCompositionLength);
+	_timelineItem->setCompositionLength(minCompositionLength);
 	for (const auto& track : _tracks)
 		track->_background->setTrackLength(minCompositionLength);
 }
@@ -83,8 +89,9 @@ void CompositionScene::removeFragment(size_t trackIndex, size_t offset)
 
 void CompositionScene::reset(const std::shared_ptr<const aulos::CompositionData>& composition)
 {
-	removeItem(_timeline.get());
+	removeItem(_timelineItem.get());
 	_tracks.clear();
+	removeItem(_addVoiceItem.get());
 	removeItem(_cursorItem.get());
 	clear();
 
@@ -104,7 +111,8 @@ void CompositionScene::reset(const std::shared_ptr<const aulos::CompositionData>
 		connect(track->_background, &TrackItem::insertRequested, this, &CompositionScene::insertFragmentRequested);
 		connect(track->_background, &TrackItem::newSequenceRequested, this, &CompositionScene::newSequenceRequested);
 
-		track->_header = new VoiceItem{ _composition, trackIndex, track->_background };
+		track->_header = new VoiceItem{ trackData->_voice, track->_background };
+		track->_header->setIndex(trackIndex);
 		trackHeaderWidth = std::max(trackHeaderWidth, track->_header->requiredWidth());
 
 		for (const auto& fragment : trackData->_fragments)
@@ -115,25 +123,24 @@ void CompositionScene::reset(const std::shared_ptr<const aulos::CompositionData>
 	}
 	compositionLength += kExtraLength;
 
-	_timeline->setCompositionSpeed(_composition->_speed);
-	_timeline->setCompositionLength(compositionLength);
+	_timelineItem->setCompositionSpeed(_composition->_speed);
+	_timelineItem->setCompositionLength(compositionLength);
 	for (const auto& track : _tracks)
 	{
 		track->_header->setWidth(trackHeaderWidth);
 		track->_background->setTrackLength(compositionLength);
 	}
-
-	const QPointF bottomRight{ compositionLength * kStepWidth, _tracks.size() * kTrackHeight };
-	setSceneRect({ { -trackHeaderWidth, -kTimelineHeight }, bottomRight });
-
-	auto cursorLine = _cursorItem->line();
-	cursorLine.setP2({ 0, bottomRight.y() });
-	_cursorItem->setLine(cursorLine);
+	_addVoiceItem->setIndex(_tracks.size());
+	_addVoiceItem->setPos(0, _tracks.size() * kTrackHeight);
+	_addVoiceItem->setWidth(trackHeaderWidth);
+	_cursorItem->setLine(::makeCursorLine(_tracks.size()));
 	_cursorItem->setVisible(false);
 
-	addItem(_timeline.get());
+	setSceneRect({ { -trackHeaderWidth, -kTimelineHeight }, QPointF{ compositionLength * kStepWidth, (_tracks.size() + 1) * kTrackHeight } });
+	addItem(_timelineItem.get());
 	for (auto i = _tracks.crbegin(); i != _tracks.crend(); ++i)
 		addItem((*i)->_background);
+	addItem(_addVoiceItem.get());
 	addItem(_cursorItem.get());
 }
 
@@ -151,8 +158,8 @@ void CompositionScene::setCurrentStep(double step)
 
 void CompositionScene::setSpeed(unsigned speed)
 {
-	if (_timeline->setCompositionSpeed(speed))
-		_timeline->update();
+	if (_timelineItem->setCompositionSpeed(speed))
+		_timelineItem->update();
 }
 
 void CompositionScene::onEditRequested(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>&)

@@ -29,6 +29,8 @@ namespace
 {
 	constexpr auto kFontSize = kTrackHeight * 0.5;
 	constexpr auto kMargin = (kTrackHeight - kFontSize) / 2;
+	constexpr auto kAddVoiceHeight = kTrackHeight * 0.75;
+	constexpr auto kAddVoiceFontSize = kAddVoiceHeight * 0.75;
 
 	struct VoiceColors
 	{
@@ -41,46 +43,66 @@ namespace
 		VoiceColors{ "#ddd", "#000" },
 	};
 
-	QFont defaultFont()
+	QFont makeVoiceFont(bool addVoice)
 	{
 		QFont font;
-		font.setPixelSize(kFontSize);
+		font.setBold(addVoice);
+		font.setPixelSize(addVoice ? kAddVoiceFontSize : kFontSize);
 		return font;
 	}
 }
 
-VoiceItem::VoiceItem(const std::shared_ptr<const aulos::CompositionData>& composition, size_t trackIndex, QGraphicsItem* parent)
+VoiceItem::VoiceItem(const std::shared_ptr<const aulos::Voice>& voice, QGraphicsItem* parent)
 	: QGraphicsItem{ parent }
-	, _composition{ composition }
-	, _trackIndex{ trackIndex }
+	, _voice{ voice }
 {
 	QTextOption textOption;
 	textOption.setWrapMode(QTextOption::NoWrap);
-	_name.setText(QString::fromStdString(_composition->_tracks[_trackIndex]->_voice->_name));
+	_name.setText(_voice ? QString::fromStdString(_voice->_name) : QStringLiteral("+"));
 	_name.setTextFormat(Qt::PlainText);
 	_name.setTextOption(textOption);
-	_name.prepare({}, ::defaultFont());
+	_name.prepare({}, ::makeVoiceFont(!_voice));
 }
 
 QRectF VoiceItem::boundingRect() const
 {
-	return { { -_width, 0 }, QSizeF{ _width, kTrackHeight } };
+	return { { -_width, 0 }, QSizeF{ _width, _voice ? kTrackHeight : kAddVoiceHeight } };
 }
 
 void VoiceItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*)
 {
-	const auto& colors = kVoiceColors[_trackIndex % kVoiceColors.size()];
+	const auto& colors = kVoiceColors[_index % kVoiceColors.size()];
 	painter->setBrush(colors._brush);
 	painter->setPen(Qt::transparent);
-	painter->drawRect(boundingRect());
+	if (!_voice)
+	{
+		const auto arrowHeight = kAddVoiceHeight / 2;
+		const std::array<QPointF, 5> shape{
+			QPointF{ -_width, 0 },
+			QPointF{ 0, 0 },
+			QPointF{ 0, arrowHeight },
+			QPointF{ -_width / 2, kAddVoiceHeight },
+			QPointF{ -_width, arrowHeight },
+		};
+		painter->drawConvexPolygon(shape.data(), static_cast<int>(shape.size()));
+	}
+	else
+		painter->drawRect(boundingRect());
 	painter->setPen(colors._pen);
-	painter->setFont(::defaultFont());
-	painter->drawStaticText(QPointF{ kMargin - _width, (kTrackHeight - _name.size().height()) / 2 }, _name);
+	painter->setFont(::makeVoiceFont(!_voice));
+	const auto nameSize = _name.size();
+	painter->drawStaticText(QPointF{ _voice ? kMargin - _width : -(_width + nameSize.width()) / 2, _voice ? (kTrackHeight - nameSize.height()) / 2 : 0 }, _name);
 }
 
 qreal VoiceItem::requiredWidth() const
 {
 	return kMargin + _name.size().width() + kMargin;
+}
+
+void VoiceItem::setIndex(size_t index)
+{
+	_index = index;
+	update();
 }
 
 void VoiceItem::setWidth(qreal width)

@@ -24,22 +24,23 @@
 
 namespace aulos
 {
-	struct CompositionData;
+	struct Voice;
 }
 
 class VoiceItem final : public QGraphicsItem
 {
 public:
-	VoiceItem(const std::shared_ptr<const aulos::CompositionData>&, size_t trackIndex, QGraphicsItem* parent = nullptr);
+	VoiceItem(const std::shared_ptr<const aulos::Voice>&, QGraphicsItem* parent = nullptr);
 
 	QRectF boundingRect() const override;
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
 	qreal requiredWidth() const;
+	void setIndex(size_t);
 	void setWidth(qreal);
 
 private:
-	const std::shared_ptr<const aulos::CompositionData> _composition;
-	const size_t _trackIndex;
+	const std::shared_ptr<const aulos::Voice> _voice;
+	size_t _index = 0;
 	QStaticText _name;
 	qreal _width = 0;
 };
