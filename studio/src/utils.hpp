@@ -27,5 +27,6 @@ namespace aulos
 constexpr auto kStepWidth = 15.0;
 constexpr auto kTrackHeight = 40.0;
 constexpr auto kTimelineHeight = 0.5 * kTrackHeight;
+constexpr auto kAddTimeItemWidth = kStepWidth;
 
 QString makeSequenceName(const aulos::SequenceData&, bool rich = false);

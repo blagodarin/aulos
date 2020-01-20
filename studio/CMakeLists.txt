@@ -20,6 +20,8 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
 set(_src
+	src/add_time_item.cpp
+	src/add_time_item.hpp
 	src/composition_scene.cpp
 	src/composition_scene.hpp
 	src/fragment_item.cpp

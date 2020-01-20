@@ -17,6 +17,7 @@
 
 #include "timeline_item.hpp"
 
+#include "add_time_item.hpp"
 #include "utils.hpp"
 
 #include <array>
@@ -40,6 +41,7 @@ namespace
 
 TimelineItem::TimelineItem(QGraphicsItem* parent)
 	: QGraphicsItem{ parent }
+	, _addTimeItem{ new AddTimeItem{ kTimelineColors[0]._brush, this } }
 {
 	setFlag(QGraphicsItem::ItemUsesExtendedStyleOption);
 }
@@ -74,13 +76,6 @@ void TimelineItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* opti
 		rect.moveLeft(rect.right());
 		++index;
 	}
-	if (_length % _speed)
-	{
-		rect.setRight(_length * kStepWidth);
-		painter->setPen(Qt::transparent);
-		painter->setBrush(kTimelineColors[index % kTimelineColors.size()]._brush);
-		painter->drawRect(rect);
-	}
 }
 
 void TimelineItem::setCompositionLength(size_t length)
@@ -89,12 +84,21 @@ void TimelineItem::setCompositionLength(size_t length)
 		return;
 	prepareGeometryChange();
 	_length = length;
+	updateAddTimeItem();
 }
 
-bool TimelineItem::setCompositionSpeed(unsigned speed)
+void TimelineItem::setCompositionSpeed(unsigned speed)
 {
 	if (_speed == speed)
-		return false;
+		return;
+	prepareGeometryChange();
 	_speed = speed;
-	return true;
+	updateAddTimeItem();
+}
+
+void TimelineItem::updateAddTimeItem() const
+{
+	const auto extraLength = _length % _speed;
+	_addTimeItem->setGeometry(kTimelineColors[(_length / _speed) % kTimelineColors.size()]._brush, extraLength);
+	_addTimeItem->setPos({ (_length - extraLength) * kStepWidth, 0 });
 }

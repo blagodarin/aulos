@@ -136,7 +136,7 @@ void CompositionScene::reset(const std::shared_ptr<const aulos::CompositionData>
 	_cursorItem->setLine(::makeCursorLine(_tracks.size()));
 	_cursorItem->setVisible(false);
 
-	setSceneRect({ { -trackHeaderWidth, -kTimelineHeight }, QPointF{ compositionLength * kStepWidth, (_tracks.size() + 1) * kTrackHeight } });
+	setSceneRect({ { -trackHeaderWidth, -kTimelineHeight }, QPointF{ compositionLength * kStepWidth + kAddTimeItemWidth, (_tracks.size() + 1) * kTrackHeight } });
 	addItem(_timelineItem.get());
 	for (auto i = _tracks.crbegin(); i != _tracks.crend(); ++i)
 		addItem((*i)->_background);
@@ -158,8 +158,7 @@ void CompositionScene::setCurrentStep(double step)
 
 void CompositionScene::setSpeed(unsigned speed)
 {
-	if (_timelineItem->setCompositionSpeed(speed))
-		_timelineItem->update();
+	_timelineItem->setCompositionSpeed(speed);
 }
 
 void CompositionScene::onEditRequested(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>&)

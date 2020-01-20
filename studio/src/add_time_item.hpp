@@ -17,28 +17,18 @@
 
 #pragma once
 
-#include <memory>
-
 #include <QGraphicsItem>
 
-class AddTimeItem;
-
-class TimelineItem final : public QGraphicsItem
+class AddTimeItem final : public QGraphicsItem
 {
 public:
-	TimelineItem(QGraphicsItem* parent = nullptr);
+	AddTimeItem(const QColor& color, QGraphicsItem* parent = nullptr);
 
 	QRectF boundingRect() const override;
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
-	void setCompositionLength(size_t length);
-	void setCompositionSpeed(unsigned speed);
-	size_t compositionLength() const noexcept { return _length; }
+	void setGeometry(const QColor&, size_t extraLength);
 
 private:
-	void updateAddTimeItem() const;
-
-private:
-	unsigned _speed = 1;
-	size_t _length = 0;
-	AddTimeItem* const _addTimeItem;
+	QColor _color;
+	size_t _extraLength = 0;
 };
