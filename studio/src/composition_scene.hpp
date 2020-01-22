@@ -55,6 +55,7 @@ signals:
 
 private slots:
 	void onEditRequested(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>&);
+	void setCompositionLength(size_t length);
 
 private:
 	struct Track;

@@ -40,10 +40,11 @@ namespace
 }
 
 TimelineItem::TimelineItem(QGraphicsItem* parent)
-	: QGraphicsItem{ parent }
+	: QGraphicsObject{ parent }
 	, _addTimeItem{ new AddTimeItem{ kTimelineColors[0]._brush, this } }
 {
 	setFlag(QGraphicsItem::ItemUsesExtendedStyleOption);
+	connect(_addTimeItem, &AddTimeItem::clicked, this, [this] { emit lengthRequested(_length + (_speed - _length % _speed)); });
 }
 
 QRectF TimelineItem::boundingRect() const

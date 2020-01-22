@@ -19,12 +19,14 @@
 
 #include <memory>
 
-#include <QGraphicsItem>
+#include <QGraphicsObject>
 
 class AddTimeItem;
 
-class TimelineItem final : public QGraphicsItem
+class TimelineItem final : public QGraphicsObject
 {
+	Q_OBJECT
+
 public:
 	TimelineItem(QGraphicsItem* parent = nullptr);
 
@@ -33,6 +35,9 @@ public:
 	void setCompositionLength(size_t length);
 	void setCompositionSpeed(unsigned speed);
 	size_t compositionLength() const noexcept { return _length; }
+
+signals:
+	void lengthRequested(size_t length);
 
 private:
 	void updateAddTimeItem() const;

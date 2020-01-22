@@ -56,6 +56,8 @@ CompositionScene::CompositionScene()
 	, _addVoiceItem{ std::make_unique<VoiceItem>(nullptr) }
 {
 	setBackgroundBrush(kBackgroundColor);
+	_timelineItem->setZValue(0.5);
+	connect(_timelineItem.get(), &TimelineItem::lengthRequested, this, &CompositionScene::setCompositionLength);
 	_cursorItem->setPen(kCursorColor);
 	_cursorItem->setVisible(false);
 	_cursorItem->setZValue(1.0);
@@ -67,14 +69,8 @@ void CompositionScene::insertFragment(size_t trackIndex, size_t offset, const st
 {
 	const auto newItem = addFragmentItem(*_tracks[trackIndex], offset, sequence);
 	const auto minCompositionLength = offset + newItem->fragmentLength() + kExtraLength;
-	if (minCompositionLength <= _timelineItem->compositionLength())
-		return;
-	auto compositionRect = sceneRect();
-	compositionRect.setRight(minCompositionLength * kStepWidth);
-	setSceneRect(compositionRect);
-	_timelineItem->setCompositionLength(minCompositionLength);
-	for (const auto& track : _tracks)
-		track->_background->setTrackLength(minCompositionLength);
+	if (minCompositionLength > _timelineItem->compositionLength())
+		setCompositionLength(minCompositionLength);
 }
 
 void CompositionScene::removeFragment(size_t trackIndex, size_t offset)
@@ -164,6 +160,16 @@ void CompositionScene::setSpeed(unsigned speed)
 void CompositionScene::onEditRequested(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>&)
 {
 	(void)trackIndex, offset;
+}
+
+void CompositionScene::setCompositionLength(size_t length)
+{
+	auto compositionRect = sceneRect();
+	compositionRect.setRight(length * kStepWidth + kAddTimeItemWidth);
+	setSceneRect(compositionRect);
+	_timelineItem->setCompositionLength(length);
+	for (const auto& track : _tracks)
+		track->_background->setTrackLength(length);
 }
 
 FragmentItem* CompositionScene::addFragmentItem(Track& track, size_t offset, const std::shared_ptr<const aulos::SequenceData>& sequence)
