@@ -17,17 +17,29 @@
 
 #pragma once
 
-class QString;
+#include <QGraphicsObject>
 
-namespace aulos
+class ButtonItem : public QGraphicsObject
 {
-	struct SequenceData;
-}
+	Q_OBJECT
 
-constexpr auto kStepWidth = 15.0;
-constexpr auto kTrackHeight = 40.0;
-constexpr auto kTimelineHeight = 0.5 * kTrackHeight;
-constexpr auto kAddTimeItemWidth = kStepWidth;
-constexpr auto kAddTimeExtraWidth = kStepWidth;
+public:
+	ButtonItem(QGraphicsItem* parent = nullptr);
 
-QString makeSequenceName(const aulos::SequenceData&, bool rich = false);
+signals:
+	void clicked();
+
+protected:
+	bool isHovered() const noexcept { return _hovered; }
+	bool isPressed() const noexcept { return _pressed; }
+
+private:
+	void hoverEnterEvent(QGraphicsSceneHoverEvent*) override;
+	void hoverLeaveEvent(QGraphicsSceneHoverEvent*) override;
+	void mousePressEvent(QGraphicsSceneMouseEvent*) override;
+	void mouseReleaseEvent(QGraphicsSceneMouseEvent*) override;
+
+private:
+	bool _hovered = false;
+	bool _pressed = false;
+};

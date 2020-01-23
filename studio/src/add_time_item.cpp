@@ -21,7 +21,6 @@
 
 #include <array>
 
-#include <QGraphicsSceneEvent>
 #include <QPainter>
 
 namespace
@@ -34,10 +33,9 @@ namespace
 }
 
 AddTimeItem::AddTimeItem(const QColor& color, QGraphicsItem* parent)
-	: QGraphicsObject{ parent }
+	: ButtonItem{ parent }
 	, _color{ color }
 {
-	setAcceptHoverEvents(true);
 }
 
 QRectF AddTimeItem::boundingRect() const
@@ -56,10 +54,10 @@ void AddTimeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWid
 		QPointF{ rect.right() - kAddTimeArrowWidth, rect.bottom() },
 		rect.bottomLeft(),
 	};
-	if (_pressed || _hovered)
+	if (isPressed() || isHovered())
 	{
 		painter->setPen(kHoverPenColor);
-		painter->setBrush(_pressed ? kPressBrushColor : kHoverBrushColor);
+		painter->setBrush(isPressed() ? kPressBrushColor : kHoverBrushColor);
 	}
 	else
 	{
@@ -73,7 +71,7 @@ void AddTimeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWid
 	font.setBold(true);
 	font.setPixelSize(fontSize);
 	painter->setFont(font);
-	painter->setPen(_pressed || _hovered ? kHoverPenColor : Qt::black);
+	painter->setPen(isPressed() || isHovered() ? kHoverPenColor : Qt::black);
 	painter->drawText(rect.adjusted(rect.right() - kAddTimeItemWidth, 0, 0, 0), Qt::AlignHCenter | Qt::AlignVCenter, QStringLiteral("+"));
 }
 
@@ -82,35 +80,4 @@ void AddTimeItem::setGeometry(const QColor& color, size_t extraLength)
 	prepareGeometryChange();
 	_color = color;
 	_extraLength = extraLength;
-}
-
-void AddTimeItem::hoverEnterEvent(QGraphicsSceneHoverEvent* e)
-{
-	e->accept();
-	_hovered = true;
-	update();
-}
-
-void AddTimeItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* e)
-{
-	e->accept();
-	_hovered = false;
-	update();
-}
-
-void AddTimeItem::mousePressEvent(QGraphicsSceneMouseEvent* e)
-{
-	if (e->setAccepted(e->button() == Qt::LeftButton); e->isAccepted())
-	{
-		_pressed = true;
-		update();
-	}
-}
-
-void AddTimeItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* e)
-{
-	_pressed = false;
-	update();
-	if (boundingRect().contains(e->lastPos()))
-		emit clicked();
 }

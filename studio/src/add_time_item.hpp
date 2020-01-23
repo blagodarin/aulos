@@ -17,9 +17,9 @@
 
 #pragma once
 
-#include <QGraphicsObject>
+#include "button_item.hpp"
 
-class AddTimeItem final : public QGraphicsObject
+class AddTimeItem final : public ButtonItem
 {
 	Q_OBJECT
 
@@ -30,18 +30,7 @@ public:
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
 	void setGeometry(const QColor&, size_t extraLength);
 
-signals:
-	void clicked();
-
-private:
-	void hoverEnterEvent(QGraphicsSceneHoverEvent*) override;
-	void hoverLeaveEvent(QGraphicsSceneHoverEvent*) override;
-	void mousePressEvent(QGraphicsSceneMouseEvent*) override;
-	void mouseReleaseEvent(QGraphicsSceneMouseEvent*) override;
-
 private:
 	QColor _color;
 	size_t _extraLength = 0;
-	bool _hovered = false;
-	bool _pressed = false;
 };
