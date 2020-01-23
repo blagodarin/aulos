@@ -17,30 +17,21 @@
 
 #pragma once
 
-#include <memory>
+#include "button_item.hpp"
 
-#include <QGraphicsItem>
-#include <QStaticText>
-
-namespace aulos
+class AddVoiceItem final : public ButtonItem
 {
-	struct Voice;
-}
+	Q_OBJECT
 
-class VoiceItem final : public QGraphicsItem
-{
 public:
-	VoiceItem(const std::shared_ptr<const aulos::Voice>&, QGraphicsItem* parent = nullptr);
+	AddVoiceItem(QGraphicsItem* parent = nullptr);
 
 	QRectF boundingRect() const override;
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
-	qreal requiredWidth() const;
 	void setIndex(size_t);
 	void setWidth(qreal);
 
 private:
 	size_t _index = 0;
 	qreal _width = 0;
-	const std::shared_ptr<const aulos::Voice> _voice;
-	QStaticText _name;
 };

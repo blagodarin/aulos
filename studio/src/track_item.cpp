@@ -21,8 +21,6 @@
 
 #include <aulos/data.hpp>
 
-#include <array>
-
 #include <QGraphicsSceneContextMenuEvent>
 #include <QMenu>
 #include <QPainter>

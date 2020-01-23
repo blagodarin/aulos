@@ -22,7 +22,6 @@
 
 #include <aulos/data.hpp>
 
-#include <array>
 #include <numeric>
 
 #include <QGraphicsSceneContextMenuEvent>

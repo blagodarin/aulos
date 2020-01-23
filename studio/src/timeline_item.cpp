@@ -20,8 +20,6 @@
 #include "add_time_item.hpp"
 #include "utils.hpp"
 
-#include <array>
-
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
 

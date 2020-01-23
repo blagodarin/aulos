@@ -17,6 +17,7 @@
 
 #include "composition_scene.hpp"
 
+#include "add_voice_item.hpp"
 #include "fragment_item.hpp"
 #include "timeline_item.hpp"
 #include "track_item.hpp"
@@ -25,7 +26,6 @@
 
 #include <aulos/data.hpp>
 
-#include <array>
 #include <numeric>
 #include <vector>
 
@@ -53,7 +53,7 @@ struct CompositionScene::Track
 CompositionScene::CompositionScene()
 	: _timelineItem{ std::make_unique<TimelineItem>() }
 	, _cursorItem{ std::make_unique<QGraphicsLineItem>(::makeCursorLine(0)) }
-	, _addVoiceItem{ std::make_unique<VoiceItem>(nullptr) }
+	, _addVoiceItem{ std::make_unique<AddVoiceItem>() }
 {
 	setBackgroundBrush(kBackgroundColor);
 	_timelineItem->setZValue(0.5);
@@ -95,7 +95,7 @@ void CompositionScene::reset(const std::shared_ptr<const aulos::CompositionData>
 	if (!_composition || _composition->_tracks.empty())
 		return;
 
-	qreal trackHeaderWidth = 0;
+	qreal trackHeaderWidth = kMinVoiceItemWidth;
 	size_t compositionLength = 0;
 	for (const auto& trackData : _composition->_tracks)
 	{

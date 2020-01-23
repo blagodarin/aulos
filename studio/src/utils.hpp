@@ -17,6 +17,10 @@
 
 #pragma once
 
+#include <array>
+
+#include <QColor>
+
 class QString;
 
 namespace aulos
@@ -29,5 +33,22 @@ constexpr auto kTrackHeight = 40.0;
 constexpr auto kTimelineHeight = 0.5 * kTrackHeight;
 constexpr auto kAddTimeItemWidth = kStepWidth;
 constexpr auto kAddTimeExtraWidth = kStepWidth;
+constexpr auto kAddVoiceItemHeight = kTrackHeight * 0.75;
+constexpr auto kMinVoiceItemWidth = kTrackHeight;
+
+inline const QColor kHoverPenColor{ "#07f" };
+inline const QColor kHoverBrushColor{ "#cff" };
+inline const QColor kPressBrushColor{ "#8cf" };
+
+struct VoiceColors
+{
+	QColor _brush;
+	QColor _pen;
+};
+
+inline const std::array<VoiceColors, 2> kVoiceColors{
+	VoiceColors{ "#fff", "#000" },
+	VoiceColors{ "#ddd", "#000" },
+};
 
 QString makeSequenceName(const aulos::SequenceData&, bool rich = false);

@@ -15,7 +15,7 @@
 // limitations under the License.
 //
 
-#include "add_time_item.hpp"
+#include "add_voice_item.hpp"
 
 #include "utils.hpp"
 
@@ -23,37 +23,37 @@
 
 namespace
 {
-	constexpr auto kAddTimeArrowWidth = kAddTimeItemWidth * 0.25;
+	constexpr auto kAddVoiceArrowHeight = kAddVoiceItemHeight * 0.25;
 
-	QFont makeAddTimeFont()
+	QFont makeAddVoiceFont()
 	{
 		QFont font;
 		font.setBold(true);
-		font.setPixelSize(kTimelineHeight * 0.75);
+		font.setPixelSize(kAddVoiceItemHeight * 0.75);
 		return font;
 	}
 }
 
-AddTimeItem::AddTimeItem(const QColor& color, QGraphicsItem* parent)
+AddVoiceItem::AddVoiceItem(QGraphicsItem* parent)
 	: ButtonItem{ parent }
-	, _color{ color }
+	, _width{ kMinVoiceItemWidth }
 {
 }
 
-QRectF AddTimeItem::boundingRect() const
+QRectF AddVoiceItem::boundingRect() const
 {
-	return { 0, -kTimelineHeight, _extraLength * kStepWidth + kAddTimeItemWidth, kTimelineHeight };
+	return { { -_width, 0 }, QSizeF{ _width, kAddVoiceItemHeight } };
 }
 
-void AddTimeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*)
+void AddVoiceItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*)
 {
-	const auto rect = boundingRect();
+	const auto& colors = kVoiceColors[_index % kVoiceColors.size()];
 	const std::array<QPointF, 5> shape{
-		rect.topLeft(),
-		QPointF{ rect.right() - kAddTimeArrowWidth, rect.top() },
-		QPointF{ rect.right(), rect.center().y() },
-		QPointF{ rect.right() - kAddTimeArrowWidth, rect.bottom() },
-		rect.bottomLeft(),
+		QPointF{ -_width, 0 },
+		QPointF{ 0, 0 },
+		QPointF{ 0, kAddVoiceItemHeight - kAddVoiceArrowHeight },
+		QPointF{ -_width / 2, kAddVoiceItemHeight },
+		QPointF{ -_width, kAddVoiceItemHeight - kAddVoiceArrowHeight },
 	};
 	if (isPressed() || isHovered())
 	{
@@ -63,17 +63,22 @@ void AddTimeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWid
 	else
 	{
 		painter->setPen(Qt::transparent);
-		painter->setBrush(_color);
+		painter->setBrush(colors._brush);
 	}
 	painter->drawConvexPolygon(shape.data(), static_cast<int>(shape.size()));
-	painter->setFont(::makeAddTimeFont());
-	painter->setPen(isPressed() || isHovered() ? kHoverPenColor : Qt::black);
-	painter->drawText(rect.adjusted(rect.right() - kAddTimeItemWidth, 0, 0, 0), Qt::AlignHCenter | Qt::AlignVCenter, QStringLiteral("+"));
+	painter->setPen(colors._pen);
+	painter->setFont(::makeAddVoiceFont());
+	painter->drawText(boundingRect(), Qt::AlignHCenter | Qt::AlignVCenter, QStringLiteral("+"));
 }
 
-void AddTimeItem::setGeometry(const QColor& color, size_t extraLength)
+void AddVoiceItem::setIndex(size_t index)
+{
+	_index = index;
+	update();
+}
+
+void AddVoiceItem::setWidth(qreal width)
 {
 	prepareGeometryChange();
-	_color = color;
-	_extraLength = extraLength;
+	_width = width;
 }

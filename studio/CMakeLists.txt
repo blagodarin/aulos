@@ -22,6 +22,8 @@ set(CMAKE_AUTOUIC ON)
 set(_src
 	src/add_time_item.cpp
 	src/add_time_item.hpp
+	src/add_voice_item.cpp
+	src/add_voice_item.hpp
 	src/button_item.cpp
 	src/button_item.hpp
 	src/composition_scene.cpp
