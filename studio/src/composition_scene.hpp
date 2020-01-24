@@ -28,6 +28,7 @@ namespace aulos
 {
 	struct CompositionData;
 	struct SequenceData;
+	struct TrackData;
 }
 
 class FragmentItem;
@@ -42,27 +43,26 @@ public:
 	CompositionScene();
 	~CompositionScene() override;
 
-	void insertFragment(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>&);
-	void removeFragment(size_t trackIndex, size_t offset);
-	void reset(const std::shared_ptr<const aulos::CompositionData>&);
+	void insertFragment(const aulos::TrackData*, size_t offset, const std::shared_ptr<aulos::SequenceData>&);
+	void removeFragment(const aulos::TrackData*, size_t offset);
+	void reset(const std::shared_ptr<aulos::CompositionData>&);
 	void setCurrentStep(double step);
 	void setSpeed(unsigned speed);
 
 signals:
-	void insertFragmentRequested(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>&);
-	void newSequenceRequested(size_t trackIndex, size_t offset);
-	void removeFragmentRequested(size_t trackIndex, size_t offset);
+	void insertFragmentRequested(const std::shared_ptr<aulos::TrackData>&, size_t offset, const std::shared_ptr<aulos::SequenceData>&);
+	void newSequenceRequested(const std::shared_ptr<aulos::TrackData>&, size_t offset);
+	void removeFragmentRequested(const std::shared_ptr<aulos::TrackData>&, size_t offset);
 
 private slots:
-	void onEditRequested(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>&);
 	void setCompositionLength(size_t length);
 
 private:
 	struct Track;
-	FragmentItem* addFragmentItem(Track&, size_t offset, const std::shared_ptr<const aulos::SequenceData>&);
+	FragmentItem* addFragmentItem(Track&, size_t offset, const std::shared_ptr<aulos::SequenceData>&);
 
 private:
-	std::shared_ptr<const aulos::CompositionData> _composition;
+	std::shared_ptr<aulos::CompositionData> _composition;
 	std::unique_ptr<TimelineItem> _timelineItem;
 	std::vector<std::unique_ptr<Track>> _tracks;
 	std::unique_ptr<AddVoiceItem> _addVoiceItem;

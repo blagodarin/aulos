@@ -30,7 +30,7 @@ namespace aulos
 class VoiceItem final : public QGraphicsItem
 {
 public:
-	VoiceItem(const std::shared_ptr<const aulos::Voice>&, QGraphicsItem* parent = nullptr);
+	VoiceItem(const std::shared_ptr<aulos::Voice>&, QGraphicsItem* parent = nullptr);
 
 	QRectF boundingRect() const override;
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
@@ -41,6 +41,6 @@ public:
 private:
 	size_t _index = 0;
 	qreal _width = 0;
-	const std::shared_ptr<const aulos::Voice> _voice;
+	const std::shared_ptr<aulos::Voice> _voice;
 	QStaticText _name;
 };

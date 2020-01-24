@@ -43,8 +43,8 @@ void VoicesModel::reset(aulos::CompositionData* composition)
 	beginResetModel();
 	_voices.clear();
 	if (composition)
-		for (const auto& voice : composition->_voices)
-			_voices << voice;
+		for (const auto& part : composition->_parts)
+			_voices << part->_voice;
 	endResetModel();
 }
 

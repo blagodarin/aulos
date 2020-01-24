@@ -23,6 +23,7 @@
 namespace aulos
 {
 	struct SequenceData;
+	struct TrackData;
 }
 
 class TrackItem;
@@ -32,7 +33,7 @@ class FragmentItem final : public QGraphicsObject
 	Q_OBJECT
 
 public:
-	FragmentItem(TrackItem* track, size_t offset, const std::shared_ptr<const aulos::SequenceData>&);
+	FragmentItem(TrackItem* track, size_t offset, const std::shared_ptr<aulos::SequenceData>&);
 
 	QRectF boundingRect() const override;
 	size_t fragmentLength() const noexcept { return _length; }
@@ -40,15 +41,14 @@ public:
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
 
 signals:
-	void editRequested(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>&);
-	void removeRequested(size_t trackIndex, size_t offset);
+	void removeRequested(const std::shared_ptr<aulos::TrackData>&, size_t offset);
 
 private:
 	void contextMenuEvent(QGraphicsSceneContextMenuEvent*) override;
 
 private:
 	const size_t _offset;
-	const std::shared_ptr<const aulos::SequenceData> _sequence;
+	const std::shared_ptr<aulos::SequenceData> _sequence;
 	QStaticText _name;
 	size_t _length = 0;
 	qreal _width = 0;

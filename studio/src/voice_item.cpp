@@ -36,7 +36,7 @@ namespace
 	}
 }
 
-VoiceItem::VoiceItem(const std::shared_ptr<const aulos::Voice>& voice, QGraphicsItem* parent)
+VoiceItem::VoiceItem(const std::shared_ptr<aulos::Voice>& voice, QGraphicsItem* parent)
 	: QGraphicsItem{ parent }
 	, _voice{ voice }
 {

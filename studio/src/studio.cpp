@@ -176,30 +176,27 @@ Studio::Studio()
 	connect(_player.get(), &Player::timeAdvanced, [this](qint64 microseconds) {
 		_compositionScene->setCurrentStep(microseconds * _composition->_speed / 1'000'000.0);
 	});
-	connect(_compositionScene.get(), &CompositionScene::insertFragmentRequested, [this](size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>& sequence) {
-		auto& track = *_composition->_tracks[trackIndex];
-		assert(std::find(track._sequences.begin(), track._sequences.end(), sequence) != track._sequences.end());
-		[[maybe_unused]] const auto inserted = track._fragments.insert_or_assign(offset, sequence).second;
+	connect(_compositionScene.get(), &CompositionScene::insertFragmentRequested, [this](const std::shared_ptr<aulos::TrackData>& track, size_t offset, const std::shared_ptr<aulos::SequenceData>& sequence) {
+		assert(std::find(track->_sequences.begin(), track->_sequences.end(), sequence) != track->_sequences.end());
+		[[maybe_unused]] const auto inserted = track->_fragments.insert_or_assign(offset, sequence).second;
 		assert(inserted);
-		_compositionScene->insertFragment(trackIndex, offset, sequence);
+		_compositionScene->insertFragment(track.get(), offset, sequence);
 		_changed = true;
 		updateStatus();
 	});
-	connect(_compositionScene.get(), &CompositionScene::newSequenceRequested, [this](size_t trackIndex, size_t offset) {
-		auto& track = *_composition->_tracks[trackIndex];
+	connect(_compositionScene.get(), &CompositionScene::newSequenceRequested, [this](const std::shared_ptr<aulos::TrackData>& track, size_t offset) {
 		const auto sequence = std::make_shared<aulos::SequenceData>();
-		track._sequences.emplace_back(sequence);
-		[[maybe_unused]] const auto inserted = track._fragments.insert_or_assign(offset, sequence).second;
+		track->_sequences.emplace_back(sequence);
+		[[maybe_unused]] const auto inserted = track->_fragments.insert_or_assign(offset, sequence).second;
 		assert(inserted);
-		_compositionScene->insertFragment(trackIndex, offset, sequence);
+		_compositionScene->insertFragment(track.get(), offset, sequence);
 		_changed = true;
 		updateStatus();
 	});
-	connect(_compositionScene.get(), &CompositionScene::removeFragmentRequested, [this](size_t trackIndex, size_t offset) {
-		auto& track = *_composition->_tracks[trackIndex];
-		[[maybe_unused]] const auto erased = track._fragments.erase(offset);
+	connect(_compositionScene.get(), &CompositionScene::removeFragmentRequested, [this](const std::shared_ptr<aulos::TrackData>& track, size_t offset) {
+		[[maybe_unused]] const auto erased = track->_fragments.erase(offset);
 		assert(erased);
-		_compositionScene->removeFragment(trackIndex, offset);
+		_compositionScene->removeFragment(track.get(), offset);
 		_changed = true;
 		updateStatus();
 	});

@@ -32,20 +32,24 @@ namespace aulos
 
 	struct Track
 	{
-		size_t _voice = 0;
 		unsigned _weight = 0;
 		std::vector<std::vector<Sound>> _sequences;
 		std::vector<Fragment> _fragments;
 
-		Track(size_t voice, unsigned weight) noexcept
-			: _voice{ voice }, _weight{ weight } {}
+		Track(unsigned weight) noexcept
+			: _weight{ weight } {}
+	};
+
+	struct Part
+	{
+		Voice _voice;
+		std::vector<Track> _tracks;
 	};
 
 	struct CompositionImpl final : public Composition
 	{
 		unsigned _speed = kMinSpeed;
-		std::vector<Voice> _voices;
-		std::vector<Track> _tracks;
+		std::vector<Part> _parts;
 
 		void load(const char* source);
 	};

@@ -353,29 +353,38 @@ namespace
 			: _samplingRate{ samplingRate }
 			, _stepBytes{ static_cast<size_t>(std::lround(_samplingRate / composition._speed)) * kSampleSize }
 		{
-			const auto totalWeight = static_cast<float>(std::reduce(composition._tracks.cbegin(), composition._tracks.cend(), 0u, [](unsigned weight, const aulos::Track& track) { return weight + track._weight; }));
-			_tracks.reserve(composition._tracks.size());
-			for (const auto& track : composition._tracks)
+			size_t trackCount = 0;
+			const auto totalWeight = static_cast<float>(std::reduce(composition._parts.cbegin(), composition._parts.cend(), 0u, [&trackCount](unsigned weight, const aulos::Part& part) {
+				return weight + std::reduce(part._tracks.cbegin(), part._tracks.cend(), 0u, [&trackCount](unsigned partWeight, const aulos::Track& track) {
+					++trackCount;
+					return partWeight + track._weight;
+				});
+			}));
+			_tracks.reserve(trackCount);
+			for (const auto& part : composition._parts)
 			{
-				auto& trackSounds = _tracks.emplace_back(std::make_unique<TrackState>(composition._voices[track._voice], track._weight / totalWeight, samplingRate))->_sounds;
-				size_t fragmentOffset = 0;
-				for (const auto& fragment : track._fragments)
+				for (const auto& track : part._tracks)
 				{
-					fragmentOffset += fragment._delay;
-					auto lastSoundOffset = std::reduce(trackSounds.cbegin(), trackSounds.cend(), size_t{}, [](size_t offset, const TrackSound& sound) { return offset + sound._delay; });
-					while (!trackSounds.empty() && lastSoundOffset >= fragmentOffset)
+					auto& trackSounds = _tracks.emplace_back(std::make_unique<TrackState>(part._voice, track._weight / totalWeight, samplingRate))->_sounds;
+					size_t fragmentOffset = 0;
+					for (const auto& fragment : track._fragments)
 					{
-						lastSoundOffset -= trackSounds.back()._delay;
-						trackSounds.pop_back();
-					}
-					if (const auto& sequence = track._sequences[fragment._sequence]; !sequence.empty())
-					{
-						trackSounds.reserve(trackSounds.size() + sequence.size());
-						auto delay = fragmentOffset - lastSoundOffset;
-						for (const auto& sound : sequence)
+						fragmentOffset += fragment._delay;
+						auto lastSoundOffset = std::reduce(trackSounds.cbegin(), trackSounds.cend(), size_t{}, [](size_t offset, const TrackSound& sound) { return offset + sound._delay; });
+						while (!trackSounds.empty() && lastSoundOffset >= fragmentOffset)
 						{
-							trackSounds.emplace_back(delay, sound._note);
-							delay = sound._pause;
+							lastSoundOffset -= trackSounds.back()._delay;
+							trackSounds.pop_back();
+						}
+						if (const auto& sequence = track._sequences[fragment._sequence]; !sequence.empty())
+						{
+							trackSounds.reserve(trackSounds.size() + sequence.size());
+							auto delay = fragmentOffset - lastSoundOffset;
+							for (const auto& sound : sequence)
+							{
+								trackSounds.emplace_back(delay, sound._note);
+								delay = sound._pause;
+							}
 						}
 					}
 				}

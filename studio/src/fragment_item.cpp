@@ -47,7 +47,7 @@ namespace
 	};
 }
 
-FragmentItem::FragmentItem(TrackItem* track, size_t offset, const std::shared_ptr<const aulos::SequenceData>& sequence)
+FragmentItem::FragmentItem(TrackItem* track, size_t offset, const std::shared_ptr<aulos::SequenceData>& sequence)
 	: QGraphicsObject{ track }
 	, _offset{ offset }
 	, _sequence{ sequence }
@@ -106,14 +106,12 @@ void FragmentItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWi
 void FragmentItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
 {
 	QMenu menu;
-	const auto editAction = menu.addAction(tr("Edit..."));
+	menu.addAction(tr("Edit..."));
 	const auto removeAction = menu.addAction(tr("Remove"));
 	if (const auto action = menu.exec(e->screenPos()))
 	{
-		const auto trackIndex = static_cast<const TrackItem*>(parentItem())->trackIndex();
-		if (action == editAction)
-			emit editRequested(trackIndex, _offset, _sequence);
-		else if (action == removeAction)
-			emit removeRequested(trackIndex, _offset);
+		const auto trackData = static_cast<const TrackItem*>(parentItem())->trackData();
+		if (action == removeAction)
+			emit removeRequested(trackData, _offset);
 	}
 }

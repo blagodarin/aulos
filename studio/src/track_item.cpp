@@ -39,10 +39,9 @@ namespace
 	};
 }
 
-TrackItem::TrackItem(const std::shared_ptr<const aulos::CompositionData>& composition, size_t trackIndex, QGraphicsItem* parent)
+TrackItem::TrackItem(const std::shared_ptr<aulos::TrackData>& data, QGraphicsItem* parent)
 	: QGraphicsObject{ parent }
-	, _composition{ composition }
-	, _trackIndex{ trackIndex }
+	, _data{ data }
 {
 	setFlag(QGraphicsItem::ItemUsesExtendedStyleOption);
 }
@@ -56,7 +55,7 @@ void TrackItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
 {
 	if (!_length)
 		return;
-	const auto& colors = kTrackColors[_trackIndex % kTrackColors.size()]._colors;
+	const auto& colors = kTrackColors[_index % kTrackColors.size()]._colors;
 	auto step = static_cast<size_t>(std::floor(option->exposedRect.left() / kStepWidth));
 	QRectF rect{ { step * kStepWidth, 0 }, QSizeF{ kStepWidth, kTrackHeight } };
 	painter->setPen(Qt::transparent);
@@ -74,6 +73,14 @@ void TrackItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
 	painter->drawRect(rect);
 }
 
+void TrackItem::setTrackIndex(size_t index)
+{
+	if (_index == index)
+		return;
+	_index = index;
+	update();
+}
+
 void TrackItem::setTrackLength(size_t length)
 {
 	if (_length == length)
@@ -86,10 +93,10 @@ void TrackItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
 {
 	QMenu menu;
 	const auto insertSubmenu = menu.addMenu(tr("Insert"));
-	const auto sequenceCount = _composition->_tracks[_trackIndex]->_sequences.size();
+	const auto sequenceCount = _data->_sequences.size();
 	for (size_t sequenceIndex = 0; sequenceIndex < sequenceCount; ++sequenceIndex)
-		insertSubmenu->addAction(::makeSequenceName(*_composition->_tracks[_trackIndex]->_sequences[sequenceIndex]))->setData(sequenceIndex);
-	if (!_composition->_tracks[_trackIndex]->_sequences.empty())
+		insertSubmenu->addAction(::makeSequenceName(*_data->_sequences[sequenceIndex]))->setData(sequenceIndex);
+	if (!_data->_sequences.empty())
 		insertSubmenu->addSeparator();
 	const auto newSequenceAction = insertSubmenu->addAction(tr("New sequence..."));
 	const auto action = menu.exec(e->screenPos());
@@ -97,7 +104,7 @@ void TrackItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
 		return;
 	const auto offset = static_cast<size_t>(std::ceil(e->pos().x()) / kStepWidth);
 	if (action == newSequenceAction)
-		emit newSequenceRequested(_trackIndex, offset);
+		emit newSequenceRequested(_data, offset);
 	else
-		emit insertRequested(_trackIndex, offset, _composition->_tracks[_trackIndex]->_sequences[action->data().toUInt()]);
+		emit insertRequested(_data, offset, _data->_sequences[action->data().toUInt()]);
 }

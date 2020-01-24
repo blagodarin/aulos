@@ -322,18 +322,19 @@ namespace aulos
 				switch (currentSection)
 				{
 				case Section::Sequences: {
-					const auto trackIndex = readUnsigned(1, static_cast<unsigned>(_tracks.size()));
-					const auto sequenceIndex = static_cast<unsigned>(_tracks[trackIndex - 1]._sequences.size() + 1);
+					auto& part = _parts[readUnsigned(1, static_cast<unsigned>(_parts.size())) - 1];
+					auto& track = part._tracks[readUnsigned(1, static_cast<unsigned>(part._tracks.size())) - 1];
+					const auto sequenceIndex = static_cast<unsigned>(track._sequences.size() + 1);
 					readUnsigned(sequenceIndex, sequenceIndex);
-					parseSequence(_tracks[trackIndex - 1]._sequences.emplace_back());
+					parseSequence(track._sequences.emplace_back());
 					break;
 				}
 				case Section::Tracks: {
-					const auto trackIndex = static_cast<unsigned>(_tracks.size() + 1);
+					auto& part = _parts[readUnsigned(1, static_cast<unsigned>(_parts.size())) - 1];
+					const auto trackIndex = static_cast<unsigned>(part._tracks.size() + 1);
 					readUnsigned(trackIndex, trackIndex);
-					const auto voiceIndex = readUnsigned(1, static_cast<unsigned>(_voices.size()));
 					const auto weight = tryReadUnsigned(1, 256);
-					_tracks.emplace_back(voiceIndex - 1, weight ? *weight : 1);
+					part._tracks.emplace_back(weight ? *weight : 1);
 					break;
 				}
 				case Section::Fragments: {
@@ -357,12 +358,12 @@ namespace aulos
 				++source;
 				if (const auto section = readIdentifier(); section == "voice")
 				{
-					const auto voiceIndex = static_cast<unsigned>(_voices.size() + 1);
-					readUnsigned(voiceIndex, voiceIndex);
+					const auto partIndex = static_cast<unsigned>(_parts.size() + 1);
+					readUnsigned(partIndex, partIndex);
 					auto name = tryReadString();
 					consumeEndOfLine();
 					currentSection = Section::Voice;
-					currentVoice = &_voices.emplace_back();
+					currentVoice = &_parts.emplace_back()._voice;
 					if (name)
 						currentVoice->_name = std::move(*name);
 				}
@@ -378,10 +379,11 @@ namespace aulos
 				}
 				else if (section == "fragments")
 				{
-					const auto trackIndex = readUnsigned(1, static_cast<unsigned>(_tracks.size()));
+					auto& part = _parts[readUnsigned(1, static_cast<unsigned>(_parts.size())) - 1];
+					auto& track = part._tracks[readUnsigned(1, static_cast<unsigned>(part._tracks.size())) - 1];
 					consumeEndOfLine();
 					currentSection = Section::Fragments;
-					currentTrack = &_tracks[trackIndex - 1];
+					currentTrack = &track;
 				}
 				else
 					throw CompositionError{ location(), "Unknown section \"@" + std::string{ section } + "\"" };
@@ -403,19 +405,21 @@ namespace aulos
 	{
 		const auto& packed = static_cast<const CompositionImpl&>(composition);
 		_speed = packed._speed;
-		_voices.reserve(packed._voices.size());
-		for (const auto& packedVoice : packed._voices)
-			_voices.emplace_back(std::make_unique<Voice>(packedVoice));
-		_tracks.reserve(packed._tracks.size());
-		for (const auto& packedTrack : packed._tracks)
+		_parts.reserve(packed._parts.size());
+		for (const auto& packedPart : packed._parts)
 		{
-			auto& trackData = *_tracks.emplace_back(std::make_shared<TrackData>(_voices[packedTrack._voice], packedTrack._weight));
-			trackData._sequences.reserve(packedTrack._sequences.size());
-			for (const auto& packedSequence : packedTrack._sequences)
-				trackData._sequences.emplace_back(std::make_shared<SequenceData>())->_sounds = packedSequence;
-			size_t offset = 0;
-			for (const auto& packedFragment : packedTrack._fragments)
-				trackData._fragments.insert_or_assign(offset += packedFragment._delay, trackData._sequences[packedFragment._sequence]);
+			auto& partData = _parts.emplace_back(std::make_shared<PartData>(std::make_shared<Voice>(packedPart._voice)));
+			partData->_tracks.reserve(packedPart._tracks.size());
+			for (const auto& packedTrack : packedPart._tracks)
+			{
+				auto& trackData = *partData->_tracks.emplace_back(std::make_shared<TrackData>(packedTrack._weight));
+				trackData._sequences.reserve(packedTrack._sequences.size());
+				for (const auto& packedSequence : packedTrack._sequences)
+					trackData._sequences.emplace_back(std::make_shared<SequenceData>())->_sounds = packedSequence;
+				size_t offset = 0;
+				for (const auto& packedFragment : packedTrack._fragments)
+					trackData._fragments.insert_or_assign(offset += packedFragment._delay, trackData._sequences[packedFragment._sequence]);
+			}
 		}
 	}
 
@@ -424,28 +428,28 @@ namespace aulos
 		// TODO: Verify values.
 		auto packed = std::make_unique<CompositionImpl>();
 		packed->_speed = _speed;
-		packed->_voices.reserve(_voices.size());
-		for (const auto& voiceData : _voices)
-			packed->_voices.emplace_back(*voiceData);
-		packed->_tracks.reserve(_tracks.size());
-		for (const auto& trackData : _tracks)
+		packed->_parts.reserve(_parts.size());
+		for (const auto& partData : _parts)
 		{
-			const auto v = std::find(_voices.begin(), _voices.end(), trackData->_voice);
-			if (v == _voices.end())
-				return {};
-			auto& packedTrack = packed->_tracks.emplace_back(v - _voices.begin(), trackData->_weight);
-			packedTrack._sequences.reserve(trackData->_sequences.size());
-			for (const auto& sequenceData : trackData->_sequences)
-				packedTrack._sequences.emplace_back(sequenceData->_sounds);
-			packedTrack._fragments.reserve(trackData->_fragments.size());
-			size_t lastOffset = 0;
-			for (const auto& fragmentData : trackData->_fragments)
+			auto& packedPart = packed->_parts.emplace_back();
+			packedPart._voice = *partData->_voice;
+			packedPart._tracks.reserve(partData->_tracks.size());
+			for (const auto& trackData : partData->_tracks)
 			{
-				const auto s = std::find(trackData->_sequences.begin(), trackData->_sequences.end(), fragmentData.second);
-				if (s == trackData->_sequences.end())
-					return {};
-				packedTrack._fragments.emplace_back(fragmentData.first - lastOffset, s - trackData->_sequences.begin());
-				lastOffset = fragmentData.first;
+				auto& packedTrack = packedPart._tracks.emplace_back(trackData->_weight);
+				packedTrack._sequences.reserve(trackData->_sequences.size());
+				for (const auto& sequenceData : trackData->_sequences)
+					packedTrack._sequences.emplace_back(sequenceData->_sounds);
+				packedTrack._fragments.reserve(trackData->_fragments.size());
+				size_t lastOffset = 0;
+				for (const auto& fragmentData : trackData->_fragments)
+				{
+					const auto s = std::find(trackData->_sequences.begin(), trackData->_sequences.end(), fragmentData.second);
+					if (s == trackData->_sequences.end())
+						return {};
+					packedTrack._fragments.emplace_back(fragmentData.first - lastOffset, s - trackData->_sequences.begin());
+					lastOffset = fragmentData.first;
+				}
 			}
 		}
 		return packed;

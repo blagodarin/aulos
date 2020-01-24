@@ -23,8 +23,8 @@
 
 namespace aulos
 {
-	struct CompositionData;
 	struct SequenceData;
+	struct TrackData;
 }
 
 class TrackItem final : public QGraphicsObject
@@ -32,22 +32,24 @@ class TrackItem final : public QGraphicsObject
 	Q_OBJECT
 
 public:
-	TrackItem(const std::shared_ptr<const aulos::CompositionData>&, size_t trackIndex, QGraphicsItem* parent = nullptr);
+	TrackItem(const std::shared_ptr<aulos::TrackData>&, QGraphicsItem* parent = nullptr);
 
 	QRectF boundingRect() const override;
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
+	void setTrackIndex(size_t index);
 	void setTrackLength(size_t length);
-	size_t trackIndex() const noexcept { return _trackIndex; }
+	std::shared_ptr<aulos::TrackData> trackData() const noexcept { return _data; }
+	size_t trackIndex() const noexcept { return _index; }
 
 signals:
-	void insertRequested(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>&);
-	void newSequenceRequested(size_t trackIndex, size_t offset);
+	void insertRequested(const std::shared_ptr<aulos::TrackData>&, size_t offset, const std::shared_ptr<aulos::SequenceData>&);
+	void newSequenceRequested(const std::shared_ptr<aulos::TrackData>&, size_t offset);
 
 private:
 	void contextMenuEvent(QGraphicsSceneContextMenuEvent*) override;
 
 private:
-	const std::shared_ptr<const aulos::CompositionData> _composition;
-	const size_t _trackIndex;
+	const std::shared_ptr<aulos::TrackData> _data;
+	size_t _index = 0;
 	size_t _length = 0;
 };

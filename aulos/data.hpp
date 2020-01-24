@@ -93,16 +93,23 @@ namespace aulos
 		std::vector<Sound> _sounds;
 	};
 
-	// Specifies playback actions for a single voice instance.
 	struct TrackData
 	{
-		std::shared_ptr<const Voice> _voice;
 		unsigned _weight = 0;
 		std::vector<std::shared_ptr<SequenceData>> _sequences;
-		std::map<size_t, std::shared_ptr<const SequenceData>> _fragments;
+		std::map<size_t, std::shared_ptr<SequenceData>> _fragments;
 
-		TrackData(const std::shared_ptr<const Voice>& voice, unsigned weight) noexcept
-			: _voice{ voice }, _weight{ weight } {}
+		TrackData(unsigned weight) noexcept
+			: _weight{ weight } {}
+	};
+
+	struct PartData
+	{
+		std::shared_ptr<Voice> _voice;
+		std::vector<std::shared_ptr<TrackData>> _tracks;
+
+		PartData(const std::shared_ptr<Voice>& voice) noexcept
+			: _voice{ voice } {}
 	};
 
 	constexpr unsigned kMinSpeed = 1;  // Minimum composition playback speed (in steps per second).
@@ -112,8 +119,7 @@ namespace aulos
 	struct CompositionData
 	{
 		unsigned _speed = kMinSpeed;
-		std::vector<std::shared_ptr<Voice>> _voices;
-		std::vector<std::shared_ptr<TrackData>> _tracks;
+		std::vector<std::shared_ptr<PartData>> _parts;
 
 		CompositionData() = default;
 		CompositionData(const Composition&);

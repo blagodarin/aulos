@@ -26,6 +26,7 @@
 
 #include <aulos/data.hpp>
 
+#include <cassert>
 #include <numeric>
 #include <vector>
 
@@ -65,25 +66,28 @@ CompositionScene::CompositionScene()
 
 CompositionScene::~CompositionScene() = default;
 
-void CompositionScene::insertFragment(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>& sequence)
+void CompositionScene::insertFragment(const aulos::TrackData* trackData, size_t offset, const std::shared_ptr<aulos::SequenceData>& sequence)
 {
-	const auto newItem = addFragmentItem(*_tracks[trackIndex], offset, sequence);
+	const auto track = std::find_if(_tracks.begin(), _tracks.end(), [trackData](const auto& trackPtr) { return trackPtr->_background->trackData().get() == trackData; });
+	assert(track != _tracks.end());
+	const auto newItem = addFragmentItem(**track, offset, sequence);
 	const auto minCompositionLength = offset + newItem->fragmentLength() + kExtraLength;
 	if (minCompositionLength > _timelineItem->compositionLength())
 		setCompositionLength(minCompositionLength);
 }
 
-void CompositionScene::removeFragment(size_t trackIndex, size_t offset)
+void CompositionScene::removeFragment(const aulos::TrackData* trackData, size_t offset)
 {
-	auto& track = *_tracks[trackIndex];
-	const auto i = track._fragments.find(offset);
-	assert(i != track._fragments.end());
-	removeItem(i->second);
-	i->second->deleteLater();
-	track._fragments.erase(i);
+	const auto track = std::find_if(_tracks.begin(), _tracks.end(), [trackData](const auto& trackPtr) { return trackPtr->_background->trackData().get() == trackData; });
+	assert(track != _tracks.end());
+	const auto fragment = (*track)->_fragments.find(offset);
+	assert(fragment != (*track)->_fragments.end());
+	removeItem(fragment->second);
+	fragment->second->deleteLater();
+	(*track)->_fragments.erase(fragment);
 }
 
-void CompositionScene::reset(const std::shared_ptr<const aulos::CompositionData>& composition)
+void CompositionScene::reset(const std::shared_ptr<aulos::CompositionData>& composition)
 {
 	removeItem(_timelineItem.get());
 	_tracks.clear();
@@ -92,29 +96,33 @@ void CompositionScene::reset(const std::shared_ptr<const aulos::CompositionData>
 	clear();
 
 	_composition = composition;
-	if (!_composition || _composition->_tracks.empty())
+	if (!_composition || _composition->_parts.empty())
 		return;
 
 	qreal trackHeaderWidth = kMinVoiceItemWidth;
 	size_t compositionLength = 0;
-	for (const auto& trackData : _composition->_tracks)
+	for (const auto& partData : _composition->_parts)
 	{
-		const auto trackIndex = _tracks.size();
-		const auto& track = _tracks.emplace_back(std::make_unique<Track>());
-
-		track->_background = new TrackItem{ _composition, trackIndex };
-		track->_background->setPos(0, trackIndex * kTrackHeight);
-		connect(track->_background, &TrackItem::insertRequested, this, &CompositionScene::insertFragmentRequested);
-		connect(track->_background, &TrackItem::newSequenceRequested, this, &CompositionScene::newSequenceRequested);
-
-		track->_header = new VoiceItem{ trackData->_voice, track->_background };
-		track->_header->setIndex(trackIndex);
-		trackHeaderWidth = std::max(trackHeaderWidth, track->_header->requiredWidth());
-
-		for (const auto& fragment : trackData->_fragments)
+		for (const auto& trackData : partData->_tracks)
 		{
-			const auto fragmentItem = addFragmentItem(*track, fragment.first, fragment.second);
-			compositionLength = std::max(compositionLength, fragmentItem->fragmentOffset() + fragmentItem->fragmentLength());
+			const auto trackIndex = _tracks.size();
+			const auto& track = _tracks.emplace_back(std::make_unique<Track>());
+
+			track->_background = new TrackItem{ trackData };
+			track->_background->setPos(0, trackIndex * kTrackHeight);
+			track->_background->setTrackIndex(trackIndex);
+			connect(track->_background, &TrackItem::insertRequested, this, &CompositionScene::insertFragmentRequested);
+			connect(track->_background, &TrackItem::newSequenceRequested, this, &CompositionScene::newSequenceRequested);
+
+			track->_header = new VoiceItem{ partData->_voice, track->_background };
+			track->_header->setIndex(trackIndex);
+			trackHeaderWidth = std::max(trackHeaderWidth, track->_header->requiredWidth());
+
+			for (const auto& fragment : trackData->_fragments)
+			{
+				const auto fragmentItem = addFragmentItem(*track, fragment.first, fragment.second);
+				compositionLength = std::max(compositionLength, fragmentItem->fragmentOffset() + fragmentItem->fragmentLength());
+			}
 		}
 	}
 	compositionLength += kExtraLength;
@@ -157,11 +165,6 @@ void CompositionScene::setSpeed(unsigned speed)
 	_timelineItem->setCompositionSpeed(speed);
 }
 
-void CompositionScene::onEditRequested(size_t trackIndex, size_t offset, const std::shared_ptr<const aulos::SequenceData>&)
-{
-	(void)trackIndex, offset;
-}
-
 void CompositionScene::setCompositionLength(size_t length)
 {
 	auto compositionRect = sceneRect();
@@ -172,11 +175,10 @@ void CompositionScene::setCompositionLength(size_t length)
 		track->_background->setTrackLength(length);
 }
 
-FragmentItem* CompositionScene::addFragmentItem(Track& track, size_t offset, const std::shared_ptr<const aulos::SequenceData>& sequence)
+FragmentItem* CompositionScene::addFragmentItem(Track& track, size_t offset, const std::shared_ptr<aulos::SequenceData>& sequence)
 {
 	const auto item = new FragmentItem{ track._background, offset, sequence };
 	item->setPos(offset * kStepWidth, 0);
-	connect(item, &FragmentItem::editRequested, this, &CompositionScene::onEditRequested);
 	connect(item, &FragmentItem::removeRequested, this, &CompositionScene::removeFragmentRequested);
 	const auto i = track._fragments.emplace(offset, item).first;
 	if (i != track._fragments.begin())
