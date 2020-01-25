@@ -121,7 +121,7 @@ void CompositionScene::reset(const std::shared_ptr<aulos::CompositionData>& comp
 
 			track->_background = new TrackItem{ *i, voiceItem };
 			track->_background->setPos(0, trackOffset * kTrackHeight);
-			track->_background->setTrackIndex(trackIndexBase + trackOffset);
+			track->_background->setTrackIndices(trackIndexBase + trackOffset, trackOffset);
 			connect(track->_background, &TrackItem::insertRequested, this, &CompositionScene::insertFragmentRequested);
 			connect(track->_background, &TrackItem::newSequenceRequested, this, &CompositionScene::newSequenceRequested);
 

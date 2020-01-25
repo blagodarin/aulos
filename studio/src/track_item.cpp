@@ -55,29 +55,30 @@ void TrackItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
 {
 	if (!_length)
 		return;
-	const auto& colors = kTrackColors[_index % kTrackColors.size()]._colors;
+	const auto& colors = kTrackColors[_indexInComposition % kTrackColors.size()]._colors;
 	auto step = static_cast<size_t>(std::floor(option->exposedRect.left() / kStepWidth));
 	QRectF rect{ { step * kStepWidth, 0 }, QSizeF{ kStepWidth, kTrackHeight } };
 	painter->setPen(Qt::transparent);
-	while (step < _length - 1)
+	while (step < _length)
 	{
 		painter->setBrush(colors[step % colors.size()]);
 		painter->drawRect(rect);
 		if (rect.right() > option->exposedRect.right())
-			return;
+			break;
 		rect.moveLeft(rect.right());
 		++step;
 	}
-	rect.setRight(_length * kStepWidth);
-	painter->setBrush(colors[step % colors.size()]);
-	painter->drawRect(rect);
+	if (_indexInPart == 0)
+	{
+		painter->setPen("#666");
+		painter->drawLine(boundingRect().topLeft(), boundingRect().topRight() - QPointF{ 1, 0 });
+	}
 }
 
-void TrackItem::setTrackIndex(size_t index)
+void TrackItem::setTrackIndices(size_t indexInComposition, size_t indexInPart)
 {
-	if (_index == index)
-		return;
-	_index = index;
+	_indexInComposition = indexInComposition;
+	_indexInPart = indexInPart;
 	update();
 }
 

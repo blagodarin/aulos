@@ -36,10 +36,10 @@ public:
 
 	QRectF boundingRect() const override;
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
-	void setTrackIndex(size_t index);
+	void setTrackIndices(size_t indexInComposition, size_t indexInPart);
 	void setTrackLength(size_t length);
 	std::shared_ptr<aulos::TrackData> trackData() const noexcept { return _data; }
-	size_t trackIndex() const noexcept { return _index; }
+	size_t trackIndex() const noexcept { return _indexInComposition; }
 
 signals:
 	void insertRequested(const std::shared_ptr<aulos::TrackData>&, size_t offset, const std::shared_ptr<aulos::SequenceData>&);
@@ -50,6 +50,7 @@ private:
 
 private:
 	const std::shared_ptr<aulos::TrackData> _data;
-	size_t _index = 0;
 	size_t _length = 0;
+	size_t _indexInComposition = 0;
+	size_t _indexInPart = 0;
 };
