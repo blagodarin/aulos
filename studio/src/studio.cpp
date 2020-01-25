@@ -200,15 +200,23 @@ Studio::Studio()
 		_changed = true;
 		updateStatus();
 	});
-	connect(_compositionScene.get(), &CompositionScene::voiceEditRequested, [this](const std::shared_ptr<aulos::Voice>& voice) {
-		_voiceEditor->setVoice(*voice);
-		if (_voiceEditor->exec() != QDialog::Accepted)
-			return;
-		*voice = _voiceEditor->voice();
-		_compositionScene->updateVoice(voice.get());
-		_compositionView->horizontalScrollBar()->setValue(_compositionView->horizontalScrollBar()->minimum());
-		_changed = true;
-		updateStatus();
+	connect(_compositionScene.get(), &CompositionScene::voiceMenuRequested, [this](const void* id, const QPoint& pos) {
+		const auto i = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [id](const auto& part) { return part->_voice.get() == id; });
+		assert(i != _composition->_parts.cend());
+		QMenu menu;
+		const auto editAction = menu.addAction(tr("Edit..."));
+		const auto action = menu.exec(pos);
+		if (action == editAction)
+		{
+			_voiceEditor->setVoice(*(*i)->_voice);
+			if (_voiceEditor->exec() != QDialog::Accepted)
+				return;
+			*(*i)->_voice = _voiceEditor->voice();
+			_compositionScene->updateVoice(id, (*i)->_voice->_name);
+			_compositionView->horizontalScrollBar()->setValue(_compositionView->horizontalScrollBar()->minimum());
+			_changed = true;
+			updateStatus();
+		}
 	});
 
 	updateStatus();

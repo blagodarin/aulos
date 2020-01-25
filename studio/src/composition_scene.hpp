@@ -52,14 +52,14 @@ public:
 	void reset(const std::shared_ptr<aulos::CompositionData>&);
 	void setCurrentStep(double step);
 	void setSpeed(unsigned speed);
-	void updateVoice(const aulos::Voice*);
+	void updateVoice(const void* id, const std::string& name);
 
 signals:
 	void insertFragmentRequested(const std::shared_ptr<aulos::TrackData>&, size_t offset, const std::shared_ptr<aulos::SequenceData>&);
 	void newSequenceRequested(const std::shared_ptr<aulos::TrackData>&, size_t offset);
 	void newVoiceRequested();
 	void removeFragmentRequested(const std::shared_ptr<aulos::TrackData>&, size_t offset);
-	void voiceEditRequested(const std::shared_ptr<aulos::Voice>&);
+	void voiceMenuRequested(const void* voiceId, const QPoint& pos);
 
 private slots:
 	void setCompositionLength(size_t length);
@@ -67,6 +67,7 @@ private slots:
 private:
 	struct Track;
 	FragmentItem* addFragmentItem(Track&, size_t offset, const std::shared_ptr<aulos::SequenceData>&);
+	VoiceItem* addVoiceItem(const void* id, const QString& name, size_t trackCount);
 	qreal requiredVoiceColumnWidth() const;
 	void setVoiceColumnWidth(qreal);
 	void updateSceneRect(size_t compositionLength);

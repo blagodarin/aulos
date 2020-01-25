@@ -17,42 +17,35 @@
 
 #pragma once
 
-#include <memory>
-
 #include <QGraphicsObject>
 #include <QStaticText>
-
-namespace aulos
-{
-	struct Voice;
-}
 
 class VoiceItem final : public QGraphicsObject
 {
 	Q_OBJECT
 
 public:
-	VoiceItem(const std::shared_ptr<aulos::Voice>&, QGraphicsItem* parent = nullptr);
+	VoiceItem(const void* id, QGraphicsItem* parent = nullptr);
 
 	QRectF boundingRect() const override;
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
 	qreal requiredWidth() const;
-	void setIndex(size_t);
 	void setTrackCount(size_t);
+	void setVoiceIndex(size_t);
 	void setVoiceName(const QString& name);
 	void setWidth(qreal);
-	const aulos::Voice* voiceId() const noexcept { return _voice.get(); }
+	const void* voiceId() const noexcept { return _voiceId; }
 
 signals:
-	void voiceEditRequested(const std::shared_ptr<aulos::Voice>&);
+	void voiceMenuRequested(const void* voiceId, const QPoint& pos);
 
 private:
 	void contextMenuEvent(QGraphicsSceneContextMenuEvent*) override;
 
 private:
+	const void* const _voiceId;
 	size_t _index = 0;
 	qreal _width = 0;
 	size_t _trackCount = 0;
-	const std::shared_ptr<aulos::Voice> _voice;
 	QStaticText _name;
 };
