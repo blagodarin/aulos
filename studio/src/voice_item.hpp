@@ -36,11 +36,13 @@ public:
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
 	qreal requiredWidth() const;
 	void setIndex(size_t);
+	void setTrackCount(size_t);
 	void setWidth(qreal);
 
 private:
 	size_t _index = 0;
 	qreal _width = 0;
+	size_t _trackCount = 0;
 	const std::shared_ptr<aulos::Voice> _voice;
 	QStaticText _name;
 };

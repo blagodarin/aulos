@@ -31,9 +31,10 @@ namespace aulos
 	struct TrackData;
 }
 
+class AddVoiceItem;
 class FragmentItem;
 class TimelineItem;
-class AddVoiceItem;
+class VoiceItem;
 
 class CompositionScene final : public QGraphicsScene
 {
@@ -63,6 +64,7 @@ private:
 
 private:
 	std::shared_ptr<aulos::CompositionData> _composition;
+	std::vector<std::unique_ptr<VoiceItem>> _voices;
 	std::unique_ptr<TimelineItem> _timelineItem;
 	std::vector<std::unique_ptr<Track>> _tracks;
 	std::unique_ptr<AddVoiceItem> _addVoiceItem;

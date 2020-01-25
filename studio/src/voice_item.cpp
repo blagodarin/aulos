@@ -50,7 +50,7 @@ VoiceItem::VoiceItem(const std::shared_ptr<aulos::Voice>& voice, QGraphicsItem* 
 
 QRectF VoiceItem::boundingRect() const
 {
-	return { { -_width, 0 }, QSizeF{ _width, kTrackHeight } };
+	return { { -_width, 0 }, QSizeF{ _width, _trackCount * kTrackHeight } };
 }
 
 void VoiceItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*)
@@ -62,7 +62,7 @@ void VoiceItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidge
 	painter->setPen(colors._pen);
 	painter->setFont(::makeVoiceFont());
 	const auto nameSize = _name.size();
-	painter->drawStaticText(QPointF{ kMargin - _width, (kTrackHeight - nameSize.height()) / 2 }, _name);
+	painter->drawStaticText(QPointF{ kMargin - _width, (_trackCount * kTrackHeight - nameSize.height()) / 2 }, _name);
 }
 
 qreal VoiceItem::requiredWidth() const
@@ -74,6 +74,12 @@ void VoiceItem::setIndex(size_t index)
 {
 	_index = index;
 	update();
+}
+
+void VoiceItem::setTrackCount(size_t count)
+{
+	prepareGeometryChange();
+	_trackCount = count;
 }
 
 void VoiceItem::setWidth(qreal width)

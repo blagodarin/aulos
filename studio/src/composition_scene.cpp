@@ -47,7 +47,6 @@ namespace
 struct CompositionScene::Track
 {
 	TrackItem* _background = nullptr;
-	VoiceItem* _header = nullptr;
 	std::map<size_t, FragmentItem*> _fragments;
 };
 
@@ -90,6 +89,7 @@ void CompositionScene::removeFragment(const aulos::TrackData* trackData, size_t 
 void CompositionScene::reset(const std::shared_ptr<aulos::CompositionData>& composition)
 {
 	removeItem(_timelineItem.get());
+	_voices.clear();
 	_tracks.clear();
 	removeItem(_addVoiceItem.get());
 	removeItem(_cursorItem.get());
@@ -101,24 +101,31 @@ void CompositionScene::reset(const std::shared_ptr<aulos::CompositionData>& comp
 
 	qreal trackHeaderWidth = kMinVoiceItemWidth;
 	size_t compositionLength = 0;
+	_voices.reserve(_composition->_parts.size());
 	for (const auto& partData : _composition->_parts)
 	{
-		for (const auto& trackData : partData->_tracks)
+		assert(!partData->_tracks.empty());
+
+		const auto voiceIndex = _voices.size();
+		const auto voiceItem = _voices.emplace_back(std::make_unique<VoiceItem>(partData->_voice)).get();
+		voiceItem->setIndex(voiceIndex);
+		voiceItem->setPos(0, _tracks.size() * kTrackHeight);
+		voiceItem->setTrackCount(partData->_tracks.size());
+		trackHeaderWidth = std::max(trackHeaderWidth, voiceItem->requiredWidth());
+
+		const auto trackIndexBase = _tracks.size();
+		for (auto i = partData->_tracks.crbegin(); i != partData->_tracks.crend(); ++i)
 		{
-			const auto trackIndex = _tracks.size();
+			const auto trackOffset = std::prev(i.base()) - partData->_tracks.cbegin();
 			const auto& track = _tracks.emplace_back(std::make_unique<Track>());
 
-			track->_background = new TrackItem{ trackData };
-			track->_background->setPos(0, trackIndex * kTrackHeight);
-			track->_background->setTrackIndex(trackIndex);
+			track->_background = new TrackItem{ *i, voiceItem };
+			track->_background->setPos(0, trackOffset * kTrackHeight);
+			track->_background->setTrackIndex(trackIndexBase + trackOffset);
 			connect(track->_background, &TrackItem::insertRequested, this, &CompositionScene::insertFragmentRequested);
 			connect(track->_background, &TrackItem::newSequenceRequested, this, &CompositionScene::newSequenceRequested);
 
-			track->_header = new VoiceItem{ partData->_voice, track->_background };
-			track->_header->setIndex(trackIndex);
-			trackHeaderWidth = std::max(trackHeaderWidth, track->_header->requiredWidth());
-
-			for (const auto& fragment : trackData->_fragments)
+			for (const auto& fragment : (*i)->_fragments)
 			{
 				const auto fragmentItem = addFragmentItem(*track, fragment.first, fragment.second);
 				compositionLength = std::max(compositionLength, fragmentItem->fragmentOffset() + fragmentItem->fragmentLength());
@@ -129,12 +136,11 @@ void CompositionScene::reset(const std::shared_ptr<aulos::CompositionData>& comp
 
 	_timelineItem->setCompositionSpeed(_composition->_speed);
 	_timelineItem->setCompositionLength(compositionLength);
+	for (const auto& voice : _voices)
+		voice->setWidth(trackHeaderWidth);
 	for (const auto& track : _tracks)
-	{
-		track->_header->setWidth(trackHeaderWidth);
 		track->_background->setTrackLength(compositionLength);
-	}
-	_addVoiceItem->setIndex(_tracks.size());
+	_addVoiceItem->setIndex(_voices.size());
 	_addVoiceItem->setPos(0, _tracks.size() * kTrackHeight);
 	_addVoiceItem->setWidth(trackHeaderWidth);
 	_cursorItem->setLine(::makeCursorLine(_tracks.size()));
@@ -142,8 +148,8 @@ void CompositionScene::reset(const std::shared_ptr<aulos::CompositionData>& comp
 
 	setSceneRect({ { -trackHeaderWidth, -kTimelineHeight }, QPointF{ compositionLength * kStepWidth + kAddTimeItemWidth + kAddTimeExtraWidth, (_tracks.size() + 1) * kTrackHeight } });
 	addItem(_timelineItem.get());
-	for (auto i = _tracks.crbegin(); i != _tracks.crend(); ++i)
-		addItem((*i)->_background);
+	for (auto i = _voices.crbegin(); i != _voices.crend(); ++i)
+		addItem(i->get());
 	addItem(_addVoiceItem.get());
 	addItem(_cursorItem.get());
 }
