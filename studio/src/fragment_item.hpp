@@ -23,7 +23,6 @@
 namespace aulos
 {
 	struct SequenceData;
-	struct TrackData;
 }
 
 class TrackItem;
@@ -41,7 +40,7 @@ public:
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
 
 signals:
-	void removeRequested(const std::shared_ptr<aulos::TrackData>&, size_t offset);
+	void removeRequested(const void* trackId, size_t offset);
 
 private:
 	void contextMenuEvent(QGraphicsSceneContextMenuEvent*) override;

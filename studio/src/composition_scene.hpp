@@ -29,13 +29,12 @@ namespace aulos
 	struct CompositionData;
 	struct PartData;
 	struct SequenceData;
-	struct TrackData;
-	struct Voice;
 }
 
 class AddVoiceItem;
 class FragmentItem;
 class TimelineItem;
+class TrackItem;
 class VoiceItem;
 
 class CompositionScene final : public QGraphicsScene
@@ -47,18 +46,17 @@ public:
 	~CompositionScene() override;
 
 	void appendPart(const std::shared_ptr<aulos::PartData>&);
-	void insertFragment(const aulos::TrackData*, size_t offset, const std::shared_ptr<aulos::SequenceData>&);
-	void removeFragment(const aulos::TrackData*, size_t offset);
+	void insertFragment(const void* voiceId, const void* trackId, size_t offset, const std::shared_ptr<aulos::SequenceData>&);
+	void removeFragment(const void* trackId, size_t offset);
 	void reset(const std::shared_ptr<aulos::CompositionData>&);
 	void setCurrentStep(double step);
 	void setSpeed(unsigned speed);
 	void updateVoice(const void* id, const std::string& name);
 
 signals:
-	void insertFragmentRequested(const std::shared_ptr<aulos::TrackData>&, size_t offset, const std::shared_ptr<aulos::SequenceData>&);
-	void newSequenceRequested(const std::shared_ptr<aulos::TrackData>&, size_t offset);
 	void newVoiceRequested();
-	void removeFragmentRequested(const std::shared_ptr<aulos::TrackData>&, size_t offset);
+	void removeFragmentRequested(const void* voiceId, const void* trackId, size_t offset);
+	void trackMenuRequested(const void* voiceId, const void* trackId, size_t offset, const QPoint& pos);
 	void voiceMenuRequested(const void* voiceId, const QPoint& pos);
 
 private slots:
@@ -66,7 +64,8 @@ private slots:
 
 private:
 	struct Track;
-	FragmentItem* addFragmentItem(Track&, size_t offset, const std::shared_ptr<aulos::SequenceData>&);
+	FragmentItem* addFragmentItem(const void* voiceId, Track&, size_t offset, const std::shared_ptr<aulos::SequenceData>&);
+	TrackItem* addTrackItem(VoiceItem*, const void* trackId);
 	VoiceItem* addVoiceItem(const void* id, const QString& name, size_t trackCount);
 	qreal requiredVoiceColumnWidth() const;
 	void setVoiceColumnWidth(qreal);

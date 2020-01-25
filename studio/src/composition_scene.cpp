@@ -77,11 +77,9 @@ void CompositionScene::appendPart(const std::shared_ptr<aulos::PartData>& partDa
 	const auto voiceItem = addVoiceItem(partData->_voice.get(), QString::fromStdString(partData->_voice->_name), partData->_tracks.size());
 
 	const auto& track = _tracks.emplace_back(std::make_unique<Track>());
-	track->_background = new TrackItem{ partData->_tracks.front(), voiceItem };
+	track->_background = addTrackItem(voiceItem, partData->_tracks.front().get());
 	track->_background->setTrackLength(_timelineItem->compositionLength());
 	track->_background->setTrackIndices(_tracks.size() - 1, 0);
-	connect(track->_background, &TrackItem::insertRequested, this, &CompositionScene::insertFragmentRequested);
-	connect(track->_background, &TrackItem::newSequenceRequested, this, &CompositionScene::newSequenceRequested);
 
 	bool shouldUpdateVoiceColumnWidth = false;
 	if (const auto requiredWidth = voiceItem->requiredWidth(); requiredWidth > _voiceColumnWidth)
@@ -105,19 +103,19 @@ void CompositionScene::appendPart(const std::shared_ptr<aulos::PartData>& partDa
 	_cursorItem->setLine(::makeCursorLine(_tracks.size()));
 }
 
-void CompositionScene::insertFragment(const aulos::TrackData* trackData, size_t offset, const std::shared_ptr<aulos::SequenceData>& sequence)
+void CompositionScene::insertFragment(const void* voiceId, const void* trackId, size_t offset, const std::shared_ptr<aulos::SequenceData>& sequence)
 {
-	const auto track = std::find_if(_tracks.begin(), _tracks.end(), [trackData](const auto& trackPtr) { return trackPtr->_background->trackData().get() == trackData; });
+	const auto track = std::find_if(_tracks.begin(), _tracks.end(), [trackId](const auto& trackPtr) { return trackPtr->_background->trackId() == trackId; });
 	assert(track != _tracks.end());
-	const auto newItem = addFragmentItem(**track, offset, sequence);
+	const auto newItem = addFragmentItem(voiceId, **track, offset, sequence);
 	const auto minCompositionLength = offset + newItem->fragmentLength() + kExtraLength;
 	if (minCompositionLength > _timelineItem->compositionLength())
 		setCompositionLength(minCompositionLength);
 }
 
-void CompositionScene::removeFragment(const aulos::TrackData* trackData, size_t offset)
+void CompositionScene::removeFragment(const void* trackId, size_t offset)
 {
-	const auto track = std::find_if(_tracks.begin(), _tracks.end(), [trackData](const auto& trackPtr) { return trackPtr->_background->trackData().get() == trackData; });
+	const auto track = std::find_if(_tracks.begin(), _tracks.end(), [trackId](const auto& trackPtr) { return trackPtr->_background->trackId() == trackId; });
 	assert(track != _tracks.end());
 	const auto fragment = (*track)->_fragments.find(offset);
 	assert(fragment != (*track)->_fragments.end());
@@ -152,15 +150,12 @@ void CompositionScene::reset(const std::shared_ptr<aulos::CompositionData>& comp
 		{
 			const auto trackOffset = std::prev(i.base()) - partData->_tracks.cbegin();
 			const auto& track = _tracks.emplace_back(std::make_unique<Track>());
-			track->_background = new TrackItem{ *i, voiceItem };
+			track->_background = addTrackItem(voiceItem, i->get());
 			track->_background->setPos(0, trackOffset * kTrackHeight);
 			track->_background->setTrackIndices(trackIndexBase + trackOffset, trackOffset);
-			connect(track->_background, &TrackItem::insertRequested, this, &CompositionScene::insertFragmentRequested);
-			connect(track->_background, &TrackItem::newSequenceRequested, this, &CompositionScene::newSequenceRequested);
-
 			for (const auto& fragment : (*i)->_fragments)
 			{
-				const auto fragmentItem = addFragmentItem(*track, fragment.first, fragment.second);
+				const auto fragmentItem = addFragmentItem(voiceItem->voiceId(), *track, fragment.first, fragment.second);
 				compositionLength = std::max(compositionLength, fragmentItem->fragmentOffset() + fragmentItem->fragmentLength());
 			}
 		}
@@ -223,17 +218,28 @@ void CompositionScene::setCompositionLength(size_t length)
 		track->_background->setTrackLength(length);
 }
 
-FragmentItem* CompositionScene::addFragmentItem(Track& track, size_t offset, const std::shared_ptr<aulos::SequenceData>& sequence)
+FragmentItem* CompositionScene::addFragmentItem(const void* voiceId, Track& track, size_t offset, const std::shared_ptr<aulos::SequenceData>& sequence)
 {
 	const auto item = new FragmentItem{ track._background, offset, sequence };
 	item->setPos(offset * kStepWidth, 0);
-	connect(item, &FragmentItem::removeRequested, this, &CompositionScene::removeFragmentRequested);
+	connect(item, &FragmentItem::removeRequested, [this, voiceId](const void* trackId, size_t offset) {
+		emit removeFragmentRequested(voiceId, trackId, offset);
+	});
 	const auto i = track._fragments.emplace(offset, item).first;
 	if (i != track._fragments.begin())
 		std::prev(i)->second->stackBefore(i->second);
 	if (const auto next = std::next(i); next != track._fragments.end())
 		i->second->stackBefore(next->second);
 	return item;
+}
+
+TrackItem* CompositionScene::addTrackItem(VoiceItem* voiceItem, const void* trackId)
+{
+	const auto trackItem = new TrackItem{ trackId, voiceItem };
+	connect(trackItem, &TrackItem::trackMenuRequested, [this, voiceId = voiceItem->voiceId()](const void* trackId, size_t offset, const QPoint& pos) {
+		emit trackMenuRequested(voiceId, trackId, offset, pos);
+	});
+	return trackItem;
 }
 
 VoiceItem* CompositionScene::addVoiceItem(const void* id, const QString& name, size_t trackCount)

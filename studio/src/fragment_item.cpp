@@ -110,8 +110,8 @@ void FragmentItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
 	const auto removeAction = menu.addAction(tr("Remove"));
 	if (const auto action = menu.exec(e->screenPos()))
 	{
-		const auto trackData = static_cast<const TrackItem*>(parentItem())->trackData();
+		const auto trackId = static_cast<const TrackItem*>(parentItem())->trackId();
 		if (action == removeAction)
-			emit removeRequested(trackData, _offset);
+			emit removeRequested(trackId, _offset);
 	}
 }

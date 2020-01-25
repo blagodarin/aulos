@@ -19,8 +19,6 @@
 
 #include "utils.hpp"
 
-#include <aulos/data.hpp>
-
 #include <QGraphicsSceneContextMenuEvent>
 #include <QMenu>
 #include <QPainter>
@@ -41,9 +39,9 @@ namespace
 	};
 }
 
-TrackItem::TrackItem(const std::shared_ptr<aulos::TrackData>& data, QGraphicsItem* parent)
+TrackItem::TrackItem(const void* id, QGraphicsItem* parent)
 	: QGraphicsObject{ parent }
-	, _data{ data }
+	, _trackId{ id }
 {
 	setFlag(QGraphicsItem::ItemUsesExtendedStyleOption);
 }
@@ -94,20 +92,5 @@ void TrackItem::setTrackLength(size_t length)
 
 void TrackItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
 {
-	QMenu menu;
-	const auto insertSubmenu = menu.addMenu(tr("Insert"));
-	const auto sequenceCount = _data->_sequences.size();
-	for (size_t sequenceIndex = 0; sequenceIndex < sequenceCount; ++sequenceIndex)
-		insertSubmenu->addAction(::makeSequenceName(*_data->_sequences[sequenceIndex]))->setData(sequenceIndex);
-	if (!_data->_sequences.empty())
-		insertSubmenu->addSeparator();
-	const auto newSequenceAction = insertSubmenu->addAction(tr("New sequence..."));
-	const auto action = menu.exec(e->screenPos());
-	if (!action)
-		return;
-	const auto offset = static_cast<size_t>(std::ceil(e->pos().x()) / kStepWidth);
-	if (action == newSequenceAction)
-		emit newSequenceRequested(_data, offset);
-	else
-		emit insertRequested(_data, offset, _data->_sequences[action->data().toUInt()]);
+	emit trackMenuRequested(_trackId, static_cast<size_t>(std::ceil(e->pos().x()) / kStepWidth), e->screenPos());
 }

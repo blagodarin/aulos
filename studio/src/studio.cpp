@@ -19,6 +19,7 @@
 
 #include "composition_scene.hpp"
 #include "player.hpp"
+#include "utils.hpp"
 #include "voice_editor.hpp"
 
 #include <aulos/data.hpp>
@@ -162,23 +163,6 @@ Studio::Studio()
 	connect(_player.get(), &Player::timeAdvanced, [this](qint64 microseconds) {
 		_compositionScene->setCurrentStep(microseconds * _composition->_speed / 1'000'000.0);
 	});
-	connect(_compositionScene.get(), &CompositionScene::insertFragmentRequested, [this](const std::shared_ptr<aulos::TrackData>& track, size_t offset, const std::shared_ptr<aulos::SequenceData>& sequence) {
-		assert(std::find(track->_sequences.begin(), track->_sequences.end(), sequence) != track->_sequences.end());
-		[[maybe_unused]] const auto inserted = track->_fragments.insert_or_assign(offset, sequence).second;
-		assert(inserted);
-		_compositionScene->insertFragment(track.get(), offset, sequence);
-		_changed = true;
-		updateStatus();
-	});
-	connect(_compositionScene.get(), &CompositionScene::newSequenceRequested, [this](const std::shared_ptr<aulos::TrackData>& track, size_t offset) {
-		const auto sequence = std::make_shared<aulos::SequenceData>();
-		track->_sequences.emplace_back(sequence);
-		[[maybe_unused]] const auto inserted = track->_fragments.insert_or_assign(offset, sequence).second;
-		assert(inserted);
-		_compositionScene->insertFragment(track.get(), offset, sequence);
-		_changed = true;
-		updateStatus();
-	});
 	connect(_compositionScene.get(), &CompositionScene::newVoiceRequested, [this] {
 		aulos::Voice voice;
 		voice._amplitudeEnvelope._changes = { { .1f, 1.f }, { .4f, .5f }, { .5f, 0.f } };
@@ -193,26 +177,63 @@ Studio::Studio()
 		_changed = true;
 		updateStatus();
 	});
-	connect(_compositionScene.get(), &CompositionScene::removeFragmentRequested, [this](const std::shared_ptr<aulos::TrackData>& track, size_t offset) {
-		[[maybe_unused]] const auto erased = track->_fragments.erase(offset);
+	connect(_compositionScene.get(), &CompositionScene::removeFragmentRequested, [this](const void* voiceId, const void* trackId, size_t offset) {
+		const auto part = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [voiceId](const auto& partData) { return partData->_voice.get() == voiceId; });
+		assert(part != _composition->_parts.cend());
+		const auto track = std::find_if((*part)->_tracks.cbegin(), (*part)->_tracks.cend(), [trackId](const auto& trackData) { return trackData.get() == trackId; });
+		assert(track != (*part)->_tracks.cend());
+		[[maybe_unused]] const auto erased = (*track)->_fragments.erase(offset);
 		assert(erased);
-		_compositionScene->removeFragment(track.get(), offset);
+		_compositionScene->removeFragment(trackId, offset);
 		_changed = true;
 		updateStatus();
 	});
+	connect(_compositionScene.get(), &CompositionScene::trackMenuRequested, [this](const void* voiceId, const void* trackId, size_t offset, const QPoint& pos) {
+		const auto part = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [voiceId](const auto& partData) { return partData->_voice.get() == voiceId; });
+		assert(part != _composition->_parts.cend());
+		const auto track = std::find_if((*part)->_tracks.cbegin(), (*part)->_tracks.cend(), [trackId](const auto& trackData) { return trackData.get() == trackId; });
+		assert(track != (*part)->_tracks.cend());
+		QMenu menu;
+		const auto insertSubmenu = menu.addMenu(tr("Insert"));
+		const auto sequenceCount = (*track)->_sequences.size();
+		for (size_t sequenceIndex = 0; sequenceIndex < sequenceCount; ++sequenceIndex)
+			insertSubmenu->addAction(::makeSequenceName(*(*track)->_sequences[sequenceIndex]))->setData(sequenceIndex);
+		if (!(*track)->_sequences.empty())
+			insertSubmenu->addSeparator();
+		const auto newSequenceAction = insertSubmenu->addAction(tr("New sequence..."));
+		if (const auto action = menu.exec(pos); action == newSequenceAction)
+		{
+			const auto sequence = std::make_shared<aulos::SequenceData>();
+			(*track)->_sequences.emplace_back(sequence);
+			[[maybe_unused]] const auto inserted = (*track)->_fragments.insert_or_assign(offset, sequence).second;
+			assert(inserted);
+			_compositionScene->insertFragment(voiceId, trackId, offset, sequence);
+			_changed = true;
+			updateStatus();
+		}
+		else if (action)
+		{
+			const auto& sequence = (*track)->_sequences[action->data().toUInt()];
+			[[maybe_unused]] const auto inserted = (*track)->_fragments.insert_or_assign(offset, sequence).second;
+			assert(inserted);
+			_compositionScene->insertFragment(voiceId, trackId, offset, sequence);
+			_changed = true;
+			updateStatus();
+		}
+	});
 	connect(_compositionScene.get(), &CompositionScene::voiceMenuRequested, [this](const void* id, const QPoint& pos) {
-		const auto i = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [id](const auto& part) { return part->_voice.get() == id; });
-		assert(i != _composition->_parts.cend());
+		const auto part = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [id](const auto& partData) { return partData->_voice.get() == id; });
+		assert(part != _composition->_parts.cend());
 		QMenu menu;
 		const auto editAction = menu.addAction(tr("Edit..."));
 		const auto action = menu.exec(pos);
 		if (action == editAction)
 		{
-			_voiceEditor->setVoice(*(*i)->_voice);
+			_voiceEditor->setVoice(*(*part)->_voice);
 			if (_voiceEditor->exec() != QDialog::Accepted)
 				return;
-			*(*i)->_voice = _voiceEditor->voice();
-			_compositionScene->updateVoice(id, (*i)->_voice->_name);
+			*(*part)->_voice = _voiceEditor->voice();
+			_compositionScene->updateVoice(id, (*part)->_voice->_name);
 			_compositionView->horizontalScrollBar()->setValue(_compositionView->horizontalScrollBar()->minimum());
 			_changed = true;
 			updateStatus();

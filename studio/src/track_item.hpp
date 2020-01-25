@@ -17,39 +17,30 @@
 
 #pragma once
 
-#include <memory>
-
 #include <QGraphicsObject>
-
-namespace aulos
-{
-	struct SequenceData;
-	struct TrackData;
-}
 
 class TrackItem final : public QGraphicsObject
 {
 	Q_OBJECT
 
 public:
-	TrackItem(const std::shared_ptr<aulos::TrackData>&, QGraphicsItem* parent = nullptr);
+	TrackItem(const void* id, QGraphicsItem* parent = nullptr);
 
 	QRectF boundingRect() const override;
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
 	void setTrackIndices(size_t indexInComposition, size_t indexInPart);
 	void setTrackLength(size_t length);
-	std::shared_ptr<aulos::TrackData> trackData() const noexcept { return _data; }
+	const void* trackId() const noexcept { return _trackId; }
 	size_t trackIndex() const noexcept { return _indexInComposition; }
 
 signals:
-	void insertRequested(const std::shared_ptr<aulos::TrackData>&, size_t offset, const std::shared_ptr<aulos::SequenceData>&);
-	void newSequenceRequested(const std::shared_ptr<aulos::TrackData>&, size_t offset);
+	void trackMenuRequested(const void* trackId, size_t offset, const QPoint& pos);
 
 private:
 	void contextMenuEvent(QGraphicsSceneContextMenuEvent*) override;
 
 private:
-	const std::shared_ptr<aulos::TrackData> _data;
+	const void* const _trackId;
 	size_t _length = 0;
 	size_t _indexInComposition = 0;
 	size_t _indexInPart = 0;
