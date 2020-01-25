@@ -20,7 +20,6 @@
 #include "composition_scene.hpp"
 #include "player.hpp"
 #include "voice_editor.hpp"
-#include "voices_model.hpp"
 
 #include <aulos/data.hpp>
 
@@ -81,9 +80,8 @@ namespace
 }
 
 Studio::Studio()
-	: _voicesModel{ std::make_unique<VoicesModel>() }
-	, _compositionScene{ std::make_unique<CompositionScene>() }
-	, _voiceEditor{ std::make_unique<VoiceEditor>(*_voicesModel, this) }
+	: _compositionScene{ std::make_unique<CompositionScene>() }
+	, _voiceEditor{ std::make_unique<VoiceEditor>(this) }
 	, _player{ std::make_unique<Player>() }
 {
 	resize(640, 480);
@@ -125,10 +123,6 @@ Studio::Studio()
 			updateStatus();
 		});
 
-	const auto toolsMenu = menuBar()->addMenu(tr("&Tools"));
-	_toolsVoiceEditorAction = toolsMenu->addAction(
-		qApp->style()->standardIcon(QStyle::SP_MediaVolume), tr("&Voice Editor"), [this] { _voiceEditor->show(); });
-
 	_speedSpin = new QSpinBox{ this };
 	_speedSpin->setRange(1, 32);
 	_speedSpin->setSuffix("x");
@@ -142,8 +136,6 @@ Studio::Studio()
 	toolBar->addAction(_playAction);
 	toolBar->addAction(_stopAction);
 	toolBar->addWidget(_speedSpin);
-	toolBar->addSeparator();
-	toolBar->addAction(_toolsVoiceEditorAction);
 	addToolBar(toolBar);
 
 	_compositionView = new QGraphicsView{ this };
@@ -159,12 +151,6 @@ Studio::Studio()
 			return;
 		_composition->_speed = static_cast<unsigned>(_speedSpin->value());
 		_compositionScene->setSpeed(_composition->_speed);
-		_changed = true;
-		updateStatus();
-	});
-	connect(_voicesModel.get(), &QAbstractItemModel::dataChanged, [this] {
-		if (!_hasComposition)
-			return;
 		_changed = true;
 		updateStatus();
 	});
@@ -197,10 +183,11 @@ Studio::Studio()
 		aulos::Voice voice;
 		voice._amplitudeEnvelope._changes = { { .1f, 1.f }, { .4f, .5f }, { .5f, 0.f } };
 		voice._name = tr("NewVoice").toStdString();
-		// TODO: Edit voice.
-		const auto& part = _composition->_parts.emplace_back(std::make_shared<aulos::PartData>(std::make_shared<aulos::Voice>(voice)));
-		part->_tracks.emplace_back(std::make_shared<aulos::TrackData>(1));
-		// TODO: Adjust track weight.
+		_voiceEditor->setVoice(voice);
+		if (_voiceEditor->exec() != QDialog::Accepted)
+			return;
+		const auto& part = _composition->_parts.emplace_back(std::make_shared<aulos::PartData>(std::make_shared<aulos::Voice>(_voiceEditor->voice())));
+		part->_tracks.emplace_back(std::make_shared<aulos::TrackData>(1)); // TODO: Adjust track weight.
 		_compositionScene->appendPart(part);
 		_compositionView->horizontalScrollBar()->setValue(_compositionView->horizontalScrollBar()->minimum());
 		_changed = true;
@@ -210,6 +197,16 @@ Studio::Studio()
 		[[maybe_unused]] const auto erased = track->_fragments.erase(offset);
 		assert(erased);
 		_compositionScene->removeFragment(track.get(), offset);
+		_changed = true;
+		updateStatus();
+	});
+	connect(_compositionScene.get(), &CompositionScene::voiceEditRequested, [this](const std::shared_ptr<aulos::Voice>& voice) {
+		_voiceEditor->setVoice(*voice);
+		if (_voiceEditor->exec() != QDialog::Accepted)
+			return;
+		*voice = _voiceEditor->voice();
+		_compositionScene->updateVoice(voice.get());
+		_compositionView->horizontalScrollBar()->setValue(_compositionView->horizontalScrollBar()->minimum());
 		_changed = true;
 		updateStatus();
 	});
@@ -236,7 +233,6 @@ void Studio::closeComposition()
 	_compositionPath.clear();
 	_compositionName.clear();
 	_speedSpin->setValue(_speedSpin->minimum());
-	_voicesModel->reset(nullptr);
 	_compositionScene->reset(nullptr);
 	_player->stop();
 	_changed = false;
@@ -312,7 +308,6 @@ void Studio::openComposition(const QString& path)
 	_compositionPath = path;
 	_compositionName = QFileInfo{ file }.fileName();
 	_speedSpin->setValue(static_cast<int>(_composition->_speed));
-	_voicesModel->reset(_composition.get());
 	_compositionScene->reset(_composition);
 	_compositionView->horizontalScrollBar()->setValue(_compositionView->horizontalScrollBar()->minimum());
 	_hasComposition = true;
@@ -363,7 +358,6 @@ void Studio::updateStatus()
 	_fileCloseAction->setEnabled(_hasComposition);
 	_playAction->setEnabled(_hasComposition && !_player->isPlaying());
 	_stopAction->setEnabled(_hasComposition && _player->isPlaying());
-	_toolsVoiceEditorAction->setEnabled(_hasComposition);
 	_speedSpin->setEnabled(_hasComposition && !_player->isPlaying());
 	_compositionView->setEnabled(_hasComposition);
 	_statusPath->setText(_hasComposition ? _compositionPath : QStringLiteral("<i>%1</i>").arg(tr("no file")));

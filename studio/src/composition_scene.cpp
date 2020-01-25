@@ -80,6 +80,7 @@ void CompositionScene::appendPart(const std::shared_ptr<aulos::PartData>& partDa
 	voiceItem->setPos(0, _tracks.size() * kTrackHeight);
 	voiceItem->setTrackCount(partData->_tracks.size());
 	voiceItem->setWidth(_voices.size() > 1 ? _voices.front()->boundingRect().width() : kMinVoiceItemWidth);
+	connect(voiceItem, &VoiceItem::voiceEditRequested, this, &CompositionScene::voiceEditRequested);
 
 	const auto& track = _tracks.emplace_back(std::make_unique<Track>());
 
@@ -156,6 +157,7 @@ void CompositionScene::reset(const std::shared_ptr<aulos::CompositionData>& comp
 		voiceItem->setIndex(voiceIndex);
 		voiceItem->setPos(0, _tracks.size() * kTrackHeight);
 		voiceItem->setTrackCount(partData->_tracks.size());
+		connect(voiceItem, &VoiceItem::voiceEditRequested, this, &CompositionScene::voiceEditRequested);
 
 		const auto trackIndexBase = _tracks.size();
 		for (auto i = partData->_tracks.crbegin(); i != partData->_tracks.crend(); ++i)
@@ -211,6 +213,19 @@ void CompositionScene::setCurrentStep(double step)
 void CompositionScene::setSpeed(unsigned speed)
 {
 	_timelineItem->setCompositionSpeed(speed);
+}
+
+void CompositionScene::updateVoice(const aulos::Voice* voice)
+{
+	const auto i = std::find_if(_voices.cbegin(), _voices.cend(), [voice](const auto& voiceItem) { return voiceItem->voiceId() == voice; });
+	assert(i != _voices.cend());
+	(*i)->setVoiceName(QString::fromStdString(voice->_name));
+	if (const auto width = requiredVoiceColumnWidth(); width != _voiceColumnWidth)
+	{
+		_voiceColumnWidth = width;
+		updateSceneRect(_timelineItem->compositionLength());
+		setVoiceColumnWidth(width);
+	}
 }
 
 void CompositionScene::setCompositionLength(size_t length)

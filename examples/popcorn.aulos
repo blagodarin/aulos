@@ -10,9 +10,9 @@ asymmetry 0.3
 
 @voice 2 "Melody"
 wave linear
-amplitude 0.0 0.02 1.0 0.08 0.25 0.9 0.0
-frequency 0.8 0.02 1.0 0.08 1.0 0.9 0.99
-asymmetry 0.1 0.02 0.8 0.08 0.8 0.9 0.1
+amplitude 0.0 0.02 1.0 0.08 0.25 0.4 0.0
+frequency 0.8 0.02 1.0 0.08 1.0 0.4 0.99
+asymmetry 0.1 0.02 0.8 0.08 0.8 0.4 0.1
 
 @tracks
 1 1 1

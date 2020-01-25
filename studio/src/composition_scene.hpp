@@ -30,6 +30,7 @@ namespace aulos
 	struct PartData;
 	struct SequenceData;
 	struct TrackData;
+	struct Voice;
 }
 
 class AddVoiceItem;
@@ -51,12 +52,14 @@ public:
 	void reset(const std::shared_ptr<aulos::CompositionData>&);
 	void setCurrentStep(double step);
 	void setSpeed(unsigned speed);
+	void updateVoice(const aulos::Voice*);
 
 signals:
 	void insertFragmentRequested(const std::shared_ptr<aulos::TrackData>&, size_t offset, const std::shared_ptr<aulos::SequenceData>&);
 	void newSequenceRequested(const std::shared_ptr<aulos::TrackData>&, size_t offset);
 	void newVoiceRequested();
 	void removeFragmentRequested(const std::shared_ptr<aulos::TrackData>&, size_t offset);
+	void voiceEditRequested(const std::shared_ptr<aulos::Voice>&);
 
 private slots:
 	void setCompositionLength(size_t length);

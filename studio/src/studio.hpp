@@ -52,12 +52,11 @@ private:
 	void updateStatus();
 
 private:
-	std::unique_ptr<VoicesModel> _voicesModel;
+	std::shared_ptr<aulos::CompositionData> _composition;
 	std::unique_ptr<CompositionScene> _compositionScene;
 	std::unique_ptr<VoiceEditor> _voiceEditor;
 	std::unique_ptr<Player> _player;
 
-	std::shared_ptr<aulos::CompositionData> _composition;
 	QString _compositionPath;
 	QString _compositionName;
 
@@ -73,7 +72,6 @@ private:
 	QList<QAction*> _recentFilesActions;
 	QAction* _playAction;
 	QAction* _stopAction;
-	QAction* _toolsVoiceEditorAction;
 	QSpinBox* _speedSpin;
 	QGraphicsView* _compositionView;
 	QLabel* _statusPath;

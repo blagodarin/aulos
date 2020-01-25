@@ -19,7 +19,7 @@
 
 #include <memory>
 
-#include <QGraphicsItem>
+#include <QGraphicsObject>
 #include <QStaticText>
 
 namespace aulos
@@ -27,8 +27,10 @@ namespace aulos
 	struct Voice;
 }
 
-class VoiceItem final : public QGraphicsItem
+class VoiceItem final : public QGraphicsObject
 {
+	Q_OBJECT
+
 public:
 	VoiceItem(const std::shared_ptr<aulos::Voice>&, QGraphicsItem* parent = nullptr);
 
@@ -37,7 +39,15 @@ public:
 	qreal requiredWidth() const;
 	void setIndex(size_t);
 	void setTrackCount(size_t);
+	void setVoiceName(const QString& name);
 	void setWidth(qreal);
+	const aulos::Voice* voiceId() const noexcept { return _voice.get(); }
+
+signals:
+	void voiceEditRequested(const std::shared_ptr<aulos::Voice>&);
+
+private:
+	void contextMenuEvent(QGraphicsSceneContextMenuEvent*) override;
 
 private:
 	size_t _index = 0;

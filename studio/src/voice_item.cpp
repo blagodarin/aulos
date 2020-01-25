@@ -21,6 +21,8 @@
 
 #include <aulos/data.hpp>
 
+#include <QGraphicsSceneEvent>
+#include <QMenu>
 #include <QPainter>
 
 namespace
@@ -37,15 +39,10 @@ namespace
 }
 
 VoiceItem::VoiceItem(const std::shared_ptr<aulos::Voice>& voice, QGraphicsItem* parent)
-	: QGraphicsItem{ parent }
+	: QGraphicsObject{ parent }
 	, _voice{ voice }
 {
-	QTextOption textOption;
-	textOption.setWrapMode(QTextOption::NoWrap);
-	_name.setText(QString::fromStdString(_voice->_name));
-	_name.setTextFormat(Qt::PlainText);
-	_name.setTextOption(textOption);
-	_name.prepare({}, ::makeVoiceFont());
+	setVoiceName(QString::fromStdString(voice->_name));
 }
 
 QRectF VoiceItem::boundingRect() const
@@ -76,6 +73,17 @@ void VoiceItem::setIndex(size_t index)
 	update();
 }
 
+void VoiceItem::setVoiceName(const QString& name)
+{
+	QTextOption textOption;
+	textOption.setWrapMode(QTextOption::NoWrap);
+	_name.setText(name);
+	_name.setTextFormat(Qt::PlainText);
+	_name.setTextOption(textOption);
+	_name.prepare({}, ::makeVoiceFont());
+	update();
+}
+
 void VoiceItem::setTrackCount(size_t count)
 {
 	prepareGeometryChange();
@@ -86,4 +94,13 @@ void VoiceItem::setWidth(qreal width)
 {
 	prepareGeometryChange();
 	_width = width;
+}
+
+void VoiceItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
+{
+	QMenu menu;
+	const auto editAction = menu.addAction(tr("Edit..."));
+	const auto action = menu.exec(e->screenPos());
+	if (action == editAction)
+		emit voiceEditRequested(_voice);
 }

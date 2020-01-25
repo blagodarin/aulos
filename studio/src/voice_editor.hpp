@@ -22,44 +22,38 @@
 
 #include <QByteArray>
 #include <QBuffer>
-#include <QWidget>
+#include <QDialog>
 
 namespace aulos
 {
 	struct Voice;
 }
 
-class QAudioOutput;
 class QDoubleSpinBox;
 class QLineEdit;
-class QTableView;
 
 class Player;
 class VoicesModel;
 
-class VoiceEditor : public QWidget
+class VoiceEditor : public QDialog
 {
 	Q_OBJECT
 
 public:
-	VoiceEditor(VoicesModel&, QWidget*);
+	VoiceEditor(QWidget*);
 	~VoiceEditor() override;
+
+	void setVoice(const aulos::Voice&);
+	aulos::Voice voice() const;
 
 private slots:
 	void onNoteClicked();
 
 private:
-	void hideEvent(QHideEvent*) override;
-
-	void resetVoice(const aulos::Voice&);
-	aulos::Voice currentVoice();
-
-private:
 	struct EnvelopePoint;
 
-	VoicesModel& _model;
-	QTableView* _voicesView;
-	QDoubleSpinBox* _oscillationSpin;
+	QLineEdit* _nameEdit = nullptr;
+	QDoubleSpinBox* _oscillationSpin = nullptr;
 	std::vector<EnvelopePoint> _amplitudeEnvelope;
 	std::vector<EnvelopePoint> _frequencyEnvelope;
 	std::vector<EnvelopePoint> _asymmetryEnvelope;
