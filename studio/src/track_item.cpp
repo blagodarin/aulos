@@ -33,6 +33,8 @@ namespace
 		std::array<QColor, 2> _colors;
 	};
 
+	const QColor kPartBorderColor{ "#555" };
+
 	const std::array<TrackColors, 2> kTrackColors{
 		TrackColors{ "#888", "#999" },
 		TrackColors{ "#777", "#888" },
@@ -70,7 +72,7 @@ void TrackItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
 	}
 	if (_indexInPart == 0)
 	{
-		painter->setPen("#666");
+		painter->setPen(kPartBorderColor);
 		painter->drawLine(boundingRect().topLeft(), boundingRect().topRight() - QPointF{ 1, 0 });
 	}
 }

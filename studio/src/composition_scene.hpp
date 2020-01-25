@@ -27,6 +27,7 @@ class QGraphicsLineItem;
 namespace aulos
 {
 	struct CompositionData;
+	struct PartData;
 	struct SequenceData;
 	struct TrackData;
 }
@@ -44,6 +45,7 @@ public:
 	CompositionScene();
 	~CompositionScene() override;
 
+	void appendPart(const std::shared_ptr<aulos::PartData>&);
 	void insertFragment(const aulos::TrackData*, size_t offset, const std::shared_ptr<aulos::SequenceData>&);
 	void removeFragment(const aulos::TrackData*, size_t offset);
 	void reset(const std::shared_ptr<aulos::CompositionData>&);
@@ -53,6 +55,7 @@ public:
 signals:
 	void insertFragmentRequested(const std::shared_ptr<aulos::TrackData>&, size_t offset, const std::shared_ptr<aulos::SequenceData>&);
 	void newSequenceRequested(const std::shared_ptr<aulos::TrackData>&, size_t offset);
+	void newVoiceRequested();
 	void removeFragmentRequested(const std::shared_ptr<aulos::TrackData>&, size_t offset);
 
 private slots:
@@ -61,6 +64,9 @@ private slots:
 private:
 	struct Track;
 	FragmentItem* addFragmentItem(Track&, size_t offset, const std::shared_ptr<aulos::SequenceData>&);
+	qreal requiredVoiceColumnWidth() const;
+	void setVoiceColumnWidth(qreal);
+	void updateSceneRect(size_t compositionLength);
 
 private:
 	std::shared_ptr<aulos::CompositionData> _composition;
@@ -69,4 +75,5 @@ private:
 	std::vector<std::unique_ptr<Track>> _tracks;
 	std::unique_ptr<AddVoiceItem> _addVoiceItem;
 	std::unique_ptr<QGraphicsLineItem> _cursorItem;
+	qreal _voiceColumnWidth;
 };

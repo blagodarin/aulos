@@ -36,7 +36,6 @@ namespace
 
 AddVoiceItem::AddVoiceItem(QGraphicsItem* parent)
 	: ButtonItem{ parent }
-	, _width{ kMinVoiceItemWidth }
 {
 }
 

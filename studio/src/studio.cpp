@@ -193,6 +193,19 @@ Studio::Studio()
 		_changed = true;
 		updateStatus();
 	});
+	connect(_compositionScene.get(), &CompositionScene::newVoiceRequested, [this] {
+		aulos::Voice voice;
+		voice._amplitudeEnvelope._changes = { { .1f, 1.f }, { .4f, .5f }, { .5f, 0.f } };
+		voice._name = tr("NewVoice").toStdString();
+		// TODO: Edit voice.
+		const auto& part = _composition->_parts.emplace_back(std::make_shared<aulos::PartData>(std::make_shared<aulos::Voice>(voice)));
+		part->_tracks.emplace_back(std::make_shared<aulos::TrackData>(1));
+		// TODO: Adjust track weight.
+		_compositionScene->appendPart(part);
+		_compositionView->horizontalScrollBar()->setValue(_compositionView->horizontalScrollBar()->minimum());
+		_changed = true;
+		updateStatus();
+	});
 	connect(_compositionScene.get(), &CompositionScene::removeFragmentRequested, [this](const std::shared_ptr<aulos::TrackData>& track, size_t offset) {
 		[[maybe_unused]] const auto erased = track->_fragments.erase(offset);
 		assert(erased);
