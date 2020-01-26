@@ -51,7 +51,7 @@ QRectF TrackItem::boundingRect() const
 	return { {}, QSizeF{ _length * kStepWidth, kTrackHeight } };
 }
 
-void TrackItem::setFirstVoiceTrack(bool first)
+void TrackItem::setFirstTrack(bool first)
 {
 	_first = first;
 	update();

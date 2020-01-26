@@ -201,6 +201,8 @@ Studio::Studio()
 		if (!(*track)->_sequences.empty())
 			insertSubmenu->addSeparator();
 		const auto newSequenceAction = insertSubmenu->addAction(tr("New sequence..."));
+		const auto removeTrackAction = menu.addAction(tr("Remove"));
+		removeTrackAction->setEnabled((*part)->_tracks.size() > 1);
 		if (const auto action = menu.exec(pos); action == newSequenceAction)
 		{
 			const auto sequence = std::make_shared<aulos::SequenceData>();
@@ -208,6 +210,11 @@ Studio::Studio()
 			[[maybe_unused]] const auto inserted = (*track)->_fragments.insert_or_assign(offset, sequence).second;
 			assert(inserted);
 			_compositionScene->insertFragment(voiceId, trackId, offset, sequence);
+		}
+		else if (removeTrackAction && action == removeTrackAction)
+		{
+			_compositionScene->removeTrack(voiceId, trackId);
+			(*part)->_tracks.erase(track);
 		}
 		else if (action)
 		{

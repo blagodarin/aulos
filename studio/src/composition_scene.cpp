@@ -77,7 +77,7 @@ void CompositionScene::addTrack(const void* voiceId, const void* trackId)
 	const auto trackIndex = std::reduce(_voices.begin(), voice, trackOffset, [](size_t count, const auto& voiceItem) { return count + voiceItem->trackCount(); });
 	const auto track = _tracks.emplace(_tracks.begin() + trackIndex, std::make_unique<Track>());
 	(*track)->_background = addTrackItem(voice->get(), trackId);
-	(*track)->_background->setFirstVoiceTrack(trackOffset == 0);
+	(*track)->_background->setFirstTrack(trackOffset == 0);
 	(*track)->_background->setPos(0, trackOffset * kTrackHeight);
 	(*track)->_background->setTrackIndex(trackIndex);
 	(*track)->_background->setTrackLength(_timelineItem->compositionLength());
@@ -106,7 +106,7 @@ void CompositionScene::appendPart(const std::shared_ptr<aulos::PartData>& partDa
 
 	const auto& track = _tracks.emplace_back(std::make_unique<Track>());
 	track->_background = addTrackItem(voiceItem, partData->_tracks.front().get());
-	track->_background->setFirstVoiceTrack(true);
+	track->_background->setFirstTrack(true);
 	track->_background->setTrackIndex(_tracks.size() - 1);
 	track->_background->setTrackLength(_timelineItem->compositionLength());
 
@@ -153,6 +153,44 @@ void CompositionScene::removeFragment(const void* trackId, size_t offset)
 	(*track)->_fragments.erase(fragment);
 }
 
+void CompositionScene::removeTrack(const void* voiceId, const void* trackId)
+{
+	const auto voice = std::find_if(_voices.begin(), _voices.end(), [voiceId](const auto& voiceItem) { return voiceItem->voiceId() == voiceId; });
+	assert(voice != _voices.end());
+	const auto track = std::find_if(_tracks.begin(), _tracks.end(), [trackId](const auto& trackPtr) { return trackPtr->_background->trackId() == trackId; });
+	assert(track != _tracks.end());
+	assert((*track)->_background->parentItem() == voice->get());
+	removeItem((*track)->_background);
+	(*voice)->setTrackCount((*voice)->trackCount() - 1);
+	if (const auto nextVoice = std::next(voice); nextVoice != _voices.end())
+	{
+		const auto index = std::reduce(_voices.begin(), nextVoice, size_t{}, [](size_t count, const auto& voiceItem) { return count + voiceItem->trackCount(); });
+		std::for_each(nextVoice, _voices.end(), [index = index](const auto& voiceItem) mutable {
+			voiceItem->setPos(0, index * kTrackHeight);
+			index += voiceItem->trackCount();
+		});
+	}
+	if (const auto nextTrack = std::next(track); nextTrack != _tracks.end())
+	{
+		const auto index = (*track)->_background->trackIndex() - std::reduce(_voices.begin(), voice, size_t{}, [](size_t count, const auto& voiceItem) { return count + voiceItem->trackCount(); });
+		std::for_each(nextTrack, std::find_if(nextTrack, _tracks.end(), [](const auto& trackPtr) { return trackPtr->_background->isFirstTrack(); }), [index = index](const auto& trackItem) mutable {
+			trackItem->_background->setPos(0, index * kTrackHeight);
+			++index;
+		});
+		if (!index)
+			(*nextTrack)->_background->setFirstTrack(true);
+		std::for_each(nextTrack, _tracks.end(), [](const auto& trackItem) {
+			trackItem->_background->setTrackIndex(trackItem->_background->trackIndex() - 1);
+			for (const auto& fragment : trackItem->_fragments)
+				fragment.second->update();
+		});
+	}
+	_tracks.erase(track);
+	_addVoiceItem->setPos(0, _tracks.size() * kTrackHeight);
+	_cursorItem->setLine(::makeCursorLine(_tracks.size()));
+	updateSceneRect(_timelineItem->compositionLength());
+}
+
 void CompositionScene::reset(const std::shared_ptr<aulos::CompositionData>& composition)
 {
 	removeItem(_timelineItem.get());
@@ -175,14 +213,16 @@ void CompositionScene::reset(const std::shared_ptr<aulos::CompositionData>& comp
 		const auto voiceItem = addVoiceItem(partData->_voice.get(), QString::fromStdString(partData->_voice->_name), partData->_tracks.size());
 
 		const auto trackIndexBase = _tracks.size();
-		for (auto i = partData->_tracks.crbegin(); i != partData->_tracks.crend(); ++i)
+		for (auto i = partData->_tracks.cbegin(); i != partData->_tracks.cend(); ++i)
 		{
-			const auto trackOffset = std::prev(i.base()) - partData->_tracks.cbegin();
+			const auto trackOffset = i - partData->_tracks.cbegin();
 			const auto& track = _tracks.emplace_back(std::make_unique<Track>());
 			track->_background = addTrackItem(voiceItem, i->get());
-			track->_background->setFirstVoiceTrack(trackOffset == 0);
+			track->_background->setFirstTrack(trackOffset == 0);
 			track->_background->setPos(0, trackOffset * kTrackHeight);
 			track->_background->setTrackIndex(trackIndexBase + trackOffset);
+			if (trackOffset > 0)
+				track->_background->stackBefore(_tracks[_tracks.size() - 2]->_background);
 			for (const auto& fragment : (*i)->_fragments)
 			{
 				const auto fragmentItem = addFragmentItem(voiceItem->voiceId(), *track, fragment.first, fragment.second);

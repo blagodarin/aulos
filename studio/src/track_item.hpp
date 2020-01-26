@@ -27,7 +27,8 @@ public:
 	TrackItem(const void* id, QGraphicsItem* parent = nullptr);
 
 	QRectF boundingRect() const override;
-	void setFirstVoiceTrack(bool);
+	bool isFirstTrack() const noexcept { return _first; }
+	void setFirstTrack(bool);
 	void setTrackIndex(size_t);
 	void setTrackLength(size_t);
 	const void* trackId() const noexcept { return _trackId; }
