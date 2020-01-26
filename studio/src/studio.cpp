@@ -208,8 +208,6 @@ Studio::Studio()
 			[[maybe_unused]] const auto inserted = (*track)->_fragments.insert_or_assign(offset, sequence).second;
 			assert(inserted);
 			_compositionScene->insertFragment(voiceId, trackId, offset, sequence);
-			_changed = true;
-			updateStatus();
 		}
 		else if (action)
 		{
@@ -217,27 +215,36 @@ Studio::Studio()
 			[[maybe_unused]] const auto inserted = (*track)->_fragments.insert_or_assign(offset, sequence).second;
 			assert(inserted);
 			_compositionScene->insertFragment(voiceId, trackId, offset, sequence);
-			_changed = true;
-			updateStatus();
 		}
+		else
+			return;
+		_changed = true;
+		updateStatus();
 	});
-	connect(_compositionScene.get(), &CompositionScene::voiceMenuRequested, [this](const void* id, const QPoint& pos) {
-		const auto part = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [id](const auto& partData) { return partData->_voice.get() == id; });
+	connect(_compositionScene.get(), &CompositionScene::voiceMenuRequested, [this](const void* voiceId, const QPoint& pos) {
+		const auto part = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [voiceId](const auto& partData) { return partData->_voice.get() == voiceId; });
 		assert(part != _composition->_parts.cend());
 		QMenu menu;
 		const auto editAction = menu.addAction(tr("Edit..."));
-		const auto action = menu.exec(pos);
-		if (action == editAction)
+		const auto addTrackAction = menu.addAction(tr("Add track"));
+		if (const auto action = menu.exec(pos); action == editAction)
 		{
 			_voiceEditor->setVoice(*(*part)->_voice);
 			if (_voiceEditor->exec() != QDialog::Accepted)
 				return;
 			*(*part)->_voice = _voiceEditor->voice();
-			_compositionScene->updateVoice(id, (*part)->_voice->_name);
+			_compositionScene->updateVoice(voiceId, (*part)->_voice->_name);
 			_compositionView->horizontalScrollBar()->setValue(_compositionView->horizontalScrollBar()->minimum());
-			_changed = true;
-			updateStatus();
 		}
+		else if (action == addTrackAction)
+		{
+			auto& track = (*part)->_tracks.emplace_back(std::make_shared<aulos::TrackData>(1));
+			_compositionScene->addTrack(voiceId, track.get());
+		}
+		else
+			return;
+		_changed = true;
+		updateStatus();
 	});
 
 	updateStatus();

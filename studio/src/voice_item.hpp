@@ -34,6 +34,7 @@ public:
 	void setVoiceIndex(size_t);
 	void setVoiceName(const QString& name);
 	void setWidth(qreal);
+	size_t trackCount() const noexcept { return _trackCount; }
 	const void* voiceId() const noexcept { return _voiceId; }
 
 signals:

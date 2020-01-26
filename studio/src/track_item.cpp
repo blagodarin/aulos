@@ -31,7 +31,7 @@ namespace
 		std::array<QColor, 2> _colors;
 	};
 
-	const QColor kPartBorderColor{ "#555" };
+	const QColor kPartBorderColor{ "#aaa" };
 
 	const std::array<TrackColors, 2> kTrackColors{
 		TrackColors{ "#888", "#999" },
@@ -51,11 +51,34 @@ QRectF TrackItem::boundingRect() const
 	return { {}, QSizeF{ _length * kStepWidth, kTrackHeight } };
 }
 
+void TrackItem::setFirstVoiceTrack(bool first)
+{
+	_first = first;
+	update();
+}
+
+void TrackItem::setTrackIndex(size_t index)
+{
+	_index = index;
+	update();
+}
+
+void TrackItem::setTrackLength(size_t length)
+{
+	prepareGeometryChange();
+	_length = length;
+}
+
+void TrackItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
+{
+	emit trackMenuRequested(_trackId, static_cast<size_t>(std::ceil(e->pos().x()) / kStepWidth), e->screenPos());
+}
+
 void TrackItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget*)
 {
 	if (!_length)
 		return;
-	const auto& colors = kTrackColors[_indexInComposition % kTrackColors.size()]._colors;
+	const auto& colors = kTrackColors[_index % kTrackColors.size()]._colors;
 	auto step = static_cast<size_t>(std::floor(option->exposedRect.left() / kStepWidth));
 	QRectF rect{ { step * kStepWidth, 0 }, QSizeF{ kStepWidth, kTrackHeight } };
 	painter->setPen(Qt::transparent);
@@ -68,29 +91,9 @@ void TrackItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
 		rect.moveLeft(rect.right());
 		++step;
 	}
-	if (_indexInPart == 0)
+	if (_first)
 	{
 		painter->setPen(kPartBorderColor);
 		painter->drawLine(boundingRect().topLeft(), boundingRect().topRight() - QPointF{ 1, 0 });
 	}
-}
-
-void TrackItem::setTrackIndices(size_t indexInComposition, size_t indexInPart)
-{
-	_indexInComposition = indexInComposition;
-	_indexInPart = indexInPart;
-	update();
-}
-
-void TrackItem::setTrackLength(size_t length)
-{
-	if (_length == length)
-		return;
-	prepareGeometryChange();
-	_length = length;
-}
-
-void TrackItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
-{
-	emit trackMenuRequested(_trackId, static_cast<size_t>(std::ceil(e->pos().x()) / kStepWidth), e->screenPos());
 }

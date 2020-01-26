@@ -45,6 +45,7 @@ public:
 	CompositionScene();
 	~CompositionScene() override;
 
+	void addTrack(const void* voiceId, const void* trackId);
 	void appendPart(const std::shared_ptr<aulos::PartData>&);
 	void insertFragment(const void* voiceId, const void* trackId, size_t offset, const std::shared_ptr<aulos::SequenceData>&);
 	void removeFragment(const void* trackId, size_t offset);

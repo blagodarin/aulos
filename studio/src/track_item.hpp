@@ -27,21 +27,22 @@ public:
 	TrackItem(const void* id, QGraphicsItem* parent = nullptr);
 
 	QRectF boundingRect() const override;
-	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
-	void setTrackIndices(size_t indexInComposition, size_t indexInPart);
-	void setTrackLength(size_t length);
+	void setFirstVoiceTrack(bool);
+	void setTrackIndex(size_t);
+	void setTrackLength(size_t);
 	const void* trackId() const noexcept { return _trackId; }
-	size_t trackIndex() const noexcept { return _indexInComposition; }
+	size_t trackIndex() const noexcept { return _index; }
 
 signals:
 	void trackMenuRequested(const void* trackId, size_t offset, const QPoint& pos);
 
 private:
 	void contextMenuEvent(QGraphicsSceneContextMenuEvent*) override;
+	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
 
 private:
 	const void* const _trackId;
 	size_t _length = 0;
-	size_t _indexInComposition = 0;
-	size_t _indexInPart = 0;
+	size_t _index = 0;
+	bool _first = false;
 };
