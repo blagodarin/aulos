@@ -29,6 +29,7 @@
 #include <QGraphicsView>
 #include <QLabel>
 #include <QMenuBar>
+#include <QMessageBox>
 #include <QSaveFile>
 #include <QScrollBar>
 #include <QSettings>
@@ -234,6 +235,8 @@ Studio::Studio()
 		QMenu menu;
 		const auto editAction = menu.addAction(tr("Edit..."));
 		const auto addTrackAction = menu.addAction(tr("Add track"));
+		menu.addSeparator();
+		const auto removeVoiceAction = menu.addAction(tr("Remove voice"));
 		if (const auto action = menu.exec(pos); action == editAction)
 		{
 			_voiceEditor->setVoice(*(*part)->_voice);
@@ -247,6 +250,13 @@ Studio::Studio()
 		{
 			auto& track = (*part)->_tracks.emplace_back(std::make_shared<aulos::TrackData>(1));
 			_compositionScene->addTrack(voiceId, track.get());
+		}
+		else if (action == removeVoiceAction)
+		{
+			if (QMessageBox::question(this, {}, tr("Remove %1 voice?").arg("<b>" + QString::fromStdString((*part)->_voice->_name) + "</b>")) != QMessageBox::Yes)
+				return;
+			_compositionScene->removeVoice(voiceId);
+			_composition->_parts.erase(part);
 		}
 		else
 			return;

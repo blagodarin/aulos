@@ -191,6 +191,31 @@ void CompositionScene::removeTrack(const void* voiceId, const void* trackId)
 	updateSceneRect(_timelineItem->compositionLength());
 }
 
+void CompositionScene::removeVoice(const void* voiceId)
+{
+	const auto voice = std::find_if(_voices.begin(), _voices.end(), [voiceId](const auto& voiceItem) { return voiceItem->voiceId() == voiceId; });
+	assert(voice != _voices.end());
+	removeItem(voice->get());
+	const auto trackOffset = std::reduce(_voices.begin(), voice, size_t{}, [](size_t count, const auto& voiceItem) { return count + voiceItem->trackCount(); });
+	std::for_each(std::next(voice), _voices.end(), [index = trackOffset](const auto& voiceItem) mutable {
+		voiceItem->setPos(0, index * kTrackHeight);
+		voiceItem->setVoiceIndex(voiceItem->voiceIndex() - 1);
+		index += voiceItem->trackCount();
+	});
+	const auto tracksBegin = _tracks.begin() + trackOffset;
+	const auto tracksEnd = tracksBegin + (*voice)->trackCount();
+	std::for_each(tracksEnd, _tracks.end(), [index = trackOffset](const auto& trackItem) mutable {
+		trackItem->_background->setTrackIndex(index);
+		++index;
+	});
+	_tracks.erase(tracksBegin, tracksEnd);
+	_voices.erase(voice);
+	_addVoiceItem->setIndex(_voices.size());
+	_addVoiceItem->setPos(0, _tracks.size() * kTrackHeight);
+	_cursorItem->setLine(::makeCursorLine(_tracks.size()));
+	updateSceneRect(_timelineItem->compositionLength());
+}
+
 void CompositionScene::reset(const std::shared_ptr<aulos::CompositionData>& composition)
 {
 	removeItem(_timelineItem.get());

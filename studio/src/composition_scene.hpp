@@ -50,6 +50,7 @@ public:
 	void insertFragment(const void* voiceId, const void* trackId, size_t offset, const std::shared_ptr<aulos::SequenceData>&);
 	void removeFragment(const void* trackId, size_t offset);
 	void removeTrack(const void* voiceId, const void* trackId);
+	void removeVoice(const void* voiceId);
 	void reset(const std::shared_ptr<aulos::CompositionData>&);
 	void setCurrentStep(double step);
 	void setSpeed(unsigned speed);

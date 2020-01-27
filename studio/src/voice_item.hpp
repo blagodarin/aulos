@@ -36,6 +36,7 @@ public:
 	void setWidth(qreal);
 	size_t trackCount() const noexcept { return _trackCount; }
 	const void* voiceId() const noexcept { return _voiceId; }
+	size_t voiceIndex() const noexcept { return _index; }
 
 signals:
 	void voiceMenuRequested(const void* voiceId, const QPoint& pos);
