@@ -38,6 +38,18 @@ namespace
 	const QColor kCursorColor{ "#000" };
 	constexpr size_t kExtraLength = 1;
 
+	auto findVoice(const std::vector<std::unique_ptr<VoiceItem>>& voices, const void* id)
+	{
+		size_t offset = 0;
+		for (auto i = voices.begin(); i != voices.end(); ++i)
+		{
+			if ((*i)->voiceId() == id)
+				return std::pair{ i, offset };
+			offset += (*i)->trackCount();
+		}
+		return std::pair{ voices.end(), offset };
+	}
+
 	QLineF makeCursorLine(size_t height)
 	{
 		return { 0, -kTimelineHeight, 0, height * kTrackHeight };
@@ -71,10 +83,10 @@ CompositionScene::~CompositionScene() = default;
 
 void CompositionScene::addTrack(const void* voiceId, const void* trackId)
 {
-	const auto voice = std::find_if(_voices.begin(), _voices.end(), [voiceId](const auto& voiceItem) { return voiceItem->voiceId() == voiceId; });
+	const auto [voice, voiceOffset] = ::findVoice(_voices, voiceId);
 	assert(voice != _voices.end());
 	const auto trackOffset = (*voice)->trackCount();
-	const auto trackIndex = std::reduce(_voices.begin(), voice, trackOffset, [](size_t count, const auto& voiceItem) { return count + voiceItem->trackCount(); });
+	const auto trackIndex = voiceOffset + trackOffset;
 	const auto track = _tracks.emplace(_tracks.begin() + trackIndex, std::make_unique<Track>());
 	(*track)->_background = addTrackItem(voice->get(), trackId);
 	(*track)->_background->setFirstTrack(trackOffset == 0);
@@ -84,7 +96,7 @@ void CompositionScene::addTrack(const void* voiceId, const void* trackId)
 	if (trackOffset > 0)
 		(*track)->_background->stackBefore((*std::prev(track))->_background);
 	(*voice)->setTrackCount(trackOffset + 1);
-	std::for_each(voice + 1, _voices.end(), [index = trackIndex + 1](const auto& voiceItem) mutable {
+	std::for_each(voice + 1, _voices.cend(), [index = trackIndex + 1](const auto& voiceItem) mutable {
 		voiceItem->setPos(0, index * kTrackHeight);
 		index += voiceItem->trackCount();
 	});
@@ -155,24 +167,20 @@ void CompositionScene::removeFragment(const void* trackId, size_t offset)
 
 void CompositionScene::removeTrack(const void* voiceId, const void* trackId)
 {
-	const auto voice = std::find_if(_voices.begin(), _voices.end(), [voiceId](const auto& voiceItem) { return voiceItem->voiceId() == voiceId; });
+	const auto [voice, voiceOffset] = ::findVoice(_voices, voiceId);
 	assert(voice != _voices.end());
 	const auto track = std::find_if(_tracks.begin(), _tracks.end(), [trackId](const auto& trackPtr) { return trackPtr->_background->trackId() == trackId; });
 	assert(track != _tracks.end());
 	assert((*track)->_background->parentItem() == voice->get());
 	removeItem((*track)->_background);
 	(*voice)->setTrackCount((*voice)->trackCount() - 1);
-	if (const auto nextVoice = std::next(voice); nextVoice != _voices.end())
-	{
-		const auto index = std::reduce(_voices.begin(), nextVoice, size_t{}, [](size_t count, const auto& voiceItem) { return count + voiceItem->trackCount(); });
-		std::for_each(nextVoice, _voices.end(), [index = index](const auto& voiceItem) mutable {
-			voiceItem->setPos(0, index * kTrackHeight);
-			index += voiceItem->trackCount();
-		});
-	}
+	std::for_each(std::next(voice), _voices.cend(), [index = voiceOffset + (*voice)->trackCount()](const auto& voiceItem) mutable {
+		voiceItem->setPos(0, index * kTrackHeight);
+		index += voiceItem->trackCount();
+	});
 	if (const auto nextTrack = std::next(track); nextTrack != _tracks.end())
 	{
-		const auto index = (*track)->_background->trackIndex() - std::reduce(_voices.begin(), voice, size_t{}, [](size_t count, const auto& voiceItem) { return count + voiceItem->trackCount(); });
+		const auto index = (*track)->_background->trackIndex() - voiceOffset;
 		std::for_each(nextTrack, std::find_if(nextTrack, _tracks.end(), [](const auto& trackPtr) { return trackPtr->_background->isFirstTrack(); }), [index = index](const auto& trackItem) mutable {
 			trackItem->_background->setPos(0, index * kTrackHeight);
 			++index;
@@ -193,18 +201,17 @@ void CompositionScene::removeTrack(const void* voiceId, const void* trackId)
 
 void CompositionScene::removeVoice(const void* voiceId)
 {
-	const auto voice = std::find_if(_voices.begin(), _voices.end(), [voiceId](const auto& voiceItem) { return voiceItem->voiceId() == voiceId; });
+	const auto [voice, voiceOffset] = ::findVoice(_voices, voiceId);
 	assert(voice != _voices.end());
 	removeItem(voice->get());
-	const auto trackOffset = std::reduce(_voices.begin(), voice, size_t{}, [](size_t count, const auto& voiceItem) { return count + voiceItem->trackCount(); });
-	std::for_each(std::next(voice), _voices.end(), [index = trackOffset](const auto& voiceItem) mutable {
+	std::for_each(std::next(voice), _voices.cend(), [index = voiceOffset](const auto& voiceItem) mutable {
 		voiceItem->setPos(0, index * kTrackHeight);
 		voiceItem->setVoiceIndex(voiceItem->voiceIndex() - 1);
 		index += voiceItem->trackCount();
 	});
-	const auto tracksBegin = _tracks.begin() + trackOffset;
+	const auto tracksBegin = _tracks.begin() + voiceOffset;
 	const auto tracksEnd = tracksBegin + (*voice)->trackCount();
-	std::for_each(tracksEnd, _tracks.end(), [index = trackOffset](const auto& trackItem) mutable {
+	std::for_each(tracksEnd, _tracks.end(), [index = voiceOffset](const auto& trackItem) mutable {
 		trackItem->_background->setTrackIndex(index);
 		++index;
 	});

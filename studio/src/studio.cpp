@@ -253,7 +253,8 @@ Studio::Studio()
 		}
 		else if (action == removeVoiceAction)
 		{
-			if (QMessageBox::question(this, {}, tr("Remove %1 voice?").arg("<b>" + QString::fromStdString((*part)->_voice->_name) + "</b>")) != QMessageBox::Yes)
+			if (const auto message = tr("Remove %1 voice?").arg("<b>" + QString::fromStdString((*part)->_voice->_name) + "</b>");
+				QMessageBox::question(this, {}, message, QMessageBox::Yes | QMessageBox::No, QMessageBox::No) != QMessageBox::Yes)
 				return;
 			_compositionScene->removeVoice(voiceId);
 			_composition->_parts.erase(part);
