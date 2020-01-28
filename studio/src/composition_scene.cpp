@@ -324,8 +324,11 @@ FragmentItem* CompositionScene::addFragmentItem(const void* voiceId, Track& trac
 {
 	const auto item = new FragmentItem{ track._background, offset, sequence };
 	item->setPos(offset * kStepWidth, 0);
-	connect(item, &FragmentItem::removeRequested, [this, voiceId](const void* trackId, size_t offset) {
-		emit removeFragmentRequested(voiceId, trackId, offset);
+	connect(item, &FragmentItem::fragmentActionRequested, [this, voiceId, trackId = track._background->trackId()](size_t offset) {
+		emit fragmentActionRequested(voiceId, trackId, offset);
+	});
+	connect(item, &FragmentItem::fragmentMenuRequested, [this, voiceId, trackId = track._background->trackId()](size_t offset, const QPoint& pos) {
+		emit fragmentMenuRequested(voiceId, trackId, offset, pos);
 	});
 	const auto i = track._fragments.emplace(offset, item).first;
 	if (i != track._fragments.begin())

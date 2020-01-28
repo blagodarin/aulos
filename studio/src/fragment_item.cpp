@@ -105,13 +105,10 @@ void FragmentItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWi
 
 void FragmentItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
 {
-	QMenu menu;
-	menu.addAction(tr("Edit..."));
-	const auto removeAction = menu.addAction(tr("Remove"));
-	if (const auto action = menu.exec(e->screenPos()))
-	{
-		const auto trackId = static_cast<const TrackItem*>(parentItem())->trackId();
-		if (action == removeAction)
-			emit removeRequested(trackId, _offset);
-	}
+	emit fragmentMenuRequested(_offset, e->screenPos());
+}
+
+void FragmentItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent*)
+{
+	emit fragmentActionRequested(_offset);
 }

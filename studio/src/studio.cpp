@@ -184,14 +184,33 @@ Studio::Studio()
 		_changed = true;
 		updateStatus();
 	});
-	connect(_compositionScene.get(), &CompositionScene::removeFragmentRequested, [this](const void* voiceId, const void* trackId, size_t offset) {
+	connect(_compositionScene.get(), &CompositionScene::fragmentActionRequested, [this](const void* voiceId, const void* trackId, size_t offset) {
 		const auto part = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [voiceId](const auto& partData) { return partData->_voice.get() == voiceId; });
 		assert(part != _composition->_parts.cend());
 		const auto track = std::find_if((*part)->_tracks.cbegin(), (*part)->_tracks.cend(), [trackId](const auto& trackData) { return trackData.get() == trackId; });
 		assert(track != (*part)->_tracks.cend());
-		[[maybe_unused]] const auto erased = (*track)->_fragments.erase(offset);
-		assert(erased);
-		_compositionScene->removeFragment(trackId, offset);
+		const auto fragment = (*track)->_fragments.find(offset);
+		assert(fragment != (*track)->_fragments.end());
+		// TODO: Implement.
+	});
+	connect(_compositionScene.get(), &CompositionScene::fragmentMenuRequested, [this](const void* voiceId, const void* trackId, size_t offset, const QPoint& pos) {
+		const auto part = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [voiceId](const auto& partData) { return partData->_voice.get() == voiceId; });
+		assert(part != _composition->_parts.cend());
+		const auto track = std::find_if((*part)->_tracks.cbegin(), (*part)->_tracks.cend(), [trackId](const auto& trackData) { return trackData.get() == trackId; });
+		assert(track != (*part)->_tracks.cend());
+		const auto fragment = (*track)->_fragments.find(offset);
+		assert(fragment != (*track)->_fragments.end());
+		QMenu menu;
+		const auto editAction = menu.addAction(tr("Edit..."));
+		editAction->setFont(::makeBold(editAction->font()));
+		const auto removeAction = menu.addAction(tr("Remove"));
+		if (const auto action = menu.exec(pos); action == removeAction)
+		{
+			(*track)->_fragments.erase(fragment);
+			_compositionScene->removeFragment(trackId, offset);
+		}
+		else
+			return;
 		_changed = true;
 		updateStatus();
 	});

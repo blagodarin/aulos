@@ -40,10 +40,12 @@ public:
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
 
 signals:
-	void removeRequested(const void* trackId, size_t offset);
+	void fragmentActionRequested(size_t offset);
+	void fragmentMenuRequested(size_t offset, const QPoint& pos);
 
 private:
 	void contextMenuEvent(QGraphicsSceneContextMenuEvent*) override;
+	void mouseDoubleClickEvent(QGraphicsSceneMouseEvent*) override;
 
 private:
 	const size_t _offset;
