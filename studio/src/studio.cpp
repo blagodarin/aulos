@@ -201,13 +201,24 @@ Studio::Studio()
 		const auto fragment = (*track)->_fragments.find(offset);
 		assert(fragment != (*track)->_fragments.end());
 		QMenu menu;
-		const auto editAction = menu.addAction(tr("Edit..."));
-		editAction->setFont(::makeBold(editAction->font()));
-		const auto removeAction = menu.addAction(tr("Remove"));
-		if (const auto action = menu.exec(pos); action == removeAction)
+		const auto editFragmentAction = menu.addAction(tr("Edit fragment..."));
+		editFragmentAction->setFont(::makeBold(editFragmentAction->font()));
+		const auto removeFragmentAction = menu.addAction(tr("Remove fragment"));
+		menu.addSeparator();
+		const auto removeTrackAction = menu.addAction(tr("Remove track"));
+		removeTrackAction->setEnabled((*part)->_tracks.size() > 1);
+		if (const auto action = menu.exec(pos); action == removeFragmentAction)
 		{
-			(*track)->_fragments.erase(fragment);
 			_compositionScene->removeFragment(trackId, offset);
+			(*track)->_fragments.erase(fragment);
+		}
+		else if (action == removeTrackAction)
+		{
+			if (const auto message = tr("Remove %1 track %2?").arg("<b>" + QString::fromStdString((*part)->_voice->_name) + "</b>").arg(track - (*part)->_tracks.cbegin() + 1);
+				QMessageBox::question(this, {}, message, QMessageBox::Yes | QMessageBox::No, QMessageBox::No) != QMessageBox::Yes)
+				return;
+			_compositionScene->removeTrack(voiceId, trackId);
+			(*part)->_tracks.erase(track);
 		}
 		else
 			return;
@@ -227,14 +238,14 @@ Studio::Studio()
 		const auto track = std::find_if((*part)->_tracks.cbegin(), (*part)->_tracks.cend(), [trackId](const auto& trackData) { return trackData.get() == trackId; });
 		assert(track != (*part)->_tracks.cend());
 		QMenu menu;
-		const auto insertSubmenu = menu.addMenu(tr("Insert"));
+		const auto insertSubmenu = menu.addMenu(tr("Insert sequence"));
 		const auto sequenceCount = (*track)->_sequences.size();
 		for (size_t sequenceIndex = 0; sequenceIndex < sequenceCount; ++sequenceIndex)
 			insertSubmenu->addAction(::makeSequenceName(*(*track)->_sequences[sequenceIndex]))->setData(sequenceIndex);
 		if (!(*track)->_sequences.empty())
 			insertSubmenu->addSeparator();
 		const auto newSequenceAction = insertSubmenu->addAction(tr("New sequence..."));
-		const auto removeTrackAction = menu.addAction(tr("Remove"));
+		const auto removeTrackAction = menu.addAction(tr("Remove track"));
 		removeTrackAction->setEnabled((*part)->_tracks.size() > 1);
 		if (const auto action = menu.exec(pos); action == newSequenceAction)
 		{
@@ -246,6 +257,9 @@ Studio::Studio()
 		}
 		else if (removeTrackAction && action == removeTrackAction)
 		{
+			if (const auto message = tr("Remove %1 track %2?").arg("<b>" + QString::fromStdString((*part)->_voice->_name) + "</b>").arg(track - (*part)->_tracks.cbegin() + 1);
+				QMessageBox::question(this, {}, message, QMessageBox::Yes | QMessageBox::No, QMessageBox::No) != QMessageBox::Yes)
+				return;
 			_compositionScene->removeTrack(voiceId, trackId);
 			(*part)->_tracks.erase(track);
 		}
@@ -264,7 +278,7 @@ Studio::Studio()
 	connect(_compositionScene.get(), &CompositionScene::voiceActionRequested, [this](const void* voiceId) {
 		const auto part = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [voiceId](const auto& partData) { return partData->_voice.get() == voiceId; });
 		assert(part != _composition->_parts.cend());
-		if (!editVoice(voiceId , * (*part)->_voice))
+		if (!editVoice(voiceId, *(*part)->_voice))
 			return;
 		_changed = true;
 		updateStatus();
@@ -273,12 +287,12 @@ Studio::Studio()
 		const auto part = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [voiceId](const auto& partData) { return partData->_voice.get() == voiceId; });
 		assert(part != _composition->_parts.cend());
 		QMenu menu;
-		const auto editAction = menu.addAction(tr("Edit..."));
-		editAction->setFont(::makeBold(editAction->font()));
+		const auto editVoiceAction = menu.addAction(tr("Edit voice..."));
+		editVoiceAction->setFont(::makeBold(editVoiceAction->font()));
 		const auto addTrackAction = menu.addAction(tr("Add track"));
 		menu.addSeparator();
 		const auto removeVoiceAction = menu.addAction(tr("Remove voice"));
-		if (const auto action = menu.exec(pos); action == editAction)
+		if (const auto action = menu.exec(pos); action == editVoiceAction)
 		{
 			if (!editVoice(voiceId, *(*part)->_voice))
 				return;
