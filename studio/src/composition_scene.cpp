@@ -338,6 +338,9 @@ FragmentItem* CompositionScene::addFragmentItem(const void* voiceId, Track& trac
 TrackItem* CompositionScene::addTrackItem(VoiceItem* voiceItem, const void* trackId)
 {
 	const auto trackItem = new TrackItem{ trackId, voiceItem };
+	connect(trackItem, &TrackItem::trackActionRequested, [this, voiceId = voiceItem->voiceId()](const void* trackId) {
+		emit trackActionRequested(voiceId, trackId);
+	});
 	connect(trackItem, &TrackItem::trackMenuRequested, [this, voiceId = voiceItem->voiceId()](const void* trackId, size_t offset, const QPoint& pos) {
 		emit trackMenuRequested(voiceId, trackId, offset, pos);
 	});
@@ -352,6 +355,7 @@ VoiceItem* CompositionScene::addVoiceItem(const void* id, const QString& name, s
 	voiceItem->setTrackCount(trackCount);
 	voiceItem->setVoiceIndex(voiceIndex);
 	voiceItem->setVoiceName(name);
+	connect(voiceItem, &VoiceItem::voiceActionRequested, this, &CompositionScene::voiceActionRequested);
 	connect(voiceItem, &VoiceItem::voiceMenuRequested, this, &CompositionScene::voiceMenuRequested);
 	return voiceItem;
 }

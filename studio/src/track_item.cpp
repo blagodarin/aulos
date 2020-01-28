@@ -74,6 +74,11 @@ void TrackItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
 	emit trackMenuRequested(_trackId, static_cast<size_t>(std::ceil(e->pos().x()) / kStepWidth), e->screenPos());
 }
 
+void TrackItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent*)
+{
+	emit trackActionRequested(_trackId);
+}
+
 void TrackItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget*)
 {
 	if (!_length)

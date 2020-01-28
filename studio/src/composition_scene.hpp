@@ -59,7 +59,9 @@ public:
 signals:
 	void newVoiceRequested();
 	void removeFragmentRequested(const void* voiceId, const void* trackId, size_t offset);
+	void trackActionRequested(const void* voiceId, const void* trackId);
 	void trackMenuRequested(const void* voiceId, const void* trackId, size_t offset, const QPoint& pos);
+	void voiceActionRequested(const void* voiceId);
 	void voiceMenuRequested(const void* voiceId, const QPoint& pos);
 
 private slots:

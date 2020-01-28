@@ -58,6 +58,12 @@ namespace
 		return result;
 	}
 
+	QFont makeBold(QFont&& font)
+	{
+		font.setBold(true);
+		return std::move(font);
+	}
+
 	void saveRecentFileList(const QStringList& files)
 	{
 		QSettings settings;
@@ -189,6 +195,13 @@ Studio::Studio()
 		_changed = true;
 		updateStatus();
 	});
+	connect(_compositionScene.get(), &CompositionScene::trackActionRequested, [this](const void* voiceId, const void* trackId) {
+		const auto part = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [voiceId](const auto& partData) { return partData->_voice.get() == voiceId; });
+		assert(part != _composition->_parts.cend());
+		const auto track = std::find_if((*part)->_tracks.cbegin(), (*part)->_tracks.cend(), [trackId](const auto& trackData) { return trackData.get() == trackId; });
+		assert(track != (*part)->_tracks.cend());
+		// TODO: Implement.
+	});
 	connect(_compositionScene.get(), &CompositionScene::trackMenuRequested, [this](const void* voiceId, const void* trackId, size_t offset, const QPoint& pos) {
 		const auto part = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [voiceId](const auto& partData) { return partData->_voice.get() == voiceId; });
 		assert(part != _composition->_parts.cend());
@@ -229,22 +242,27 @@ Studio::Studio()
 		_changed = true;
 		updateStatus();
 	});
+	connect(_compositionScene.get(), &CompositionScene::voiceActionRequested, [this](const void* voiceId) {
+		const auto part = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [voiceId](const auto& partData) { return partData->_voice.get() == voiceId; });
+		assert(part != _composition->_parts.cend());
+		if (!editVoice(voiceId , * (*part)->_voice))
+			return;
+		_changed = true;
+		updateStatus();
+	});
 	connect(_compositionScene.get(), &CompositionScene::voiceMenuRequested, [this](const void* voiceId, const QPoint& pos) {
 		const auto part = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [voiceId](const auto& partData) { return partData->_voice.get() == voiceId; });
 		assert(part != _composition->_parts.cend());
 		QMenu menu;
 		const auto editAction = menu.addAction(tr("Edit..."));
+		editAction->setFont(::makeBold(editAction->font()));
 		const auto addTrackAction = menu.addAction(tr("Add track"));
 		menu.addSeparator();
 		const auto removeVoiceAction = menu.addAction(tr("Remove voice"));
 		if (const auto action = menu.exec(pos); action == editAction)
 		{
-			_voiceEditor->setVoice(*(*part)->_voice);
-			if (_voiceEditor->exec() != QDialog::Accepted)
+			if (!editVoice(voiceId, *(*part)->_voice))
 				return;
-			*(*part)->_voice = _voiceEditor->voice();
-			_compositionScene->updateVoice(voiceId, (*part)->_voice->_name);
-			_compositionView->horizontalScrollBar()->setValue(_compositionView->horizontalScrollBar()->minimum());
 		}
 		else if (action == addTrackAction)
 		{
@@ -291,6 +309,17 @@ void Studio::closeComposition()
 	_player->stop();
 	_changed = false;
 	updateStatus();
+}
+
+bool Studio::editVoice(const void* id, aulos::Voice& voice)
+{
+	_voiceEditor->setVoice(voice);
+	if (_voiceEditor->exec() != QDialog::Accepted)
+		return false;
+	voice = _voiceEditor->voice();
+	_compositionScene->updateVoice(id, voice._name);
+	_compositionView->horizontalScrollBar()->setValue(_compositionView->horizontalScrollBar()->minimum());
+	return true;
 }
 
 void Studio::exportComposition()

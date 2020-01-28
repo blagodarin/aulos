@@ -39,10 +39,12 @@ public:
 	size_t voiceIndex() const noexcept { return _index; }
 
 signals:
+	void voiceActionRequested(const void* voiceId);
 	void voiceMenuRequested(const void* voiceId, const QPoint& pos);
 
 private:
 	void contextMenuEvent(QGraphicsSceneContextMenuEvent*) override;
+	void mouseDoubleClickEvent(QGraphicsSceneMouseEvent*) override;
 
 private:
 	const void* const _voiceId;

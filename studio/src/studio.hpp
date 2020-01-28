@@ -26,6 +26,7 @@ class QSpinBox;
 namespace aulos
 {
 	struct CompositionData;
+	struct Voice;
 }
 
 class CompositionScene;
@@ -44,6 +45,7 @@ public:
 private:
 	void clearRecentFiles();
 	void closeComposition();
+	bool editVoice(const void* id, aulos::Voice&);
 	void exportComposition();
 	void openComposition();
 	void openComposition(const QString& path);

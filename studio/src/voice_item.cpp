@@ -97,3 +97,8 @@ void VoiceItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
 {
 	emit voiceMenuRequested(_voiceId, e->screenPos());
 }
+
+void VoiceItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent*)
+{
+	emit voiceActionRequested(_voiceId);
+}
