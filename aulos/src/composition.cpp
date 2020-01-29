@@ -333,7 +333,7 @@ namespace aulos
 					auto& part = _parts[readUnsigned(1, static_cast<unsigned>(_parts.size())) - 1];
 					const auto trackIndex = static_cast<unsigned>(part._tracks.size() + 1);
 					readUnsigned(trackIndex, trackIndex);
-					const auto weight = tryReadUnsigned(1, 256);
+					const auto weight = tryReadUnsigned(1, 255);
 					part._tracks.emplace_back(weight ? *weight : 1);
 					break;
 				}

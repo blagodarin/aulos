@@ -17,42 +17,21 @@
 
 #pragma once
 
-#include <memory>
-#include <vector>
-
 #include <QDialog>
 
-namespace aulos
-{
-	struct Voice;
-}
+class QSpinBox;
 
-class QDoubleSpinBox;
-class QLineEdit;
-
-class Player;
-
-class VoiceEditor : public QDialog
+class TrackEditor : public QDialog
 {
 	Q_OBJECT
 
 public:
-	VoiceEditor(QWidget*);
-	~VoiceEditor() override;
+	TrackEditor(QWidget*);
+	~TrackEditor() override;
 
-	void setVoice(const aulos::Voice&);
-	aulos::Voice voice() const;
-
-private slots:
-	void onNoteClicked();
+	void setTrackWeight(unsigned);
+	unsigned trackWeight() const;
 
 private:
-	struct EnvelopePoint;
-
-	QLineEdit* _nameEdit = nullptr;
-	QDoubleSpinBox* _oscillationSpin = nullptr;
-	std::vector<EnvelopePoint> _amplitudeEnvelope;
-	std::vector<EnvelopePoint> _frequencyEnvelope;
-	std::vector<EnvelopePoint> _asymmetryEnvelope;
-	std::unique_ptr<Player> _player;
+	QSpinBox* _weightSpin = nullptr;
 };

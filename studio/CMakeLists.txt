@@ -37,6 +37,8 @@ set(_src
 	src/studio.hpp
 	src/timeline_item.cpp
 	src/timeline_item.hpp
+	src/track_editor.cpp
+	src/track_editor.hpp
 	src/track_item.cpp
 	src/track_item.hpp
 	src/utils.cpp

@@ -19,6 +19,7 @@
 
 #include "composition_scene.hpp"
 #include "player.hpp"
+#include "track_editor.hpp"
 #include "utils.hpp"
 #include "voice_editor.hpp"
 
@@ -90,6 +91,7 @@ namespace
 Studio::Studio()
 	: _compositionScene{ std::make_unique<CompositionScene>() }
 	, _voiceEditor{ std::make_unique<VoiceEditor>(this) }
+	, _trackEditor{ std::make_unique<TrackEditor>(this) }
 	, _player{ std::make_unique<Player>() }
 {
 	resize(640, 480);
@@ -205,12 +207,18 @@ Studio::Studio()
 		editFragmentAction->setFont(::makeBold(editFragmentAction->font()));
 		const auto removeFragmentAction = menu.addAction(tr("Remove fragment"));
 		menu.addSeparator();
+		const auto editTrackAction = menu.addAction(tr("Edit track..."));
 		const auto removeTrackAction = menu.addAction(tr("Remove track"));
 		removeTrackAction->setEnabled((*part)->_tracks.size() > 1);
 		if (const auto action = menu.exec(pos); action == removeFragmentAction)
 		{
 			_compositionScene->removeFragment(trackId, offset);
 			(*track)->_fragments.erase(fragment);
+		}
+		else if (action == editTrackAction)
+		{
+			if (!editTrack(**track))
+				return;
 		}
 		else if (action == removeTrackAction)
 		{
@@ -230,7 +238,10 @@ Studio::Studio()
 		assert(part != _composition->_parts.cend());
 		const auto track = std::find_if((*part)->_tracks.cbegin(), (*part)->_tracks.cend(), [trackId](const auto& trackData) { return trackData.get() == trackId; });
 		assert(track != (*part)->_tracks.cend());
-		// TODO: Implement.
+		if (!editTrack(**track))
+			return;
+		_changed = true;
+		updateStatus();
 	});
 	connect(_compositionScene.get(), &CompositionScene::trackMenuRequested, [this](const void* voiceId, const void* trackId, size_t offset, const QPoint& pos) {
 		const auto part = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [voiceId](const auto& partData) { return partData->_voice.get() == voiceId; });
@@ -238,6 +249,8 @@ Studio::Studio()
 		const auto track = std::find_if((*part)->_tracks.cbegin(), (*part)->_tracks.cend(), [trackId](const auto& trackData) { return trackData.get() == trackId; });
 		assert(track != (*part)->_tracks.cend());
 		QMenu menu;
+		const auto editTrackAction = menu.addAction(tr("Edit track..."));
+		editTrackAction->setFont(::makeBold(editTrackAction->font()));
 		const auto insertSubmenu = menu.addMenu(tr("Insert sequence"));
 		const auto sequenceCount = (*track)->_sequences.size();
 		for (size_t sequenceIndex = 0; sequenceIndex < sequenceCount; ++sequenceIndex)
@@ -247,7 +260,12 @@ Studio::Studio()
 		const auto newSequenceAction = insertSubmenu->addAction(tr("New sequence..."));
 		const auto removeTrackAction = menu.addAction(tr("Remove track"));
 		removeTrackAction->setEnabled((*part)->_tracks.size() > 1);
-		if (const auto action = menu.exec(pos); action == newSequenceAction)
+		if (const auto action = menu.exec(pos); action == editTrackAction)
+		{
+			if (!editTrack(**track))
+				return;
+		}
+		else if (action == newSequenceAction)
 		{
 			const auto sequence = std::make_shared<aulos::SequenceData>();
 			(*track)->_sequences.emplace_back(sequence);
@@ -255,7 +273,7 @@ Studio::Studio()
 			assert(inserted);
 			_compositionScene->insertFragment(voiceId, trackId, offset, sequence);
 		}
-		else if (removeTrackAction && action == removeTrackAction)
+		else if (action == removeTrackAction)
 		{
 			if (const auto message = tr("Remove %1 track %2?").arg("<b>" + QString::fromStdString((*part)->_voice->_name) + "</b>").arg(track - (*part)->_tracks.cbegin() + 1);
 				QMessageBox::question(this, {}, message, QMessageBox::Yes | QMessageBox::No, QMessageBox::No) != QMessageBox::Yes)
@@ -342,6 +360,15 @@ void Studio::closeComposition()
 	_player->stop();
 	_changed = false;
 	updateStatus();
+}
+
+bool Studio::editTrack(aulos::TrackData& track)
+{
+	_trackEditor->setTrackWeight(track._weight);
+	if (_trackEditor->exec() != QDialog::Accepted)
+		return false;
+	track._weight = _trackEditor->trackWeight();
+	return true;
 }
 
 bool Studio::editVoice(const void* id, aulos::Voice& voice)

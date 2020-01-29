@@ -26,13 +26,14 @@ class QSpinBox;
 namespace aulos
 {
 	struct CompositionData;
+	struct TrackData;
 	struct Voice;
 }
 
 class CompositionScene;
 class Player;
+class TrackEditor;
 class VoiceEditor;
-class VoicesModel;
 
 class Studio : public QMainWindow
 {
@@ -45,6 +46,7 @@ public:
 private:
 	void clearRecentFiles();
 	void closeComposition();
+	bool editTrack(aulos::TrackData&);
 	bool editVoice(const void* id, aulos::Voice&);
 	void exportComposition();
 	void openComposition();
@@ -57,6 +59,7 @@ private:
 	std::shared_ptr<aulos::CompositionData> _composition;
 	std::unique_ptr<CompositionScene> _compositionScene;
 	std::unique_ptr<VoiceEditor> _voiceEditor;
+	std::unique_ptr<TrackEditor> _trackEditor;
 	std::unique_ptr<Player> _player;
 
 	QString _compositionPath;
