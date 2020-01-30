@@ -18,19 +18,20 @@
 #pragma once
 
 #include "button_item.hpp"
+#include "colors.hpp"
 
 class AddTimeItem final : public ButtonItem
 {
 	Q_OBJECT
 
 public:
-	AddTimeItem(const QColor& color, QGraphicsItem* parent = nullptr);
+	AddTimeItem(const Colors& colors, QGraphicsItem* parent = nullptr);
 
 	QRectF boundingRect() const override;
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
-	void setGeometry(const QColor&, size_t extraLength);
+	void setGeometry(const Colors&, size_t extraLength);
 
 private:
-	QColor _color;
+	Colors _colors;
 	size_t _extraLength = 0;
 };

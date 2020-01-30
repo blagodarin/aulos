@@ -17,19 +17,30 @@
 
 #pragma once
 
-class QString;
+#include <array>
 
-namespace aulos
+#include <QColor>
+
+extern const QColor kBackgroundColor;
+extern const QColor kCursorColor;
+extern const QColor kHoverBrushColor;
+extern const QColor kHoverPenColor;
+extern const QColor kPartBorderColor;
+extern const QColor kPressBrushColor;
+
+struct Colors
 {
-	struct SequenceData;
-}
+	QColor _brush;
+	QColor _pen;
+};
 
-constexpr auto kStepWidth = 15.0;
-constexpr auto kTrackHeight = 40.0;
-constexpr auto kTimelineHeight = 0.5 * kTrackHeight;
-constexpr auto kAddTimeItemWidth = kStepWidth;
-constexpr auto kAddTimeExtraWidth = kStepWidth;
-constexpr auto kAddVoiceItemHeight = kTrackHeight * 0.75;
-constexpr auto kMinVoiceItemWidth = kTrackHeight;
+extern const std::array<Colors, 6> kFragmentColors;
+extern const std::array<Colors, 2> kTimelineColors;
+extern const std::array<Colors, 2> kVoiceColors;
 
-QString makeSequenceName(const aulos::SequenceData&, bool rich = false);
+struct TrackColors
+{
+	std::array<QColor, 2> _colors;
+};
+
+extern const std::array<TrackColors, 2> kTrackColors;

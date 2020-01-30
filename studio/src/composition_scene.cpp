@@ -18,6 +18,7 @@
 #include "composition_scene.hpp"
 
 #include "add_voice_item.hpp"
+#include "colors.hpp"
 #include "fragment_item.hpp"
 #include "timeline_item.hpp"
 #include "track_item.hpp"
@@ -34,8 +35,6 @@
 
 namespace
 {
-	const QColor kBackgroundColor{ "#444" };
-	const QColor kCursorColor{ "#000" };
 	constexpr size_t kExtraLength = 1;
 
 	auto findVoice(const std::vector<std::unique_ptr<VoiceItem>>& voices, const void* id)

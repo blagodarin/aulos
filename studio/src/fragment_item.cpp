@@ -17,6 +17,7 @@
 
 #include "fragment_item.hpp"
 
+#include "colors.hpp"
 #include "track_item.hpp"
 #include "utils.hpp"
 
@@ -28,24 +29,6 @@
 #include <QMenu>
 #include <QPainter>
 #include <QTextOption>
-
-namespace
-{
-	struct FragmentColors
-	{
-		QColor _brush;
-		QColor _pen;
-	};
-
-	const std::array<FragmentColors, 6> kFragmentColors{
-		FragmentColors{ "#f88", "#400" },
-		FragmentColors{ "#ff8", "#440" },
-		FragmentColors{ "#8f8", "#040" },
-		FragmentColors{ "#8ff", "#044" },
-		FragmentColors{ "#88f", "#004" },
-		FragmentColors{ "#f8f", "#404" },
-	};
-}
 
 FragmentItem::FragmentItem(TrackItem* track, size_t offset, const std::shared_ptr<aulos::SequenceData>& sequence)
 	: QGraphicsObject{ track }

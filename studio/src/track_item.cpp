@@ -17,27 +17,13 @@
 
 #include "track_item.hpp"
 
+#include "colors.hpp"
 #include "utils.hpp"
 
 #include <QGraphicsSceneContextMenuEvent>
 #include <QMenu>
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
-
-namespace
-{
-	struct TrackColors
-	{
-		std::array<QColor, 2> _colors;
-	};
-
-	const QColor kPartBorderColor{ "#aaa" };
-
-	const std::array<TrackColors, 2> kTrackColors{
-		TrackColors{ "#888", "#999" },
-		TrackColors{ "#777", "#888" },
-	};
-}
 
 TrackItem::TrackItem(const void* id, QGraphicsItem* parent)
 	: QGraphicsObject{ parent }

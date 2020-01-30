@@ -34,9 +34,9 @@ namespace
 	}
 }
 
-AddTimeItem::AddTimeItem(const QColor& color, QGraphicsItem* parent)
+AddTimeItem::AddTimeItem(const Colors& colors, QGraphicsItem* parent)
 	: ButtonItem{ parent }
-	, _color{ color }
+	, _colors{ colors }
 {
 }
 
@@ -63,17 +63,17 @@ void AddTimeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWid
 	else
 	{
 		painter->setPen(Qt::transparent);
-		painter->setBrush(_color);
+		painter->setBrush(_colors._brush);
 	}
 	painter->drawConvexPolygon(shape.data(), static_cast<int>(shape.size()));
 	painter->setFont(::makeAddTimeFont());
-	painter->setPen(isPressed() || isHovered() ? kHoverPenColor : Qt::black);
+	painter->setPen(isPressed() || isHovered() ? kHoverPenColor : _colors._pen);
 	painter->drawText(rect.adjusted(rect.right() - kAddTimeItemWidth, 0, 0, 0), Qt::AlignHCenter | Qt::AlignVCenter, QStringLiteral("+"));
 }
 
-void AddTimeItem::setGeometry(const QColor& color, size_t extraLength)
+void AddTimeItem::setGeometry(const Colors& colors, size_t extraLength)
 {
 	prepareGeometryChange();
-	_color = color;
+	_colors = colors;
 	_extraLength = extraLength;
 }

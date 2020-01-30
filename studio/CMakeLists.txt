@@ -26,6 +26,8 @@ set(_src
 	src/add_voice_item.hpp
 	src/button_item.cpp
 	src/button_item.hpp
+	src/colors.cpp
+	src/colors.hpp
 	src/composition_scene.cpp
 	src/composition_scene.hpp
 	src/fragment_item.cpp

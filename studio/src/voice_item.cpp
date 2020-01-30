@@ -17,6 +17,7 @@
 
 #include "voice_item.hpp"
 
+#include "colors.hpp"
 #include "utils.hpp"
 
 #include <QGraphicsSceneEvent>

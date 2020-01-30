@@ -23,23 +23,9 @@
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
 
-namespace
-{
-	struct TimelineColors
-	{
-		QColor _brush;
-		QColor _pen;
-	};
-
-	const std::array<TimelineColors, 2> kTimelineColors{
-		TimelineColors{ "#fff", "#000" },
-		TimelineColors{ "#ddd", "#000" },
-	};
-}
-
 TimelineItem::TimelineItem(QGraphicsItem* parent)
 	: QGraphicsObject{ parent }
-	, _addTimeItem{ new AddTimeItem{ kTimelineColors[0]._brush, this } }
+	, _addTimeItem{ new AddTimeItem{ kTimelineColors[0], this } }
 {
 	setFlag(QGraphicsItem::ItemUsesExtendedStyleOption);
 	connect(_addTimeItem, &AddTimeItem::clicked, this, [this] { emit lengthRequested(_length + (_speed - _length % _speed)); });
@@ -98,6 +84,6 @@ void TimelineItem::setCompositionSpeed(unsigned speed)
 void TimelineItem::updateAddTimeItem() const
 {
 	const auto extraLength = _length % _speed;
-	_addTimeItem->setGeometry(kTimelineColors[(_length / _speed) % kTimelineColors.size()]._brush, extraLength);
+	_addTimeItem->setGeometry(kTimelineColors[(_length / _speed) % kTimelineColors.size()], extraLength);
 	_addTimeItem->setPos({ (_length - extraLength) * kStepWidth, 0 });
 }

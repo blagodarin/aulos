@@ -23,7 +23,7 @@
 #include <QSpinBox>
 
 TrackEditor::TrackEditor(QWidget* parent)
-	: QDialog{ parent, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowCloseButtonHint }
+	: QDialog{ parent, Qt::WindowTitleHint | Qt::CustomizeWindowHint | Qt::WindowCloseButtonHint }
 {
 	setWindowTitle(tr("Track Editor"));
 

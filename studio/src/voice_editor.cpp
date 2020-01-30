@@ -48,7 +48,7 @@ struct VoiceEditor::EnvelopePoint
 };
 
 VoiceEditor::VoiceEditor(QWidget* parent)
-	: QDialog{ parent }
+	: QDialog{ parent, Qt::WindowTitleHint | Qt::CustomizeWindowHint | Qt::WindowCloseButtonHint }
 	, _player{ std::make_unique<Player>() }
 {
 	const auto createOscillationWidgets = [this](QWidget* parent) {
