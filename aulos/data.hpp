@@ -120,6 +120,8 @@ namespace aulos
 	{
 		unsigned _speed = kMinSpeed;
 		std::vector<std::shared_ptr<PartData>> _parts;
+		std::string _title;
+		std::string _author;
 
 		CompositionData() = default;
 		CompositionData(const Composition&);

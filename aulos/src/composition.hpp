@@ -50,6 +50,8 @@ namespace aulos
 	{
 		unsigned _speed = kMinSpeed;
 		std::vector<Part> _parts;
+		std::string _title;
+		std::string _author;
 
 		void load(const char* source);
 	};

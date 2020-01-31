@@ -63,6 +63,7 @@ private:
 	std::unique_ptr<Player> _player;
 
 	QString _compositionPath;
+	QString _compositionFileName;
 	QString _compositionName;
 
 	bool _hasComposition = false;

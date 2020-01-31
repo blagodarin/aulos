@@ -1,6 +1,6 @@
-; Sergei Blagodarin - Example 1
-
+author "Sergei Blagodarin"
 speed 10
+title "Example 1"
 
 @voice 1 "Melody"
 wave linear

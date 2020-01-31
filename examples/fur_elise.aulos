@@ -1,6 +1,6 @@
-; Ludwig van Beethoven - Fur Elise
-
+author "Ludwig van Beethoven"
 speed 6
+title "Fur Elise"
 
 @voice 1 "RightHand"
 wave linear 0.8

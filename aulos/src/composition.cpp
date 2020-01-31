@@ -48,7 +48,7 @@ namespace aulos
 	{
 		enum class Section
 		{
-			Initial,
+			Global,
 			Voice,
 			Tracks,
 			Sequences,
@@ -57,7 +57,7 @@ namespace aulos
 
 		size_t line = 1;
 		const char* lineBase = source;
-		Section currentSection = Section::Initial;
+		Section currentSection = Section::Global;
 		Voice* currentVoice = nullptr;
 		Track* currentTrack = nullptr;
 
@@ -162,6 +162,13 @@ namespace aulos
 			const auto end = source++;
 			skipSpaces();
 			return std::string{ begin, end };
+		};
+
+		const auto readString = [&] {
+			const auto result = tryReadString();
+			if (!result)
+				throw CompositionError{ location(), "String expected" };
+			return *result;
 		};
 
 		const auto parseNote = [&](std::vector<Sound>& sequence, size_t baseOffset) {
@@ -282,10 +289,21 @@ namespace aulos
 			}
 			else if (command == "speed")
 			{
-				if (currentSection != Section::Initial)
+				if (currentSection != Section::Global)
 					throw CompositionError{ location(), "Unexpected command" };
 				_speed = readUnsigned(kMinSpeed, kMaxSpeed);
-				consumeEndOfLine();
+			}
+			else if (command == "title")
+			{
+				if (currentSection != Section::Global)
+					throw CompositionError{ location(), "Unexpected command" };
+				_title = readString();
+			}
+			else if (command == "author")
+			{
+				if (currentSection != Section::Global)
+					throw CompositionError{ location(), "Unexpected command" };
+				_author = readString();
 			}
 			else
 				throw CompositionError{ location(), "Unknown command \"" + std::string{ command } + "\"" };
@@ -348,11 +366,6 @@ namespace aulos
 				default:
 					throw CompositionError{ location(), "Unexpected token" };
 				}
-				break;
-			case ';':
-				do
-					++source;
-				while (*source && *source != '\n' && *source != '\r');
 				break;
 			case '@':
 				++source;
@@ -421,6 +434,8 @@ namespace aulos
 					trackData._fragments.insert_or_assign(offset += packedFragment._delay, trackData._sequences[packedFragment._sequence]);
 			}
 		}
+		_title = packed._title;
+		_author = packed._author;
 	}
 
 	std::unique_ptr<Composition> CompositionData::pack() const
@@ -452,6 +467,8 @@ namespace aulos
 				}
 			}
 		}
+		packed->_title = _title;
+		packed->_author = _author;
 		return packed;
 	}
 }

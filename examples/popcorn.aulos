@@ -1,6 +1,6 @@
-; Gershon Kingsley - Popcorn
-
+author "Gershon Kingsley"
 speed 8
+title "Popcorn"
 
 @voice 1 "Bass"
 wave linear 0.5

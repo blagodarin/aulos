@@ -354,6 +354,7 @@ void Studio::closeComposition()
 {
 	_hasComposition = false;
 	_compositionPath.clear();
+	_compositionFileName.clear();
 	_compositionName.clear();
 	_speedSpin->setValue(_speedSpin->minimum());
 	_compositionScene->reset(nullptr);
@@ -449,7 +450,8 @@ void Studio::openComposition(const QString& path)
 
 	_composition = std::make_shared<aulos::CompositionData>(*composition);
 	_compositionPath = path;
-	_compositionName = QFileInfo{ file }.fileName();
+	_compositionFileName = QFileInfo{ file }.fileName();
+	_compositionName = _composition->_title.empty() ? _compositionFileName : QString::fromStdString(_composition->_title);
 	_speedSpin->setValue(static_cast<int>(_composition->_speed));
 	_compositionScene->reset(_composition);
 	_compositionView->horizontalScrollBar()->setValue(_compositionView->horizontalScrollBar()->minimum());
