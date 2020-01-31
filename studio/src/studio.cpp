@@ -18,6 +18,7 @@
 #include "studio.hpp"
 
 #include "composition_scene.hpp"
+#include "info_editor.hpp"
 #include "player.hpp"
 #include "track_editor.hpp"
 #include "utils.hpp"
@@ -90,6 +91,7 @@ namespace
 
 Studio::Studio()
 	: _compositionScene{ std::make_unique<CompositionScene>() }
+	, _infoEditor{ std::make_unique<InfoEditor>(this) }
 	, _voiceEditor{ std::make_unique<VoiceEditor>(this) }
 	, _trackEditor{ std::make_unique<TrackEditor>(this) }
 	, _player{ std::make_unique<Player>() }
@@ -117,21 +119,31 @@ Studio::Studio()
 	fileMenu->addAction(
 		tr("E&xit"), [this] { close(); }, Qt::ALT + Qt::Key_F4);
 
+	const auto editMenu = menuBar()->addMenu(tr("&Edit"));
+	_editInfoAction = editMenu->addAction(tr("Composition &information..."), [this] {
+		_infoEditor->setCompositionAuthor(QString::fromStdString(_composition->_author));
+		_infoEditor->setCompositionTitle(QString::fromStdString(_composition->_title));
+		if (_infoEditor->exec() != QDialog::Accepted)
+			return;
+		_composition->_author = _infoEditor->compositionAuthor().toStdString();
+		_composition->_title = _infoEditor->compositionTitle().toStdString();
+		_changed = true;
+		updateStatus();
+	});
+
 	const auto playbackMenu = menuBar()->addMenu(tr("&Playback"));
-	_playAction = playbackMenu->addAction(
-		qApp->style()->standardIcon(QStyle::SP_MediaPlay), tr("&Play"), [this] {
-			const auto composition = _composition->pack();
-			if (!composition)
-				return;
-			_player->reset(*aulos::Renderer::create(*composition, Player::SamplingRate));
-			_player->start();
-			updateStatus();
-		});
-	_stopAction = playbackMenu->addAction(
-		qApp->style()->standardIcon(QStyle::SP_MediaStop), tr("&Stop"), [this] {
-			_player->stop();
-			updateStatus();
-		});
+	_playAction = playbackMenu->addAction(qApp->style()->standardIcon(QStyle::SP_MediaPlay), tr("&Play"), [this] {
+		const auto composition = _composition->pack();
+		if (!composition)
+			return;
+		_player->reset(*aulos::Renderer::create(*composition, Player::SamplingRate));
+		_player->start();
+		updateStatus();
+	});
+	_stopAction = playbackMenu->addAction(qApp->style()->standardIcon(QStyle::SP_MediaStop), tr("&Stop"), [this] {
+		_player->stop();
+		updateStatus();
+	});
 
 	_speedSpin = new QSpinBox{ this };
 	_speedSpin->setRange(1, 32);
@@ -355,7 +367,6 @@ void Studio::closeComposition()
 	_hasComposition = false;
 	_compositionPath.clear();
 	_compositionFileName.clear();
-	_compositionName.clear();
 	_speedSpin->setValue(_speedSpin->minimum());
 	_compositionScene->reset(nullptr);
 	_player->stop();
@@ -451,7 +462,6 @@ void Studio::openComposition(const QString& path)
 	_composition = std::make_shared<aulos::CompositionData>(*composition);
 	_compositionPath = path;
 	_compositionFileName = QFileInfo{ file }.fileName();
-	_compositionName = _composition->_title.empty() ? _compositionFileName : QString::fromStdString(_composition->_title);
 	_speedSpin->setValue(static_cast<int>(_composition->_speed));
 	_compositionScene->reset(_composition);
 	_compositionView->horizontalScrollBar()->setValue(_compositionView->horizontalScrollBar()->minimum());
@@ -496,11 +506,13 @@ void Studio::saveRecentFiles()
 
 void Studio::updateStatus()
 {
-	setWindowTitle(_hasComposition ? QStringLiteral("%1 - %2").arg(_changed ? '*' + _compositionName : _compositionName, QCoreApplication::applicationName()) : QCoreApplication::applicationName());
+	const auto compositionName = _hasComposition && !_composition->_title.empty() ? QString::fromStdString(_composition->_title) : _compositionFileName;
+	setWindowTitle(_hasComposition ? QStringLiteral("%1 - %2").arg(_changed ? '*' + compositionName : compositionName, QCoreApplication::applicationName()) : QCoreApplication::applicationName());
 	_fileSaveAction->setEnabled(_changed);
 	_fileSaveAsAction->setEnabled(_hasComposition);
 	_fileExportAction->setEnabled(_hasComposition);
 	_fileCloseAction->setEnabled(_hasComposition);
+	_editInfoAction->setEnabled(_hasComposition);
 	_playAction->setEnabled(_hasComposition && !_player->isPlaying());
 	_stopAction->setEnabled(_hasComposition && _player->isPlaying());
 	_speedSpin->setEnabled(_hasComposition && !_player->isPlaying());

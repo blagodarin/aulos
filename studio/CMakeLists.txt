@@ -32,6 +32,8 @@ set(_src
 	src/composition_scene.hpp
 	src/fragment_item.cpp
 	src/fragment_item.hpp
+	src/info_editor.cpp
+	src/info_editor.hpp
 	src/main.cpp
 	src/player.cpp
 	src/player.hpp
