@@ -50,8 +50,8 @@ private:
 	bool editTrack(aulos::TrackData&);
 	bool editVoice(const void* id, aulos::Voice&);
 	void exportComposition();
-	void openComposition();
 	void openComposition(const QString& path);
+	bool saveComposition(const QString& path) const;
 	void saveRecentFiles();
 	void setRecentFile(const QString& path);
 	void updateStatus();

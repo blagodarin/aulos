@@ -43,7 +43,8 @@
 
 namespace
 {
-	const auto recentFileKeyBase = QStringLiteral("RecentFile%1");
+	constexpr int kMaxRecentFiles = 10;
+	const auto kRecentFileKeyBase = QStringLiteral("RecentFile%1");
 
 	QStringList loadRecentFileList()
 	{
@@ -51,7 +52,7 @@ namespace
 		QStringList result;
 		for (int index = 0;;)
 		{
-			const auto value = settings.value(recentFileKeyBase.arg(index));
+			const auto value = settings.value(kRecentFileKeyBase.arg(index));
 			if (!value.isValid())
 				break;
 			result.prepend(value.toString());
@@ -71,10 +72,10 @@ namespace
 		QSettings settings;
 		int index = 0;
 		for (const auto& file : files)
-			settings.setValue(recentFileKeyBase.arg(index++), file);
+			settings.setValue(kRecentFileKeyBase.arg(index++), file);
 		for (;;)
 		{
-			const auto key = recentFileKeyBase.arg(index);
+			const auto key = kRecentFileKeyBase.arg(index);
 			if (!settings.contains(key))
 				break;
 			settings.remove(key);
@@ -100,23 +101,32 @@ Studio::Studio()
 
 	const auto fileMenu = menuBar()->addMenu(tr("&File"));
 	_fileOpenAction = fileMenu->addAction(
-		qApp->style()->standardIcon(QStyle::SP_DialogOpenButton), tr("&Open..."), [this] { openComposition(); }, Qt::CTRL + Qt::Key_O);
+		qApp->style()->standardIcon(QStyle::SP_DialogOpenButton), tr("&Open..."), [this] {
+			const auto path = QFileDialog::getOpenFileName(this, tr("Open Composition"), _hasComposition ? QFileInfo{ _compositionPath }.dir().path() : QString{}, tr("Aulos Files (*.aulos)"));
+			if (!path.isNull())
+				openComposition(path);
+		},
+		Qt::CTRL + Qt::Key_O);
 	_fileSaveAction = fileMenu->addAction(
 		qApp->style()->standardIcon(QStyle::SP_DialogSaveButton), tr("&Save"), [this] {
-			const auto composition = _composition->pack();
-			if (!composition)
+			if (!saveComposition(_compositionPath))
 				return;
-			const auto buffer = composition->save();
-			QFile file{ _compositionPath };
-			if (!file.open(QIODevice::WriteOnly))
-				return;
-			file.write(reinterpret_cast<const char*>(buffer.data()), static_cast<qint64>(buffer.size()));
 			_changed = false;
 			updateStatus();
 		},
 		Qt::CTRL + Qt::Key_S);
 	_fileSaveAsAction = fileMenu->addAction(
-		tr("Save &As..."), [this] {}, Qt::CTRL + Qt::ALT + Qt::Key_S);
+		tr("Save &As..."), [this] {
+			const auto path = QFileDialog::getSaveFileName(this, tr("Save Composition As"), QFileInfo{ _compositionPath }.dir().path(), tr("Aulos Files (*.aulos)"));
+			if (path.isNull() || !saveComposition(path))
+				return;
+			_compositionPath = path;
+			_compositionFileName = QFileInfo{ _compositionPath }.fileName();
+			setRecentFile(_compositionPath);
+			_changed = false;
+			updateStatus();
+		},
+		Qt::CTRL + Qt::ALT + Qt::Key_S);
 	_fileExportAction = fileMenu->addAction(
 		tr("&Export..."), [this] { exportComposition(); });
 	_fileCloseAction = fileMenu->addAction(
@@ -446,13 +456,6 @@ void Studio::exportComposition()
 	file.commit();
 }
 
-void Studio::openComposition()
-{
-	const auto path = QFileDialog::getOpenFileName(this, tr("Open Composition"), {}, tr("Aulos Files (*.aulos)"));
-	if (!path.isNull())
-		openComposition(path);
-}
-
 void Studio::openComposition(const QString& path)
 {
 	closeComposition();
@@ -483,6 +486,19 @@ void Studio::openComposition(const QString& path)
 	updateStatus();
 }
 
+bool Studio::saveComposition(const QString& path) const
+{
+	assert(_hasComposition);
+	const auto composition = _composition->pack();
+	assert(composition);
+	const auto buffer = composition->save();
+	QFile file{ path };
+	if (!file.open(QIODevice::WriteOnly))
+		return false;
+	file.write(reinterpret_cast<const char*>(buffer.data()), static_cast<qint64>(buffer.size()));
+	return true;
+}
+
 void Studio::setRecentFile(const QString& path)
 {
 	if (const auto i = std::find_if(_recentFilesActions.begin(), _recentFilesActions.end(), [this, &path](const QAction* action) { return action->text() == path; }); i != _recentFilesActions.end())
@@ -499,7 +515,7 @@ void Studio::setRecentFile(const QString& path)
 		connect(action, &QAction::triggered, [this, path] { openComposition(path); });
 		_recentFilesActions.prepend(action);
 		_recentFilesMenu->insertAction(_recentFilesMenu->actions().value(0, nullptr), action);
-		while (_recentFilesActions.size() > 10)
+		while (_recentFilesActions.size() > kMaxRecentFiles)
 		{
 			const auto oldAction = _recentFilesActions.takeLast();
 			_recentFilesMenu->removeAction(oldAction);
