@@ -102,7 +102,19 @@ Studio::Studio()
 	_fileOpenAction = fileMenu->addAction(
 		qApp->style()->standardIcon(QStyle::SP_DialogOpenButton), tr("&Open..."), [this] { openComposition(); }, Qt::CTRL + Qt::Key_O);
 	_fileSaveAction = fileMenu->addAction(
-		qApp->style()->standardIcon(QStyle::SP_DialogSaveButton), tr("&Save"), [this] {}, Qt::CTRL + Qt::Key_S);
+		qApp->style()->standardIcon(QStyle::SP_DialogSaveButton), tr("&Save"), [this] {
+			const auto composition = _composition->pack();
+			if (!composition)
+				return;
+			const auto buffer = composition->save();
+			QFile file{ _compositionPath };
+			if (!file.open(QIODevice::WriteOnly))
+				return;
+			file.write(reinterpret_cast<const char*>(buffer.data()), static_cast<qint64>(buffer.size()));
+			_changed = false;
+			updateStatus();
+		},
+		Qt::CTRL + Qt::Key_S);
 	_fileSaveAsAction = fileMenu->addAction(
 		tr("Save &As..."), [this] {}, Qt::CTRL + Qt::ALT + Qt::Key_S);
 	_fileExportAction = fileMenu->addAction(

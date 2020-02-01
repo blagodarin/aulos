@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <cassert>
 #include <charconv>
+#include <cmath>
 #include <limits>
 #include <numeric>
 #include <optional>
@@ -405,6 +406,106 @@ namespace aulos
 				parseCommand(readIdentifier());
 			}
 		}
+	}
+
+	std::vector<std::byte> CompositionImpl::save() const
+	{
+		const auto floatToString = [](float value) {
+			const auto roundedValue = std::lround(value * 100.f);
+			auto result = std::to_string(roundedValue / 100);
+			const auto remainder = roundedValue % 100;
+			return result + (remainder >= 10 ? '.' + std::to_string(remainder) : ".0" + std::to_string(remainder));
+		};
+
+		std::string text;
+		if (!_author.empty())
+			text += "\nauthor \"" + _author + '"';
+		text += "\nspeed " + std::to_string(_speed);
+		if (!_title.empty())
+			text += "\ntitle \"" + _title + '"';
+		for (const auto& part : _parts)
+		{
+			const auto partIndex = static_cast<size_t>(&part - _parts.data() + 1);
+			text += "\n\n@voice " + std::to_string(partIndex);
+			if (!part._voice._name.empty())
+				text += " \"" + part._voice._name + '"';
+			text += "\nwave linear " + floatToString(part._voice._oscillation);
+			text += "\namplitude " + floatToString(part._voice._amplitudeEnvelope._initial);
+			for (const auto& change : part._voice._amplitudeEnvelope._changes)
+				text += ' ' + floatToString(change._delay) + ' ' + floatToString(change._value);
+			text += "\nfrequency " + floatToString(part._voice._frequencyEnvelope._initial);
+			for (const auto& change : part._voice._frequencyEnvelope._changes)
+				text += ' ' + floatToString(change._delay) + ' ' + floatToString(change._value);
+			text += "\nasymmetry " + floatToString(part._voice._asymmetryEnvelope._initial);
+			for (const auto& change : part._voice._asymmetryEnvelope._changes)
+				text += ' ' + floatToString(change._delay) + ' ' + floatToString(change._value);
+		}
+		text += "\n\n@tracks";
+		for (const auto& part : _parts)
+		{
+			const auto partIndex = static_cast<size_t>(&part - _parts.data() + 1);
+			for (const auto& track : part._tracks)
+			{
+				const auto trackIndex = static_cast<size_t>(&track - part._tracks.data() + 1);
+				text += '\n' + std::to_string(partIndex) + ' ' + std::to_string(trackIndex) + ' ' + std::to_string(track._weight);
+			}
+		}
+		text += "\n\n@sequences";
+		for (const auto& part : _parts)
+		{
+			const auto partIndex = static_cast<size_t>(&part - _parts.data() + 1);
+			for (const auto& track : part._tracks)
+			{
+				const auto trackIndex = static_cast<size_t>(&track - part._tracks.data() + 1);
+				for (const auto& sequence : track._sequences)
+				{
+					const auto sequenceIndex = static_cast<size_t>(&sequence - track._sequences.data() + 1);
+					text += '\n' + std::to_string(partIndex) + ' ' + std::to_string(trackIndex) + ' ' + std::to_string(sequenceIndex);
+					for (const auto& sound : sequence)
+					{
+						text += ' ';
+						const auto note = static_cast<unsigned>(sound._note);
+						switch (note % 12)
+						{
+						case 0: text += "C"; break;
+						case 1: text += "C#"; break;
+						case 2: text += "D"; break;
+						case 3: text += "D#"; break;
+						case 4: text += "E"; break;
+						case 5: text += "F"; break;
+						case 6: text += "F#"; break;
+						case 7: text += "G"; break;
+						case 8: text += "G#"; break;
+						case 9: text += "A"; break;
+						case 10: text += "A#"; break;
+						case 11: text += "B"; break;
+						}
+						text += std::to_string(note / 12);
+						for (auto i = sound._pause; i > 1; --i)
+							text += " .";
+					}
+				}
+			}
+		}
+		for (const auto& part : _parts)
+		{
+			const auto partIndex = static_cast<size_t>(&part - _parts.data() + 1);
+			for (const auto& track : part._tracks)
+			{
+				if (track._fragments.empty())
+					continue;
+				const auto trackIndex = static_cast<size_t>(&track - part._tracks.data() + 1);
+				text += "\n\n@fragments " + std::to_string(partIndex) + ' ' + std::to_string(trackIndex);
+				for (const auto& fragment : track._fragments)
+					text += '\n' + std::to_string(fragment._delay) + ' ' + std::to_string(fragment._sequence + 1);
+			}
+		}
+		text += '\n';
+
+		std::vector<std::byte> buffer;
+		buffer.reserve(text.size());
+		std::for_each(std::next(text.begin()), text.end(), [&buffer](const auto c) { buffer.emplace_back(static_cast<std::byte>(c)); });
+		return buffer;
 	}
 
 	std::unique_ptr<Composition> Composition::create(const char* textSource)

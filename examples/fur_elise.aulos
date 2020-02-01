@@ -3,24 +3,24 @@ speed 6
 title "Fur Elise"
 
 @voice 1 "RightHand"
-wave linear 0.8
-amplitude 0.0 0.01 1.0 0.04 0.5 0.95 0.0
-frequency 0.8 0.01 0.8 0.04 1.0 0.95 0.99
-asymmetry 0.5 0.05 0.9 0.95 0.0
+wave linear 0.80
+amplitude 0.00 0.01 1.00 0.04 0.50 0.95 0.00
+frequency 0.80 0.01 0.80 0.04 1.00 0.95 0.99
+asymmetry 0.50 0.05 0.90 0.95 0.00
 
 @voice 2 "LeftHand"
-wave linear 0.0
-amplitude 0.0 0.01 1.0 0.04 1.0 0.05 0.4 0.9 0.0
-frequency 0.5 0.01 1.0 0.09 1.0 0.1 0.99 0.8 0.95
-asymmetry 0.3 0.1 0.0 0.9 0.9
+wave linear 0.00
+amplitude 0.00 0.01 1.00 0.04 1.00 0.05 0.40 0.90 0.00
+frequency 0.50 0.01 1.00 0.09 1.00 0.10 0.99 0.80 0.95
+asymmetry 0.30 0.10 0.00 0.90 0.90
 
 @tracks
 1 1 3
 2 1 2
 
 @sequences
-1 1 1 E5 D#5 E5 D#5 E5 B4 D5 C5 A4 .  .  C4 E4 A4 B4 .  .   E4 G#4 B4 C5 .  .  E4 E5 D#5 E5 D#5 E5 B4 D5 C5 A4 .  .  C4 E4 A4 B4 .  .   E4 C5 B4 A4 .  .  . E5 D#5 E5 D#5 E5 B4 D5 C5 A4 .  .  C4 E4 A4 B4 .  .   E4 G#4 B4 C5 .  .  E4 E5 D#5 E5 D#5 E5 B4 D5 C5 A4 .  .  C4 E4 A4 B4 .  .   E4 C5 B4 A4 .  .  B4 C5 D5 E5 .  .  G4 F5 E5 D5 .  .  F4 E5 D5 C5 .  .  E4 D5 C5 B4 .  E4 E4 E5 E4 E5 E5 E6 D#5 E5 D#5 E5 D#5 E5 D#5 E5 D#5 E5 D#5 E5 B4 D5 C5 A4 .  .  C4 E4 A4 B4 .  .   E4 G#4 B4 C5 .  .  E4 E5 D#5 E5 D#5 E5 B4 D5 C5 A4 .  .  C4 E4 A4 B4 .  .   E4 C5 B4 A4
-2 1 1 A2 E3 A3 .  .  .  E2 E3 G#3 .  .   .  A2 E3 A3 .  .  .   .  .   .  .  .  .  A2 E3 A3 .  .  .  E2 E3 G#3 .  .  .  A2 E3 A3 . .  .   .  .   .  .  .  .  A2 E3 A3 .  .  .  E2 E3 G#3 .  .   .  A2 E3 A3 .  .  .   .  .   .  .  .  .  A2 E3 A3 .  .  .  E2 E3 G#3 .  .  .  A2 E3 A3 .  .  .  C3 G3 C4 .  .  .  G2 G3 B3 .  .  .  A2 E3 A3 .  .  .  E2 E3 .  .  .  .  .  .  .  .   .  .   .  .   .  .   .  .   .  .   .  .  .  .  A2 E3 A3 .  .  .  E2 E3 G#3 .  .   .  A2 E3 A3 .  .  .   .  .   .  .  .  .  A2 E3 A3 .  .  .  E2 E3 G#3 .  .  .  A2 E3 A3
+1 1 1 E5 D#5 E5 D#5 E5 B4 D5 C5 A4 . . C4 E4 A4 B4 . . E4 G#4 B4 C5 . . E4 E5 D#5 E5 D#5 E5 B4 D5 C5 A4 . . C4 E4 A4 B4 . . E4 C5 B4 A4 . . . E5 D#5 E5 D#5 E5 B4 D5 C5 A4 . . C4 E4 A4 B4 . . E4 G#4 B4 C5 . . E4 E5 D#5 E5 D#5 E5 B4 D5 C5 A4 . . C4 E4 A4 B4 . . E4 C5 B4 A4 . . B4 C5 D5 E5 . . G4 F5 E5 D5 . . F4 E5 D5 C5 . . E4 D5 C5 B4 . E4 E4 E5 E4 E5 E5 E6 D#5 E5 D#5 E5 D#5 E5 D#5 E5 D#5 E5 D#5 E5 B4 D5 C5 A4 . . C4 E4 A4 B4 . . E4 G#4 B4 C5 . . E4 E5 D#5 E5 D#5 E5 B4 D5 C5 A4 . . C4 E4 A4 B4 . . E4 C5 B4 A4
+2 1 1 A2 E3 A3 . . . E2 E3 G#3 . . . A2 E3 A3 . . . . . . . . . A2 E3 A3 . . . E2 E3 G#3 . . . A2 E3 A3 . . . . . . . . . A2 E3 A3 . . . E2 E3 G#3 . . . A2 E3 A3 . . . . . . . . . A2 E3 A3 . . . E2 E3 G#3 . . . A2 E3 A3 . . . C3 G3 C4 . . . G2 G3 B3 . . . A2 E3 A3 . . . E2 E3 . . . . . . . . . . . . . . . . . . . . . . A2 E3 A3 . . . E2 E3 G#3 . . . A2 E3 A3 . . . . . . . . . A2 E3 A3 . . . E2 E3 G#3 . . . A2 E3 A3
 
 @fragments 1 1
 1 1

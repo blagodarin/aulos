@@ -54,5 +54,6 @@ namespace aulos
 		std::string _author;
 
 		void load(const char* source);
+		std::vector<std::byte> save() const override;
 	};
 }
