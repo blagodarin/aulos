@@ -27,6 +27,7 @@
 #include <aulos/data.hpp>
 
 #include <QApplication>
+#include <QCloseEvent>
 #include <QFileDialog>
 #include <QGraphicsView>
 #include <QLabel>
@@ -102,9 +103,16 @@ Studio::Studio()
 	const auto fileMenu = menuBar()->addMenu(tr("&File"));
 	_fileOpenAction = fileMenu->addAction(
 		qApp->style()->standardIcon(QStyle::SP_DialogOpenButton), tr("&Open..."), [this] {
+			if (!maybeSaveComposition())
+				return;
 			const auto path = QFileDialog::getOpenFileName(this, tr("Open Composition"), _hasComposition ? QFileInfo{ _compositionPath }.dir().path() : QString{}, tr("Aulos Files (*.aulos)"));
-			if (!path.isNull())
-				openComposition(path);
+			if (path.isNull())
+				return;
+			closeComposition();
+			if (!openComposition(path))
+				return;
+			_changed = false;
+			updateStatus();
 		},
 		Qt::CTRL + Qt::Key_O);
 	_fileSaveAction = fileMenu->addAction(
@@ -130,7 +138,14 @@ Studio::Studio()
 	_fileExportAction = fileMenu->addAction(
 		tr("&Export..."), [this] { exportComposition(); });
 	_fileCloseAction = fileMenu->addAction(
-		tr("&Close"), [this] { closeComposition(); }, Qt::CTRL + Qt::Key_W);
+		tr("&Close"), [this] {
+			if (!maybeSaveComposition())
+				return;
+			closeComposition();
+			_changed = false;
+			updateStatus();
+		},
+		Qt::CTRL + Qt::Key_W);
 	fileMenu->addSeparator();
 	_recentFilesMenu = fileMenu->addMenu(tr("&Recent Files"));
 	for (const auto& recentFile : loadRecentFileList())
@@ -392,8 +407,6 @@ void Studio::closeComposition()
 	_speedSpin->setValue(_speedSpin->minimum());
 	_compositionScene->reset(nullptr);
 	_player->stop();
-	_changed = false;
-	updateStatus();
 }
 
 bool Studio::editTrack(aulos::TrackData& track)
@@ -456,13 +469,21 @@ void Studio::exportComposition()
 	file.commit();
 }
 
-void Studio::openComposition(const QString& path)
+bool Studio::maybeSaveComposition() const
 {
-	closeComposition();
+	if (!_changed)
+		return true;
+	const auto action = QMessageBox::question(const_cast<Studio*>(this), {}, tr("Save changes to the current composition?"), QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
+	return action == QMessageBox::Yes ? saveComposition(_compositionPath) : action == QMessageBox::No;
+}
+
+bool Studio::openComposition(const QString& path)
+{
+	assert(!_hasComposition);
 
 	QFile file{ path };
 	if (!file.open(QIODevice::ReadOnly))
-		return;
+		return false;
 
 	std::unique_ptr<aulos::Composition> composition;
 	try
@@ -471,7 +492,7 @@ void Studio::openComposition(const QString& path)
 	}
 	catch (const std::runtime_error&)
 	{
-		return;
+		return false;
 	}
 
 	_composition = std::make_shared<aulos::CompositionData>(*composition);
@@ -483,7 +504,7 @@ void Studio::openComposition(const QString& path)
 	_hasComposition = true;
 	setRecentFile(path);
 	saveRecentFiles();
-	updateStatus();
+	return true;
 }
 
 bool Studio::saveComposition(const QString& path) const
@@ -512,7 +533,14 @@ void Studio::setRecentFile(const QString& path)
 	else
 	{
 		const auto action = new QAction{ path, this };
-		connect(action, &QAction::triggered, [this, path] { openComposition(path); });
+		connect(action, &QAction::triggered, [this, path] {
+			if (!maybeSaveComposition())
+				return;
+			closeComposition();
+			openComposition(path);
+			_changed = false;
+			updateStatus();
+		});
 		_recentFilesActions.prepend(action);
 		_recentFilesMenu->insertAction(_recentFilesMenu->actions().value(0, nullptr), action);
 		while (_recentFilesActions.size() > kMaxRecentFiles)
@@ -524,7 +552,7 @@ void Studio::setRecentFile(const QString& path)
 	}
 }
 
-void Studio::saveRecentFiles()
+void Studio::saveRecentFiles() const
 {
 	QStringList recentFiles;
 	for (const auto action : _recentFilesActions)
@@ -546,4 +574,9 @@ void Studio::updateStatus()
 	_speedSpin->setEnabled(_hasComposition && !_player->isPlaying());
 	_compositionView->setEnabled(_hasComposition);
 	_statusPath->setText(_hasComposition ? _compositionPath : QStringLiteral("<i>%1</i>").arg(tr("no file")));
+}
+
+void Studio::closeEvent(QCloseEvent* e)
+{
+	e->setAccepted(maybeSaveComposition());
 }

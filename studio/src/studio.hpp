@@ -50,11 +50,15 @@ private:
 	bool editTrack(aulos::TrackData&);
 	bool editVoice(const void* id, aulos::Voice&);
 	void exportComposition();
-	void openComposition(const QString& path);
+	bool maybeSaveComposition() const;
+	bool openComposition(const QString& path);
 	bool saveComposition(const QString& path) const;
-	void saveRecentFiles();
+	void saveRecentFiles() const;
 	void setRecentFile(const QString& path);
 	void updateStatus();
+
+private:
+	void closeEvent(QCloseEvent*) override;
 
 private:
 	std::shared_ptr<aulos::CompositionData> _composition;
