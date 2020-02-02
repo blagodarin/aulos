@@ -1,4 +1,4 @@
-version: 0.0.{build}-{branch}
+version: 0.0.0.{build}-{branch}
 image: Visual Studio 2019
 shallow_clone: true
 
@@ -7,12 +7,15 @@ environment:
     - CONFIG: Release
       ARCH: amd64
       QTDIR: C:\Qt\5.13.2\msvc2017_64
+      INSTALLER: ON
     - CONFIG: Debug
       ARCH: amd64
       QTDIR: C:\Qt\5.13.2\msvc2017_64
+      INSTALLER: OFF
     - CONFIG: Release
       ARCH: x86
       QTDIR: C:\Qt\5.13.2\msvc2017
+      INSTALLER: OFF
 
 install:
   - cmake --version
@@ -23,6 +26,12 @@ build_script:
   - set BUILD_DIR=%APPVEYOR_BUILD_FOLDER%\_build
   - set INSTALL_DIR=%APPVEYOR_BUILD_FOLDER%\_install
   - mkdir %BUILD_DIR% && cd %BUILD_DIR%
-  - cmake -G Ninja %APPVEYOR_BUILD_FOLDER% -DCMAKE_BUILD_TYPE=%CONFIG% -DCMAKE_INSTALL_PREFIX=%INSTALL_DIR% -DCMAKE_PREFIX_PATH=%QTDIR% -DWITH_STUDIO=ON
+  - cmake -G Ninja %APPVEYOR_BUILD_FOLDER% -DCMAKE_BUILD_TYPE=%CONFIG% -DCMAKE_INSTALL_PREFIX=%INSTALL_DIR% -DCMAKE_PREFIX_PATH=%QTDIR% -DWITH_STUDIO=ON -DWITH_STUDIO_INSTALLER=%INSTALLER%
   - cmake --build .
   - cmake --build . --target install
+  - if "%INSTALLER%"=="ON" cmake --build . --target studio_installer
+  - if "%INSTALLER%"=="ON" xcopy %BUILD_DIR%\AulosStudio-*.exe %APPVEYOR_BUILD_FOLDER%
+
+artifacts:
+  - path: AulosStudio-*.exe
+    type: file
