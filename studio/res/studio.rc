@@ -1,0 +1,30 @@
+#include <verrsrc.h>
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION 0,0,0,0
+PRODUCTVERSION 0,0,0,0
+FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
+FILEFLAGS 0
+FILEOS VOS_NT_WINDOWS32
+FILETYPE VFT_APP
+FILESUBTYPE VFT2_UNKNOWN
+BEGIN
+	BLOCK "StringFileInfo"
+	BEGIN
+		BLOCK "000004B0"
+		BEGIN
+			VALUE "CompanyName", "blagodarin.me"
+			VALUE "FileDescription", "Aulos Studio"
+			VALUE "FileVersion", "0.0.0.0"
+			VALUE "InternalName", "AulosStudio"
+			VALUE "LegalCopyright", "© 2020 Sergei Blagodarin"
+			VALUE "OriginalFilename", "AulosStudio.exe"
+			VALUE "ProductName", "Aulos Studio"
+			VALUE "ProductVersion", "0.0.0.0"
+		END
+	END
+	BLOCK "VarFileInfo"
+	BEGIN
+		VALUE "Translation", 0, 1200
+	END
+END
