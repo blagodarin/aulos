@@ -17,7 +17,7 @@
 
 cmake_minimum_required(VERSION 3.15)
 
-project(aulos VERSION 0.0.1 LANGUAGES CXX)
+project(aulos VERSION 0.0.0 HOMEPAGE_URL https://github.com/blagodarin/aulos LANGUAGES CXX)
 
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
@@ -32,6 +32,7 @@ set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER ".cmake")
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 option(WITH_STUDIO "Build Aulos Studio (requires Qt)" OFF)
+option(WITH_STUDIO_INSTALLER "Build Aulos Studio installer (requires NSIS)" OFF)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 	add_compile_options(/std:c++latest /WX /W4)
@@ -45,7 +46,7 @@ if(WITH_STUDIO)
 endif()
 
 if(WIN32)
-	set(_cmake_config_dir ${CMAKE_INSTALL_PREFIX}/cmake)
+	set(_cmake_config_dir cmake)
 else()
 	set(_cmake_config_dir ${CMAKE_INSTALL_LIBDIR}/cmake/Aulos)
 endif()
