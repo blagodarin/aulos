@@ -19,6 +19,14 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
+set(_res
+	res/studio.qrc
+	)
+if(WIN32)
+	list(APPEND _res res/studio.rc)
+endif()
+source_group("res" FILES ${_res})
+
 set(_src
 	src/add_time_item.cpp
 	src/add_time_item.hpp
@@ -54,13 +62,11 @@ set(_src
 	)
 source_group("src" FILES ${_src})
 
-add_executable(aulos_studio WIN32 ${_src})
+add_executable(aulos_studio WIN32 ${_res} ${_src})
 target_compile_options(aulos_studio PRIVATE /wd5054)
 target_link_libraries(aulos_studio PRIVATE aulos Qt5::Multimedia Qt5::Widgets)
 if(WIN32)
 	set_property(TARGET aulos_studio PROPERTY OUTPUT_NAME AulosStudio)
-	target_sources(aulos_studio PRIVATE res/studio.rc)
-	source_group("res" FILES res/studio.rc)
 endif()
 
 install(TARGETS aulos_studio RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
