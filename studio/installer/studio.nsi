@@ -49,8 +49,7 @@ Section
 	SetOutPath "$INSTDIR"
 	WriteUninstaller "$INSTDIR\Uninstall.exe"
 
-	File /nonfatal "${BUILD_DIR}\bin\AulosStudio.exe"
-	File /nonfatal "${BUILD_DIR}\bin\${CONFIG}\AulosStudio.exe"
+	File "${BUILD_DIR}\AulosStudio.exe"
 	File "$%QTDIR%\bin\Qt5Core${SUFFIX}.dll"
 	File "$%QTDIR%\bin\Qt5Gui${SUFFIX}.dll"
 	File "$%QTDIR%\bin\Qt5Multimedia${SUFFIX}.dll"
