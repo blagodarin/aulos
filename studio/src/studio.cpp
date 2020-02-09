@@ -214,8 +214,7 @@ Studio::Studio()
 		updateStatus();
 	});
 	connect(_player.get(), &Player::stateChanged, [this] {
-		if (!_player->isPlaying())
-			_compositionScene->setCurrentStep(-1);
+		_compositionScene->showCursor(_player->isPlaying());
 		updateStatus();
 	});
 	connect(_player.get(), &Player::timeAdvanced, [this](qint64 microseconds) {

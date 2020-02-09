@@ -38,6 +38,8 @@ set(_src
 	src/colors.hpp
 	src/composition_scene.cpp
 	src/composition_scene.hpp
+	src/cursor_item.cpp
+	src/cursor_item.hpp
 	src/fragment_item.cpp
 	src/fragment_item.hpp
 	src/info_editor.cpp

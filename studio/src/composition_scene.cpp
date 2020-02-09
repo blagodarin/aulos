@@ -19,6 +19,7 @@
 
 #include "add_voice_item.hpp"
 #include "colors.hpp"
+#include "cursor_item.hpp"
 #include "fragment_item.hpp"
 #include "timeline_item.hpp"
 #include "track_item.hpp"
@@ -63,7 +64,7 @@ struct CompositionScene::Track
 
 CompositionScene::CompositionScene()
 	: _timelineItem{ std::make_unique<TimelineItem>() }
-	, _cursorItem{ std::make_unique<QGraphicsLineItem>(::makeCursorLine(0)) }
+	, _cursorItem{ std::make_unique<CursorItem>() }
 	, _addVoiceItem{ std::make_unique<AddVoiceItem>() }
 	, _voiceColumnWidth{ kMinVoiceItemWidth }
 {
@@ -73,7 +74,6 @@ CompositionScene::CompositionScene()
 	_addVoiceItem->setZValue(0.5);
 	_addVoiceItem->setWidth(_voiceColumnWidth);
 	connect(_addVoiceItem.get(), &ButtonItem::clicked, this, &CompositionScene::newVoiceRequested);
-	_cursorItem->setPen(kCursorColor);
 	_cursorItem->setVisible(false);
 	_cursorItem->setZValue(1.0);
 }
@@ -104,7 +104,7 @@ void CompositionScene::addTrack(const void* voiceId, const void* trackId)
 		++index;
 	});
 	_addVoiceItem->setPos(0, _tracks.size() * kTrackHeight);
-	_cursorItem->setLine(::makeCursorLine(_tracks.size()));
+	_cursorItem->setTrackCount(_tracks.size());
 	updateSceneRect(_timelineItem->compositionLength());
 }
 
@@ -140,7 +140,7 @@ void CompositionScene::appendPart(const std::shared_ptr<aulos::PartData>& partDa
 	_addVoiceItem->setIndex(_voices.size());
 	_addVoiceItem->setPos(0, _tracks.size() * kTrackHeight);
 
-	_cursorItem->setLine(::makeCursorLine(_tracks.size()));
+	_cursorItem->setTrackCount(_tracks.size());
 }
 
 void CompositionScene::insertFragment(const void* voiceId, const void* trackId, size_t offset, const std::shared_ptr<aulos::SequenceData>& sequence)
@@ -194,7 +194,7 @@ void CompositionScene::removeTrack(const void* voiceId, const void* trackId)
 	}
 	_tracks.erase(track);
 	_addVoiceItem->setPos(0, _tracks.size() * kTrackHeight);
-	_cursorItem->setLine(::makeCursorLine(_tracks.size()));
+	_cursorItem->setTrackCount(_tracks.size());
 	updateSceneRect(_timelineItem->compositionLength());
 }
 
@@ -218,7 +218,7 @@ void CompositionScene::removeVoice(const void* voiceId)
 	_voices.erase(voice);
 	_addVoiceItem->setIndex(_voices.size());
 	_addVoiceItem->setPos(0, _tracks.size() * kTrackHeight);
-	_cursorItem->setLine(::makeCursorLine(_tracks.size()));
+	_cursorItem->setTrackCount(_tracks.size());
 	updateSceneRect(_timelineItem->compositionLength());
 }
 
@@ -269,7 +269,7 @@ void CompositionScene::reset(const std::shared_ptr<aulos::CompositionData>& comp
 		track->_background->setTrackLength(compositionLength);
 	_addVoiceItem->setIndex(_voices.size());
 	_addVoiceItem->setPos(0, _tracks.size() * kTrackHeight);
-	_cursorItem->setLine(::makeCursorLine(_tracks.size()));
+	_cursorItem->setTrackCount(_tracks.size());
 	_cursorItem->setVisible(false);
 
 	setVoiceColumnWidth(requiredVoiceColumnWidth());
@@ -283,14 +283,16 @@ void CompositionScene::reset(const std::shared_ptr<aulos::CompositionData>& comp
 
 void CompositionScene::setCurrentStep(double step)
 {
-	if (_composition)
-	{
-		const auto x = step * kStepWidth;
-		const auto isVisible = x >= 0.0 && x < sceneRect().right();
-		_cursorItem->setVisible(isVisible);
-		if (isVisible)
-			_cursorItem->setTransform(QTransform{ 1.0, 0.0, 0.0, 1.0, step * kStepWidth, 0.0 });
-	}
+	// Moving cursor leaves artifacts if the view is being scrolled.
+	// The moved-from area should be updated to clean them up.
+	const auto updateRect = _cursorItem->mapRectToScene(_cursorItem->boundingRect());
+	_cursorItem->setPos(step * kStepWidth, 0.0);
+	update(updateRect);
+}
+
+void CompositionScene::showCursor(bool visible)
+{
+	_cursorItem->setVisible(visible);
 }
 
 void CompositionScene::setSpeed(unsigned speed)

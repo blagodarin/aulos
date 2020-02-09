@@ -22,8 +22,6 @@
 
 #include <QGraphicsScene>
 
-class QGraphicsLineItem;
-
 namespace aulos
 {
 	struct CompositionData;
@@ -32,6 +30,7 @@ namespace aulos
 }
 
 class AddVoiceItem;
+class CursorItem;
 class FragmentItem;
 class TimelineItem;
 class TrackItem;
@@ -53,6 +52,7 @@ public:
 	void removeVoice(const void* voiceId);
 	void reset(const std::shared_ptr<aulos::CompositionData>&);
 	void setCurrentStep(double step);
+	void showCursor(bool);
 	void setSpeed(unsigned speed);
 	void updateVoice(const void* id, const std::string& name);
 
@@ -83,6 +83,6 @@ private:
 	std::unique_ptr<TimelineItem> _timelineItem;
 	std::vector<std::unique_ptr<Track>> _tracks;
 	std::unique_ptr<AddVoiceItem> _addVoiceItem;
-	std::unique_ptr<QGraphicsLineItem> _cursorItem;
+	std::unique_ptr<CursorItem> _cursorItem;
 	qreal _voiceColumnWidth;
 };
