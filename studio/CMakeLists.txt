@@ -47,6 +47,8 @@ set(_src
 	src/main.cpp
 	src/player.cpp
 	src/player.hpp
+	src/sequence_editor.cpp
+	src/sequence_editor.hpp
 	src/studio.cpp
 	src/studio.hpp
 	src/timeline_item.cpp

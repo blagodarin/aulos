@@ -290,14 +290,30 @@ void CompositionScene::setCurrentStep(double step)
 	update(updateRect);
 }
 
+void CompositionScene::setSpeed(unsigned speed)
+{
+	_timelineItem->setCompositionSpeed(speed);
+}
+
 void CompositionScene::showCursor(bool visible)
 {
 	_cursorItem->setVisible(visible);
 }
 
-void CompositionScene::setSpeed(unsigned speed)
+void CompositionScene::updateSequence(const void* trackId, const std::shared_ptr<aulos::SequenceData>& sequence)
 {
-	_timelineItem->setCompositionSpeed(speed);
+	const auto track = std::find_if(_tracks.begin(), _tracks.end(), [trackId](const auto& trackPtr) { return trackPtr->_background->trackId() == trackId; });
+	assert(track != _tracks.end());
+	size_t compositionLength = 0;
+	for (const auto& fragment : (*track)->_fragments)
+	{
+		if (!fragment.second->updateSequence(sequence))
+			continue;
+		compositionLength = std::max(compositionLength, fragment.second->fragmentOffset() + fragment.second->fragmentLength());
+	}
+	compositionLength += kExtraLength;
+	if (compositionLength > _timelineItem->compositionLength())
+		setCompositionLength(compositionLength);
 }
 
 void CompositionScene::updateVoice(const void* id, const std::string& name)

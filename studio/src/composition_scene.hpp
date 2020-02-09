@@ -52,8 +52,9 @@ public:
 	void removeVoice(const void* voiceId);
 	void reset(const std::shared_ptr<aulos::CompositionData>&);
 	void setCurrentStep(double step);
-	void showCursor(bool);
 	void setSpeed(unsigned speed);
+	void showCursor(bool);
+	void updateSequence(const void* trackId, const std::shared_ptr<aulos::SequenceData>&);
 	void updateVoice(const void* id, const std::string& name);
 
 signals:

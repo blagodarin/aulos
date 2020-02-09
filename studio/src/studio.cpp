@@ -20,6 +20,7 @@
 #include "composition_scene.hpp"
 #include "info_editor.hpp"
 #include "player.hpp"
+#include "sequence_editor.hpp"
 #include "track_editor.hpp"
 #include "utils.hpp"
 #include "voice_editor.hpp"
@@ -96,6 +97,7 @@ Studio::Studio()
 	, _infoEditor{ std::make_unique<InfoEditor>(this) }
 	, _voiceEditor{ std::make_unique<VoiceEditor>(this) }
 	, _trackEditor{ std::make_unique<TrackEditor>(this) }
+	, _sequenceEditor{ std::make_unique<SequenceEditor>(this) }
 	, _player{ std::make_unique<Player>() }
 {
 	resize(640, 480);
@@ -241,7 +243,10 @@ Studio::Studio()
 		assert(track != (*part)->_tracks.cend());
 		const auto fragment = (*track)->_fragments.find(offset);
 		assert(fragment != (*track)->_fragments.end());
-		// TODO: Implement.
+		if (!editSequence(trackId, fragment->second))
+			return;
+		_changed = true;
+		updateStatus();
 	});
 	connect(_compositionScene.get(), &CompositionScene::fragmentMenuRequested, [this](const void* voiceId, const void* trackId, size_t offset, const QPoint& pos) {
 		const auto part = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [voiceId](const auto& partData) { return partData->_voice.get() == voiceId; });
@@ -258,7 +263,12 @@ Studio::Studio()
 		const auto editTrackAction = menu.addAction(tr("Edit track..."));
 		const auto removeTrackAction = menu.addAction(tr("Remove track"));
 		removeTrackAction->setEnabled((*part)->_tracks.size() > 1);
-		if (const auto action = menu.exec(pos); action == removeFragmentAction)
+		if (const auto action = menu.exec(pos); action == editFragmentAction)
+		{
+			if (!editSequence(trackId, fragment->second))
+				return;
+		}
+		else if (action == removeFragmentAction)
 		{
 			_compositionScene->removeFragment(trackId, offset);
 			(*track)->_fragments.erase(fragment);
@@ -406,6 +416,16 @@ void Studio::closeComposition()
 	_speedSpin->setValue(_speedSpin->minimum());
 	_compositionScene->reset(nullptr);
 	_player->stop();
+}
+
+bool Studio::editSequence(const void* trackId, const std::shared_ptr<aulos::SequenceData>& sequence)
+{
+	_sequenceEditor->setSequence(*sequence);
+	if (_sequenceEditor->exec() != QDialog::Accepted)
+		return false;
+	*sequence = _sequenceEditor->sequence();
+	_compositionScene->updateSequence(trackId, sequence);
+	return true;
 }
 
 bool Studio::editTrack(aulos::TrackData& track)

@@ -34,19 +34,8 @@ FragmentItem::FragmentItem(TrackItem* track, size_t offset, const std::shared_pt
 	: QGraphicsObject{ track }
 	, _offset{ offset }
 	, _sequence{ sequence }
-	, _length{ std::reduce(_sequence->_sounds.begin(), _sequence->_sounds.end(), size_t{}, [](size_t length, const aulos::Sound& sound) { return length + sound._pause; }) }
-	, _width{ std::max<size_t>(_length, 1) * kStepWidth }
 {
-	setToolTip(::makeSequenceName(*_sequence));
-	if (_length > 1)
-	{
-		QTextOption textOption;
-		textOption.setWrapMode(QTextOption::NoWrap);
-		_name.setText(::makeSequenceName(*_sequence, true));
-		_name.setTextFormat(Qt::RichText);
-		_name.setTextOption(textOption);
-		_name.setTextWidth((_length - 1) * kStepWidth);
-	}
+	resetSequence();
 }
 
 QRectF FragmentItem::boundingRect() const
@@ -86,6 +75,14 @@ void FragmentItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWi
 	}
 }
 
+bool FragmentItem::updateSequence(const std::shared_ptr<aulos::SequenceData>& sequence)
+{
+	if (_sequence != sequence)
+		return false;
+	resetSequence();
+	return true;
+}
+
 void FragmentItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
 {
 	emit fragmentMenuRequested(_offset, e->screenPos());
@@ -94,4 +91,23 @@ void FragmentItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
 void FragmentItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent*)
 {
 	emit fragmentActionRequested(_offset);
+}
+
+void FragmentItem::resetSequence()
+{
+	prepareGeometryChange();
+	_length = std::reduce(_sequence->_sounds.begin(), _sequence->_sounds.end(), size_t{}, [](size_t length, const aulos::Sound& sound) { return length + sound._pause; });
+	_width = std::max<size_t>(_length, 1) * kStepWidth;
+	if (_length > 1)
+	{
+		QTextOption textOption;
+		textOption.setWrapMode(QTextOption::NoWrap);
+		_name.setText(::makeSequenceName(*_sequence, true));
+		_name.setTextFormat(Qt::RichText);
+		_name.setTextOption(textOption);
+		_name.setTextWidth((_length - 1) * kStepWidth);
+	}
+	else
+		_name = {};
+	setToolTip(::makeSequenceName(*_sequence));
 }

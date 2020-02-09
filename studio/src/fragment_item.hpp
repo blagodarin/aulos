@@ -38,6 +38,7 @@ public:
 	size_t fragmentLength() const noexcept { return _length; }
 	size_t fragmentOffset() const noexcept { return _offset; }
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
+	bool updateSequence(const std::shared_ptr<aulos::SequenceData>&);
 
 signals:
 	void fragmentActionRequested(size_t offset);
@@ -46,6 +47,8 @@ signals:
 private:
 	void contextMenuEvent(QGraphicsSceneContextMenuEvent*) override;
 	void mouseDoubleClickEvent(QGraphicsSceneMouseEvent*) override;
+
+	void resetSequence();
 
 private:
 	const size_t _offset;
