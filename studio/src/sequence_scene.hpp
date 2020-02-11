@@ -17,34 +17,11 @@
 
 #pragma once
 
-#include <memory>
+#include <QGraphicsScene>
 
-#include <QDialog>
-
-class QGraphicsView;
-class QLabel;
-
-namespace aulos
+class SequenceScene final : public QGraphicsScene
 {
-	struct SequenceData;
-}
-
-class SequenceScene;
-
-class SequenceEditor : public QDialog
-{
-	Q_OBJECT
-
 public:
-	SequenceEditor(QWidget*);
-	~SequenceEditor() override;
-
-	void setSequence(const aulos::SequenceData&);
-	aulos::SequenceData sequence() const;
-
-private:
-	std::unique_ptr<aulos::SequenceData> _sequence;
-	SequenceScene* const _scene;
-	QLabel* _sequenceLabel;
-	QGraphicsView* _sequenceView;
+	SequenceScene(QObject* parent = nullptr);
+	~SequenceScene() override;
 };

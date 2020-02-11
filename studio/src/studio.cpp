@@ -199,8 +199,7 @@ Studio::Studio()
 	toolBar->addWidget(_speedSpin);
 	addToolBar(toolBar);
 
-	_compositionView = new QGraphicsView{ this };
-	_compositionView->setScene(_compositionScene.get());
+	_compositionView = new QGraphicsView{ _compositionScene.get(), this };
 	setCentralWidget(_compositionView);
 
 	_statusPath = new QLabel{ statusBar() };

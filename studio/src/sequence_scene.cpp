@@ -15,36 +15,14 @@
 // limitations under the License.
 //
 
-#pragma once
+#include "sequence_scene.hpp"
 
-#include <memory>
+#include "colors.hpp"
 
-#include <QDialog>
-
-class QGraphicsView;
-class QLabel;
-
-namespace aulos
+SequenceScene::SequenceScene(QObject* parent)
+	: QGraphicsScene{ parent }
 {
-	struct SequenceData;
+	setBackgroundBrush(kBackgroundColor);
 }
 
-class SequenceScene;
-
-class SequenceEditor : public QDialog
-{
-	Q_OBJECT
-
-public:
-	SequenceEditor(QWidget*);
-	~SequenceEditor() override;
-
-	void setSequence(const aulos::SequenceData&);
-	aulos::SequenceData sequence() const;
-
-private:
-	std::unique_ptr<aulos::SequenceData> _sequence;
-	SequenceScene* const _scene;
-	QLabel* _sequenceLabel;
-	QGraphicsView* _sequenceView;
-};
+SequenceScene::~SequenceScene() = default;

@@ -17,17 +17,20 @@
 
 #include "sequence_editor.hpp"
 
+#include "sequence_scene.hpp"
 #include "utils.hpp"
 
 #include <aulos/data.hpp>
 
 #include <QDialogButtonBox>
+#include <QGraphicsView>
 #include <QGridLayout>
 #include <QLabel>
 
 SequenceEditor::SequenceEditor(QWidget* parent)
 	: QDialog{ parent, Qt::WindowTitleHint | Qt::CustomizeWindowHint | Qt::WindowCloseButtonHint }
 	, _sequence{ std::make_unique<aulos::SequenceData>() }
+	, _scene{ new SequenceScene{ this } }
 {
 	setWindowTitle(tr("Sequence Editor"));
 
@@ -36,7 +39,8 @@ SequenceEditor::SequenceEditor(QWidget* parent)
 	_sequenceLabel = new QLabel{ this };
 	rootLayout->addWidget(_sequenceLabel, 0, 0);
 
-	rootLayout->addItem(new QSpacerItem{ 0, 0, QSizePolicy::Minimum, QSizePolicy::Expanding }, 1, 0);
+	_sequenceView = new QGraphicsView{ _scene, this };
+	rootLayout->addWidget(_sequenceView, 1, 0);
 
 	const auto buttonBox = new QDialogButtonBox{ QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this };
 	rootLayout->addWidget(buttonBox, 2, 0);
