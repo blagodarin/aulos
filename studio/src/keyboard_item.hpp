@@ -15,17 +15,17 @@
 // limitations under the License.
 //
 
-#include "sequence_scene.hpp"
+#pragma once
 
-#include "colors.hpp"
-#include "keyboard_item.hpp"
+#include <QGraphicsObject>
 
-SequenceScene::SequenceScene(QObject* parent)
-	: QGraphicsScene{ parent }
-	, _keyboardItem{ std::make_unique<KeyboardItem>() }
+class KeyboardItem final : public QGraphicsObject
 {
-	setBackgroundBrush(kBackgroundColor);
-	addItem(_keyboardItem.get());
-}
+	Q_OBJECT
 
-SequenceScene::~SequenceScene() = default;
+public:
+	KeyboardItem(QGraphicsItem* parent = nullptr);
+
+	QRectF boundingRect() const override;
+	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
+};

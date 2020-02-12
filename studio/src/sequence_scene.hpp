@@ -17,11 +17,18 @@
 
 #pragma once
 
+#include <memory>
+
 #include <QGraphicsScene>
+
+class KeyboardItem;
 
 class SequenceScene final : public QGraphicsScene
 {
 public:
 	SequenceScene(QObject* parent = nullptr);
 	~SequenceScene() override;
+
+private:
+	const std::unique_ptr<KeyboardItem> _keyboardItem;
 };

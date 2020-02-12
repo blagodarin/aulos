@@ -44,6 +44,8 @@ set(_src
 	src/fragment_item.hpp
 	src/info_editor.cpp
 	src/info_editor.hpp
+	src/keyboard_item.cpp
+	src/keyboard_item.hpp
 	src/main.cpp
 	src/player.cpp
 	src/player.hpp
