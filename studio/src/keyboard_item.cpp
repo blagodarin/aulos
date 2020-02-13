@@ -17,13 +17,45 @@
 
 #include "keyboard_item.hpp"
 
+#include <array>
+
 #include <QPainter>
 
 namespace
 {
-	constexpr auto kNoteHeight = 20.;
+	constexpr auto kNoteHeight = 20.0;
 	constexpr auto kWhiteKeyWidth = 3 * kNoteHeight;
 	constexpr auto kBlackKeyWidth = 2 * kNoteHeight;
+
+	struct KeyInfo
+	{
+		QString _name;
+		qreal _y;
+		qreal _width;
+		qreal _height;
+		QColor _borderColor;
+		QColor _textColor;
+	};
+
+	const QColor kWhiteKeyBorder{ "#aaa" };
+	const QColor kWhiteKeyText{ "#999" };
+	const QColor kBlackKeyBorder{ "#555" };
+	const QColor kBlackKeyText{ "#999" };
+
+	const std::array<KeyInfo, 12> kKeyInfo{
+		KeyInfo{ QStringLiteral("B%1"), 0.0, kWhiteKeyWidth, 1.5, kWhiteKeyBorder, kWhiteKeyText },
+		KeyInfo{ QStringLiteral("A#%1"), 1.0, kBlackKeyWidth, 1.0, kBlackKeyBorder, kBlackKeyText },
+		KeyInfo{ QStringLiteral("A%1"), 1.5, kWhiteKeyWidth, 2.0, kWhiteKeyBorder, kWhiteKeyText },
+		KeyInfo{ QStringLiteral("G#%1"), 3.0, kBlackKeyWidth, 1.0, kBlackKeyBorder, kBlackKeyText },
+		KeyInfo{ QStringLiteral("G%1"), 3.5, kWhiteKeyWidth, 2.0, kWhiteKeyBorder, kWhiteKeyText },
+		KeyInfo{ QStringLiteral("F#%1"), 5.0, kBlackKeyWidth, 1.0, kBlackKeyBorder, kBlackKeyText },
+		KeyInfo{ QStringLiteral("F%1"), 5.5, kWhiteKeyWidth, 1.5, kWhiteKeyBorder, kWhiteKeyText },
+		KeyInfo{ QStringLiteral("E%1"), 7.0, kWhiteKeyWidth, 1.5, kWhiteKeyBorder, kWhiteKeyText },
+		KeyInfo{ QStringLiteral("D#%1"), 8.0, kBlackKeyWidth, 1.0, kBlackKeyBorder, kBlackKeyText },
+		KeyInfo{ QStringLiteral("D%1"), 8.5, kWhiteKeyWidth, 2.0, kWhiteKeyBorder, kWhiteKeyText },
+		KeyInfo{ QStringLiteral("C#%1"), 10.0, kBlackKeyWidth, 1.0, kBlackKeyBorder, kBlackKeyText },
+		KeyInfo{ QStringLiteral("C%1"), 10.5, kWhiteKeyWidth, 1.5, kWhiteKeyBorder, kWhiteKeyText },
+	};
 }
 
 KeyboardItem::KeyboardItem(QGraphicsItem* parent)
@@ -33,32 +65,37 @@ KeyboardItem::KeyboardItem(QGraphicsItem* parent)
 
 QRectF KeyboardItem::boundingRect() const
 {
-	return { 0.0, -kWhiteKeyWidth, kWhiteKeyWidth, 12 * kNoteHeight };
+	return { 0.0, -kWhiteKeyWidth, kWhiteKeyWidth, 120 * kNoteHeight };
 }
 
 void KeyboardItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*)
 {
-	const auto octaveRect = boundingRect();
-	const auto topLeft = [&octaveRect](qreal y) {
-		return octaveRect.topLeft() + QPointF{ 0.0, kNoteHeight * y };
+	const auto drawKey = [painter](const QPointF& topLeft, int octave, size_t note) {
+		const auto& key = kKeyInfo[note];
+		painter->setPen(key._borderColor);
+		painter->drawRect(QRectF{ { topLeft.x(), topLeft.y() + kNoteHeight * key._y }, QSizeF{ key._width, kNoteHeight * key._height } });
+		painter->setPen(key._textColor);
+		painter->drawText(QRectF{ { topLeft.x(), topLeft.y() + kNoteHeight * note }, QSizeF{ key._width - kNoteHeight * 0.125, kNoteHeight } }, Qt::AlignVCenter | Qt::AlignRight, key._name.arg(octave));
 	};
-	const auto keySize = [&octaveRect](qreal width, qreal height = 1.0) {
-		return QSizeF{ width, kNoteHeight * height };
-	};
-	painter->setPen(Qt::lightGray);
-	painter->setBrush(Qt::white);
-	painter->drawRect(QRectF{ topLeft(0.0), keySize(kWhiteKeyWidth, 1.5) });  // B
-	painter->drawRect(QRectF{ topLeft(1.5), keySize(kWhiteKeyWidth, 2.0) });  // A
-	painter->drawRect(QRectF{ topLeft(3.5), keySize(kWhiteKeyWidth, 2.0) });  // G
-	painter->drawRect(QRectF{ topLeft(5.5), keySize(kWhiteKeyWidth, 1.5) });  // F
-	painter->drawRect(QRectF{ topLeft(7.0), keySize(kWhiteKeyWidth, 1.5) });  // E
-	painter->drawRect(QRectF{ topLeft(8.5), keySize(kWhiteKeyWidth, 2.0) });  // D
-	painter->drawRect(QRectF{ topLeft(10.5), keySize(kWhiteKeyWidth, 1.5) }); // C
-	painter->setPen(Qt::darkGray);
-	painter->setBrush(Qt::black);
-	painter->drawRect(QRectF{ topLeft(1.0), keySize(kBlackKeyWidth) });  // A#
-	painter->drawRect(QRectF{ topLeft(3.0), keySize(kBlackKeyWidth) });  // G#
-	painter->drawRect(QRectF{ topLeft(5.0), keySize(kBlackKeyWidth) });  // E#
-	painter->drawRect(QRectF{ topLeft(8.0), keySize(kBlackKeyWidth) });  // D#
-	painter->drawRect(QRectF{ topLeft(10.0), keySize(kBlackKeyWidth) }); // C#
+
+	auto octaveRect = boundingRect();
+	octaveRect.setHeight(12 * kNoteHeight);
+	for (int octave = 9; octave >= 0; --octave)
+	{
+		painter->setBrush(Qt::white);
+		drawKey(octaveRect.topLeft(), octave, 0);
+		drawKey(octaveRect.topLeft(), octave, 2);
+		drawKey(octaveRect.topLeft(), octave, 4);
+		drawKey(octaveRect.topLeft(), octave, 6);
+		drawKey(octaveRect.topLeft(), octave, 7);
+		drawKey(octaveRect.topLeft(), octave, 9);
+		drawKey(octaveRect.topLeft(), octave, 11);
+		painter->setBrush(Qt::black);
+		drawKey(octaveRect.topLeft(), octave, 1);
+		drawKey(octaveRect.topLeft(), octave, 3);
+		drawKey(octaveRect.topLeft(), octave, 5);
+		drawKey(octaveRect.topLeft(), octave, 8);
+		drawKey(octaveRect.topLeft(), octave, 10);
+		octaveRect.moveTop(octaveRect.bottom());
+	}
 }
