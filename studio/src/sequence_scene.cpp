@@ -18,14 +18,14 @@
 #include "sequence_scene.hpp"
 
 #include "colors.hpp"
-#include "keyboard_item.hpp"
+#include "key_item.hpp"
 
 SequenceScene::SequenceScene(QObject* parent)
 	: QGraphicsScene{ parent }
-	, _keyboardItem{ std::make_unique<KeyboardItem>() }
 {
 	setBackgroundBrush(kBackgroundColor);
-	addItem(_keyboardItem.get());
+	for (int note = 0; note < 120; ++note)
+		addItem(new KeyItem{ static_cast<aulos::Note>(note) });
 }
 
 SequenceScene::~SequenceScene() = default;

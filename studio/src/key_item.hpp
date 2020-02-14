@@ -17,15 +17,31 @@
 
 #pragma once
 
+#include <aulos/data.hpp>
+
+#include <array>
+
 #include <QGraphicsObject>
 
-class KeyboardItem final : public QGraphicsObject
+class KeyItem final : public QGraphicsObject
 {
 	Q_OBJECT
 
 public:
-	KeyboardItem(QGraphicsItem* parent = nullptr);
+	KeyItem(aulos::Note, QGraphicsItem* parent = nullptr);
 
 	QRectF boundingRect() const override;
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
+
+private:
+	struct NoteInfo;
+	struct StyleInfo;
+
+	static const std::array<NoteInfo, 12> kNoteInfo;
+	static const std::array<StyleInfo, 2> kStyleInfo;
+
+	const aulos::Note _note;
+	const int _octave;
+	const NoteInfo& _noteInfo;
+	const StyleInfo& _styleInfo;
 };
