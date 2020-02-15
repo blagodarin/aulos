@@ -17,13 +17,13 @@
 
 #pragma once
 
+#include "button_item.hpp"
+
 #include <aulos/data.hpp>
 
 #include <array>
 
-#include <QGraphicsObject>
-
-class KeyItem final : public QGraphicsObject
+class KeyItem final : public ButtonItem
 {
 	Q_OBJECT
 

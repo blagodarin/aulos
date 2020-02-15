@@ -35,7 +35,7 @@ namespace
 }
 
 AddTimeItem::AddTimeItem(const Colors& colors, QGraphicsItem* parent)
-	: ButtonItem{ parent }
+	: ButtonItem{ Mode::Click, parent }
 	, _colors{ colors }
 {
 }

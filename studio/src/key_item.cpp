@@ -36,16 +36,28 @@ namespace
 
 struct KeyItem::StyleInfo
 {
+	struct Colors
+	{
+		QColor _normal;
+		QColor _hovered;
+		QColor _pressed;
+
+		const QColor& operator()(bool hovered, bool pressed) const noexcept
+		{
+			return pressed ? _pressed : (hovered ? _hovered : _normal);
+		}
+	};
+
 	qreal _width;
-	QColor _backgroundColor;
-	QColor _borderColor;
-	QColor _textColor;
+	Colors _backgroundColors;
+	Colors _borderColors;
+	Colors _textColors;
 	qreal _z;
 };
 
 const std::array<KeyItem::StyleInfo, 2> KeyItem::kStyleInfo{
-	StyleInfo{ kWhiteKeyWidth, Qt::white, "#aaa", "#999", 0.5 },
-	StyleInfo{ kBlackKeyWidth, Qt::black, "#555", "#999", 1.0 },
+	StyleInfo{ kWhiteKeyWidth, { "#fff", "#fdd", "#fcc" }, { "#aaa", "#aaa", "#aaa" }, { "#999", "#944", "#900" }, 0.5 },
+	StyleInfo{ kBlackKeyWidth, { "#000", "#200", "#300" }, { "#555", "#500", "#500" }, { "#999", "#f99", "#f99" }, 1.0 },
 };
 
 struct KeyItem::NoteInfo
@@ -73,7 +85,7 @@ const std::array<KeyItem::NoteInfo, 12> KeyItem::kNoteInfo{
 };
 
 KeyItem::KeyItem(aulos::Note note, QGraphicsItem* parent)
-	: QGraphicsObject{ parent }
+	: ButtonItem{ Mode::Press, parent }
 	, _note{ note }
 	, _octave{ static_cast<int>(_note) / 12 }
 	, _noteInfo{ kNoteInfo[static_cast<size_t>(_note) % 12] }
@@ -90,9 +102,14 @@ QRectF KeyItem::boundingRect() const
 
 void KeyItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*)
 {
-	painter->setBrush(_styleInfo._backgroundColor);
-	painter->setPen(_styleInfo._borderColor);
-	painter->drawRect(boundingRect());
-	painter->setPen(_styleInfo._textColor);
+	const auto rect = boundingRect();
+	painter->setBrush(_styleInfo._backgroundColors(isHovered(), isPressed()));
+	painter->setPen(Qt::transparent);
+	painter->drawRect(rect);
+	painter->setPen(_styleInfo._borderColors(isHovered(), isPressed()));
+	painter->drawLine(rect.topLeft(), rect.topRight());
+	painter->drawLine(rect.topRight(), rect.bottomRight());
+	painter->drawLine(rect.bottomRight(), rect.bottomLeft());
+	painter->setPen(_styleInfo._textColors(isHovered(), isPressed()));
 	painter->drawText(QRectF{ { 0, _noteInfo._textOffset * kNoteHeight }, QSizeF{ _styleInfo._width - kNoteHeight * 0.125, kNoteHeight } }, Qt::AlignVCenter | Qt::AlignRight, _noteInfo._name.arg(_octave));
 }

@@ -73,7 +73,7 @@ CompositionScene::CompositionScene()
 	connect(_timelineItem.get(), &TimelineItem::lengthRequested, this, &CompositionScene::setCompositionLength);
 	_addVoiceItem->setZValue(0.5);
 	_addVoiceItem->setWidth(_voiceColumnWidth);
-	connect(_addVoiceItem.get(), &ButtonItem::clicked, this, &CompositionScene::newVoiceRequested);
+	connect(_addVoiceItem.get(), &ButtonItem::activated, this, &CompositionScene::newVoiceRequested);
 	_cursorItem->setVisible(false);
 	_cursorItem->setZValue(1.0);
 }

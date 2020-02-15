@@ -19,8 +19,9 @@
 
 #include <QGraphicsSceneEvent>
 
-ButtonItem::ButtonItem(QGraphicsItem* parent)
+ButtonItem::ButtonItem(Mode mode, QGraphicsItem* parent)
 	: QGraphicsObject{ parent }
+	, _mode{ mode }
 {
 	setAcceptHoverEvents(true);
 }
@@ -45,6 +46,8 @@ void ButtonItem::mousePressEvent(QGraphicsSceneMouseEvent* e)
 	{
 		_pressed = true;
 		update();
+		if (_mode == Mode::Press)
+			emit activated();
 	}
 }
 
@@ -52,6 +55,6 @@ void ButtonItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* e)
 {
 	_pressed = false;
 	update();
-	if (boundingRect().contains(e->lastPos()))
-		emit clicked();
+	if (_mode == Mode::Click && boundingRect().contains(e->lastPos()))
+		emit activated();
 }

@@ -24,10 +24,16 @@ class ButtonItem : public QGraphicsObject
 	Q_OBJECT
 
 public:
-	ButtonItem(QGraphicsItem* parent = nullptr);
+	enum class Mode
+	{
+		Click,
+		Press,
+	};
+
+	ButtonItem(Mode mode = Mode::Click, QGraphicsItem* parent = nullptr);
 
 signals:
-	void clicked();
+	void activated();
 
 protected:
 	bool isHovered() const noexcept { return _hovered; }
@@ -40,6 +46,7 @@ private:
 	void mouseReleaseEvent(QGraphicsSceneMouseEvent*) override;
 
 private:
+	const Mode _mode;
 	bool _hovered = false;
 	bool _pressed = false;
 };

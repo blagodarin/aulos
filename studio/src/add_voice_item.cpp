@@ -36,7 +36,7 @@ namespace
 }
 
 AddVoiceItem::AddVoiceItem(QGraphicsItem* parent)
-	: ButtonItem{ parent }
+	: ButtonItem{ Mode::Click, parent }
 {
 }
 

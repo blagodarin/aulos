@@ -28,7 +28,7 @@ TimelineItem::TimelineItem(QGraphicsItem* parent)
 	, _addTimeItem{ new AddTimeItem{ kTimelineColors[0], this } }
 {
 	setFlag(QGraphicsItem::ItemUsesExtendedStyleOption);
-	connect(_addTimeItem, &AddTimeItem::clicked, this, [this] { emit lengthRequested(_length + (_speed - _length % _speed)); });
+	connect(_addTimeItem, &AddTimeItem::activated, this, [this] { emit lengthRequested(_length + (_speed - _length % _speed)); });
 }
 
 QRectF TimelineItem::boundingRect() const
