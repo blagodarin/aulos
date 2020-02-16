@@ -34,6 +34,7 @@ public:
 	SequenceScene(QObject* parent = nullptr);
 	~SequenceScene() override;
 
+	void addPianorollSteps();
 	void setSequence(const aulos::SequenceData&);
 
 signals:

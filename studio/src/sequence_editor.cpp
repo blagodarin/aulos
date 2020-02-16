@@ -41,6 +41,10 @@ SequenceEditor::SequenceEditor(QWidget* parent)
 
 	_sequenceView = new QGraphicsView{ _scene, this };
 	rootLayout->addWidget(_sequenceView, 0, 0);
+	connect(_sequenceView->horizontalScrollBar(), &QAbstractSlider::valueChanged, this, [this](int value) {
+		if (value == _sequenceView->horizontalScrollBar()->maximum())
+			_scene->addPianorollSteps();
+	}, Qt::QueuedConnection);
 
 	const auto buttonBox = new QDialogButtonBox{ QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this };
 	rootLayout->addWidget(buttonBox, 1, 0);

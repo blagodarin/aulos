@@ -23,9 +23,6 @@
 
 namespace
 {
-	constexpr auto kWhiteKeyWidth = 3 * kNoteHeight;
-	constexpr auto kBlackKeyWidth = 2 * kNoteHeight;
-
 	enum class KeyStyle : size_t
 	{
 		White,

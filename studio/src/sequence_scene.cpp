@@ -35,7 +35,6 @@ SequenceScene::SequenceScene(QObject* parent)
 		connect(keyItem, &KeyItem::activated, this, [this, note] { emit noteActivated(note); });
 	}
 	_pianorollItem = std::make_unique<PianorollItem>();
-	_pianorollItem->setStepCount(120);
 	addItem(_pianorollItem.get());
 }
 
@@ -43,6 +42,12 @@ SequenceScene::~SequenceScene()
 {
 	removeSoundItems();
 	removeItem(_pianorollItem.get());
+}
+
+void SequenceScene::addPianorollSteps()
+{
+	_pianorollItem->setStepCount(_pianorollItem->stepCount() + 8);
+	setSceneRect(_pianorollItem->boundingRect().adjusted(-kWhiteKeyWidth, 0, 0, 0));
 }
 
 void SequenceScene::setSequence(const aulos::SequenceData& sequence)
@@ -55,6 +60,8 @@ void SequenceScene::setSequence(const aulos::SequenceData& sequence)
 		soundItem->setPos(offset * kStepWidth, (119 - static_cast<size_t>(sound._note)) * kNoteHeight);
 		offset += sound._pause;
 	}
+	_pianorollItem->setStepCount((offset + 8) / 8 * 8);
+	setSceneRect(_pianorollItem->boundingRect().adjusted(-kWhiteKeyWidth, 0, 0, 0));
 }
 
 void SequenceScene::removeSoundItems()
