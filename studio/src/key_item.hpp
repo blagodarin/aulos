@@ -40,7 +40,6 @@ private:
 	static const std::array<NoteInfo, 12> kNoteInfo;
 	static const std::array<StyleInfo, 2> kStyleInfo;
 
-	const aulos::Note _note;
 	const int _octave;
 	const NoteInfo& _noteInfo;
 	const StyleInfo& _styleInfo;

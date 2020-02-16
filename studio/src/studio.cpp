@@ -242,7 +242,7 @@ Studio::Studio()
 		assert(track != (*part)->_tracks.cend());
 		const auto fragment = (*track)->_fragments.find(offset);
 		assert(fragment != (*track)->_fragments.end());
-		if (!editSequence(trackId, fragment->second))
+		if (!editSequence(trackId, *(*part)->_voice, fragment->second))
 			return;
 		_changed = true;
 		updateStatus();
@@ -264,7 +264,7 @@ Studio::Studio()
 		removeTrackAction->setEnabled((*part)->_tracks.size() > 1);
 		if (const auto action = menu.exec(pos); action == editFragmentAction)
 		{
-			if (!editSequence(trackId, fragment->second))
+			if (!editSequence(trackId, *(*part)->_voice, fragment->second))
 				return;
 		}
 		else if (action == removeFragmentAction)
@@ -417,9 +417,9 @@ void Studio::closeComposition()
 	_player->stop();
 }
 
-bool Studio::editSequence(const void* trackId, const std::shared_ptr<aulos::SequenceData>& sequence)
+bool Studio::editSequence(const void* trackId, const aulos::Voice& voice, const std::shared_ptr<aulos::SequenceData>& sequence)
 {
-	_sequenceEditor->setSequence(*sequence);
+	_sequenceEditor->setSequence(voice, *sequence);
 	if (_sequenceEditor->exec() != QDialog::Accepted)
 		return false;
 	*sequence = _sequenceEditor->sequence();

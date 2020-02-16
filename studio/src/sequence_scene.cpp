@@ -24,8 +24,13 @@ SequenceScene::SequenceScene(QObject* parent)
 	: QGraphicsScene{ parent }
 {
 	setBackgroundBrush(kBackgroundColor);
-	for (int note = 0; note < 120; ++note)
-		addItem(new KeyItem{ static_cast<aulos::Note>(note) });
+	for (int i = 0; i < 120; ++i)
+	{
+		const auto note = static_cast<aulos::Note>(i);
+		const auto keyItem = new KeyItem{ note };
+		addItem(keyItem);
+		connect(keyItem, &KeyItem::activated, this, [this, note] { emit noteActivated(note); });
+	}
 }
 
 SequenceScene::~SequenceScene() = default;

@@ -17,13 +17,20 @@
 
 #pragma once
 
+#include <aulos/data.hpp>
+
 #include <memory>
 
 #include <QGraphicsScene>
 
 class SequenceScene final : public QGraphicsScene
 {
+	Q_OBJECT
+
 public:
 	SequenceScene(QObject* parent = nullptr);
 	~SequenceScene() override;
+
+signals:
+	void noteActivated(aulos::Note);
 };

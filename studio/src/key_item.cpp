@@ -70,25 +70,24 @@ struct KeyItem::NoteInfo
 };
 
 const std::array<KeyItem::NoteInfo, 12> KeyItem::kNoteInfo{
-	NoteInfo{ QStringLiteral("B%1"), 0.0, 1.5, 0.0, KeyStyle::White },
-	NoteInfo{ QStringLiteral("A#%1"), 1.0, 1.0, 0.0, KeyStyle::Black },
-	NoteInfo{ QStringLiteral("A%1"), 1.5, 2.0, 0.5, KeyStyle::White },
-	NoteInfo{ QStringLiteral("G#%1"), 3.0, 1.0, 0.0, KeyStyle::Black },
-	NoteInfo{ QStringLiteral("G%1"), 3.5, 2.0, 0.5, KeyStyle::White },
-	NoteInfo{ QStringLiteral("F#%1"), 5.0, 1.0, 0.0, KeyStyle::Black },
-	NoteInfo{ QStringLiteral("F%1"), 5.5, 1.5, 0.5, KeyStyle::White },
-	NoteInfo{ QStringLiteral("E%1"), 7.0, 1.5, 0.0, KeyStyle::White },
-	NoteInfo{ QStringLiteral("D#%1"), 8.0, 1.0, 0.0, KeyStyle::Black },
-	NoteInfo{ QStringLiteral("D%1"), 8.5, 2.0, 0.5, KeyStyle::White },
-	NoteInfo{ QStringLiteral("C#%1"), 10.0, 1.0, 0.0, KeyStyle::Black },
 	NoteInfo{ QStringLiteral("C%1"), 10.5, 1.5, 0.5, KeyStyle::White },
+	NoteInfo{ QStringLiteral("C#%1"), 10.0, 1.0, 0.0, KeyStyle::Black },
+	NoteInfo{ QStringLiteral("D%1"), 8.5, 2.0, 0.5, KeyStyle::White },
+	NoteInfo{ QStringLiteral("D#%1"), 8.0, 1.0, 0.0, KeyStyle::Black },
+	NoteInfo{ QStringLiteral("E%1"), 7.0, 1.5, 0.0, KeyStyle::White },
+	NoteInfo{ QStringLiteral("F%1"), 5.5, 1.5, 0.5, KeyStyle::White },
+	NoteInfo{ QStringLiteral("F#%1"), 5.0, 1.0, 0.0, KeyStyle::Black },
+	NoteInfo{ QStringLiteral("G%1"), 3.5, 2.0, 0.5, KeyStyle::White },
+	NoteInfo{ QStringLiteral("G#%1"), 3.0, 1.0, 0.0, KeyStyle::Black },
+	NoteInfo{ QStringLiteral("A%1"), 1.5, 2.0, 0.5, KeyStyle::White },
+	NoteInfo{ QStringLiteral("A#%1"), 1.0, 1.0, 0.0, KeyStyle::Black },
+	NoteInfo{ QStringLiteral("B%1"), 0.0, 1.5, 0.0, KeyStyle::White },
 };
 
 KeyItem::KeyItem(aulos::Note note, QGraphicsItem* parent)
 	: ButtonItem{ Mode::Press, parent }
-	, _note{ note }
-	, _octave{ static_cast<int>(_note) / 12 }
-	, _noteInfo{ kNoteInfo[static_cast<size_t>(_note) % 12] }
+	, _octave{ static_cast<int>(note) / 12 }
+	, _noteInfo{ kNoteInfo[static_cast<size_t>(note) % kNoteInfo.size()] }
 	, _styleInfo{ kStyleInfo[static_cast<size_t>(_noteInfo._style)] }
 {
 	setPos(-kWhiteKeyWidth, ((9 - _octave) * 12 + _noteInfo._y) * kNoteHeight);

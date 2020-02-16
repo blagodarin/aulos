@@ -17,6 +17,7 @@
 
 #include "sequence_editor.hpp"
 
+#include "player.hpp"
 #include "sequence_scene.hpp"
 #include "utils.hpp"
 
@@ -29,8 +30,10 @@
 
 SequenceEditor::SequenceEditor(QWidget* parent)
 	: QDialog{ parent, Qt::WindowTitleHint | Qt::CustomizeWindowHint | Qt::WindowCloseButtonHint }
+	, _voice{ std::make_unique<aulos::Voice>() }
 	, _sequence{ std::make_unique<aulos::SequenceData>() }
 	, _scene{ new SequenceScene{ this } }
+	, _player{ std::make_unique<Player>() }
 {
 	setWindowTitle(tr("Sequence Editor"));
 
@@ -46,12 +49,23 @@ SequenceEditor::SequenceEditor(QWidget* parent)
 	rootLayout->addWidget(buttonBox, 2, 0);
 	connect(buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
 	connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
+
+	connect(this, &QDialog::finished, [this] { _player->stop(); });
+
+	connect(_scene, &SequenceScene::noteActivated, [this](aulos::Note note) {
+		const auto renderer = aulos::VoiceRenderer::create(*_voice, Player::SamplingRate);
+		assert(renderer);
+		renderer->start(note, 1.f);
+		_player->reset(*renderer);
+		_player->start();
+	});
 }
 
 SequenceEditor::~SequenceEditor() = default;
 
-void SequenceEditor::setSequence(const aulos::SequenceData& sequence)
+void SequenceEditor::setSequence(const aulos::Voice& voice, const aulos::SequenceData& sequence)
 {
+	*_voice = voice;
 	*_sequence = sequence;
 	_sequenceLabel->setText(::makeSequenceName(sequence, true));
 }

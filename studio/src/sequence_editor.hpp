@@ -27,8 +27,10 @@ class QLabel;
 namespace aulos
 {
 	struct SequenceData;
+	struct Voice;
 }
 
+class Player;
 class SequenceScene;
 
 class SequenceEditor : public QDialog
@@ -39,12 +41,14 @@ public:
 	SequenceEditor(QWidget*);
 	~SequenceEditor() override;
 
-	void setSequence(const aulos::SequenceData&);
+	void setSequence(const aulos::Voice&, const aulos::SequenceData&);
 	aulos::SequenceData sequence() const;
 
 private:
-	std::unique_ptr<aulos::SequenceData> _sequence;
+	const std::unique_ptr<aulos::Voice> _voice;
+	const std::unique_ptr<aulos::SequenceData> _sequence;
 	SequenceScene* const _scene;
 	QLabel* _sequenceLabel;
 	QGraphicsView* _sequenceView;
+	std::unique_ptr<Player> _player;
 };
