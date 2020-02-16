@@ -15,34 +15,26 @@
 // limitations under the License.
 //
 
-#pragma once
+#include "sound_item.hpp"
 
-#include <aulos/data.hpp>
+#include "colors.hpp"
+#include "utils.hpp"
 
-#include <memory>
+#include <QPainter>
 
-#include <QGraphicsScene>
-
-class PianorollItem;
-class SoundItem;
-
-class SequenceScene final : public QGraphicsScene
+SoundItem::SoundItem(QGraphicsItem* parent)
+	: QGraphicsObject{ parent }
 {
-	Q_OBJECT
+}
 
-public:
-	SequenceScene(QObject* parent = nullptr);
-	~SequenceScene() override;
+QRectF SoundItem::boundingRect() const
+{
+	return { {}, QSizeF{ kStepWidth, kNoteHeight } };
+}
 
-	void setSequence(const aulos::SequenceData&);
-
-signals:
-	void noteActivated(aulos::Note);
-
-private:
-	void removeSoundItems();
-
-private:
-	std::unique_ptr<PianorollItem> _pianorollItem;
-	std::vector<std::unique_ptr<SoundItem>> _soundItems;
-};
+void SoundItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*)
+{
+	painter->setPen(kSoundBorderColor);
+	painter->setBrush(kSoundBackgroundColor);
+	painter->drawRect(boundingRect());
+}

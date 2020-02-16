@@ -48,7 +48,6 @@ private:
 	const std::unique_ptr<aulos::Voice> _voice;
 	const std::unique_ptr<aulos::SequenceData> _sequence;
 	SequenceScene* const _scene;
-	QLabel* _sequenceLabel;
 	QGraphicsView* _sequenceView;
 	std::unique_ptr<Player> _player;
 };

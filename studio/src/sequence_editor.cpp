@@ -19,7 +19,6 @@
 
 #include "player.hpp"
 #include "sequence_scene.hpp"
-#include "utils.hpp"
 
 #include <aulos/data.hpp>
 
@@ -27,6 +26,7 @@
 #include <QGraphicsView>
 #include <QGridLayout>
 #include <QLabel>
+#include <QScrollBar>
 
 SequenceEditor::SequenceEditor(QWidget* parent)
 	: QDialog{ parent, Qt::WindowTitleHint | Qt::CustomizeWindowHint | Qt::WindowCloseButtonHint }
@@ -39,14 +39,11 @@ SequenceEditor::SequenceEditor(QWidget* parent)
 
 	const auto rootLayout = new QGridLayout{ this };
 
-	_sequenceLabel = new QLabel{ this };
-	rootLayout->addWidget(_sequenceLabel, 0, 0);
-
 	_sequenceView = new QGraphicsView{ _scene, this };
-	rootLayout->addWidget(_sequenceView, 1, 0);
+	rootLayout->addWidget(_sequenceView, 0, 0);
 
 	const auto buttonBox = new QDialogButtonBox{ QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this };
-	rootLayout->addWidget(buttonBox, 2, 0);
+	rootLayout->addWidget(buttonBox, 1, 0);
 	connect(buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
 	connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
@@ -67,7 +64,11 @@ void SequenceEditor::setSequence(const aulos::Voice& voice, const aulos::Sequenc
 {
 	*_voice = voice;
 	*_sequence = sequence;
-	_sequenceLabel->setText(::makeSequenceName(sequence, true));
+	_scene->setSequence(sequence);
+	const auto horizontalScrollBar = _sequenceView->horizontalScrollBar();
+	horizontalScrollBar->setValue(horizontalScrollBar->minimum());
+	const auto verticalScrollBar = _sequenceView->verticalScrollBar();
+	verticalScrollBar->setValue((verticalScrollBar->minimum() + verticalScrollBar->maximum()) / 2);
 }
 
 aulos::SequenceData SequenceEditor::sequence() const

@@ -55,6 +55,8 @@ set(_src
 	src/sequence_editor.hpp
 	src/sequence_scene.cpp
 	src/sequence_scene.hpp
+	src/sound_item.cpp
+	src/sound_item.hpp
 	src/studio.cpp
 	src/studio.hpp
 	src/timeline_item.cpp

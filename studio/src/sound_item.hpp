@@ -17,32 +17,18 @@
 
 #pragma once
 
-#include <aulos/data.hpp>
-
-#include <memory>
-
-#include <QGraphicsScene>
+#include <QGraphicsObject>
 
 class PianorollItem;
-class SoundItem;
 
-class SequenceScene final : public QGraphicsScene
+class SoundItem final : public QGraphicsObject
 {
 	Q_OBJECT
 
 public:
-	SequenceScene(QObject* parent = nullptr);
-	~SequenceScene() override;
-
-	void setSequence(const aulos::SequenceData&);
-
-signals:
-	void noteActivated(aulos::Note);
+	SoundItem(QGraphicsItem* parent = nullptr);
 
 private:
-	void removeSoundItems();
-
-private:
-	std::unique_ptr<PianorollItem> _pianorollItem;
-	std::vector<std::unique_ptr<SoundItem>> _soundItems;
+	QRectF boundingRect() const override;
+	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
 };

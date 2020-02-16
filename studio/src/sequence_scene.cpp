@@ -20,6 +20,8 @@
 #include "colors.hpp"
 #include "key_item.hpp"
 #include "pianoroll_item.hpp"
+#include "sound_item.hpp"
+#include "utils.hpp"
 
 SequenceScene::SequenceScene(QObject* parent)
 	: QGraphicsScene{ parent }
@@ -32,10 +34,33 @@ SequenceScene::SequenceScene(QObject* parent)
 		addItem(keyItem);
 		connect(keyItem, &KeyItem::activated, this, [this, note] { emit noteActivated(note); });
 	}
-	auto pianorollItem = std::make_unique<PianorollItem>();
-	pianorollItem->setStepCount(120);
-	addItem(pianorollItem.release());
-
+	_pianorollItem = std::make_unique<PianorollItem>();
+	_pianorollItem->setStepCount(120);
+	addItem(_pianorollItem.get());
 }
 
-SequenceScene::~SequenceScene() = default;
+SequenceScene::~SequenceScene()
+{
+	removeSoundItems();
+	removeItem(_pianorollItem.get());
+}
+
+void SequenceScene::setSequence(const aulos::SequenceData& sequence)
+{
+	removeSoundItems();
+	size_t offset = 0;
+	for (const auto& sound : sequence._sounds)
+	{
+		const auto& soundItem = _soundItems.emplace_back(std::make_unique<SoundItem>(_pianorollItem.get()));
+		soundItem->setPos(offset * kStepWidth, (119 - static_cast<size_t>(sound._note)) * kNoteHeight);
+		offset += sound._pause;
+	}
+}
+
+void SequenceScene::removeSoundItems()
+{
+	// Qt documentation says it's more efficient to remove items from the scene before destroying them.
+	for (const auto& sound : _soundItems)
+		removeItem(sound.get());
+	_soundItems.clear();
+}
