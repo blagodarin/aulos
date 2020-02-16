@@ -17,13 +17,12 @@
 
 #include "key_item.hpp"
 
-#include <array>
+#include "utils.hpp"
 
 #include <QPainter>
 
 namespace
 {
-	constexpr auto kNoteHeight = 20.0;
 	constexpr auto kWhiteKeyWidth = 3 * kNoteHeight;
 	constexpr auto kBlackKeyWidth = 2 * kNoteHeight;
 

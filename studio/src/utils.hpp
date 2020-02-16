@@ -24,6 +24,7 @@ namespace aulos
 	struct SequenceData;
 }
 
+constexpr auto kNoteHeight = 20.0;
 constexpr auto kStepWidth = 15.0;
 constexpr auto kTrackHeight = 40.0;
 constexpr auto kTimelineHeight = 0.5 * kTrackHeight;

@@ -47,6 +47,8 @@ set(_src
 	src/key_item.cpp
 	src/key_item.hpp
 	src/main.cpp
+	src/pianoroll_item.cpp
+	src/pianoroll_item.hpp
 	src/player.cpp
 	src/player.hpp
 	src/sequence_editor.cpp

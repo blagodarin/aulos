@@ -15,27 +15,24 @@
 // limitations under the License.
 //
 
-#include "sequence_scene.hpp"
+#pragma once
 
-#include "colors.hpp"
-#include "key_item.hpp"
-#include "pianoroll_item.hpp"
+#include <QGraphicsObject>
 
-SequenceScene::SequenceScene(QObject* parent)
-	: QGraphicsScene{ parent }
+class PianorollItem final : public QGraphicsObject
 {
-	setBackgroundBrush(kBackgroundColor);
-	for (int i = 0; i < 120; ++i)
-	{
-		const auto note = static_cast<aulos::Note>(i);
-		const auto keyItem = new KeyItem{ note };
-		addItem(keyItem);
-		connect(keyItem, &KeyItem::activated, this, [this, note] { emit noteActivated(note); });
-	}
-	auto pianorollItem = std::make_unique<PianorollItem>();
-	pianorollItem->setStepCount(120);
-	addItem(pianorollItem.release());
+	Q_OBJECT
 
-}
+public:
+	PianorollItem(QGraphicsItem* parent = nullptr);
 
-SequenceScene::~SequenceScene() = default;
+	QRectF boundingRect() const override;
+	size_t stepCount() const noexcept { return _stepCount; }
+	void setStepCount(size_t count);
+
+private:
+	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
+
+private:
+	size_t _stepCount = 0;
+};
