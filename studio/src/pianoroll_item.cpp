@@ -23,6 +23,26 @@
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
 
+namespace
+{
+	constexpr size_t rowToColorIndex(size_t row)
+	{
+		switch (11 - row % 12)
+		{
+		case 0:
+		case 2:
+		case 4:
+		case 5:
+		case 7:
+		case 9:
+		case 11:
+			return 0; // White.
+		default:
+			return 1; // Black.
+		}
+	}
+}
+
 PianorollItem::PianorollItem(QGraphicsItem* parent)
 	: QGraphicsObject{ parent }
 {
@@ -44,22 +64,24 @@ void PianorollItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* opt
 {
 	if (!_stepCount)
 		return;
-	painter->setPen(Qt::transparent);
-	const auto firstNote = static_cast<size_t>(std::floor(option->exposedRect.top() / kNoteHeight));
+	const auto firstRow = static_cast<size_t>(std::floor(option->exposedRect.top() / kNoteHeight));
+	const auto lastRow = static_cast<size_t>(std::ceil(option->exposedRect.bottom() / kNoteHeight));
 	const auto firstStep = static_cast<size_t>(std::floor(option->exposedRect.left() / kStepWidth));
-	for (auto note = firstNote; note < 120; ++note)
+	const auto lastStep = static_cast<size_t>(std::ceil(option->exposedRect.right() / kStepWidth));
+	for (auto row = firstRow; row < lastRow; ++row)
 	{
-		QRectF rect{ { firstStep * kStepWidth, note * kNoteHeight }, QSizeF{ kStepWidth, kNoteHeight } };
-		const auto& colors = kTrackColors[note % kTrackColors.size()]._colors;
-		for (auto step = firstStep; step < _stepCount; ++step)
+		const auto rowTop = row * kNoteHeight;
+		const auto rowBottom = rowTop + kNoteHeight;
+		painter->setPen(Qt::transparent);
+		painter->setBrush(kPianorollBackgroundColor[::rowToColorIndex(row)]);
+		painter->drawRect({ { option->exposedRect.left(), rowTop }, QSizeF{ option->exposedRect.width(), kNoteHeight } });
+		painter->setPen(kPianorollGridColor);
+		for (auto step = firstStep; step < lastStep; ++step)
 		{
-			painter->setBrush(colors[step % colors.size()]);
-			painter->drawRect(rect);
-			if (rect.right() > option->exposedRect.right())
-				break;
-			rect.moveLeft(rect.right());
+			const auto stepLeft = step * kStepWidth;
+			painter->drawLine(QPointF{ stepLeft, rowTop }, QPointF{ stepLeft, rowBottom });
 		}
-		if (rect.bottom() > option->exposedRect.bottom())
-			break;
+		painter->setPen(row % 12 ? kPianorollGridColor : kPianorollOctaveBorderColor);
+		painter->drawLine(QPointF{ option->exposedRect.left(), rowTop }, QPointF{ option->exposedRect.right(), rowTop });
 	}
 }

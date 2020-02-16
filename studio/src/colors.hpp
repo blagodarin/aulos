@@ -44,3 +44,7 @@ struct TrackColors
 };
 
 extern const std::array<TrackColors, 2> kTrackColors;
+
+extern const std::array<QColor, 2> kPianorollBackgroundColor;
+extern const QColor kPianorollGridColor;
+extern const QColor kPianorollOctaveBorderColor;

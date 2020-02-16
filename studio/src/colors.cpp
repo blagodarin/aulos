@@ -47,3 +47,7 @@ const std::array<TrackColors, 2> kTrackColors{
 	TrackColors{ "#777", "#666" },
 	TrackColors{ "#666", "#555" },
 };
+
+const std::array<QColor, 2> kPianorollBackgroundColor{ "#333", "#222" };
+const QColor kPianorollGridColor{ "#444" };
+const QColor kPianorollOctaveBorderColor{ "#666" };
