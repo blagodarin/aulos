@@ -20,6 +20,9 @@
 #include "colors.hpp"
 #include "utils.hpp"
 
+#include <cassert>
+
+#include <QGraphicsSceneEvent>
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
 
@@ -58,6 +61,18 @@ void PianorollItem::setStepCount(size_t count)
 {
 	prepareGeometryChange();
 	_stepCount = count;
+}
+
+void PianorollItem::mousePressEvent(QGraphicsSceneMouseEvent* e)
+{
+	if (e->setAccepted(e->button() == Qt::LeftButton); e->isAccepted())
+	{
+		const auto pos = e->lastPos();
+		const auto row = static_cast<size_t>(std::floor(pos.y() / kNoteHeight));
+		assert(row >= 0 && row < 120);
+		const auto offset = static_cast<size_t>(std::floor(pos.x() / kStepWidth));
+		emit newSoundRequested(offset, static_cast<aulos::Note>(119 - row));
+	}
 }
 
 void PianorollItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget*)

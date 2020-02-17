@@ -28,7 +28,12 @@ class SoundItem final : public QGraphicsObject
 public:
 	SoundItem(QGraphicsItem* parent = nullptr);
 
+signals:
+	void playRequested();
+	void removeRequested();
+
 private:
 	QRectF boundingRect() const override;
+	void mousePressEvent(QGraphicsSceneMouseEvent*) override;
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
 };

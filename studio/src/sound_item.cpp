@@ -20,6 +20,7 @@
 #include "colors.hpp"
 #include "utils.hpp"
 
+#include <QGraphicsSceneEvent>
 #include <QPainter>
 
 SoundItem::SoundItem(QGraphicsItem* parent)
@@ -30,6 +31,21 @@ SoundItem::SoundItem(QGraphicsItem* parent)
 QRectF SoundItem::boundingRect() const
 {
 	return { {}, QSizeF{ kStepWidth, kNoteHeight } };
+}
+
+void SoundItem::mousePressEvent(QGraphicsSceneMouseEvent* e)
+{
+	switch (e->button())
+	{
+	case Qt::LeftButton:
+		e->accept();
+		emit playRequested();
+		break;
+	case Qt::RightButton:
+		e->accept();
+		emit removeRequested();
+		break;
+	}
 }
 
 void SoundItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*)

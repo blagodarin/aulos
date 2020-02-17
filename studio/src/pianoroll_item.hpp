@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <aulos/data.hpp>
+
 #include <QGraphicsObject>
 
 class PianorollItem final : public QGraphicsObject
@@ -30,7 +32,11 @@ public:
 	size_t stepCount() const noexcept { return _stepCount; }
 	void setStepCount(size_t count);
 
+signals:
+	void newSoundRequested(size_t offset, aulos::Note);
+
 private:
+	void mousePressEvent(QGraphicsSceneMouseEvent*) override;
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
 
 private:

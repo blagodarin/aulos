@@ -23,6 +23,8 @@
 #include "sound_item.hpp"
 #include "utils.hpp"
 
+#include <cassert>
+
 SequenceScene::SequenceScene(QObject* parent)
 	: QGraphicsScene{ parent }
 {
@@ -32,10 +34,20 @@ SequenceScene::SequenceScene(QObject* parent)
 		const auto note = static_cast<aulos::Note>(i);
 		const auto keyItem = new KeyItem{ note };
 		addItem(keyItem);
-		connect(keyItem, &KeyItem::activated, this, [this, note] { emit noteActivated(note); });
+		connect(keyItem, &KeyItem::activated, [this, note] { emit noteActivated(note); });
 	}
 	_pianorollItem = std::make_unique<PianorollItem>();
 	addItem(_pianorollItem.get());
+	connect(_pianorollItem.get(), &PianorollItem::newSoundRequested, [this](size_t offset, aulos::Note note) {
+		if (const auto i = _soundItems.find(offset); i != _soundItems.end())
+		{
+			disconnect(i->second.get(), &SoundItem::playRequested, nullptr, nullptr);
+			updateSound(i->second.get(), offset, note);
+		}
+		else
+			insertSound(offset, note);
+		emit noteActivated(note);
+	});
 }
 
 SequenceScene::~SequenceScene()
@@ -56,18 +68,37 @@ void SequenceScene::setSequence(const aulos::SequenceData& sequence)
 	size_t offset = 0;
 	for (const auto& sound : sequence._sounds)
 	{
-		const auto& soundItem = _soundItems.emplace_back(std::make_unique<SoundItem>(_pianorollItem.get()));
-		soundItem->setPos(offset * kStepWidth, (119 - static_cast<size_t>(sound._note)) * kNoteHeight);
+		insertSound(offset, sound._note);
 		offset += sound._pause;
 	}
 	_pianorollItem->setStepCount((offset + 8) / 8 * 8);
 	setSceneRect(_pianorollItem->boundingRect().adjusted(-kWhiteKeyWidth, 0, 0, 0));
 }
 
+void SequenceScene::insertSound(size_t offset, aulos::Note note)
+{
+	const auto [soundItem, inserted] = _soundItems.emplace(offset, std::make_unique<SoundItem>(_pianorollItem.get()));
+	assert(inserted);
+	connect(soundItem->second.get(), &SoundItem::removeRequested, [this, offset] {
+		const auto i = _soundItems.find(offset);
+		assert(i != _soundItems.end());
+		removeItem(i->second.get());
+		i->second.release()->deleteLater();
+		_soundItems.erase(i);
+	});
+	updateSound(soundItem->second.get(), offset, note);
+}
+
 void SequenceScene::removeSoundItems()
 {
 	// Qt documentation says it's more efficient to remove items from the scene before destroying them.
 	for (const auto& sound : _soundItems)
-		removeItem(sound.get());
+		removeItem(sound.second.get());
 	_soundItems.clear();
+}
+
+void SequenceScene::updateSound(SoundItem* soundItem, size_t offset, aulos::Note note)
+{
+	soundItem->setPos(offset * kStepWidth, (119 - static_cast<size_t>(note)) * kNoteHeight);
+	connect(soundItem, &SoundItem::playRequested, [this, note] { emit noteActivated(note); });
 }

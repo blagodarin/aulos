@@ -41,9 +41,11 @@ signals:
 	void noteActivated(aulos::Note);
 
 private:
+	void insertSound(size_t offset, aulos::Note);
 	void removeSoundItems();
+	void updateSound(SoundItem*, size_t offset, aulos::Note);
 
 private:
 	std::unique_ptr<PianorollItem> _pianorollItem;
-	std::vector<std::unique_ptr<SoundItem>> _soundItems;
+	std::map<size_t, std::unique_ptr<SoundItem>> _soundItems;
 };
