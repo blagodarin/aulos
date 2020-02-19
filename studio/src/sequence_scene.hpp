@@ -35,6 +35,7 @@ public:
 	~SequenceScene() override;
 
 	void addPianorollSteps();
+	aulos::SequenceData sequence() const;
 	void setSequence(const aulos::SequenceData&);
 
 signals:
@@ -43,7 +44,6 @@ signals:
 private:
 	void insertSound(size_t offset, aulos::Note);
 	void removeSoundItems();
-	void updateSound(SoundItem*, size_t offset, aulos::Note);
 
 private:
 	std::unique_ptr<PianorollItem> _pianorollItem;

@@ -23,9 +23,17 @@
 #include <QGraphicsSceneEvent>
 #include <QPainter>
 
-SoundItem::SoundItem(QGraphicsItem* parent)
+SoundItem::SoundItem(size_t offset, aulos::Note note, QGraphicsItem* parent)
 	: QGraphicsObject{ parent }
+	, _offset{ offset }
 {
+	setNote(note);
+}
+
+void SoundItem::setNote(aulos::Note note)
+{
+	_note = note;
+	setPos(_offset * kStepWidth, (119 - static_cast<size_t>(_note)) * kNoteHeight);
 }
 
 QRectF SoundItem::boundingRect() const

@@ -31,7 +31,6 @@
 SequenceEditor::SequenceEditor(QWidget* parent)
 	: QDialog{ parent, Qt::WindowTitleHint | Qt::CustomizeWindowHint | Qt::WindowCloseButtonHint }
 	, _voice{ std::make_unique<aulos::Voice>() }
-	, _sequence{ std::make_unique<aulos::SequenceData>() }
 	, _scene{ new SequenceScene{ this } }
 	, _player{ std::make_unique<Player>() }
 {
@@ -67,7 +66,6 @@ SequenceEditor::~SequenceEditor() = default;
 void SequenceEditor::setSequence(const aulos::Voice& voice, const aulos::SequenceData& sequence)
 {
 	*_voice = voice;
-	*_sequence = sequence;
 	_scene->setSequence(sequence);
 	const auto horizontalScrollBar = _sequenceView->horizontalScrollBar();
 	horizontalScrollBar->setValue(horizontalScrollBar->minimum());
@@ -77,5 +75,5 @@ void SequenceEditor::setSequence(const aulos::Voice& voice, const aulos::Sequenc
 
 aulos::SequenceData SequenceEditor::sequence() const
 {
-	return *_sequence;
+	return _scene->sequence();
 }

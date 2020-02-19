@@ -40,10 +40,7 @@ SequenceScene::SequenceScene(QObject* parent)
 	addItem(_pianorollItem.get());
 	connect(_pianorollItem.get(), &PianorollItem::newSoundRequested, [this](size_t offset, aulos::Note note) {
 		if (const auto i = _soundItems.find(offset); i != _soundItems.end())
-		{
-			disconnect(i->second.get(), &SoundItem::playRequested, nullptr, nullptr);
-			updateSound(i->second.get(), offset, note);
-		}
+			i->second->setNote(note);
 		else
 			insertSound(offset, note);
 		emit noteActivated(note);
@@ -62,6 +59,25 @@ void SequenceScene::addPianorollSteps()
 	setSceneRect(_pianorollItem->boundingRect().adjusted(-kWhiteKeyWidth, 0, 0, 0));
 }
 
+aulos::SequenceData SequenceScene::sequence() const
+{
+	aulos::SequenceData result;
+	if (auto i = _soundItems.begin(); i != _soundItems.end())
+	{
+		auto lastOffset = i->first;
+		assert(lastOffset == 0);
+		do
+		{
+			const auto note = i->second->note();
+			++i;
+			const auto nextOffset = i != _soundItems.end() ? i->first : lastOffset;
+			result._sounds.emplace_back(note, nextOffset - lastOffset);
+			lastOffset = nextOffset;
+		} while (i != _soundItems.end());
+	}
+	return result;
+}
+
 void SequenceScene::setSequence(const aulos::SequenceData& sequence)
 {
 	removeSoundItems();
@@ -77,16 +93,17 @@ void SequenceScene::setSequence(const aulos::SequenceData& sequence)
 
 void SequenceScene::insertSound(size_t offset, aulos::Note note)
 {
-	const auto [soundItem, inserted] = _soundItems.emplace(offset, std::make_unique<SoundItem>(_pianorollItem.get()));
+	const auto [i, inserted] = _soundItems.emplace(offset, std::make_unique<SoundItem>(offset, note, _pianorollItem.get()));
 	assert(inserted);
-	connect(soundItem->second.get(), &SoundItem::removeRequested, [this, offset] {
-		const auto i = _soundItems.find(offset);
+	const auto soundItem = i->second.get();
+	connect(soundItem, &SoundItem::playRequested, [this, soundItem] { emit noteActivated(soundItem->note()); });
+	connect(soundItem, &SoundItem::removeRequested, [this, soundItem] {
+		const auto i = _soundItems.find(soundItem->offset());
 		assert(i != _soundItems.end());
 		removeItem(i->second.get());
 		i->second.release()->deleteLater();
 		_soundItems.erase(i);
 	});
-	updateSound(soundItem->second.get(), offset, note);
 }
 
 void SequenceScene::removeSoundItems()
@@ -95,10 +112,4 @@ void SequenceScene::removeSoundItems()
 	for (const auto& sound : _soundItems)
 		removeItem(sound.second.get());
 	_soundItems.clear();
-}
-
-void SequenceScene::updateSound(SoundItem* soundItem, size_t offset, aulos::Note note)
-{
-	soundItem->setPos(offset * kStepWidth, (119 - static_cast<size_t>(note)) * kNoteHeight);
-	connect(soundItem, &SoundItem::playRequested, [this, note] { emit noteActivated(note); });
 }
