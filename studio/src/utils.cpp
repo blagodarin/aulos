@@ -35,6 +35,8 @@ QString makeSequenceName(const aulos::SequenceData& sequence, bool rich)
 	{
 		if (!rich && !result.isEmpty())
 			result += ' ';
+		for (size_t i = 1; i < sound._delay; ++i)
+			result += rich ? "&nbsp;" : ". ";
 		const auto octave = QString::number(static_cast<uint8_t>(sound._note) / 12);
 		const auto note = static_cast<size_t>(sound._note) % 12;
 		result += noteNames[note];
@@ -44,8 +46,6 @@ QString makeSequenceName(const aulos::SequenceData& sequence, bool rich)
 		result += rich ? QStringLiteral("<sub>%1</sub>").arg(octave) : octave;
 		if (rich && isSharpNote)
 			result += QStringLiteral("<sup>#</sup>");
-		for (size_t i = 1; i < sound._pause; ++i)
-			result += rich ? "&nbsp;" : " .";
 	}
 	return result;
 }

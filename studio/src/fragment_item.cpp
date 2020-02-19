@@ -57,7 +57,7 @@ void FragmentItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWi
 	painter->setPen(colors._pen);
 	painter->setBrush(colors._brush);
 	painter->drawConvexPolygon(shape.data(), static_cast<int>(shape.size()));
-	if (_length > 1)
+	if (_length > 0)
 	{
 		constexpr auto fontSize = kTrackHeight * 0.75;
 		constexpr auto xOffset = (kTrackHeight - fontSize) / 2.0;
@@ -96,9 +96,9 @@ void FragmentItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent*)
 void FragmentItem::resetSequence()
 {
 	prepareGeometryChange();
-	_length = std::reduce(_sequence->_sounds.begin(), _sequence->_sounds.end(), size_t{}, [](size_t length, const aulos::Sound& sound) { return length + sound._pause; });
-	_width = std::max<size_t>(_length, 1) * kStepWidth;
-	if (_length > 1)
+	_length = _sequence->_sounds.empty() ? 0 : std::reduce(_sequence->_sounds.begin(), _sequence->_sounds.end(), size_t{ 1 }, [](size_t length, const aulos::Sound& sound) { return length + sound._delay; });
+	_width = (_length + 0.5) * kStepWidth;
+	if (_length > 0)
 	{
 		QTextOption textOption;
 		textOption.setWrapMode(QTextOption::NoWrap);

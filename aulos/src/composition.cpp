@@ -172,7 +172,7 @@ namespace aulos
 			return *result;
 		};
 
-		const auto parseNote = [&](std::vector<Sound>& sequence, size_t baseOffset) {
+		const auto parseNote = [&](std::vector<Sound>& sequence, size_t& delay, size_t baseOffset) {
 			assert(*source >= 'A' && *source <= 'G');
 			assert(baseOffset >= 0 && baseOffset < 12);
 			++source;
@@ -192,12 +192,13 @@ namespace aulos
 			}
 			if (*source < '0' || *source > '9')
 				throw CompositionError{ location(), "Bad note" };
-			sequence.emplace_back(static_cast<Note>((*source - '0') * 12 + baseOffset), 1);
+			sequence.emplace_back(delay, static_cast<Note>((*source - '0') * 12 + baseOffset));
+			delay = 1;
 			++source;
 		};
 
 		const auto parseSequence = [&](std::vector<Sound>& sequence) {
-			for (;;)
+			for (size_t delay = 0;;)
 			{
 				switch (*source)
 				{
@@ -211,31 +212,29 @@ namespace aulos
 				case ' ':
 					break;
 				case '.':
-					if (sequence.empty())
-						throw CompositionError{ location(), "Bad note" };
+					++delay;
 					++source;
-					++sequence.back()._pause;
 					break;
 				case 'A':
-					parseNote(sequence, 9);
+					parseNote(sequence, delay, 9);
 					break;
 				case 'B':
-					parseNote(sequence, 11);
+					parseNote(sequence, delay, 11);
 					break;
 				case 'C':
-					parseNote(sequence, 0);
+					parseNote(sequence, delay, 0);
 					break;
 				case 'D':
-					parseNote(sequence, 2);
+					parseNote(sequence, delay, 2);
 					break;
 				case 'E':
-					parseNote(sequence, 4);
+					parseNote(sequence, delay, 4);
 					break;
 				case 'F':
-					parseNote(sequence, 5);
+					parseNote(sequence, delay, 5);
 					break;
 				case 'G':
-					parseNote(sequence, 7);
+					parseNote(sequence, delay, 7);
 					break;
 				default:
 					throw CompositionError{ location(), "Bad note" };
@@ -463,6 +462,8 @@ namespace aulos
 					text += '\n' + std::to_string(partIndex) + ' ' + std::to_string(trackIndex) + ' ' + std::to_string(sequenceIndex);
 					for (const auto& sound : sequence)
 					{
+						for (auto i = sound._delay; i > 1; --i)
+							text += " .";
 						text += ' ';
 						const auto note = static_cast<unsigned>(sound._note);
 						switch (note % 12)
@@ -481,8 +482,6 @@ namespace aulos
 						case 11: text += "B"; break;
 						}
 						text += std::to_string(note / 12);
-						for (auto i = sound._pause; i > 1; --i)
-							text += " .";
 					}
 				}
 			}

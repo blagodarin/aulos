@@ -62,18 +62,11 @@ void SequenceScene::addPianorollSteps()
 aulos::SequenceData SequenceScene::sequence() const
 {
 	aulos::SequenceData result;
-	if (auto i = _soundItems.begin(); i != _soundItems.end())
+	size_t lastOffset = 0;
+	for (const auto& soundItem : _soundItems)
 	{
-		auto lastOffset = i->first;
-		assert(lastOffset == 0);
-		do
-		{
-			const auto note = i->second->note();
-			++i;
-			const auto nextOffset = i != _soundItems.end() ? i->first : lastOffset;
-			result._sounds.emplace_back(note, nextOffset - lastOffset);
-			lastOffset = nextOffset;
-		} while (i != _soundItems.end());
+		result._sounds.emplace_back(soundItem.first - lastOffset, soundItem.second->note());
+		lastOffset = soundItem.first;
 	}
 	return result;
 }
@@ -84,8 +77,8 @@ void SequenceScene::setSequence(const aulos::SequenceData& sequence)
 	size_t offset = 0;
 	for (const auto& sound : sequence._sounds)
 	{
+		offset += sound._delay;
 		insertSound(offset, sound._note);
-		offset += sound._pause;
 	}
 	_pianorollItem->setStepCount((offset + 8) / 8 * 8);
 	setSceneRect(_pianorollItem->boundingRect().adjusted(-kWhiteKeyWidth, 0, 0, 0));

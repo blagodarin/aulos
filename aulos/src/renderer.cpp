@@ -379,12 +379,10 @@ namespace
 						if (const auto& sequence = track._sequences[fragment._sequence]; !sequence.empty())
 						{
 							trackSounds.reserve(trackSounds.size() + sequence.size());
-							auto delay = fragmentOffset - lastSoundOffset;
-							for (const auto& sound : sequence)
-							{
-								trackSounds.emplace_back(delay, sound._note);
-								delay = sound._pause;
-							}
+							trackSounds.emplace_back(fragmentOffset - lastSoundOffset + sequence.front()._delay, sequence.front()._note);
+							std::for_each(std::next(sequence.begin()), sequence.end(), [&trackSounds](const aulos::Sound& sound) {
+								trackSounds.emplace_back(sound._delay, sound._note);
+							});
 						}
 					}
 				}
