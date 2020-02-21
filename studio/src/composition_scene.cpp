@@ -36,8 +36,6 @@
 
 namespace
 {
-	constexpr size_t kExtraLength = 1;
-
 	auto findVoice(const std::vector<std::unique_ptr<VoiceItem>>& voices, const void* id)
 	{
 		size_t offset = 0;
@@ -147,10 +145,7 @@ void CompositionScene::insertFragment(const void* voiceId, const void* trackId, 
 {
 	const auto track = std::find_if(_tracks.begin(), _tracks.end(), [trackId](const auto& trackPtr) { return trackPtr->_background->trackId() == trackId; });
 	assert(track != _tracks.end());
-	const auto newItem = addFragmentItem(voiceId, **track, offset, sequence);
-	const auto minCompositionLength = offset + newItem->fragmentLength() + kExtraLength;
-	if (minCompositionLength > _timelineItem->compositionLength())
-		setCompositionLength(minCompositionLength);
+	addFragmentItem(voiceId, **track, offset, sequence);
 }
 
 void CompositionScene::removeFragment(const void* trackId, size_t offset)
@@ -222,7 +217,7 @@ void CompositionScene::removeVoice(const void* voiceId)
 	updateSceneRect(_timelineItem->compositionLength());
 }
 
-void CompositionScene::reset(const std::shared_ptr<aulos::CompositionData>& composition)
+void CompositionScene::reset(const std::shared_ptr<aulos::CompositionData>& composition, size_t viewWidth)
 {
 	removeItem(_timelineItem.get());
 	_voices.clear();
@@ -235,7 +230,7 @@ void CompositionScene::reset(const std::shared_ptr<aulos::CompositionData>& comp
 	if (!_composition || _composition->_parts.empty())
 		return;
 
-	size_t compositionLength = 0;
+	auto compositionLength = viewWidth / static_cast<size_t>(kStepWidth) + 1;
 	_voices.reserve(_composition->_parts.size());
 	for (const auto& partData : _composition->_parts)
 	{
@@ -261,7 +256,6 @@ void CompositionScene::reset(const std::shared_ptr<aulos::CompositionData>& comp
 			}
 		}
 	}
-	compositionLength += kExtraLength;
 
 	_timelineItem->setCompositionSpeed(_composition->_speed);
 	_timelineItem->setCompositionLength(compositionLength);
@@ -304,16 +298,8 @@ void CompositionScene::updateSequence(const void* trackId, const std::shared_ptr
 {
 	const auto track = std::find_if(_tracks.begin(), _tracks.end(), [trackId](const auto& trackPtr) { return trackPtr->_background->trackId() == trackId; });
 	assert(track != _tracks.end());
-	size_t compositionLength = 0;
 	for (const auto& fragment : (*track)->_fragments)
-	{
-		if (!fragment.second->updateSequence(sequence))
-			continue;
-		compositionLength = std::max(compositionLength, fragment.second->fragmentOffset() + fragment.second->fragmentLength());
-	}
-	compositionLength += kExtraLength;
-	if (compositionLength > _timelineItem->compositionLength())
-		setCompositionLength(compositionLength);
+		fragment.second->updateSequence(sequence);
 }
 
 void CompositionScene::updateVoice(const void* id, const std::string& name)

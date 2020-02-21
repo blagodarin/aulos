@@ -62,6 +62,13 @@ void TimelineItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* opti
 		rect.moveLeft(rect.right());
 		++index;
 	}
+	if (_length % _speed && rect.left() <= option->exposedRect.right() && rect.right() >= option->exposedRect.left())
+	{
+		rect.setRight(_length * kStepWidth);
+		painter->setPen(Qt::transparent);
+		painter->setBrush(kTimelineColors[index % kTimelineColors.size()]._brush);
+		painter->drawRect(rect);
+	}
 }
 
 void TimelineItem::setCompositionLength(size_t length)

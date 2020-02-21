@@ -50,7 +50,7 @@ public:
 	void removeFragment(const void* trackId, size_t offset);
 	void removeTrack(const void* voiceId, const void* trackId);
 	void removeVoice(const void* voiceId);
-	void reset(const std::shared_ptr<aulos::CompositionData>&);
+	void reset(const std::shared_ptr<aulos::CompositionData>&, size_t viewWidth);
 	void setCurrentStep(double step);
 	void setSpeed(unsigned speed);
 	void showCursor(bool);

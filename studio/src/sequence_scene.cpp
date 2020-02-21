@@ -78,7 +78,7 @@ aulos::SequenceData SequenceScene::sequence() const
 	return result;
 }
 
-void SequenceScene::setSequence(const aulos::SequenceData& sequence)
+void SequenceScene::setSequence(const aulos::SequenceData& sequence, size_t viewWidth)
 {
 	removeSoundItems();
 	size_t offset = 0;
@@ -87,7 +87,7 @@ void SequenceScene::setSequence(const aulos::SequenceData& sequence)
 		offset += sound._delay;
 		insertSound(offset, sound._note);
 	}
-	_pianorollItem->setStepCount((offset + kPianorollStride) / kPianorollStride * kPianorollStride);
+	_pianorollItem->setStepCount(std::max((offset + kPianorollStride) / kPianorollStride * kPianorollStride, viewWidth / static_cast<size_t>(kStepWidth) + 1));
 	_rightBoundItem->setPos(_pianorollItem->boundingRect().topRight());
 	setSceneRect(_pianorollItem->boundingRect().adjusted(-kWhiteKeyWidth, 0, 0, 0));
 }

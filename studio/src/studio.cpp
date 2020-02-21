@@ -200,6 +200,7 @@ Studio::Studio()
 	addToolBar(toolBar);
 
 	_compositionView = new QGraphicsView{ _compositionScene.get(), this };
+	_compositionView->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 	setCentralWidget(_compositionView);
 
 	_statusPath = new QLabel{ statusBar() };
@@ -413,7 +414,7 @@ void Studio::closeComposition()
 	_compositionPath.clear();
 	_compositionFileName.clear();
 	_speedSpin->setValue(_speedSpin->minimum());
-	_compositionScene->reset(nullptr);
+	_compositionScene->reset(nullptr, _compositionView->width());
 	_player->stop();
 }
 
@@ -517,7 +518,7 @@ bool Studio::openComposition(const QString& path)
 	_compositionPath = path;
 	_compositionFileName = QFileInfo{ file }.fileName();
 	_speedSpin->setValue(static_cast<int>(_composition->_speed));
-	_compositionScene->reset(_composition);
+	_compositionScene->reset(_composition, _compositionView->width());
 	_compositionView->horizontalScrollBar()->setValue(_compositionView->horizontalScrollBar()->minimum());
 	_hasComposition = true;
 	setRecentFile(path);

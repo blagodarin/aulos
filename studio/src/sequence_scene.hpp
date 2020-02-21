@@ -36,7 +36,7 @@ public:
 	~SequenceScene() override;
 
 	aulos::SequenceData sequence() const;
-	void setSequence(const aulos::SequenceData&);
+	void setSequence(const aulos::SequenceData&, size_t viewWidth);
 
 signals:
 	void noteActivated(aulos::Note);
