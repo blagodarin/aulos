@@ -28,8 +28,6 @@ endif()
 source_group("res" FILES ${_res})
 
 set(_src
-	src/add_time_item.cpp
-	src/add_time_item.hpp
 	src/add_voice_item.cpp
 	src/add_voice_item.hpp
 	src/button_item.cpp
@@ -40,6 +38,8 @@ set(_src
 	src/composition_scene.hpp
 	src/cursor_item.cpp
 	src/cursor_item.hpp
+	src/elusive_item.cpp
+	src/elusive_item.hpp
 	src/fragment_item.cpp
 	src/fragment_item.hpp
 	src/info_editor.cpp

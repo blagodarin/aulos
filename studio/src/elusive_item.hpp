@@ -17,21 +17,24 @@
 
 #pragma once
 
-#include "button_item.hpp"
-#include "colors.hpp"
+#include <QGraphicsObject>
 
-class AddTimeItem final : public ButtonItem
+class ElusiveItem final : public QGraphicsObject
 {
 	Q_OBJECT
 
 public:
-	AddTimeItem(const Colors& colors, QGraphicsItem* parent = nullptr);
+	ElusiveItem(QGraphicsItem* parent = nullptr);
 
-	QRectF boundingRect() const override;
-	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
-	void setGeometry(const Colors&, size_t extraLength);
+	void setHeight(qreal);
+
+signals:
+	void elude();
 
 private:
-	Colors _colors;
-	size_t _extraLength = 0;
+	QRectF boundingRect() const override;
+	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
+
+private:
+	qreal _height = 1;
 };

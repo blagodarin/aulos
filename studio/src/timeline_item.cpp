@@ -17,7 +17,8 @@
 
 #include "timeline_item.hpp"
 
-#include "add_time_item.hpp"
+#include "colors.hpp"
+#include "elusive_item.hpp"
 #include "utils.hpp"
 
 #include <QPainter>
@@ -25,10 +26,10 @@
 
 TimelineItem::TimelineItem(QGraphicsItem* parent)
 	: QGraphicsObject{ parent }
-	, _addTimeItem{ new AddTimeItem{ kTimelineColors[0], this } }
+	, _rightBoundItem{ new ElusiveItem{ this } }
 {
 	setFlag(QGraphicsItem::ItemUsesExtendedStyleOption);
-	connect(_addTimeItem, &AddTimeItem::activated, this, [this] { emit lengthRequested(_length + (_speed - _length % _speed)); });
+	connect(_rightBoundItem, &ElusiveItem::elude, [this] { emit lengthRequested(_length + (_speed - _length % _speed)); });
 }
 
 QRectF TimelineItem::boundingRect() const
@@ -69,21 +70,13 @@ void TimelineItem::setCompositionLength(size_t length)
 		return;
 	prepareGeometryChange();
 	_length = length;
-	updateAddTimeItem();
+	_rightBoundItem->setPos(boundingRect().topRight());
 }
 
 void TimelineItem::setCompositionSpeed(unsigned speed)
 {
 	if (_speed == speed)
 		return;
-	prepareGeometryChange();
 	_speed = speed;
-	updateAddTimeItem();
-}
-
-void TimelineItem::updateAddTimeItem() const
-{
-	const auto extraLength = _length % _speed;
-	_addTimeItem->setGeometry(kTimelineColors[(_length / _speed) % kTimelineColors.size()], extraLength);
-	_addTimeItem->setPos({ (_length - extraLength) * kStepWidth, 0 });
+	update();
 }

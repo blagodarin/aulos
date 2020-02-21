@@ -18,12 +18,18 @@
 #include "sequence_scene.hpp"
 
 #include "colors.hpp"
+#include "elusive_item.hpp"
 #include "key_item.hpp"
 #include "pianoroll_item.hpp"
 #include "sound_item.hpp"
 #include "utils.hpp"
 
 #include <cassert>
+
+namespace
+{
+	constexpr size_t kPianorollStride = 8;
+}
 
 SequenceScene::SequenceScene(QObject* parent)
 	: QGraphicsScene{ parent }
@@ -45,18 +51,19 @@ SequenceScene::SequenceScene(QObject* parent)
 			insertSound(offset, note);
 		emit noteActivated(note);
 	});
+	_rightBoundItem = new ElusiveItem{ _pianorollItem.get() };
+	_rightBoundItem->setHeight(_pianorollItem->boundingRect().height());
+	connect(_rightBoundItem, &ElusiveItem::elude, [this] {
+		_pianorollItem->setStepCount(_pianorollItem->stepCount() + kPianorollStride);
+		_rightBoundItem->setPos(_pianorollItem->boundingRect().topRight());
+		setSceneRect(_pianorollItem->boundingRect().adjusted(-kWhiteKeyWidth, 0, 0, 0));
+	});
 }
 
 SequenceScene::~SequenceScene()
 {
 	removeSoundItems();
 	removeItem(_pianorollItem.get());
-}
-
-void SequenceScene::addPianorollSteps()
-{
-	_pianorollItem->setStepCount(_pianorollItem->stepCount() + 8);
-	setSceneRect(_pianorollItem->boundingRect().adjusted(-kWhiteKeyWidth, 0, 0, 0));
 }
 
 aulos::SequenceData SequenceScene::sequence() const
@@ -80,7 +87,8 @@ void SequenceScene::setSequence(const aulos::SequenceData& sequence)
 		offset += sound._delay;
 		insertSound(offset, sound._note);
 	}
-	_pianorollItem->setStepCount((offset + 8) / 8 * 8);
+	_pianorollItem->setStepCount((offset + kPianorollStride) / kPianorollStride * kPianorollStride);
+	_rightBoundItem->setPos(_pianorollItem->boundingRect().topRight());
 	setSceneRect(_pianorollItem->boundingRect().adjusted(-kWhiteKeyWidth, 0, 0, 0));
 }
 

@@ -23,6 +23,7 @@
 
 #include <QGraphicsScene>
 
+class ElusiveItem;
 class PianorollItem;
 class SoundItem;
 
@@ -34,7 +35,6 @@ public:
 	SequenceScene(QObject* parent = nullptr);
 	~SequenceScene() override;
 
-	void addPianorollSteps();
 	aulos::SequenceData sequence() const;
 	void setSequence(const aulos::SequenceData&);
 
@@ -47,5 +47,6 @@ private:
 
 private:
 	std::unique_ptr<PianorollItem> _pianorollItem;
+	ElusiveItem* _rightBoundItem = nullptr;
 	std::map<size_t, std::unique_ptr<SoundItem>> _soundItems;
 };

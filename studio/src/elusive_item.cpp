@@ -15,35 +15,25 @@
 // limitations under the License.
 //
 
-#pragma once
+#include "elusive_item.hpp"
 
-#include <memory>
-
-#include <QGraphicsObject>
-
-class ElusiveItem;
-
-class TimelineItem final : public QGraphicsObject
+ElusiveItem::ElusiveItem(QGraphicsItem* parent)
+	: QGraphicsObject{ parent }
 {
-	Q_OBJECT
+}
 
-public:
-	TimelineItem(QGraphicsItem* parent = nullptr);
+void ElusiveItem::setHeight(qreal height)
+{
+	prepareGeometryChange();
+	_height = height;
+}
 
-	QRectF boundingRect() const override;
-	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
-	void setCompositionLength(size_t length);
-	void setCompositionSpeed(unsigned speed);
-	size_t compositionLength() const noexcept { return _length; }
+QRectF ElusiveItem::boundingRect() const
+{
+	return { 0, 0, 1, _height };
+}
 
-signals:
-	void lengthRequested(size_t length);
-
-private:
-	void updateAddTimeItem() const;
-
-private:
-	ElusiveItem* const _rightBoundItem;
-	unsigned _speed = 1;
-	size_t _length = 0;
-};
+void ElusiveItem::paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*)
+{
+	emit elude();
+}
