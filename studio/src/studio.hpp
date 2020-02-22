@@ -49,13 +49,15 @@ public:
 private:
 	void clearRecentFiles();
 	void closeComposition();
+	void createEmptyComposition();
 	bool editSequence(const void* trackId, const aulos::Voice&, const std::shared_ptr<aulos::SequenceData>&);
 	bool editTrack(aulos::TrackData&);
 	bool editVoice(const void* id, aulos::Voice&);
 	void exportComposition();
-	bool maybeSaveComposition() const;
+	bool maybeSaveComposition();
 	bool openComposition(const QString& path);
 	bool saveComposition(const QString& path) const;
+	bool saveCompositionAs();
 	void saveRecentFiles() const;
 	void setRecentFile(const QString& path);
 	void updateStatus();
@@ -78,6 +80,7 @@ private:
 	bool _hasComposition = false;
 	bool _changed = false;
 
+	QAction* _fileNewAction;
 	QAction* _fileOpenAction;
 	QAction* _fileSaveAction;
 	QAction* _fileSaveAsAction;

@@ -103,11 +103,21 @@ Studio::Studio()
 	resize(640, 480);
 
 	const auto fileMenu = menuBar()->addMenu(tr("&File"));
+	_fileNewAction = fileMenu->addAction(
+		qApp->style()->standardIcon(QStyle::SP_FileIcon), tr("&New"), [this] {
+			if (!maybeSaveComposition())
+				return;
+			closeComposition();
+			createEmptyComposition();
+			_changed = true;
+			updateStatus();
+		},
+		Qt::CTRL + Qt::Key_N);
 	_fileOpenAction = fileMenu->addAction(
 		qApp->style()->standardIcon(QStyle::SP_DialogOpenButton), tr("&Open..."), [this] {
 			if (!maybeSaveComposition())
 				return;
-			const auto path = QFileDialog::getOpenFileName(this, tr("Open Composition"), _hasComposition ? QFileInfo{ _compositionPath }.dir().path() : QString{}, tr("Aulos Files (*.aulos)"));
+			const auto path = QFileDialog::getOpenFileName(this, tr("Open Composition"), !_compositionPath.isEmpty() ? QFileInfo{ _compositionPath }.dir().path() : QString{}, tr("Aulos Files (*.aulos)"));
 			if (path.isNull())
 				return;
 			closeComposition();
@@ -119,7 +129,7 @@ Studio::Studio()
 		Qt::CTRL + Qt::Key_O);
 	_fileSaveAction = fileMenu->addAction(
 		qApp->style()->standardIcon(QStyle::SP_DialogSaveButton), tr("&Save"), [this] {
-			if (!saveComposition(_compositionPath))
+			if (_compositionPath.isEmpty() ? !saveCompositionAs() : !saveComposition(_compositionPath))
 				return;
 			_changed = false;
 			updateStatus();
@@ -127,12 +137,8 @@ Studio::Studio()
 		Qt::CTRL + Qt::Key_S);
 	_fileSaveAsAction = fileMenu->addAction(
 		tr("Save &As..."), [this] {
-			const auto path = QFileDialog::getSaveFileName(this, tr("Save Composition As"), QFileInfo{ _compositionPath }.dir().path(), tr("Aulos Files (*.aulos)"));
-			if (path.isNull() || !saveComposition(path))
+			if (!saveCompositionAs())
 				return;
-			_compositionPath = path;
-			_compositionFileName = QFileInfo{ _compositionPath }.fileName();
-			setRecentFile(_compositionPath);
 			_changed = false;
 			updateStatus();
 		},
@@ -191,6 +197,7 @@ Studio::Studio()
 	const auto toolBar = new QToolBar{ this };
 	toolBar->setFloatable(false);
 	toolBar->setMovable(false);
+	toolBar->addAction(_fileNewAction);
 	toolBar->addAction(_fileOpenAction);
 	toolBar->addAction(_fileSaveAction);
 	toolBar->addSeparator();
@@ -428,6 +435,26 @@ void Studio::closeComposition()
 	_player->stop();
 }
 
+void Studio::createEmptyComposition()
+{
+	assert(!_hasComposition);
+	assert(_compositionPath.isEmpty());
+
+	aulos::Voice voice;
+	voice._amplitudeEnvelope._changes = { { .1f, 1.f }, { .4f, .5f }, { .5f, 0.f } };
+	voice._name = tr("NewVoice").toStdString();
+
+	_composition = std::make_shared<aulos::CompositionData>();
+	_composition->_speed = 6;
+	const auto& part = _composition->_parts.emplace_back(std::make_shared<aulos::PartData>(std::make_shared<aulos::Voice>(voice)));
+	part->_tracks.emplace_back(std::make_shared<aulos::TrackData>(1));
+	_compositionFileName = tr("New composition");
+	_speedSpin->setValue(static_cast<int>(_composition->_speed));
+	_compositionScene->reset(_composition, _compositionView->width());
+	_compositionView->horizontalScrollBar()->setValue(_compositionView->horizontalScrollBar()->minimum());
+	_hasComposition = true;
+}
+
 bool Studio::editSequence(const void* trackId, const aulos::Voice& voice, const std::shared_ptr<aulos::SequenceData>& sequence)
 {
 	_sequenceEditor->setSequence(voice, *sequence);
@@ -498,12 +525,12 @@ void Studio::exportComposition()
 	file.commit();
 }
 
-bool Studio::maybeSaveComposition() const
+bool Studio::maybeSaveComposition()
 {
 	if (!_changed)
 		return true;
 	const auto action = QMessageBox::question(const_cast<Studio*>(this), {}, tr("Save changes to the current composition?"), QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
-	return action == QMessageBox::Yes ? saveComposition(_compositionPath) : action == QMessageBox::No;
+	return action == QMessageBox::Yes ? (_compositionPath.isEmpty() ? saveCompositionAs() : saveComposition(_compositionPath)) : action == QMessageBox::No;
 }
 
 bool Studio::openComposition(const QString& path)
@@ -539,13 +566,26 @@ bool Studio::openComposition(const QString& path)
 bool Studio::saveComposition(const QString& path) const
 {
 	assert(_hasComposition);
+	assert(!path.isEmpty());
 	const auto composition = _composition->pack();
 	assert(composition);
 	const auto buffer = composition->save();
 	QFile file{ path };
 	if (!file.open(QIODevice::WriteOnly))
-		return false;
+		return false; // TODO: Display error.
 	file.write(reinterpret_cast<const char*>(buffer.data()), static_cast<qint64>(buffer.size()));
+	return true;
+}
+
+bool Studio::saveCompositionAs()
+{
+	assert(_hasComposition);
+	const auto path = QFileDialog::getSaveFileName(this, tr("Save Composition As"), _compositionPath.isEmpty() ? QString{} : QFileInfo{ _compositionPath }.dir().path(), tr("Aulos Files (*.aulos)"));
+	if (path.isNull() || !saveComposition(path))
+		return false;
+	_compositionPath = path;
+	_compositionFileName = QFileInfo{ _compositionPath }.fileName();
+	setRecentFile(_compositionPath);
 	return true;
 }
 
@@ -602,7 +642,7 @@ void Studio::updateStatus()
 	_stopAction->setEnabled(_hasComposition && _player->isPlaying());
 	_speedSpin->setEnabled(_hasComposition && !_player->isPlaying());
 	_compositionView->setEnabled(_hasComposition);
-	_statusPath->setText(_hasComposition ? _compositionPath : QStringLiteral("<i>%1</i>").arg(tr("no file")));
+	_statusPath->setText(_compositionPath.isEmpty() ? QStringLiteral("<i>%1</i>").arg(tr("No file")) : _compositionPath);
 }
 
 void Studio::closeEvent(QCloseEvent* e)
