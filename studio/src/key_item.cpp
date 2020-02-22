@@ -92,7 +92,7 @@ KeyItem::KeyItem(aulos::Note note, QGraphicsItem* parent)
 
 QRectF KeyItem::boundingRect() const
 {
-	return QRectF{ 0, 0, _styleInfo._width, _noteInfo._height * kNoteHeight };
+	return { 0, 0, _styleInfo._width, _noteInfo._height * kNoteHeight };
 }
 
 void KeyItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*)

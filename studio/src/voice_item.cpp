@@ -45,7 +45,7 @@ VoiceItem::VoiceItem(const void* id, QGraphicsItem* parent)
 
 QRectF VoiceItem::boundingRect() const
 {
-	return { { -_width, 0 }, QSizeF{ _width, _trackCount * kTrackHeight } };
+	return { 0, 0, _width, _trackCount * kTrackHeight };
 }
 
 void VoiceItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*)
@@ -57,7 +57,7 @@ void VoiceItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidge
 	painter->setPen(colors._pen);
 	painter->setFont(::makeVoiceFont());
 	const auto nameSize = _name.size();
-	painter->drawStaticText(QPointF{ kMargin - _width, (_trackCount * kTrackHeight - nameSize.height()) / 2 }, _name);
+	painter->drawStaticText(QPointF{ kMargin, (_trackCount * kTrackHeight - nameSize.height()) / 2 }, _name);
 }
 
 qreal VoiceItem::requiredWidth() const

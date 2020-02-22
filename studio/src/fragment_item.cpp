@@ -40,7 +40,7 @@ FragmentItem::FragmentItem(TrackItem* track, size_t offset, const std::shared_pt
 
 QRectF FragmentItem::boundingRect() const
 {
-	return { {}, QSizeF{ _width, kTrackHeight } };
+	return { 0, 0, _width, kTrackHeight };
 }
 
 void FragmentItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*)

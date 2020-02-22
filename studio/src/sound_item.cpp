@@ -38,7 +38,7 @@ void SoundItem::setNote(aulos::Note note)
 
 QRectF SoundItem::boundingRect() const
 {
-	return { {}, QSizeF{ kStepWidth, kNoteHeight } };
+	return { 0, 0, kStepWidth, kNoteHeight };
 }
 
 void SoundItem::mousePressEvent(QGraphicsSceneMouseEvent* e)

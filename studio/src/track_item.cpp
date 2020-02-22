@@ -34,7 +34,7 @@ TrackItem::TrackItem(const void* id, QGraphicsItem* parent)
 
 QRectF TrackItem::boundingRect() const
 {
-	return { {}, QSizeF{ _length * kStepWidth, kTrackHeight } };
+	return { 0, 0, _length * kStepWidth, kTrackHeight };
 }
 
 void TrackItem::setFirstTrack(bool first)

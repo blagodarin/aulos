@@ -54,7 +54,7 @@ PianorollItem::PianorollItem(QGraphicsItem* parent)
 
 QRectF PianorollItem::boundingRect() const
 {
-	return { {}, QSizeF{ _stepCount * kStepWidth, 120 * kNoteHeight } };
+	return { 0, 0, _stepCount * kStepWidth, 120 * kNoteHeight };
 }
 
 void PianorollItem::setStepCount(size_t count)

@@ -34,13 +34,13 @@ TimelineItem::TimelineItem(QGraphicsItem* parent)
 
 QRectF TimelineItem::boundingRect() const
 {
-	return { 0.0, -kTimelineHeight, _length * kStepWidth, kTimelineHeight };
+	return { 0, 0, _length * kStepWidth, kTimelineHeight };
 }
 
 void TimelineItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget*)
 {
 	size_t index = 0;
-	QRectF rect{ { 0, -kTimelineHeight }, QSizeF{ _speed * kStepWidth, kTimelineHeight } };
+	QRectF rect{ 0, 0, _speed * kStepWidth, kTimelineHeight };
 	constexpr auto fontSize = kTimelineHeight * 0.75;
 	constexpr auto textOffset = (kTimelineHeight - fontSize) / 2.0;
 	auto font = painter->font();

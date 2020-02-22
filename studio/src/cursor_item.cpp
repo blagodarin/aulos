@@ -29,7 +29,7 @@ CursorItem::CursorItem(QGraphicsItem* parent)
 
 QRectF CursorItem::boundingRect() const
 {
-	return { 0, -kTimelineHeight, 1, kTimelineHeight + kTrackHeight * _trackCount };
+	return { 0, 0, 1, kTimelineHeight + kTrackHeight * _trackCount };
 }
 
 void CursorItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*)

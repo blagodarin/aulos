@@ -42,18 +42,18 @@ AddVoiceItem::AddVoiceItem(QGraphicsItem* parent)
 
 QRectF AddVoiceItem::boundingRect() const
 {
-	return { { -_width, 0 }, QSizeF{ _width, kAddVoiceItemHeight } };
+	return { 0, 0, _width, kAddVoiceItemHeight };
 }
 
 void AddVoiceItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*)
 {
 	const auto& colors = kVoiceColors[_index % kVoiceColors.size()];
 	const std::array<QPointF, 5> shape{
-		QPointF{ -_width, 0 },
 		QPointF{ 0, 0 },
+		QPointF{ _width, 0 },
+		QPointF{ _width, kAddVoiceItemHeight - kAddVoiceArrowHeight },
+		QPointF{ _width / 2, kAddVoiceItemHeight },
 		QPointF{ 0, kAddVoiceItemHeight - kAddVoiceArrowHeight },
-		QPointF{ -_width / 2, kAddVoiceItemHeight },
-		QPointF{ -_width, kAddVoiceItemHeight - kAddVoiceArrowHeight },
 	};
 	if (isPressed() || isHovered())
 	{

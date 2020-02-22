@@ -62,7 +62,7 @@ struct CompositionScene::Track
 
 CompositionScene::CompositionScene()
 	: _timelineItem{ std::make_unique<TimelineItem>() }
-	, _cursorItem{ std::make_unique<CursorItem>() }
+	, _cursorItem{ std::make_unique<CursorItem>(_timelineItem.get()) }
 	, _addVoiceItem{ std::make_unique<AddVoiceItem>() }
 	, _voiceColumnWidth{ kMinVoiceItemWidth }
 {
@@ -87,21 +87,21 @@ void CompositionScene::addTrack(const void* voiceId, const void* trackId)
 	const auto track = _tracks.emplace(_tracks.begin() + trackIndex, std::make_unique<Track>());
 	(*track)->_background = addTrackItem(voice->get(), trackId);
 	(*track)->_background->setFirstTrack(trackOffset == 0);
-	(*track)->_background->setPos(0, trackOffset * kTrackHeight);
+	(*track)->_background->setPos(_voiceColumnWidth, trackOffset * kTrackHeight);
 	(*track)->_background->setTrackIndex(trackIndex);
 	(*track)->_background->setTrackLength(_timelineItem->compositionLength());
 	if (trackOffset > 0)
 		(*track)->_background->stackBefore((*std::prev(track))->_background);
 	(*voice)->setTrackCount(trackOffset + 1);
 	std::for_each(voice + 1, _voices.cend(), [index = trackIndex + 1](const auto& voiceItem) mutable {
-		voiceItem->setPos(0, index * kTrackHeight);
+		voiceItem->setPos(0, kTimelineHeight + index * kTrackHeight);
 		index += voiceItem->trackCount();
 	});
 	std::for_each(track + 1, _tracks.end(), [index = trackIndex + 1](const auto& trackItem) mutable {
 		trackItem->_background->setTrackIndex(index);
 		++index;
 	});
-	_addVoiceItem->setPos(0, _tracks.size() * kTrackHeight);
+	_addVoiceItem->setPos(0, kTimelineHeight + _tracks.size() * kTrackHeight);
 	_cursorItem->setTrackCount(_tracks.size());
 	updateSceneRect(_timelineItem->compositionLength());
 }
@@ -116,6 +116,7 @@ void CompositionScene::appendPart(const std::shared_ptr<aulos::PartData>& partDa
 	const auto& track = _tracks.emplace_back(std::make_unique<Track>());
 	track->_background = addTrackItem(voiceItem, partData->_tracks.front().get());
 	track->_background->setFirstTrack(true);
+	track->_background->setPos(_voiceColumnWidth, 0);
 	track->_background->setTrackIndex(_tracks.size() - 1);
 	track->_background->setTrackLength(_timelineItem->compositionLength());
 
@@ -136,7 +137,7 @@ void CompositionScene::appendPart(const std::shared_ptr<aulos::PartData>& partDa
 		voiceItem->stackBefore(_voices[_voices.size() - 2].get());
 
 	_addVoiceItem->setIndex(_voices.size());
-	_addVoiceItem->setPos(0, _tracks.size() * kTrackHeight);
+	_addVoiceItem->setPos(0, kTimelineHeight + _tracks.size() * kTrackHeight);
 
 	_cursorItem->setTrackCount(_tracks.size());
 }
@@ -169,14 +170,14 @@ void CompositionScene::removeTrack(const void* voiceId, const void* trackId)
 	removeItem((*track)->_background);
 	(*voice)->setTrackCount((*voice)->trackCount() - 1);
 	std::for_each(std::next(voice), _voices.cend(), [index = voiceOffset + (*voice)->trackCount()](const auto& voiceItem) mutable {
-		voiceItem->setPos(0, index * kTrackHeight);
+		voiceItem->setPos(0, kTimelineHeight + index * kTrackHeight);
 		index += voiceItem->trackCount();
 	});
 	if (const auto nextTrack = std::next(track); nextTrack != _tracks.end())
 	{
 		const auto index = (*track)->_background->trackIndex() - voiceOffset;
 		std::for_each(nextTrack, std::find_if(nextTrack, _tracks.end(), [](const auto& trackPtr) { return trackPtr->_background->isFirstTrack(); }), [index = index](const auto& trackItem) mutable {
-			trackItem->_background->setPos(0, index * kTrackHeight);
+			trackItem->_background->setPos(trackItem->_background->pos().x(), index * kTrackHeight);
 			++index;
 		});
 		if (!index)
@@ -188,7 +189,7 @@ void CompositionScene::removeTrack(const void* voiceId, const void* trackId)
 		});
 	}
 	_tracks.erase(track);
-	_addVoiceItem->setPos(0, _tracks.size() * kTrackHeight);
+	_addVoiceItem->setPos(0, kTimelineHeight + _tracks.size() * kTrackHeight);
 	_cursorItem->setTrackCount(_tracks.size());
 	updateSceneRect(_timelineItem->compositionLength());
 }
@@ -199,7 +200,7 @@ void CompositionScene::removeVoice(const void* voiceId)
 	assert(voice != _voices.end());
 	removeItem(voice->get());
 	std::for_each(std::next(voice), _voices.cend(), [index = voiceOffset](const auto& voiceItem) mutable {
-		voiceItem->setPos(0, index * kTrackHeight);
+		voiceItem->setPos(0, kTimelineHeight + index * kTrackHeight);
 		voiceItem->setVoiceIndex(voiceItem->voiceIndex() - 1);
 		index += voiceItem->trackCount();
 	});
@@ -212,7 +213,7 @@ void CompositionScene::removeVoice(const void* voiceId)
 	_tracks.erase(tracksBegin, tracksEnd);
 	_voices.erase(voice);
 	_addVoiceItem->setIndex(_voices.size());
-	_addVoiceItem->setPos(0, _tracks.size() * kTrackHeight);
+	_addVoiceItem->setPos(0, kTimelineHeight + _tracks.size() * kTrackHeight);
 	_cursorItem->setTrackCount(_tracks.size());
 	updateSceneRect(_timelineItem->compositionLength());
 }
@@ -245,7 +246,7 @@ void CompositionScene::reset(const std::shared_ptr<aulos::CompositionData>& comp
 			const auto& track = _tracks.emplace_back(std::make_unique<Track>());
 			track->_background = addTrackItem(voiceItem, i->get());
 			track->_background->setFirstTrack(trackOffset == 0);
-			track->_background->setPos(0, trackOffset * kTrackHeight);
+			track->_background->setPos(_voiceColumnWidth, trackOffset * kTrackHeight);
 			track->_background->setTrackIndex(trackIndexBase + trackOffset);
 			if (trackOffset > 0)
 				track->_background->stackBefore(_tracks[_tracks.size() - 2]->_background);
@@ -262,7 +263,7 @@ void CompositionScene::reset(const std::shared_ptr<aulos::CompositionData>& comp
 	for (const auto& track : _tracks)
 		track->_background->setTrackLength(compositionLength);
 	_addVoiceItem->setIndex(_voices.size());
-	_addVoiceItem->setPos(0, _tracks.size() * kTrackHeight);
+	_addVoiceItem->setPos(0, kTimelineHeight + _tracks.size() * kTrackHeight);
 	_cursorItem->setTrackCount(_tracks.size());
 	_cursorItem->setVisible(false);
 
@@ -280,7 +281,7 @@ void CompositionScene::setCurrentStep(double step)
 	// Moving cursor leaves artifacts if the view is being scrolled.
 	// The moved-from area should be updated to clean them up.
 	const auto updateRect = _cursorItem->mapRectToScene(_cursorItem->boundingRect());
-	_cursorItem->setPos(step * kStepWidth, 0.0);
+	_cursorItem->setPos(step * kStepWidth, 0);
 	update(updateRect);
 }
 
@@ -357,7 +358,7 @@ VoiceItem* CompositionScene::addVoiceItem(const void* id, const QString& name, s
 {
 	const auto voiceIndex = _voices.size();
 	const auto voiceItem = _voices.emplace_back(std::make_unique<VoiceItem>(id)).get();
-	voiceItem->setPos(0, _tracks.size() * kTrackHeight);
+	voiceItem->setPos(0, kTimelineHeight + _tracks.size() * kTrackHeight);
 	voiceItem->setTrackCount(trackCount);
 	voiceItem->setVoiceIndex(voiceIndex);
 	voiceItem->setVoiceName(name);
@@ -380,9 +381,12 @@ void CompositionScene::setVoiceColumnWidth(qreal width)
 	for (const auto& voice : _voices)
 		voice->setWidth(width);
 	_addVoiceItem->setWidth(width);
+	_timelineItem->setPos(width, 0);
+	for (size_t i = 0; i < _tracks.size(); ++i)
+		_tracks[i]->_background->setPos(width, _tracks[i]->_background->pos().y());
 }
 
 void CompositionScene::updateSceneRect(size_t compositionLength)
 {
-	setSceneRect({ { -_voiceColumnWidth, -kTimelineHeight }, QPointF{ compositionLength * kStepWidth + kAddTimeItemWidth + kAddTimeExtraWidth, _tracks.size() * kTrackHeight + kAddVoiceItemHeight } });
+	setSceneRect(0, 0, _voiceColumnWidth + compositionLength * kStepWidth + kAddTimeItemWidth + kAddTimeExtraWidth, kTimelineHeight + _tracks.size() * kTrackHeight + kAddVoiceItemHeight);
 }
