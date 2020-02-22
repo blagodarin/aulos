@@ -342,7 +342,10 @@ Studio::Studio()
 		}
 		else if (action == newSequenceAction)
 		{
-			const auto sequence = std::make_shared<aulos::SequenceData>();
+			_sequenceEditor->setSequence(*(*part)->_voice, {});
+			if (_sequenceEditor->exec() != QDialog::Accepted)
+				return;
+			const auto sequence = std::make_shared<aulos::SequenceData>(_sequenceEditor->sequence());
 			(*track)->_sequences.emplace_back(sequence);
 			[[maybe_unused]] const auto inserted = (*track)->_fragments.insert_or_assign(offset, sequence).second;
 			assert(inserted);
