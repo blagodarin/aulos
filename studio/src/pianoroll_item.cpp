@@ -90,13 +90,13 @@ void PianorollItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* opt
 		painter->setPen(Qt::transparent);
 		painter->setBrush(kPianorollBackgroundColor[::rowToColorIndex(row)]);
 		painter->drawRect({ { option->exposedRect.left(), rowTop }, QSizeF{ option->exposedRect.width(), kNoteHeight } });
-		painter->setPen(kPianorollGridColor);
-		for (auto step = firstStep; step < lastStep; ++step)
-		{
-			const auto stepLeft = step * kStepWidth;
-			painter->drawLine(QPointF{ stepLeft, rowTop }, QPointF{ stepLeft, rowBottom });
-		}
-		painter->setPen(row % 12 ? kPianorollGridColor : kPianorollOctaveBorderColor);
+		painter->setPen(row % 12 ? kPianorollFineGridColor : kPianorollCoarseGridColor);
 		painter->drawLine(QPointF{ option->exposedRect.left(), rowTop }, QPointF{ option->exposedRect.right(), rowTop });
+	}
+	for (auto step = firstStep; step < lastStep; ++step)
+	{
+		const auto stepLeft = step * kStepWidth;
+		painter->setPen(step % kPianorollStride ? kPianorollFineGridColor : kPianorollCoarseGridColor);
+		painter->drawLine(QPointF{ stepLeft, option->exposedRect.top() }, QPointF{ stepLeft, option->exposedRect.bottom() });
 	}
 }

@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <cstddef>
+
 class QString;
 
 namespace aulos
@@ -34,5 +36,6 @@ constexpr auto kAddTimeItemWidth = kStepWidth;
 constexpr auto kAddTimeExtraWidth = kStepWidth;
 constexpr auto kAddVoiceItemHeight = kTrackHeight * 0.75;
 constexpr auto kMinVoiceItemWidth = kTrackHeight;
+constexpr size_t kPianorollStride = 8;
 
 QString makeSequenceName(const aulos::SequenceData&, bool rich = false);

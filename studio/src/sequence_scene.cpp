@@ -26,11 +26,6 @@
 
 #include <cassert>
 
-namespace
-{
-	constexpr size_t kPianorollStride = 8;
-}
-
 SequenceScene::SequenceScene(QObject* parent)
 	: QGraphicsScene{ parent }
 {
