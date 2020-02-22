@@ -44,6 +44,7 @@ signals:
 private:
 	void insertSound(size_t offset, aulos::Note);
 	void removeSoundItems();
+	void setPianorollLength(size_t steps);
 
 private:
 	std::unique_ptr<PianorollItem> _pianorollItem;

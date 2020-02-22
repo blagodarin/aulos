@@ -86,7 +86,7 @@ KeyItem::KeyItem(aulos::Note note, QGraphicsItem* parent)
 	, _noteInfo{ kNoteInfo[static_cast<size_t>(note) % kNoteInfo.size()] }
 	, _styleInfo{ kStyleInfo[static_cast<size_t>(_noteInfo._style)] }
 {
-	setPos(-kWhiteKeyWidth, ((9 - _octave) * 12 + _noteInfo._y) * kNoteHeight);
+	setPos(0, ((9 - _octave) * 12 + _noteInfo._y) * kNoteHeight);
 	setZValue(_styleInfo._z);
 }
 

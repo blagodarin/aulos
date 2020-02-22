@@ -43,6 +43,7 @@ SequenceScene::SequenceScene(QObject* parent)
 		connect(keyItem, &KeyItem::activated, [this, note] { emit noteActivated(note); });
 	}
 	_pianorollItem = std::make_unique<PianorollItem>();
+	_pianorollItem->setPos(kWhiteKeyWidth, 0);
 	addItem(_pianorollItem.get());
 	connect(_pianorollItem.get(), &PianorollItem::newSoundRequested, [this](size_t offset, aulos::Note note) {
 		if (const auto i = _soundItems.find(offset); i != _soundItems.end())
@@ -53,11 +54,7 @@ SequenceScene::SequenceScene(QObject* parent)
 	});
 	_rightBoundItem = new ElusiveItem{ _pianorollItem.get() };
 	_rightBoundItem->setHeight(_pianorollItem->boundingRect().height());
-	connect(_rightBoundItem, &ElusiveItem::elude, [this] {
-		_pianorollItem->setStepCount(_pianorollItem->stepCount() + kPianorollStride);
-		_rightBoundItem->setPos(_pianorollItem->boundingRect().topRight());
-		setSceneRect(_pianorollItem->boundingRect().adjusted(-kWhiteKeyWidth, 0, 0, 0));
-	});
+	connect(_rightBoundItem, &ElusiveItem::elude, [this] { setPianorollLength(_pianorollItem->stepCount() + kPianorollStride); });
 }
 
 SequenceScene::~SequenceScene()
@@ -87,9 +84,7 @@ void SequenceScene::setSequence(const aulos::SequenceData& sequence, size_t view
 		offset += sound._delay;
 		insertSound(offset, sound._note);
 	}
-	_pianorollItem->setStepCount(std::max((offset + kPianorollStride) / kPianorollStride * kPianorollStride, viewWidth / static_cast<size_t>(kStepWidth) + 1));
-	_rightBoundItem->setPos(_pianorollItem->boundingRect().topRight());
-	setSceneRect(_pianorollItem->boundingRect().adjusted(-kWhiteKeyWidth, 0, 0, 0));
+	setPianorollLength(std::max((offset + kPianorollStride) / kPianorollStride * kPianorollStride, viewWidth / static_cast<size_t>(kStepWidth) + 1));
 }
 
 void SequenceScene::insertSound(size_t offset, aulos::Note note)
@@ -113,4 +108,11 @@ void SequenceScene::removeSoundItems()
 	for (const auto& sound : _soundItems)
 		removeItem(sound.second.get());
 	_soundItems.clear();
+}
+
+void SequenceScene::setPianorollLength(size_t steps)
+{
+	setSceneRect({ 0, 0, kWhiteKeyWidth + steps * kStepWidth, _pianorollItem->boundingRect().height() });
+	_pianorollItem->setStepCount(steps);
+	_rightBoundItem->setPos(_pianorollItem->boundingRect().topRight());
 }
