@@ -276,13 +276,14 @@ void CompositionScene::reset(const std::shared_ptr<aulos::CompositionData>& comp
 	addItem(_cursorItem.get());
 }
 
-void CompositionScene::setCurrentStep(double step)
+QRectF CompositionScene::setCurrentStep(double step)
 {
 	// Moving cursor leaves artifacts if the view is being scrolled.
 	// The moved-from area should be updated to clean them up.
 	const auto updateRect = _cursorItem->mapRectToScene(_cursorItem->boundingRect());
 	_cursorItem->setPos(step * kStepWidth, 0);
 	update(updateRect);
+	return _cursorItem->sceneBoundingRect();
 }
 
 void CompositionScene::setSpeed(unsigned speed)

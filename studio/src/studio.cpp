@@ -220,7 +220,17 @@ Studio::Studio()
 		updateStatus();
 	});
 	connect(_player.get(), &Player::timeAdvanced, [this](qint64 microseconds) {
-		_compositionScene->setCurrentStep(microseconds * _composition->_speed / 1'000'000.0);
+		const auto sceneCursorRect = _compositionScene->setCurrentStep(microseconds * _composition->_speed / 1'000'000.0);
+		QRect viewCursorRect{ _compositionView->mapFromScene(sceneCursorRect.topLeft()), _compositionView->mapFromScene(sceneCursorRect.bottomRight()) };
+		const auto viewportRect = _compositionView->viewport()->rect();
+		constexpr auto kMargin = 50;
+		if (viewCursorRect.right() > viewportRect.right() - kMargin)
+			viewCursorRect.moveRight(viewCursorRect.right() + viewportRect.width() - kMargin);
+		else if (viewCursorRect.left() < viewportRect.left() + kMargin)
+			viewCursorRect.moveLeft(viewCursorRect.left() - viewportRect.width() + kMargin);
+		else
+			return;
+		_compositionView->ensureVisible({ _compositionView->mapToScene(viewCursorRect.topLeft()), _compositionView->mapToScene(viewCursorRect.bottomRight()) }, 0);
 	});
 	connect(_compositionScene.get(), &CompositionScene::newVoiceRequested, [this] {
 		aulos::Voice voice;

@@ -51,7 +51,7 @@ public:
 	void removeTrack(const void* voiceId, const void* trackId);
 	void removeVoice(const void* voiceId);
 	void reset(const std::shared_ptr<aulos::CompositionData>&, size_t viewWidth);
-	void setCurrentStep(double step);
+	QRectF setCurrentStep(double step);
 	void setSpeed(unsigned speed);
 	void showCursor(bool);
 	void updateSequence(const void* trackId, const std::shared_ptr<aulos::SequenceData>&);
