@@ -656,6 +656,7 @@ void Studio::updateStatus()
 	_stopAction->setEnabled(_hasComposition && _player->isPlaying());
 	_speedSpin->setEnabled(_hasComposition && !_player->isPlaying());
 	_compositionView->setEnabled(_hasComposition);
+	_compositionView->setInteractive(_hasComposition && !_player->isPlaying());
 	_statusPath->setText(_compositionPath.isEmpty() ? QStringLiteral("<i>%1</i>").arg(tr("No file")) : _compositionPath);
 }
 
