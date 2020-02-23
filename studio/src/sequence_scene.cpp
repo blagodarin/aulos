@@ -70,7 +70,7 @@ aulos::SequenceData SequenceScene::sequence() const
 	return result;
 }
 
-void SequenceScene::setSequence(const aulos::SequenceData& sequence, size_t viewWidth)
+qreal SequenceScene::setSequence(const aulos::SequenceData& sequence, const QSize& viewSize)
 {
 	removeSoundItems();
 	size_t offset = 0;
@@ -79,7 +79,13 @@ void SequenceScene::setSequence(const aulos::SequenceData& sequence, size_t view
 		offset += sound._delay;
 		insertSound(offset, sound._note);
 	}
-	setPianorollLength(std::max((offset + kPianorollStride) / kPianorollStride * kPianorollStride, viewWidth / static_cast<size_t>(kStepWidth) + 1));
+	setPianorollLength(std::max((offset + kPianorollStride) / kPianorollStride * kPianorollStride, viewSize.width() / static_cast<size_t>(kStepWidth) + 1));
+	const auto heightDifference = std::lround(sceneRect().height() - viewSize.height());
+	if (heightDifference <= 0 || _soundItems.empty())
+		return 0.5;
+	auto rect = _soundItems.cbegin()->second->sceneBoundingRect();
+	std::for_each(std::next(_soundItems.cbegin()), _soundItems.cend(), [&rect](const auto& soundItem) { rect |= soundItem.second->sceneBoundingRect(); });
+	return (rect.center().y() - viewSize.height() / 2) / heightDifference;
 }
 
 void SequenceScene::insertSound(size_t offset, aulos::Note note)

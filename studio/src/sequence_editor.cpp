@@ -63,11 +63,11 @@ SequenceEditor::~SequenceEditor() = default;
 void SequenceEditor::setSequence(const aulos::Voice& voice, const aulos::SequenceData& sequence)
 {
 	*_voice = voice;
-	_scene->setSequence(sequence, _sequenceView->width());
+	const auto verticalPosition = _scene->setSequence(sequence, _sequenceView->size());
 	const auto horizontalScrollBar = _sequenceView->horizontalScrollBar();
 	horizontalScrollBar->setValue(horizontalScrollBar->minimum());
 	const auto verticalScrollBar = _sequenceView->verticalScrollBar();
-	verticalScrollBar->setValue((verticalScrollBar->minimum() + verticalScrollBar->maximum()) / 2);
+	verticalScrollBar->setValue(verticalScrollBar->minimum() + std::lround((verticalScrollBar->maximum() - verticalScrollBar->minimum()) * verticalPosition));
 }
 
 aulos::SequenceData SequenceEditor::sequence() const
