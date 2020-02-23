@@ -35,7 +35,9 @@ VIAddVersionKey /LANG=0 "ProductName" "Aulos Studio"
 VIAddVersionKey /LANG=0 "ProductVersion" "${AULOS_VERSION}"
 
 !define MUI_ABORTWARNING
+!define MUI_ICON "${SOURCE_DIR}\studio\res\aulos.ico"
 !define MUI_FINISHPAGE_RUN "$INSTDIR\AulosStudio.exe"
+!define MUI_UNICON "${SOURCE_DIR}\studio\res\aulos.ico"
 
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_LICENSE "${SOURCE_DIR}\LICENSE"

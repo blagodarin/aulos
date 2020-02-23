@@ -25,6 +25,7 @@ int main(int argc, char** argv)
 	QCoreApplication::setApplicationName("Aulos Studio");
 	QCoreApplication::setOrganizationDomain("blagodarin.me");
 	QCoreApplication::setOrganizationName("blagodarin.me");
+	QApplication::setWindowIcon(QIcon{ ":/aulos.png" });
 	Studio studio;
 	studio.show();
 	return app.exec();
