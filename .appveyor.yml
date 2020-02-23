@@ -1,4 +1,4 @@
-version: 0.0.0.{build}-{branch}
+version: 0.0.1.{build}-{branch}
 image: Visual Studio 2019
 shallow_clone: true
 
@@ -16,20 +16,30 @@ environment:
       ARCH: x86
       QTDIR: C:\Qt\5.13.2\msvc2017
       INSTALLER: OFF
+    - CONFIG: Debug
+      ARCH: x86
+      QTDIR: C:\Qt\5.13.2\msvc2017
+      INSTALLER: OFF
 
 install:
   - cmake --version
-  - call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat" %ARCH%
-  - cinst ninja
+  - if "%CONFIG%"=="Release" (set GENERATOR=Ninja) else (set GENERATOR=VisualStudio)
+  - if "%ARCH%"=="x86" (set VS_ARCH=Win32) else (set VS_ARCH=x64)
+  - if "%GENERATOR%"=="Ninja" call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat" %ARCH%
+  - if "%GENERATOR%"=="Ninja" cinst ninja
 
 build_script:
   - set BUILD_DIR=%APPVEYOR_BUILD_FOLDER%\_build
   - set INSTALL_DIR=%APPVEYOR_BUILD_FOLDER%\_install
   - mkdir %BUILD_DIR% && cd %BUILD_DIR%
-  - cmake -G Ninja %APPVEYOR_BUILD_FOLDER% -DCMAKE_BUILD_TYPE=%CONFIG% -DCMAKE_INSTALL_PREFIX=%INSTALL_DIR% -DCMAKE_PREFIX_PATH=%QTDIR% -DWITH_STUDIO=ON -DWITH_STUDIO_INSTALLER=%INSTALLER%
-  - cmake --build .
-  - cmake --build . --target install
-  - if "%INSTALLER%"=="ON" cmake --build . --target studio_installer
+  - if "%GENERATOR%"=="Ninja" cmake -G Ninja %APPVEYOR_BUILD_FOLDER% -DCMAKE_BUILD_TYPE=%CONFIG% -DCMAKE_INSTALL_PREFIX=%INSTALL_DIR% -DCMAKE_PREFIX_PATH=%QTDIR% -DWITH_STUDIO=ON -DWITH_STUDIO_INSTALLER=ON
+  - if "%GENERATOR%"=="Ninja" cmake --build .
+  - if "%GENERATOR%"=="Ninja" cmake --build . --target install
+  - if "%GENERATOR%"=="Ninja" cmake --build . --target studio_installer
+  - if "%GENERATOR%"=="VisualStudio" cmake -G "Visual Studio 16 2019" -A %VS_ARCH% %APPVEYOR_BUILD_FOLDER% -DCMAKE_INSTALL_PREFIX=%INSTALL_DIR% -DCMAKE_PREFIX_PATH=%QTDIR% -DWITH_STUDIO=ON -DWITH_STUDIO_INSTALLER=ON
+  - if "%GENERATOR%"=="VisualStudio" cmake --build . --config %CONFIG% -- /nologo "/verbosity:minimal"
+  - if "%GENERATOR%"=="VisualStudio" cmake --build . --config %CONFIG% --target install -- /nologo "/verbosity:minimal"
+  - if "%GENERATOR%"=="VisualStudio" cmake --build . --config %CONFIG% --target studio_installer -- /nologo "/verbosity:minimal"
   - if "%INSTALLER%"=="ON" xcopy %BUILD_DIR%\AulosStudio-*.exe %APPVEYOR_BUILD_FOLDER%
 
 artifacts:
