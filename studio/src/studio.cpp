@@ -57,7 +57,9 @@ namespace
 			const auto value = settings.value(kRecentFileKeyBase.arg(index));
 			if (!value.isValid())
 				break;
-			result.prepend(value.toString());
+			const auto path = value.toString();
+			if (QFileInfo info{ path }; info.isAbsolute() && info.isFile())
+				result.prepend(path);
 			++index;
 		}
 		return result;
