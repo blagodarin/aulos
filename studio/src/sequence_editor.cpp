@@ -52,7 +52,7 @@ SequenceEditor::SequenceEditor(QWidget* parent)
 	connect(_scene, &SequenceScene::noteActivated, [this](aulos::Note note) {
 		const auto renderer = aulos::VoiceRenderer::create(*_voice, Player::SamplingRate);
 		assert(renderer);
-		renderer->start(note, 1.f);
+		renderer->start(note, _amplitude);
 		_player->reset(*renderer);
 		_player->start();
 	});
@@ -60,9 +60,10 @@ SequenceEditor::SequenceEditor(QWidget* parent)
 
 SequenceEditor::~SequenceEditor() = default;
 
-void SequenceEditor::setSequence(const aulos::Voice& voice, const aulos::SequenceData& sequence)
+void SequenceEditor::setSequence(const aulos::Voice& voice, float amplitude, const aulos::SequenceData& sequence)
 {
 	*_voice = voice;
+	_amplitude = amplitude;
 	const auto verticalPosition = _scene->setSequence(sequence, _sequenceView->size());
 	const auto horizontalScrollBar = _sequenceView->horizontalScrollBar();
 	horizontalScrollBar->setValue(horizontalScrollBar->minimum());

@@ -41,11 +41,12 @@ public:
 	SequenceEditor(QWidget*);
 	~SequenceEditor() override;
 
-	void setSequence(const aulos::Voice&, const aulos::SequenceData&);
+	void setSequence(const aulos::Voice&, float amplitude, const aulos::SequenceData&);
 	aulos::SequenceData sequence() const;
 
 private:
 	const std::unique_ptr<aulos::Voice> _voice;
+	float _amplitude = 1.f;
 	SequenceScene* const _scene;
 	QGraphicsView* _sequenceView;
 	std::unique_ptr<Player> _player;

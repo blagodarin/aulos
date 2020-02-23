@@ -69,6 +69,15 @@ namespace
 		return std::move(font);
 	}
 
+	float makeTrackAmplitude(const aulos::CompositionData& composition, unsigned weight)
+	{
+		unsigned totalWeight = 0;
+		for (const auto& part : composition._parts)
+			for (const auto& track : part->_tracks)
+				totalWeight += track->_weight;
+		return static_cast<float>(weight) / totalWeight;
+	}
+
 	void saveRecentFileList(const QStringList& files)
 	{
 		QSettings settings;
@@ -260,7 +269,7 @@ Studio::Studio()
 		assert(track != (*part)->_tracks.cend());
 		const auto fragment = (*track)->_fragments.find(offset);
 		assert(fragment != (*track)->_fragments.end());
-		if (!editSequence(trackId, *(*part)->_voice, fragment->second))
+		if (!editSequence(trackId, *(*part)->_voice, ::makeTrackAmplitude(*_composition, (*track)->_weight), fragment->second))
 			return;
 		_changed = true;
 		updateStatus();
@@ -282,7 +291,7 @@ Studio::Studio()
 		removeTrackAction->setEnabled((*part)->_tracks.size() > 1);
 		if (const auto action = menu.exec(pos); action == editFragmentAction)
 		{
-			if (!editSequence(trackId, *(*part)->_voice, fragment->second))
+			if (!editSequence(trackId, *(*part)->_voice, ::makeTrackAmplitude(*_composition, (*track)->_weight), fragment->second))
 				return;
 		}
 		else if (action == removeFragmentAction)
@@ -342,7 +351,7 @@ Studio::Studio()
 		}
 		else if (action == newSequenceAction)
 		{
-			_sequenceEditor->setSequence(*(*part)->_voice, {});
+			_sequenceEditor->setSequence(*(*part)->_voice, ::makeTrackAmplitude(*_composition, (*track)->_weight), {});
 			if (_sequenceEditor->exec() != QDialog::Accepted)
 				return;
 			const auto sequence = std::make_shared<aulos::SequenceData>(_sequenceEditor->sequence());
@@ -458,9 +467,9 @@ void Studio::createEmptyComposition()
 	_hasComposition = true;
 }
 
-bool Studio::editSequence(const void* trackId, const aulos::Voice& voice, const std::shared_ptr<aulos::SequenceData>& sequence)
+bool Studio::editSequence(const void* trackId, const aulos::Voice& voice, float amplitude, const std::shared_ptr<aulos::SequenceData>& sequence)
 {
-	_sequenceEditor->setSequence(voice, *sequence);
+	_sequenceEditor->setSequence(voice, amplitude, *sequence);
 	if (_sequenceEditor->exec() != QDialog::Accepted)
 		return false;
 	*sequence = _sequenceEditor->sequence();

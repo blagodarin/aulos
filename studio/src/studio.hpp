@@ -50,7 +50,7 @@ private:
 	void clearRecentFiles();
 	void closeComposition();
 	void createEmptyComposition();
-	bool editSequence(const void* trackId, const aulos::Voice&, const std::shared_ptr<aulos::SequenceData>&);
+	bool editSequence(const void* trackId, const aulos::Voice&, float weight, const std::shared_ptr<aulos::SequenceData>&);
 	bool editTrack(aulos::TrackData&);
 	bool editVoice(const void* id, aulos::Voice&);
 	void exportComposition();
