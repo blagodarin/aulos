@@ -249,14 +249,11 @@ Studio::Studio()
 		_compositionView->ensureVisible({ _compositionView->mapToScene(viewCursorRect.topLeft()), _compositionView->mapToScene(viewCursorRect.bottomRight()) }, 0);
 	});
 	connect(_compositionScene.get(), &CompositionScene::newVoiceRequested, [this] {
-		aulos::Voice voice;
-		voice._amplitudeEnvelope._changes = { { .1f, 1.f }, { .4f, .5f }, { .5f, 0.f } };
-		voice._name = tr("NewVoice").toStdString();
-		_voiceEditor->setVoice(voice);
+		_voiceEditor->setVoice(defaultVoiceData());
 		if (_voiceEditor->exec() != QDialog::Accepted)
 			return;
 		const auto& part = _composition->_parts.emplace_back(std::make_shared<aulos::PartData>(std::make_shared<aulos::Voice>(_voiceEditor->voice())));
-		part->_tracks.emplace_back(std::make_shared<aulos::TrackData>(1)); // TODO: Adjust track weight.
+		part->_tracks.emplace_back(std::make_shared<aulos::TrackData>(1));
 		_compositionScene->appendPart(part);
 		_compositionView->horizontalScrollBar()->setValue(_compositionView->horizontalScrollBar()->minimum());
 		_changed = true;
@@ -451,20 +448,23 @@ void Studio::createEmptyComposition()
 {
 	assert(!_hasComposition);
 	assert(_compositionPath.isEmpty());
-
-	aulos::Voice voice;
-	voice._amplitudeEnvelope._changes = { { .1f, 1.f }, { .4f, .5f }, { .5f, 0.f } };
-	voice._name = tr("NewVoice").toStdString();
-
 	_composition = std::make_shared<aulos::CompositionData>();
 	_composition->_speed = 6;
-	const auto& part = _composition->_parts.emplace_back(std::make_shared<aulos::PartData>(std::make_shared<aulos::Voice>(voice)));
+	const auto& part = _composition->_parts.emplace_back(std::make_shared<aulos::PartData>(std::make_shared<aulos::Voice>(defaultVoiceData())));
 	part->_tracks.emplace_back(std::make_shared<aulos::TrackData>(1));
 	_compositionFileName = tr("New composition");
 	_speedSpin->setValue(static_cast<int>(_composition->_speed));
 	_compositionScene->reset(_composition, _compositionView->width());
 	_compositionView->horizontalScrollBar()->setValue(_compositionView->horizontalScrollBar()->minimum());
 	_hasComposition = true;
+}
+
+aulos::Voice Studio::defaultVoiceData() const
+{
+	aulos::Voice voice;
+	voice._amplitudeEnvelope._changes = { { .1f, 1.f }, { .4f, .5f }, { .5f, 0.f } };
+	voice._name = tr("NewVoice").toStdString();
+	return voice;
 }
 
 bool Studio::editSequence(const void* trackId, const aulos::Voice& voice, float amplitude, const std::shared_ptr<aulos::SequenceData>& sequence)
@@ -541,7 +541,7 @@ bool Studio::maybeSaveComposition()
 {
 	if (!_changed)
 		return true;
-	const auto action = QMessageBox::question(const_cast<Studio*>(this), {}, tr("Save changes to the current composition?"), QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
+	const auto action = QMessageBox::question(this, {}, tr("Save changes to the current composition?"), QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
 	return action == QMessageBox::Yes ? (_compositionPath.isEmpty() ? saveCompositionAs() : saveComposition(_compositionPath)) : action == QMessageBox::No;
 }
 
@@ -583,9 +583,11 @@ bool Studio::saveComposition(const QString& path) const
 	assert(composition);
 	const auto buffer = composition->save();
 	QFile file{ path };
-	if (!file.open(QIODevice::WriteOnly))
-		return false; // TODO: Display error.
-	file.write(reinterpret_cast<const char*>(buffer.data()), static_cast<qint64>(buffer.size()));
+	if (!file.open(QIODevice::WriteOnly) || file.write(reinterpret_cast<const char*>(buffer.data()), static_cast<qint64>(buffer.size())) < static_cast<qint64>(buffer.size()))
+	{
+		QMessageBox::critical(const_cast<Studio*>(this), QString{}, file.errorString());
+		return false;
+	}
 	return true;
 }
 

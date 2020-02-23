@@ -540,7 +540,6 @@ namespace aulos
 
 	std::unique_ptr<Composition> CompositionData::pack() const
 	{
-		// TODO: Verify values.
 		auto packed = std::make_unique<CompositionImpl>();
 		packed->_speed = _speed;
 		packed->_parts.reserve(_parts.size());
