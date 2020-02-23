@@ -1,8 +1,10 @@
+#include <aulos_config.h>
+
 #include <verrsrc.h>
 
 VS_VERSION_INFO VERSIONINFO
-FILEVERSION 0,0,0,0
-PRODUCTVERSION 0,0,0,0
+FILEVERSION AULOS_RC_VERSION
+PRODUCTVERSION AULOS_RC_VERSION
 FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
 FILEFLAGS 0
 FILEOS VOS_NT_WINDOWS32
@@ -15,12 +17,12 @@ BEGIN
 		BEGIN
 			VALUE "CompanyName", "blagodarin.me"
 			VALUE "FileDescription", "Aulos Studio"
-			VALUE "FileVersion", "0.0.0"
+			VALUE "FileVersion", AULOS_VERSION
 			VALUE "InternalName", "AulosStudio"
 			VALUE "LegalCopyright", "© 2020 Sergei Blagodarin"
 			VALUE "OriginalFilename", "AulosStudio.exe"
 			VALUE "ProductName", "Aulos Studio"
-			VALUE "ProductVersion", "0.0.0"
+			VALUE "ProductVersion", AULOS_VERSION
 		END
 	END
 	BLOCK "VarFileInfo"

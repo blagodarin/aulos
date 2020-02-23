@@ -24,15 +24,15 @@ InstallDir "$PROGRAMFILES64\Aulos Studio"
 RequestExecutionLevel admin
 SetCompressor /SOLID /FINAL lzma
 
-VIProductVersion ${PRODUCT_VERSION}.0
+VIProductVersion ${AULOS_RC_VERSION}
 VIAddVersionKey /LANG=0 "CompanyName"  "blagodarin.me"
 VIAddVersionKey /LANG=0 "FileDescription" "Aulos Studio Installer"
-VIAddVersionKey /LANG=0 "FileVersion" "${PRODUCT_VERSION}"
+VIAddVersionKey /LANG=0 "FileVersion" "${AULOS_VERSION}"
 VIAddVersionKey /LANG=0 "InternalName" "AulosStudioInstaller"
 VIAddVersionKey /LANG=0 "LegalCopyright" "© 2020 Sergei Blagodarin"
-VIAddVersionKey /LANG=0 "OriginalFilename" "AulosStudio-${PRODUCT_VERSION}.exe"
+VIAddVersionKey /LANG=0 "OriginalFilename" "AulosStudio-${AULOS_VERSION}.exe"
 VIAddVersionKey /LANG=0 "ProductName" "Aulos Studio"
-VIAddVersionKey /LANG=0 "ProductVersion" "${PRODUCT_VERSION}"
+VIAddVersionKey /LANG=0 "ProductVersion" "${AULOS_VERSION}"
 
 !define MUI_ABORTWARNING
 !define MUI_FINISHPAGE_RUN "$INSTDIR\AulosStudio.exe"

@@ -17,7 +17,7 @@
 
 cmake_minimum_required(VERSION 3.15)
 
-project(aulos VERSION 0.0.0 HOMEPAGE_URL https://github.com/blagodarin/aulos LANGUAGES CXX)
+project(aulos VERSION 0.0.1.0 HOMEPAGE_URL https://github.com/blagodarin/aulos LANGUAGES CXX)
 
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
@@ -37,6 +37,14 @@ option(WITH_STUDIO_INSTALLER "Build Aulos Studio installer (requires NSIS)" OFF)
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 	add_compile_options(/std:c++latest /WX /W4)
 endif()
+
+if(NOT CMAKE_GENERATOR MATCHES "^Visual Studio")
+	set(CMAKE_RC_FLAGS "${CMAKE_RC_FLAGS} /nologo")
+endif()
+
+set(AULOS_RC_VERSION "${PROJECT_VERSION_MAJOR},${PROJECT_VERSION_MINOR},${PROJECT_VERSION_PATCH},${PROJECT_VERSION_TWEAK}")
+set(AULOS_VERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
+configure_file(config.h.in ${PROJECT_BINARY_DIR}/aulos_config.h)
 
 add_subdirectory(aulos)
 

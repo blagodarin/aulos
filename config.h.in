@@ -1,0 +1,4 @@
+#pragma once
+
+#cmakedefine AULOS_RC_VERSION ${AULOS_RC_VERSION}
+#cmakedefine AULOS_VERSION "${AULOS_VERSION}"

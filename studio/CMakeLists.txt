@@ -76,6 +76,7 @@ source_group("src" FILES ${_src})
 
 add_executable(studio WIN32 ${_res} ${_src})
 target_compile_options(studio PRIVATE /wd5054)
+target_include_directories(studio PRIVATE ${PROJECT_BINARY_DIR})
 target_link_libraries(studio PRIVATE aulos Qt5::Multimedia Qt5::Widgets)
 if(WIN32)
 	set_property(TARGET studio PROPERTY OUTPUT_NAME AulosStudio)
