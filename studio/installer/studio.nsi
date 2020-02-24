@@ -78,6 +78,11 @@ Section
 	SetOutPath "$INSTDIR\examples"
 	File "${SOURCE_DIR}\examples\*.aulos"
 
+	SetShellVarContext all
+	CreateDirectory "$SMPROGRAMS\Aulos Studio"
+	CreateShortcut "$SMPROGRAMS\Aulos Studio\Aulos Studio.lnk" "$INSTDIR\AulosStudio.exe"
+	CreateShortcut "$SMPROGRAMS\Aulos Studio\Uninstall Aulos Studio.lnk" "$INSTDIR\Uninstall.exe"
+
 	SetOutPath "$INSTDIR"
 	WriteUninstaller "$INSTDIR\Uninstall.exe"
 	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AulosStudio" "DisplayIcon" "$INSTDIR\AulosStudio.exe"
@@ -93,5 +98,9 @@ SectionEnd
 
 Section "Uninstall"
 	DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AulosStudio"
+
+	SetShellVarContext all
+	RMDir /r "$SMPROGRAMS\Aulos Studio"
+
 	RMDir /r "$INSTDIR"
 SectionEnd
