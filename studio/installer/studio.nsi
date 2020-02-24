@@ -18,7 +18,7 @@
 !include "MUI2.nsh"
 
 Name "Aulos Studio"
-OutFile "${INSTALLER_PATH}"
+OutFile "${INSTALLER_DIR}\${INSTALLER_NAME}"
 Unicode True
 InstallDir "$PROGRAMFILES64\Aulos Studio"
 RequestExecutionLevel admin
@@ -30,7 +30,7 @@ VIAddVersionKey /LANG=0 "FileDescription" "Aulos Studio Installer"
 VIAddVersionKey /LANG=0 "FileVersion" "${AULOS_VERSION}"
 VIAddVersionKey /LANG=0 "InternalName" "AulosStudioInstaller"
 VIAddVersionKey /LANG=0 "LegalCopyright" "© 2020 Sergei Blagodarin"
-VIAddVersionKey /LANG=0 "OriginalFilename" "AulosStudio-${AULOS_VERSION}.exe"
+VIAddVersionKey /LANG=0 "OriginalFilename" "${INSTALLER_NAME}"
 VIAddVersionKey /LANG=0 "ProductName" "Aulos Studio"
 VIAddVersionKey /LANG=0 "ProductVersion" "${AULOS_VERSION}"
 

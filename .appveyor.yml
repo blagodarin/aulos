@@ -32,11 +32,12 @@ build_script:
   - set BUILD_DIR=%APPVEYOR_BUILD_FOLDER%\_build
   - set INSTALL_DIR=%APPVEYOR_BUILD_FOLDER%\_install
   - mkdir %BUILD_DIR% && cd %BUILD_DIR%
-  - if "%GENERATOR%"=="Ninja" cmake -G Ninja %APPVEYOR_BUILD_FOLDER% -DCMAKE_BUILD_TYPE=%CONFIG% -DCMAKE_INSTALL_PREFIX=%INSTALL_DIR% -DCMAKE_PREFIX_PATH=%QTDIR% -DWITH_STUDIO=ON -DWITH_STUDIO_INSTALLER=ON
+  - set COMMON_CMAKE_OPTIONS=-DCMAKE_INSTALL_PREFIX=%INSTALL_DIR% -DCMAKE_PREFIX_PATH=%QTDIR% -DPUPLIC_BUILD=%APPVEYOR_REPO_TAG% -DWITH_STUDIO=ON -DWITH_STUDIO_INSTALLER=ON
+  - if "%GENERATOR%"=="Ninja" cmake -G Ninja %APPVEYOR_BUILD_FOLDER% -DCMAKE_BUILD_TYPE=%CONFIG% %COMMON_CMAKE_OPTIONS%
   - if "%GENERATOR%"=="Ninja" cmake --build .
   - if "%GENERATOR%"=="Ninja" cmake --build . --target install
   - if "%GENERATOR%"=="Ninja" cmake --build . --target studio_installer
-  - if "%GENERATOR%"=="VisualStudio" cmake -G "Visual Studio 16 2019" -A %VS_ARCH% %APPVEYOR_BUILD_FOLDER% -DCMAKE_INSTALL_PREFIX=%INSTALL_DIR% -DCMAKE_PREFIX_PATH=%QTDIR% -DWITH_STUDIO=ON -DWITH_STUDIO_INSTALLER=ON
+  - if "%GENERATOR%"=="VisualStudio" cmake -G "Visual Studio 16 2019" -A %VS_ARCH% %APPVEYOR_BUILD_FOLDER% %COMMON_CMAKE_OPTIONS%
   - if "%GENERATOR%"=="VisualStudio" cmake --build . --config %CONFIG% -- /nologo "/verbosity:minimal"
   - if "%GENERATOR%"=="VisualStudio" cmake --build . --config %CONFIG% --target install -- /nologo "/verbosity:minimal"
   - if "%GENERATOR%"=="VisualStudio" cmake --build . --config %CONFIG% --target studio_installer -- /nologo "/verbosity:minimal"

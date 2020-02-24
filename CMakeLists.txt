@@ -31,6 +31,7 @@ set_property(GLOBAL PROPERTY AUTOGEN_SOURCE_GROUP "qt")
 set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER ".cmake")
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
+option(PUBLIC_BUILD "Build for public distribution" OFF)
 option(WITH_STUDIO "Build Aulos Studio (requires Qt)" OFF)
 option(WITH_STUDIO_INSTALLER "Build Aulos Studio installer (requires NSIS)" OFF)
 
