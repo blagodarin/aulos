@@ -59,8 +59,6 @@ VIAddVersionKey /LANG=0 "ProductVersion" "${AULOS_VERSION}"
 
 Section
 	SetOutPath "$INSTDIR"
-	WriteUninstaller "$INSTDIR\Uninstall.exe"
-
 	File "${BUILD_DIR}\AulosStudio.exe"
 	File "$%QTDIR%\bin\Qt5Core${SUFFIX}.dll"
 	File "$%QTDIR%\bin\Qt5Gui${SUFFIX}.dll"
@@ -79,8 +77,21 @@ Section
 
 	SetOutPath "$INSTDIR\examples"
 	File "${SOURCE_DIR}\examples\*.aulos"
+
+	SetOutPath "$INSTDIR"
+	WriteUninstaller "$INSTDIR\Uninstall.exe"
+	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AulosStudio" "DisplayIcon" "$INSTDIR\AulosStudio.exe"
+	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AulosStudio" "DisplayName" "Aulos Studio"
+	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AulosStudio" "DisplayVersion" "${AULOS_VERSION}"
+	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AulosStudio" "InstallLocation" "$INSTDIR"
+	WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AulosStudio" "NoModify" 1
+	WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AulosStudio" "NoRepair" 1
+	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AulosStudio" "Publisher" "blagodarin.me"
+	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AulosStudio" "QuietUninstallString" "$\"$INSTDIR\Uninstall.exe$\" /S"
+	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AulosStudio" "UninstallString" "$\"$INSTDIR\Uninstall.exe$\""
 SectionEnd
 
 Section "Uninstall"
+	DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AulosStudio"
 	RMDir /r "$INSTDIR"
 SectionEnd
