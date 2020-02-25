@@ -16,6 +16,7 @@
 ;
 
 !include "MUI2.nsh"
+!include "WordFunc.nsh"
 
 Name "Aulos Studio"
 OutFile "${INSTALLER_DIR}\${INSTALLER_NAME}"
@@ -58,6 +59,14 @@ VIAddVersionKey /LANG=0 "ProductVersion" "${AULOS_VERSION}"
 !endif
 
 Section
+	ReadRegStr $0 HKLM64 "SOFTWARE\Microsoft\DevDiv\VC\Servicing\14.0\RuntimeMinimum" "Version"
+	${VersionCompare} "$0" "14.24.28127" $1
+	IntCmp $1 2 +1 +5
+	SetOutPath "$INSTDIR"
+	File "${INSTALLER_DIR}\VC_redist.x64.exe"
+	ExecWait '"$TEMP\VC_redist.x64.exe" /q /norestart'
+	Delete "$INSTDIR\VC_redist.x64.exe"
+
 	SetOutPath "$INSTDIR"
 	File "${BUILD_DIR}\AulosStudio.exe"
 	File "$%QTDIR%\bin\Qt5Core${SUFFIX}.dll"
