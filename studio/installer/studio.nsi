@@ -15,6 +15,7 @@
 ; limitations under the License.
 ;
 
+!include "FileFunc.nsh"
 !include "LogicLib.nsh"
 !include "MUI2.nsh"
 !include "WordFunc.nsh"
@@ -70,6 +71,7 @@ Section
 	${EndIf}
 
 	SetOutPath "$INSTDIR"
+	WriteUninstaller "$INSTDIR\Uninstall.exe"
 	File "${BUILD_DIR}\AulosStudio.exe"
 	File "$%QTDIR%\bin\Qt5Core${SUFFIX}.dll"
 	File "$%QTDIR%\bin\Qt5Gui${SUFFIX}.dll"
@@ -94,11 +96,11 @@ Section
 	CreateShortcut "$SMPROGRAMS\Aulos Studio\Aulos Studio.lnk" "$INSTDIR\AulosStudio.exe"
 	CreateShortcut "$SMPROGRAMS\Aulos Studio\Uninstall Aulos Studio.lnk" "$INSTDIR\Uninstall.exe"
 
-	SetOutPath "$INSTDIR"
-	WriteUninstaller "$INSTDIR\Uninstall.exe"
 	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AulosStudio" "DisplayIcon" "$INSTDIR\AulosStudio.exe"
 	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AulosStudio" "DisplayName" "Aulos Studio"
 	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AulosStudio" "DisplayVersion" "${AULOS_VERSION}"
+	${GetSize} "$INSTDIR" "/S=0K" $0 $1 $2
+	WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AulosStudio" "EstimatedSize" $0
 	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AulosStudio" "InstallLocation" "$INSTDIR"
 	WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AulosStudio" "NoModify" 1
 	WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AulosStudio" "NoRepair" 1
