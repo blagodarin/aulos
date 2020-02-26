@@ -64,9 +64,9 @@ Section
 	${VersionCompare} "$0" "14.24.28127" $1
 	${If} $1 = 2
 		SetOutPath "$INSTDIR"
-		File "${INSTALLER_DIR}\VC_redist.x64.exe"
-		ExecWait '"$INSTDIR\VC_redist.x64.exe" /install /passive /norestart'
-		Delete "$INSTDIR\VC_redist.x64.exe"
+		File "${INSTALLER_DIR}\vc_redist.x64.exe"
+		ExecWait '"$INSTDIR\vc_redist.x64.exe" /install /passive /norestart'
+		Delete "$INSTDIR\vc_redist.x64.exe"
 	${EndIf}
 
 	SetOutPath "$INSTDIR"

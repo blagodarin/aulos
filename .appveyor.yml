@@ -21,6 +21,9 @@ environment:
       QTDIR: C:\Qt\5.13.2\msvc2017
       INSTALLER: OFF
 
+cache:
+  - _build\vc_redist.x64.exe
+
 install:
   - cmake --version
   - if "%CONFIG%"=="Release" (set GENERATOR=Ninja) else (set GENERATOR=VisualStudio)
@@ -31,18 +34,19 @@ install:
 build_script:
   - set BUILD_DIR=%APPVEYOR_BUILD_FOLDER%\_build
   - set INSTALL_DIR=%APPVEYOR_BUILD_FOLDER%\_install
-  - mkdir %BUILD_DIR% && cd %BUILD_DIR%
-  - set COMMON_CMAKE_OPTIONS=-DCMAKE_INSTALL_PREFIX=%INSTALL_DIR% -DCMAKE_PREFIX_PATH=%QTDIR% -DPUPLIC_BUILD=%APPVEYOR_REPO_TAG% -DWITH_STUDIO=ON -DWITH_STUDIO_INSTALLER=ON
+  - if not exist %BUILD_DIR% mkdir %BUILD_DIR%
+  - cd %BUILD_DIR%
+  - set COMMON_CMAKE_OPTIONS=-DCMAKE_INSTALL_PREFIX=%INSTALL_DIR% -DCMAKE_PREFIX_PATH=%QTDIR% -DPUBLIC_BUILD=%APPVEYOR_REPO_TAG% -DWITH_STUDIO=ON -DWITH_STUDIO_INSTALLER=ON
   - if "%GENERATOR%"=="Ninja" cmake -G Ninja %APPVEYOR_BUILD_FOLDER% -DCMAKE_BUILD_TYPE=%CONFIG% %COMMON_CMAKE_OPTIONS%
   - if "%GENERATOR%"=="VisualStudio" cmake -G "Visual Studio 16 2019" -A %VS_ARCH% %APPVEYOR_BUILD_FOLDER% %COMMON_CMAKE_OPTIONS%
   - if "%GENERATOR%"=="Ninja" cmake --build .
   - if "%GENERATOR%"=="VisualStudio" cmake --build . --config %CONFIG% -- /nologo "/verbosity:minimal"
   - if "%GENERATOR%"=="Ninja" cmake --build . --target install
   - if "%GENERATOR%"=="VisualStudio" cmake --build . --config %CONFIG% --target install -- /nologo "/verbosity:minimal"
-  - appveyor DownloadFile https://aka.ms/vs/16/release/vc_redist.x64.exe
+  - if not exist vc_redist.x64.exe appveyor DownloadFile "https://aka.ms/vs/16/release/vc_redist.x64.exe"
   - if "%GENERATOR%"=="Ninja" cmake --build . --target studio_installer
   - if "%GENERATOR%"=="VisualStudio" cmake --build . --config %CONFIG% --target studio_installer -- /nologo "/verbosity:minimal"
-  - if "%INSTALLER%"=="ON" xcopy %BUILD_DIR%\AulosStudio-*.exe %APPVEYOR_BUILD_FOLDER%
+  - if "%INSTALLER%"=="ON" xcopy AulosStudio-*.exe %APPVEYOR_BUILD_FOLDER%
 
 artifacts:
   - path: AulosStudio-*.exe
