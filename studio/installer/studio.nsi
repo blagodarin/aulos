@@ -15,6 +15,7 @@
 ; limitations under the License.
 ;
 
+!include "LogicLib.nsh"
 !include "MUI2.nsh"
 !include "WordFunc.nsh"
 
@@ -61,11 +62,12 @@ VIAddVersionKey /LANG=0 "ProductVersion" "${AULOS_VERSION}"
 Section
 	ReadRegStr $0 HKLM64 "SOFTWARE\Microsoft\DevDiv\VC\Servicing\14.0\RuntimeMinimum" "Version"
 	${VersionCompare} "$0" "14.24.28127" $1
-	IntCmp $1 2 +1 +5
-	SetOutPath "$INSTDIR"
-	File "${INSTALLER_DIR}\VC_redist.x64.exe"
-	ExecWait '"$TEMP\VC_redist.x64.exe" /q /norestart'
-	Delete "$INSTDIR\VC_redist.x64.exe"
+	${If} $1 = 2
+		SetOutPath "$INSTDIR"
+		File "${INSTALLER_DIR}\VC_redist.x64.exe"
+		ExecWait '"$INSTDIR\VC_redist.x64.exe" /install /passive /norestart'
+		Delete "$INSTDIR\VC_redist.x64.exe"
+	${EndIf}
 
 	SetOutPath "$INSTDIR"
 	File "${BUILD_DIR}\AulosStudio.exe"
