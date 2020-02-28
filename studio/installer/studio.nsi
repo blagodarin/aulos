@@ -89,7 +89,9 @@ Section
 	File "$%QTDIR%\plugins\styles\qwindowsvistastyle${SUFFIX}.dll"
 
 	SetOutPath "$INSTDIR\examples"
-	File "${SOURCE_DIR}\examples\*.aulos"
+	File "${SOURCE_DIR}\examples\example_1.aulos"
+	File "${SOURCE_DIR}\examples\fur_elise.aulos"
+	File "${SOURCE_DIR}\examples\popcorn.aulos"
 
 	SetShellVarContext all
 	CreateShortcut "$DESKTOP\Aulos Studio.lnk" "$INSTDIR\AulosStudio.exe"
@@ -115,5 +117,28 @@ Section "Uninstall"
 	Delete "$DESKTOP\Aulos Studio.lnk"
 	Delete "$SMPROGRAMS\Aulos Studio.lnk"
 
-	RMDir /r "$INSTDIR"
+	Delete "$INSTDIR\examples\example_1.aulos"
+	Delete "$INSTDIR\examples\fur_elise.aulos"
+	Delete "$INSTDIR\examples\popcorn.aulos"
+	RMDir "$INSTDIR\examples"
+
+	Delete "$INSTDIR\plugins\styles\qwindowsvistastyle${SUFFIX}.dll"
+	RMDir "$INSTDIR\plugins\styles"
+
+	Delete "$INSTDIR\plugins\platforms\qwindows${SUFFIX}.dll"
+	RMDir "$INSTDIR\plugins\platforms"
+
+	Delete "$INSTDIR\plugins\audio\qtaudio_windows${SUFFIX}.dll"
+	RMDir "$INSTDIR\plugins\audio"
+
+	RMDir "$INSTDIR\plugins"
+
+	Delete "$INSTDIR\AulosStudio.exe"
+	Delete "$INSTDIR\Qt5Core${SUFFIX}.dll"
+	Delete "$INSTDIR\Qt5Gui${SUFFIX}.dll"
+	Delete "$INSTDIR\Qt5Multimedia${SUFFIX}.dll"
+	Delete "$INSTDIR\Qt5Network${SUFFIX}.dll"
+	Delete "$INSTDIR\Qt5Widgets${SUFFIX}.dll"
+	Delete "$INSTDIR\Uninstall.exe"
+	RMDir "$INSTDIR"
 SectionEnd
