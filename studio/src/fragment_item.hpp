@@ -49,6 +49,7 @@ private:
 	void mouseDoubleClickEvent(QGraphicsSceneMouseEvent*) override;
 
 	void resetSequence();
+	void resetPolygon();
 
 private:
 	const size_t _offset;
@@ -56,4 +57,5 @@ private:
 	QStaticText _name;
 	size_t _length = 0;
 	qreal _width = 0;
+	QPolygonF _polygon;
 };

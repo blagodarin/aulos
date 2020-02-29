@@ -30,33 +30,31 @@
 #include <QPainter>
 #include <QTextOption>
 
+namespace
+{
+	constexpr auto kFragmentArrowWidth = kStepWidth / 2;
+}
+
 FragmentItem::FragmentItem(TrackItem* track, size_t offset, const std::shared_ptr<aulos::SequenceData>& sequence)
 	: QGraphicsObject{ track }
 	, _offset{ offset }
 	, _sequence{ sequence }
 {
+	_polygon.reserve(5);
 	resetSequence();
 }
 
 QRectF FragmentItem::boundingRect() const
 {
-	return { 0, 0, _width, kTrackHeight };
+	return { 0, 0, _width + kFragmentArrowWidth, kTrackHeight };
 }
 
 void FragmentItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*)
 {
-	const auto right = _width - kStepWidth / 2;
-	const std::array<QPointF, 5> shape{
-		QPointF{ 0, 0 },
-		QPointF{ right, 0 },
-		QPointF{ _width, kTrackHeight / 2 },
-		QPointF{ right, kTrackHeight },
-		QPointF{ 0, kTrackHeight },
-	};
 	const auto& colors = kFragmentColors[static_cast<const TrackItem*>(parentItem())->trackIndex() % kFragmentColors.size()];
 	painter->setPen(colors._pen);
 	painter->setBrush(colors._brush);
-	painter->drawConvexPolygon(shape.data(), static_cast<int>(shape.size()));
+	painter->drawConvexPolygon(_polygon);
 	if (_length > 0)
 	{
 		constexpr auto fontSize = kTrackHeight * 0.75;
@@ -69,7 +67,7 @@ void FragmentItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWi
 		painter->setTransform(QTransform::fromScale(xScale, 1.0), true);
 		_name.prepare(painter->transform(), font);
 		const QPointF topLeft{ xOffset / xScale, (kTrackHeight - _name.size().height()) / 2 };
-		painter->setClipRect(QRectF{ { topLeft.x(), 0 }, QPointF{ right / xScale, kTrackHeight } });
+		painter->setClipRect(QRectF{ { topLeft.x(), 0 }, QPointF{ _width / xScale, kTrackHeight } });
 		painter->drawStaticText(topLeft, _name);
 		painter->restore();
 	}
@@ -85,19 +83,25 @@ bool FragmentItem::updateSequence(const std::shared_ptr<aulos::SequenceData>& se
 
 void FragmentItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
 {
-	emit fragmentMenuRequested(_offset, e->screenPos());
+	e->setAccepted(_polygon.containsPoint(e->pos(), Qt::OddEvenFill));
+	if (e->isAccepted())
+		emit fragmentMenuRequested(_offset, e->screenPos());
 }
 
-void FragmentItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent*)
+void FragmentItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* e)
 {
-	emit fragmentActionRequested(_offset);
+	e->setAccepted(_polygon.containsPoint(e->pos(), Qt::OddEvenFill));
+	if (e->isAccepted())
+		emit fragmentActionRequested(_offset);
 }
 
 void FragmentItem::resetSequence()
 {
 	prepareGeometryChange();
 	_length = _sequence->_sounds.empty() ? 0 : std::reduce(_sequence->_sounds.begin(), _sequence->_sounds.end(), size_t{ 1 }, [](size_t length, const aulos::Sound& sound) { return length + sound._delay; });
-	_width = (_length + 0.5) * kStepWidth;
+	_width = _length * kStepWidth;
+	_polygon.clear();
+	_polygon << QPointF{ 0, 0 } << QPointF{ _width, 0 } << QPointF{ _width + kFragmentArrowWidth, kTrackHeight / 2 } << QPointF{ _width, kTrackHeight } << QPointF{ 0, kTrackHeight };
 	if (_length > 0)
 	{
 		QTextOption textOption;
