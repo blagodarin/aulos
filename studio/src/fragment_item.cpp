@@ -35,13 +35,12 @@ namespace
 	constexpr auto kFragmentArrowWidth = kStepWidth / 2;
 }
 
-FragmentItem::FragmentItem(TrackItem* track, size_t offset, const std::shared_ptr<aulos::SequenceData>& sequence)
+FragmentItem::FragmentItem(TrackItem* track, size_t offset, const void* sequenceId)
 	: QGraphicsObject{ track }
 	, _offset{ offset }
-	, _sequence{ sequence }
+	, _sequenceId{ sequenceId }
 {
 	_polygon.reserve(5);
-	resetSequence();
 }
 
 QRectF FragmentItem::boundingRect() const
@@ -73,12 +72,25 @@ void FragmentItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWi
 	}
 }
 
-bool FragmentItem::updateSequence(const std::shared_ptr<aulos::SequenceData>& sequence)
+void FragmentItem::setSequence(const aulos::SequenceData& sequence)
 {
-	if (_sequence != sequence)
-		return false;
-	resetSequence();
-	return true;
+	prepareGeometryChange();
+	_length = sequence._sounds.empty() ? 0 : std::reduce(sequence._sounds.begin(), sequence._sounds.end(), size_t{ 1 }, [](size_t length, const aulos::Sound& sound) { return length + sound._delay; });
+	_width = _length * kStepWidth;
+	_polygon.clear();
+	_polygon << QPointF{ 0, 0 } << QPointF{ _width, 0 } << QPointF{ _width + kFragmentArrowWidth, kTrackHeight / 2 } << QPointF{ _width, kTrackHeight } << QPointF{ 0, kTrackHeight };
+	if (_length > 0)
+	{
+		QTextOption textOption;
+		textOption.setWrapMode(QTextOption::NoWrap);
+		_name.setText(::makeSequenceName(sequence, true));
+		_name.setTextFormat(Qt::RichText);
+		_name.setTextOption(textOption);
+		_name.setTextWidth((_length - 1) * kStepWidth);
+	}
+	else
+		_name = {};
+	setToolTip(::makeSequenceName(sequence));
 }
 
 void FragmentItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
@@ -93,25 +105,4 @@ void FragmentItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* e)
 	e->setAccepted(_polygon.containsPoint(e->pos(), Qt::OddEvenFill));
 	if (e->isAccepted())
 		emit fragmentActionRequested(_offset);
-}
-
-void FragmentItem::resetSequence()
-{
-	prepareGeometryChange();
-	_length = _sequence->_sounds.empty() ? 0 : std::reduce(_sequence->_sounds.begin(), _sequence->_sounds.end(), size_t{ 1 }, [](size_t length, const aulos::Sound& sound) { return length + sound._delay; });
-	_width = _length * kStepWidth;
-	_polygon.clear();
-	_polygon << QPointF{ 0, 0 } << QPointF{ _width, 0 } << QPointF{ _width + kFragmentArrowWidth, kTrackHeight / 2 } << QPointF{ _width, kTrackHeight } << QPointF{ 0, kTrackHeight };
-	if (_length > 0)
-	{
-		QTextOption textOption;
-		textOption.setWrapMode(QTextOption::NoWrap);
-		_name.setText(::makeSequenceName(*_sequence, true));
-		_name.setTextFormat(Qt::RichText);
-		_name.setTextOption(textOption);
-		_name.setTextWidth((_length - 1) * kStepWidth);
-	}
-	else
-		_name = {};
-	setToolTip(::makeSequenceName(*_sequence));
 }

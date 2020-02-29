@@ -301,7 +301,8 @@ void CompositionScene::updateSequence(const void* trackId, const std::shared_ptr
 	const auto track = std::find_if(_tracks.begin(), _tracks.end(), [trackId](const auto& trackPtr) { return trackPtr->_background->trackId() == trackId; });
 	assert(track != _tracks.end());
 	for (const auto& fragment : (*track)->_fragments)
-		fragment.second->updateSequence(sequence);
+		if (fragment.second->sequenceId() == sequence.get())
+			fragment.second->setSequence(*sequence);
 }
 
 void CompositionScene::updateVoice(const void* id, const std::string& name)
@@ -327,8 +328,9 @@ void CompositionScene::setCompositionLength(size_t length)
 
 FragmentItem* CompositionScene::addFragmentItem(const void* voiceId, Track& track, size_t offset, const std::shared_ptr<aulos::SequenceData>& sequence)
 {
-	const auto item = new FragmentItem{ track._background, offset, sequence };
+	const auto item = new FragmentItem{ track._background, offset, sequence.get() };
 	item->setPos(offset * kStepWidth, 0);
+	item->setSequence(*sequence);
 	connect(item, &FragmentItem::fragmentActionRequested, [this, voiceId, trackId = track._background->trackId()](size_t offset) {
 		emit fragmentActionRequested(voiceId, trackId, offset);
 	});

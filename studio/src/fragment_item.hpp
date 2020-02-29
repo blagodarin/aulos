@@ -32,13 +32,14 @@ class FragmentItem final : public QGraphicsObject
 	Q_OBJECT
 
 public:
-	FragmentItem(TrackItem* track, size_t offset, const std::shared_ptr<aulos::SequenceData>&);
+	FragmentItem(TrackItem* track, size_t offset, const void* sequenceId);
 
 	QRectF boundingRect() const override;
 	size_t fragmentLength() const noexcept { return _length; }
 	size_t fragmentOffset() const noexcept { return _offset; }
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
-	bool updateSequence(const std::shared_ptr<aulos::SequenceData>&);
+	const void* sequenceId() const noexcept { return _sequenceId; }
+	void setSequence(const aulos::SequenceData&);
 
 signals:
 	void fragmentActionRequested(size_t offset);
@@ -48,12 +49,9 @@ private:
 	void contextMenuEvent(QGraphicsSceneContextMenuEvent*) override;
 	void mouseDoubleClickEvent(QGraphicsSceneMouseEvent*) override;
 
-	void resetSequence();
-	void resetPolygon();
-
 private:
 	const size_t _offset;
-	const std::shared_ptr<aulos::SequenceData> _sequence;
+	const void* const _sequenceId;
 	QStaticText _name;
 	size_t _length = 0;
 	qreal _width = 0;
