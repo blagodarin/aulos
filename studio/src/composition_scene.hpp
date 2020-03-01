@@ -61,6 +61,7 @@ signals:
 	void newVoiceRequested();
 	void fragmentActionRequested(const void* voiceId, const void* trackId, size_t offset);
 	void fragmentMenuRequested(const void* voiceId, const void* trackId, size_t offset, const QPoint& pos);
+	void sequenceSelected(const void* voiceId, const void* trackId, const void* sequenceId);
 	void trackActionRequested(const void* voiceId, const void* trackId);
 	void trackMenuRequested(const void* voiceId, const void* trackId, size_t offset, const QPoint& pos);
 	void voiceActionRequested(const void* voiceId);
@@ -74,6 +75,7 @@ private:
 	FragmentItem* addFragmentItem(const void* voiceId, Track&, size_t offset, const std::shared_ptr<aulos::SequenceData>&);
 	TrackItem* addTrackItem(VoiceItem*, const void* trackId);
 	VoiceItem* addVoiceItem(const void* id, const QString& name, size_t trackCount);
+	void highlightSequence(const void* trackId, const void* sequenceId);
 	qreal requiredVoiceColumnWidth() const;
 	void setVoiceColumnWidth(qreal);
 	void updateSceneRect(size_t compositionLength);
@@ -86,4 +88,6 @@ private:
 	std::unique_ptr<AddVoiceItem> _addVoiceItem;
 	std::unique_ptr<CursorItem> _cursorItem;
 	qreal _voiceColumnWidth;
+	const void* _selectedSequenceId = nullptr;
+	const void* _selectedSequenceTrackId = nullptr;
 };

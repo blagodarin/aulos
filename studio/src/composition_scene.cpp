@@ -192,6 +192,12 @@ void CompositionScene::removeTrack(const void* voiceId, const void* trackId)
 	_addVoiceItem->setPos(0, kTimelineHeight + _tracks.size() * kTrackHeight);
 	_cursorItem->setTrackCount(_tracks.size());
 	updateSceneRect(_timelineItem->compositionLength());
+	if (trackId == _selectedSequenceTrackId)
+	{
+		_selectedSequenceId = nullptr;
+		_selectedSequenceTrackId = nullptr;
+		emit sequenceSelected(nullptr, nullptr, nullptr);
+	}
 }
 
 void CompositionScene::removeVoice(const void* voiceId)
@@ -226,54 +232,59 @@ void CompositionScene::reset(const std::shared_ptr<aulos::CompositionData>& comp
 	removeItem(_addVoiceItem.get());
 	removeItem(_cursorItem.get());
 	clear();
-
 	_composition = composition;
-	if (!_composition || _composition->_parts.empty())
-		return;
-
-	auto compositionLength = viewWidth / static_cast<size_t>(kStepWidth) + 1;
-	_voices.reserve(_composition->_parts.size());
-	for (const auto& partData : _composition->_parts)
+	if (_composition && !_composition->_parts.empty())
 	{
-		assert(!partData->_tracks.empty());
-
-		const auto voiceItem = addVoiceItem(partData->_voice.get(), QString::fromStdString(partData->_voice->_name), partData->_tracks.size());
-
-		const auto trackIndexBase = _tracks.size();
-		for (auto i = partData->_tracks.cbegin(); i != partData->_tracks.cend(); ++i)
+		auto compositionLength = viewWidth / static_cast<size_t>(kStepWidth) + 1;
+		_voices.reserve(_composition->_parts.size());
+		for (const auto& partData : _composition->_parts)
 		{
-			const auto trackOffset = i - partData->_tracks.cbegin();
-			const auto& track = _tracks.emplace_back(std::make_unique<Track>());
-			track->_background = addTrackItem(voiceItem, i->get());
-			track->_background->setFirstTrack(trackOffset == 0);
-			track->_background->setPos(_voiceColumnWidth, trackOffset * kTrackHeight);
-			track->_background->setTrackIndex(trackIndexBase + trackOffset);
-			if (trackOffset > 0)
-				track->_background->stackBefore(_tracks[_tracks.size() - 2]->_background);
-			for (const auto& fragment : (*i)->_fragments)
+			assert(!partData->_tracks.empty());
+
+			const auto voiceItem = addVoiceItem(partData->_voice.get(), QString::fromStdString(partData->_voice->_name), partData->_tracks.size());
+
+			const auto trackIndexBase = _tracks.size();
+			for (auto i = partData->_tracks.cbegin(); i != partData->_tracks.cend(); ++i)
 			{
-				const auto fragmentItem = addFragmentItem(voiceItem->voiceId(), *track, fragment.first, fragment.second);
-				compositionLength = std::max(compositionLength, fragmentItem->fragmentOffset() + fragmentItem->fragmentLength());
+				const auto trackOffset = i - partData->_tracks.cbegin();
+				const auto& track = _tracks.emplace_back(std::make_unique<Track>());
+				track->_background = addTrackItem(voiceItem, i->get());
+				track->_background->setFirstTrack(trackOffset == 0);
+				track->_background->setPos(_voiceColumnWidth, trackOffset * kTrackHeight);
+				track->_background->setTrackIndex(trackIndexBase + trackOffset);
+				if (trackOffset > 0)
+					track->_background->stackBefore(_tracks[_tracks.size() - 2]->_background);
+				for (const auto& fragment : (*i)->_fragments)
+				{
+					const auto fragmentItem = addFragmentItem(voiceItem->voiceId(), *track, fragment.first, fragment.second);
+					compositionLength = std::max(compositionLength, fragmentItem->fragmentOffset() + fragmentItem->fragmentLength());
+				}
 			}
 		}
+
+		_timelineItem->setCompositionSpeed(_composition->_speed);
+		_timelineItem->setCompositionLength(compositionLength);
+		for (const auto& track : _tracks)
+			track->_background->setTrackLength(compositionLength);
+		_addVoiceItem->setIndex(_voices.size());
+		_addVoiceItem->setPos(0, kTimelineHeight + _tracks.size() * kTrackHeight);
+		_cursorItem->setTrackCount(_tracks.size());
+		_cursorItem->setVisible(false);
+
+		setVoiceColumnWidth(requiredVoiceColumnWidth());
+		updateSceneRect(compositionLength);
+		addItem(_timelineItem.get());
+		for (auto i = _voices.crbegin(); i != _voices.crend(); ++i)
+			addItem(i->get());
+		addItem(_addVoiceItem.get());
+		addItem(_cursorItem.get());
 	}
-
-	_timelineItem->setCompositionSpeed(_composition->_speed);
-	_timelineItem->setCompositionLength(compositionLength);
-	for (const auto& track : _tracks)
-		track->_background->setTrackLength(compositionLength);
-	_addVoiceItem->setIndex(_voices.size());
-	_addVoiceItem->setPos(0, kTimelineHeight + _tracks.size() * kTrackHeight);
-	_cursorItem->setTrackCount(_tracks.size());
-	_cursorItem->setVisible(false);
-
-	setVoiceColumnWidth(requiredVoiceColumnWidth());
-	updateSceneRect(compositionLength);
-	addItem(_timelineItem.get());
-	for (auto i = _voices.crbegin(); i != _voices.crend(); ++i)
-		addItem(i->get());
-	addItem(_addVoiceItem.get());
-	addItem(_cursorItem.get());
+	if (_selectedSequenceId)
+	{
+		_selectedSequenceId = nullptr;
+		_selectedSequenceTrackId = nullptr;
+		emit sequenceSelected(nullptr, nullptr, nullptr);
+	}
 }
 
 QRectF CompositionScene::setCurrentStep(double step)
@@ -329,6 +340,7 @@ void CompositionScene::setCompositionLength(size_t length)
 FragmentItem* CompositionScene::addFragmentItem(const void* voiceId, Track& track, size_t offset, const std::shared_ptr<aulos::SequenceData>& sequence)
 {
 	const auto item = new FragmentItem{ track._background, offset, sequence.get() };
+	item->setHighlighted(sequence.get() == _selectedSequenceId);
 	item->setPos(offset * kStepWidth, 0);
 	item->setSequence(*sequence);
 	connect(item, &FragmentItem::fragmentActionRequested, [this, voiceId, trackId = track._background->trackId()](size_t offset) {
@@ -336,6 +348,14 @@ FragmentItem* CompositionScene::addFragmentItem(const void* voiceId, Track& trac
 	});
 	connect(item, &FragmentItem::fragmentMenuRequested, [this, voiceId, trackId = track._background->trackId()](size_t offset, const QPoint& pos) {
 		emit fragmentMenuRequested(voiceId, trackId, offset, pos);
+	});
+	connect(item, &FragmentItem::sequenceSelected, [this, voiceId, trackId = track._background->trackId()](const void* sequenceId) {
+		if (_selectedSequenceTrackId && _selectedSequenceTrackId != trackId)
+			highlightSequence(_selectedSequenceTrackId, nullptr);
+		_selectedSequenceId = sequenceId;
+		_selectedSequenceTrackId = trackId;
+		highlightSequence(trackId, sequenceId);
+		emit sequenceSelected(voiceId, trackId, sequenceId);
 	});
 	const auto i = track._fragments.emplace(offset, item).first;
 	if (i != track._fragments.begin())
@@ -368,6 +388,15 @@ VoiceItem* CompositionScene::addVoiceItem(const void* id, const QString& name, s
 	connect(voiceItem, &VoiceItem::voiceActionRequested, this, &CompositionScene::voiceActionRequested);
 	connect(voiceItem, &VoiceItem::voiceMenuRequested, this, &CompositionScene::voiceMenuRequested);
 	return voiceItem;
+}
+
+void CompositionScene::highlightSequence(const void* trackId, const void* sequenceId)
+{
+	const auto track = std::find_if(_tracks.begin(), _tracks.end(), [trackId](const auto& trackPtr) { return trackPtr->_background->trackId() == trackId; });
+	assert(track != _tracks.end());
+	(*track)->_background->setZValue(sequenceId ? 0.75 : 0.0);
+	for (const auto& fragment : (*track)->_fragments)
+		fragment.second->setHighlighted(fragment.second->sequenceId() == sequenceId);
 }
 
 qreal CompositionScene::requiredVoiceColumnWidth() const

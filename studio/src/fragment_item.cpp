@@ -50,8 +50,11 @@ QRectF FragmentItem::boundingRect() const
 
 void FragmentItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*)
 {
-	const auto& colors = kFragmentColors[static_cast<const TrackItem*>(parentItem())->trackIndex() % kFragmentColors.size()];
-	painter->setPen(colors._pen);
+	const auto trackIndex = static_cast<const TrackItem*>(parentItem())->trackIndex();
+	const auto& colors = _highlighted ? kFragmentHighlightColors[trackIndex % kFragmentHighlightColors.size()] : kFragmentColors[trackIndex % kFragmentColors.size()];
+	QPen pen{ colors._pen };
+	pen.setWidth(_highlighted ? 3 : 0);
+	painter->setPen(pen);
 	painter->setBrush(colors._brush);
 	painter->drawConvexPolygon(_polygon);
 	if (_length > 0)
@@ -70,6 +73,15 @@ void FragmentItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWi
 		painter->drawStaticText(topLeft, _name);
 		painter->restore();
 	}
+}
+
+void FragmentItem::setHighlighted(bool highlighted)
+{
+	if (_highlighted == highlighted)
+		return;
+	_highlighted = highlighted;
+	setZValue(highlighted ? 1.0 : 0.0);
+	update();
 }
 
 void FragmentItem::setSequence(const aulos::SequenceData& sequence)
@@ -105,4 +117,11 @@ void FragmentItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* e)
 	e->setAccepted(_polygon.containsPoint(e->pos(), Qt::OddEvenFill));
 	if (e->isAccepted())
 		emit fragmentActionRequested(_offset);
+}
+
+void FragmentItem::mousePressEvent(QGraphicsSceneMouseEvent* e)
+{
+	if (e->button() == Qt::LeftButton)
+		emit sequenceSelected(_sequenceId);
+	QGraphicsObject::mousePressEvent(e);
 }

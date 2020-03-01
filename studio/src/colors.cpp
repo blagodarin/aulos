@@ -33,6 +33,15 @@ const std::array<Colors, 6> kFragmentColors{
 	Colors{ "#e7e", "#404" },
 };
 
+const std::array<Colors, 6> kFragmentHighlightColors{
+	Colors{ "#400", "#f00" },
+	Colors{ "#440", "#ff0" },
+	Colors{ "#040", "#0f0" },
+	Colors{ "#044", "#0ff" },
+	Colors{ "#004", "#00f" },
+	Colors{ "#404", "#f0f" },
+};
+
 const std::array<Colors, 2> kTimelineColors{
 	Colors{ "#444", "#ddd" },
 	Colors{ "#333", "#ddd" },

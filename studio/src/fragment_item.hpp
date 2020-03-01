@@ -39,15 +39,18 @@ public:
 	size_t fragmentOffset() const noexcept { return _offset; }
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
 	const void* sequenceId() const noexcept { return _sequenceId; }
+	void setHighlighted(bool);
 	void setSequence(const aulos::SequenceData&);
 
 signals:
 	void fragmentActionRequested(size_t offset);
 	void fragmentMenuRequested(size_t offset, const QPoint& pos);
+	void sequenceSelected(const void* sequenceId);
 
 private:
 	void contextMenuEvent(QGraphicsSceneContextMenuEvent*) override;
 	void mouseDoubleClickEvent(QGraphicsSceneMouseEvent*) override;
+	void mousePressEvent(QGraphicsSceneMouseEvent*) override;
 
 private:
 	const size_t _offset;
@@ -56,4 +59,5 @@ private:
 	size_t _length = 0;
 	qreal _width = 0;
 	QPolygonF _polygon;
+	bool _highlighted = false;
 };
