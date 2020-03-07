@@ -20,10 +20,17 @@ asymmetry 0.30 0.10 0.00 0.90 0.90
 
 @sequences
 1 1 1 E5 D#5 E5 D#5 E5 B4 D5 C5 A4 . . C4 E4 A4 B4 . . E4 G#4 B4 C5 . . E4 E5 D#5 E5 D#5 E5 B4 D5 C5 A4 . . C4 E4 A4 B4 . . E4 C5 B4 A4 . . . E5 D#5 E5 D#5 E5 B4 D5 C5 A4 . . C4 E4 A4 B4 . . E4 G#4 B4 C5 . . E4 E5 D#5 E5 D#5 E5 B4 D5 C5 A4 . . C4 E4 A4 B4 . . E4 C5 B4 A4 . . B4 C5 D5 E5 . . G4 F5 E5 D5 . . F4 E5 D5 C5 . . E4 D5 C5 B4 . E4 E4 E5 E4 E5 E5 E6 D#5 E5 D#5 E5 D#5 E5 D#5 E5 D#5 E5 D#5 E5 B4 D5 C5 A4 . . C4 E4 A4 B4 . . E4 G#4 B4 C5 . . E4 E5 D#5 E5 D#5 E5 B4 D5 C5 A4 . . C4 E4 A4 B4 . . E4 C5 B4 A4
-2 1 1 A2 E3 A3 . . . E2 E3 G#3 . . . A2 E3 A3 . . . . . . . . . A2 E3 A3 . . . E2 E3 G#3 . . . A2 E3 A3 . . . . . . . . . A2 E3 A3 . . . E2 E3 G#3 . . . A2 E3 A3 . . . . . . . . . A2 E3 A3 . . . E2 E3 G#3 . . . A2 E3 A3 . . . C3 G3 C4 . . . G2 G3 B3 . . . A2 E3 A3 . . . E2 E3 . . . . . . . . . . . . . . . . . . . . . . A2 E3 A3 . . . E2 E3 G#3 . . . A2 E3 A3 . . . . . . . . . A2 E3 A3 . . . E2 E3 G#3 . . . A2 E3 A3
+2 1 1 A2 E3 A3 . . . E2 E3 G#3 . . . A2 E3 A3
+2 1 2 C3 G3 C4 . . . G2 G3 B3 . . . A2 E3 A3 . . . E2 E3
 
 @fragments 1 1
 1 1
 
 @fragments 2 1
 9 1
+24 1
+24 1
+24 1
+18 2
+42 1
+24 1
