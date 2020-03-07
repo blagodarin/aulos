@@ -22,7 +22,6 @@
 #include <QColor>
 
 extern const QColor kBackgroundColor;
-extern const QColor kCursorColor;
 extern const QColor kHoverBrushColor;
 extern const QColor kHoverPenColor;
 extern const QColor kPartBorderColor;
@@ -34,6 +33,7 @@ struct Colors
 	QColor _pen;
 };
 
+extern const Colors kCursorColors;
 extern const std::array<Colors, 6> kFragmentColors;
 extern const std::array<Colors, 6> kFragmentHighlightColors;
 extern const std::array<Colors, 2> kTimelineColors;

@@ -18,11 +18,12 @@
 #include "colors.hpp"
 
 const QColor kBackgroundColor{ "#222" };
-const QColor kCursorColor{ "#fff" };
 const QColor kHoverBrushColor{ "#999" };
 const QColor kHoverPenColor{ "#ddd" };
 const QColor kPartBorderColor{ "#999" };
 const QColor kPressBrushColor{ "#888" };
+
+extern const Colors kCursorColors{ "#fff", "#000" };
 
 const std::array<Colors, 6> kFragmentColors{
 	Colors{ "#e77", "#400" },

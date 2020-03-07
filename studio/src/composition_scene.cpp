@@ -20,6 +20,7 @@
 #include "add_voice_item.hpp"
 #include "colors.hpp"
 #include "cursor_item.hpp"
+#include "elusive_item.hpp"
 #include "fragment_item.hpp"
 #include "timeline_item.hpp"
 #include "track_item.hpp"
@@ -36,10 +37,9 @@
 
 namespace
 {
-	constexpr qreal kTrackZValue = 1;
-	constexpr qreal kFragmentZValue = 2;
-	constexpr qreal kHighlightedFragmentZValue = 3;
-	constexpr qreal kCursorZValue = 4;
+	constexpr qreal kDefaultZValue = 0;
+	constexpr qreal kHighlightZValue = 1;
+	constexpr qreal kCursorZValue = 2;
 
 	auto findVoice(const std::vector<std::unique_ptr<VoiceItem>>& voices, const void* id)
 	{
@@ -51,11 +51,6 @@ namespace
 			offset += (*i)->trackCount();
 		}
 		return std::pair{ voices.end(), offset };
-	}
-
-	QLineF makeCursorLine(size_t height)
-	{
-		return { 0, -kTimelineHeight, 0, height * kTrackHeight };
 	}
 }
 
@@ -100,20 +95,26 @@ struct CompositionScene::Track
 };
 
 CompositionScene::CompositionScene()
-	: _compositionItem{ std::make_unique<CompositionItem>() }
+	: _addVoiceItem{ std::make_unique<AddVoiceItem>() }
+	, _compositionItem{ std::make_unique<CompositionItem>() }
 	, _timelineItem{ new TimelineItem{ _compositionItem.get() } }
+	, _rightBoundItem{ new ElusiveItem{ _compositionItem.get() } }
 	, _cursorItem{ new CursorItem{ _compositionItem.get() } }
-	, _addVoiceItem{ std::make_unique<AddVoiceItem>() }
 	, _voiceColumnWidth{ kMinVoiceItemWidth }
 {
 	setBackgroundBrush(kBackgroundColor);
-	_compositionItem->setPos(_voiceColumnWidth, kTimelineHeight);
-	_timelineItem->setPos(0, -kTimelineHeight);
-	connect(_timelineItem, &TimelineItem::lengthRequested, this, &CompositionScene::setCompositionLength);
-	_cursorItem->setVisible(false);
-	_cursorItem->setZValue(kCursorZValue);
 	_addVoiceItem->setWidth(_voiceColumnWidth);
 	connect(_addVoiceItem.get(), &ButtonItem::activated, this, &CompositionScene::newVoiceRequested);
+	_compositionItem->setPos(_voiceColumnWidth, kTimelineHeight);
+	_timelineItem->setPos(0, -kTimelineHeight);
+	_rightBoundItem->setPos(_timelineItem->pos() + _timelineItem->boundingRect().topRight());
+	connect(_rightBoundItem, &ElusiveItem::elude, [this] {
+		const auto length = _timelineItem->compositionLength();
+		const auto speed = _timelineItem->compositionSpeed();
+		setCompositionLength(length + (speed - length % speed));
+	});
+	_cursorItem->setVisible(false);
+	_cursorItem->setZValue(kCursorZValue);
 }
 
 CompositionScene::~CompositionScene() = default;
@@ -268,6 +269,7 @@ void CompositionScene::reset(const std::shared_ptr<aulos::CompositionData>& comp
 		_timelineItem->setCompositionLength(compositionLength);
 		for (const auto& track : _tracks)
 			track->_background->setTrackLength(compositionLength);
+		_rightBoundItem->setPos(_timelineItem->pos() + _timelineItem->boundingRect().topRight());
 		_addVoiceItem->setIndex(_voices.size());
 		_addVoiceItem->setPos(0, kTimelineHeight + _tracks.size() * kTrackHeight);
 		_cursorItem->setTrackCount(_tracks.size());
@@ -336,6 +338,7 @@ void CompositionScene::setCompositionLength(size_t length)
 	_timelineItem->setCompositionLength(length);
 	for (const auto& track : _tracks)
 		track->_background->setTrackLength(length);
+	_rightBoundItem->setPos(_timelineItem->pos() + _timelineItem->boundingRect().topRight());
 }
 
 FragmentItem* CompositionScene::addFragmentItem(const void* voiceId, TrackIterator trackIt, size_t offset, const std::shared_ptr<aulos::SequenceData>& sequence)
@@ -345,7 +348,6 @@ FragmentItem* CompositionScene::addFragmentItem(const void* voiceId, TrackIterat
 	item->setHighlighted(sequence.get() == _selectedSequenceId);
 	item->setPos(offset * kStepWidth, trackIndex * kTrackHeight);
 	item->setSequence(*sequence);
-	item->setZValue(kFragmentZValue);
 	connect(item, &FragmentItem::fragmentActionRequested, [this, voiceId, trackId = (*trackIt)->_background->trackId()](size_t offset) {
 		emit fragmentActionRequested(voiceId, trackId, offset);
 	});
@@ -363,12 +365,10 @@ FragmentItem* CompositionScene::addFragmentItem(const void* voiceId, TrackIterat
 	const auto fragmentIt = (*trackIt)->_fragments.emplace(offset, item).first;
 	if (const auto nextFragmentIt = std::next(fragmentIt); nextFragmentIt != (*trackIt)->_fragments.end())
 		fragmentIt->second->stackBefore(nextFragmentIt->second);
+	else if (const auto nextFragmentTrackIt = std::find_if(std::next(trackIt), _tracks.end(), [](const auto& trackPtr) { return !trackPtr->_fragments.empty(); }); nextFragmentTrackIt != _tracks.end())
+		fragmentIt->second->stackBefore((*nextFragmentTrackIt)->_fragments.cbegin()->second);
 	else
-	{
-		const auto nextTrackIt = std::find_if(std::next(trackIt), _tracks.end(), [](const auto& trackPtr) { return !trackPtr->_fragments.empty(); });
-		if (nextTrackIt != _tracks.end())
-			fragmentIt->second->stackBefore((*nextTrackIt)->_fragments.cbegin()->second);
-	}
+		fragmentIt->second->stackBefore(_rightBoundItem);
 	return item;
 }
 
@@ -380,9 +380,12 @@ CompositionScene::TrackIterator CompositionScene::addTrackItem(const void* voice
 	(*trackIt)->_background->setFirstTrack(isFirstTrack);
 	(*trackIt)->_background->setPos(0, trackIndex * kTrackHeight);
 	(*trackIt)->_background->setTrackIndex(trackIndex);
-	(*trackIt)->_background->setZValue(kTrackZValue);
 	if (const auto nextTrackIt = std::next(trackIt); nextTrackIt != _tracks.end())
 		(*trackIt)->_background->stackBefore((*nextTrackIt)->_background);
+	else if (const auto firstFragmentTrackIt = std::find_if(_tracks.begin(), trackIt, [](const auto& trackPtr) { return !trackPtr->_fragments.empty(); }); firstFragmentTrackIt != trackIt)
+		(*trackIt)->_background->stackBefore((*firstFragmentTrackIt)->_fragments.cbegin()->second);
+	else
+		(*trackIt)->_background->stackBefore(_rightBoundItem);
 	connect((*trackIt)->_background, &TrackItem::trackActionRequested, [this, voiceId](const void* trackId) {
 		emit trackActionRequested(voiceId, trackId);
 	});
@@ -415,7 +418,7 @@ void CompositionScene::highlightSequence(const void* trackId, const void* sequen
 		if (shouldBeHighlighted == fragment.second->isHighlighted())
 			continue;
 		fragment.second->setHighlighted(shouldBeHighlighted);
-		fragment.second->setZValue(shouldBeHighlighted ? kHighlightedFragmentZValue : kFragmentZValue);
+		fragment.second->setZValue(shouldBeHighlighted ? kHighlightZValue : kDefaultZValue);
 	}
 }
 

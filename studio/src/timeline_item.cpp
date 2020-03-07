@@ -18,18 +18,15 @@
 #include "timeline_item.hpp"
 
 #include "colors.hpp"
-#include "elusive_item.hpp"
 #include "utils.hpp"
 
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
 
 TimelineItem::TimelineItem(QGraphicsItem* parent)
-	: QGraphicsObject{ parent }
-	, _rightBoundItem{ new ElusiveItem{ this } }
+	: QGraphicsItem{ parent }
 {
 	setFlag(QGraphicsItem::ItemUsesExtendedStyleOption);
-	connect(_rightBoundItem, &ElusiveItem::elude, [this] { emit lengthRequested(_length + (_speed - _length % _speed)); });
 }
 
 QRectF TimelineItem::boundingRect() const
@@ -73,17 +70,12 @@ void TimelineItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* opti
 
 void TimelineItem::setCompositionLength(size_t length)
 {
-	if (_length == length)
-		return;
 	prepareGeometryChange();
 	_length = length;
-	_rightBoundItem->setPos(boundingRect().topRight());
 }
 
 void TimelineItem::setCompositionSpeed(unsigned speed)
 {
-	if (_speed == speed)
-		return;
 	_speed = speed;
 	update();
 }

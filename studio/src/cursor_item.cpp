@@ -29,13 +29,13 @@ CursorItem::CursorItem(QGraphicsItem* parent)
 
 QRectF CursorItem::boundingRect() const
 {
-	return { 0, 0, 1, kTimelineHeight + kTrackHeight * _trackCount };
+	return { 0, 0, 2, kTimelineHeight + kTrackHeight * _trackCount };
 }
 
 void CursorItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*)
 {
-	painter->setPen(Qt::transparent);
-	painter->setBrush(kCursorColor);
+	painter->setPen(kCursorColors._pen);
+	painter->setBrush(kCursorColors._brush);
 	painter->drawRect(boundingRect());
 }
 

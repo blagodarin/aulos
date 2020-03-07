@@ -32,9 +32,9 @@ namespace aulos
 class AddVoiceItem;
 class CompositionItem;
 class CursorItem;
+class ElusiveItem;
 class FragmentItem;
 class TimelineItem;
-class TrackItem;
 class VoiceItem;
 
 class CompositionScene final : public QGraphicsScene
@@ -86,11 +86,12 @@ private:
 private:
 	std::shared_ptr<aulos::CompositionData> _composition;
 	std::vector<std::unique_ptr<VoiceItem>> _voices;
+	std::unique_ptr<AddVoiceItem> _addVoiceItem;
 	std::unique_ptr<CompositionItem> _compositionItem;
 	TimelineItem* const _timelineItem;
+	ElusiveItem* const _rightBoundItem;
 	CursorItem* const _cursorItem;
 	std::vector<std::unique_ptr<Track>> _tracks;
-	std::unique_ptr<AddVoiceItem> _addVoiceItem;
 	qreal _voiceColumnWidth;
 	const void* _selectedSequenceId = nullptr;
 	const void* _selectedSequenceTrackId = nullptr;

@@ -17,16 +17,10 @@
 
 #pragma once
 
-#include <memory>
+#include <QGraphicsItem>
 
-#include <QGraphicsObject>
-
-class ElusiveItem;
-
-class TimelineItem final : public QGraphicsObject
+class TimelineItem final : public QGraphicsItem
 {
-	Q_OBJECT
-
 public:
 	TimelineItem(QGraphicsItem* parent = nullptr);
 
@@ -35,15 +29,12 @@ public:
 	void setCompositionLength(size_t length);
 	void setCompositionSpeed(unsigned speed);
 	size_t compositionLength() const noexcept { return _length; }
-
-signals:
-	void lengthRequested(size_t length);
+	unsigned compositionSpeed() const noexcept { return _speed; }
 
 private:
 	void updateAddTimeItem() const;
 
 private:
-	ElusiveItem* const _rightBoundItem;
 	unsigned _speed = 1;
 	size_t _length = 0;
 };
