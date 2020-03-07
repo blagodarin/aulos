@@ -18,7 +18,6 @@
 #include "fragment_item.hpp"
 
 #include "colors.hpp"
-#include "track_item.hpp"
 #include "utils.hpp"
 
 #include <aulos/data.hpp>
@@ -35,8 +34,9 @@ namespace
 	constexpr auto kFragmentArrowWidth = kStepWidth / 2;
 }
 
-FragmentItem::FragmentItem(TrackItem* track, size_t offset, const void* sequenceId)
-	: QGraphicsObject{ track }
+FragmentItem::FragmentItem(size_t trackIndex, size_t offset, const void* sequenceId, QGraphicsItem* parent)
+	: QGraphicsObject{ parent }
+	, _trackIndex{ trackIndex }
 	, _offset{ offset }
 	, _sequenceId{ sequenceId }
 {
@@ -50,8 +50,7 @@ QRectF FragmentItem::boundingRect() const
 
 void FragmentItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*)
 {
-	const auto trackIndex = static_cast<const TrackItem*>(parentItem())->trackIndex();
-	const auto& colors = _highlighted ? kFragmentHighlightColors[trackIndex % kFragmentHighlightColors.size()] : kFragmentColors[trackIndex % kFragmentColors.size()];
+	const auto& colors = _highlighted ? kFragmentHighlightColors[_trackIndex % kFragmentHighlightColors.size()] : kFragmentColors[_trackIndex % kFragmentColors.size()];
 	QPen pen{ colors._pen };
 	pen.setWidth(_highlighted ? 3 : 0);
 	painter->setPen(pen);
@@ -77,10 +76,7 @@ void FragmentItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWi
 
 void FragmentItem::setHighlighted(bool highlighted)
 {
-	if (_highlighted == highlighted)
-		return;
 	_highlighted = highlighted;
-	setZValue(highlighted ? 1.0 : 0.0);
 	update();
 }
 
@@ -103,6 +99,12 @@ void FragmentItem::setSequence(const aulos::SequenceData& sequence)
 	else
 		_name = {};
 	setToolTip(::makeSequenceName(sequence));
+}
+
+void FragmentItem::setTrackIndex(size_t index)
+{
+	_trackIndex = index;
+	update();
 }
 
 void FragmentItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)

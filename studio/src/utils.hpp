@@ -26,16 +26,17 @@ namespace aulos
 	struct SequenceData;
 }
 
-constexpr auto kNoteHeight = 20.0;
-constexpr auto kWhiteKeyWidth = 3 * kNoteHeight;
-constexpr auto kBlackKeyWidth = 2 * kNoteHeight;
+// Composition.
 constexpr auto kStepWidth = 15.0;
 constexpr auto kTrackHeight = 40.0;
 constexpr auto kTimelineHeight = 0.5 * kTrackHeight;
-constexpr auto kAddTimeItemWidth = kStepWidth;
-constexpr auto kAddTimeExtraWidth = kStepWidth;
 constexpr auto kAddVoiceItemHeight = kTrackHeight * 0.75;
 constexpr auto kMinVoiceItemWidth = kTrackHeight;
+
+// Pianoroll.
+constexpr auto kNoteHeight = 20.0;
+constexpr auto kWhiteKeyWidth = 3 * kNoteHeight;
+constexpr auto kBlackKeyWidth = 2 * kNoteHeight;
 constexpr size_t kPianorollStride = 8;
 
 QString makeSequenceName(const aulos::SequenceData&, bool rich = false);

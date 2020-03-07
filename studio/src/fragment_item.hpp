@@ -25,22 +25,22 @@ namespace aulos
 	struct SequenceData;
 }
 
-class TrackItem;
-
 class FragmentItem final : public QGraphicsObject
 {
 	Q_OBJECT
 
 public:
-	FragmentItem(TrackItem* track, size_t offset, const void* sequenceId);
+	FragmentItem(size_t trackIndex, size_t offset, const void* sequenceId, QGraphicsItem* parent);
 
 	QRectF boundingRect() const override;
 	size_t fragmentLength() const noexcept { return _length; }
 	size_t fragmentOffset() const noexcept { return _offset; }
+	bool isHighlighted() const noexcept { return _highlighted; }
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
 	const void* sequenceId() const noexcept { return _sequenceId; }
 	void setHighlighted(bool);
 	void setSequence(const aulos::SequenceData&);
+	void setTrackIndex(size_t index);
 
 signals:
 	void fragmentActionRequested(size_t offset);
@@ -53,6 +53,7 @@ private:
 	void mousePressEvent(QGraphicsSceneMouseEvent*) override;
 
 private:
+	size_t _trackIndex;
 	const size_t _offset;
 	const void* const _sequenceId;
 	QStaticText _name;

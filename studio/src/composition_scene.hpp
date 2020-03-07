@@ -30,6 +30,7 @@ namespace aulos
 }
 
 class AddVoiceItem;
+class CompositionItem;
 class CursorItem;
 class FragmentItem;
 class TimelineItem;
@@ -72,8 +73,10 @@ private slots:
 
 private:
 	struct Track;
-	FragmentItem* addFragmentItem(const void* voiceId, Track&, size_t offset, const std::shared_ptr<aulos::SequenceData>&);
-	TrackItem* addTrackItem(VoiceItem*, const void* trackId);
+	using TrackIterator = std::vector<std::unique_ptr<Track>>::iterator;
+
+	FragmentItem* addFragmentItem(const void* voiceId, TrackIterator, size_t offset, const std::shared_ptr<aulos::SequenceData>&);
+	TrackIterator addTrackItem(const void* voiceId, const void* trackId, size_t trackIndex, bool isFirstTrack);
 	VoiceItem* addVoiceItem(const void* id, const QString& name, size_t trackCount);
 	void highlightSequence(const void* trackId, const void* sequenceId);
 	qreal requiredVoiceColumnWidth() const;
@@ -83,10 +86,11 @@ private:
 private:
 	std::shared_ptr<aulos::CompositionData> _composition;
 	std::vector<std::unique_ptr<VoiceItem>> _voices;
-	std::unique_ptr<TimelineItem> _timelineItem;
+	std::unique_ptr<CompositionItem> _compositionItem;
+	TimelineItem* const _timelineItem;
+	CursorItem* const _cursorItem;
 	std::vector<std::unique_ptr<Track>> _tracks;
 	std::unique_ptr<AddVoiceItem> _addVoiceItem;
-	std::unique_ptr<CursorItem> _cursorItem;
 	qreal _voiceColumnWidth;
 	const void* _selectedSequenceId = nullptr;
 	const void* _selectedSequenceTrackId = nullptr;
