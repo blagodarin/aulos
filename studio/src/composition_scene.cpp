@@ -112,7 +112,6 @@ CompositionScene::CompositionScene()
 	connect(_timelineItem, &TimelineItem::lengthRequested, this, &CompositionScene::setCompositionLength);
 	_cursorItem->setVisible(false);
 	_cursorItem->setZValue(kCursorZValue);
-	_addVoiceItem->setZValue(0.5);
 	_addVoiceItem->setWidth(_voiceColumnWidth);
 	connect(_addVoiceItem.get(), &ButtonItem::activated, this, &CompositionScene::newVoiceRequested);
 }
@@ -276,10 +275,10 @@ void CompositionScene::reset(const std::shared_ptr<aulos::CompositionData>& comp
 
 		setVoiceColumnWidth(requiredVoiceColumnWidth());
 		updateSceneRect(compositionLength);
-		addItem(_compositionItem.get());
 		for (auto i = _voices.crbegin(); i != _voices.crend(); ++i)
 			addItem(i->get());
 		addItem(_addVoiceItem.get());
+		addItem(_compositionItem.get());
 	}
 	if (_selectedSequenceId)
 	{
