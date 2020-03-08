@@ -21,6 +21,7 @@
 #include "info_editor.hpp"
 #include "player.hpp"
 #include "sequence_editor.hpp"
+#include "sequence_scene.hpp"
 #include "track_editor.hpp"
 #include "utils.hpp"
 #include "voice_editor.hpp"
@@ -38,6 +39,7 @@
 #include <QScrollBar>
 #include <QSettings>
 #include <QSpinBox>
+#include <QSplitter>
 #include <QStatusBar>
 #include <QStyle>
 #include <QTimer>
@@ -105,13 +107,14 @@ namespace
 
 Studio::Studio()
 	: _compositionScene{ std::make_unique<CompositionScene>() }
+	, _sequenceScene{ std::make_unique<SequenceScene>() }
 	, _infoEditor{ std::make_unique<InfoEditor>(this) }
 	, _voiceEditor{ std::make_unique<VoiceEditor>(this) }
 	, _trackEditor{ std::make_unique<TrackEditor>(this) }
 	, _sequenceEditor{ std::make_unique<SequenceEditor>(this) }
 	, _player{ std::make_unique<Player>() }
 {
-	resize(640, 480);
+	resize(1280, 720);
 
 	const auto fileMenu = menuBar()->addMenu(tr("&File"));
 	_fileNewAction = fileMenu->addAction(
@@ -217,9 +220,20 @@ Studio::Studio()
 	toolBar->addWidget(_speedSpin);
 	addToolBar(toolBar);
 
-	_compositionView = new QGraphicsView{ _compositionScene.get(), this };
+	const auto splitter = new QSplitter{ Qt::Vertical, this };
+	splitter->setChildrenCollapsible(false);
+	setCentralWidget(splitter);
+
+	_compositionView = new QGraphicsView{ _compositionScene.get(), splitter };
 	_compositionView->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-	setCentralWidget(_compositionView);
+	splitter->addWidget(_compositionView);
+
+	_sequenceView = new QGraphicsView{ _sequenceScene.get(), splitter };
+	_sequenceView->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+	_sequenceView->setInteractive(false);
+	splitter->addWidget(_sequenceView);
+
+	splitter->setSizes({ 1, 1 });
 
 	_statusPath = new QLabel{ statusBar() };
 	_statusPath->setTextFormat(Qt::RichText);
@@ -315,6 +329,24 @@ Studio::Studio()
 			return;
 		_changed = true;
 		updateStatus();
+	});
+	connect(_compositionScene.get(), &CompositionScene::sequenceSelected, [this](const void* voiceId, const void* trackId, const void* sequenceId) {
+		if (!sequenceId)
+		{
+			_sequenceScene->setSequence({}, _sequenceView->size());
+			return;
+		}
+		const auto part = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [voiceId](const auto& partData) { return partData->_voice.get() == voiceId; });
+		assert(part != _composition->_parts.cend());
+		const auto track = std::find_if((*part)->_tracks.cbegin(), (*part)->_tracks.cend(), [trackId](const auto& trackData) { return trackData.get() == trackId; });
+		assert(track != (*part)->_tracks.cend());
+		const auto sequence = std::find_if((*track)->_sequences.cbegin(), (*track)->_sequences.cend(), [sequenceId](const auto& sequenceData) { return sequenceData.get() == sequenceId; });
+		assert(sequence != (*track)->_sequences.end());
+		const auto verticalPosition = _sequenceScene->setSequence(**sequence, _sequenceView->size());
+		const auto horizontalScrollBar = _sequenceView->horizontalScrollBar();
+		horizontalScrollBar->setValue(horizontalScrollBar->minimum());
+		const auto verticalScrollBar = _sequenceView->verticalScrollBar();
+		verticalScrollBar->setValue(verticalScrollBar->minimum() + std::lround((verticalScrollBar->maximum() - verticalScrollBar->minimum()) * verticalPosition));
 	});
 	connect(_compositionScene.get(), &CompositionScene::trackActionRequested, [this](const void* voiceId, const void* trackId) {
 		const auto part = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [voiceId](const auto& partData) { return partData->_voice.get() == voiceId; });

@@ -229,6 +229,7 @@ void CompositionScene::removeVoice(const void* voiceId)
 	});
 	const auto tracksBegin = _tracks.begin() + voiceOffset;
 	const auto tracksEnd = tracksBegin + (*voiceIt)->trackCount();
+	const auto hasSelectedSequence = std::any_of(tracksBegin, tracksEnd, [this](const auto& trackPtr) { return trackPtr->_background->trackId() == _selectedSequenceTrackId; });
 	std::for_each(tracksEnd, _tracks.end(), [index = voiceOffset](const auto& trackPtr) mutable { trackPtr->setIndex(index++); });
 	_tracks.erase(tracksBegin, tracksEnd);
 	_voices.erase(voiceIt);
@@ -236,6 +237,12 @@ void CompositionScene::removeVoice(const void* voiceId)
 	_addVoiceItem->setPos(0, kTimelineHeight + _tracks.size() * kTrackHeight);
 	_cursorItem->setTrackCount(_tracks.size());
 	updateSceneRect(_timelineItem->compositionLength());
+	if (hasSelectedSequence)
+	{
+		_selectedSequenceId = nullptr;
+		_selectedSequenceTrackId = nullptr;
+		emit sequenceSelected(nullptr, nullptr, nullptr);
+	}
 }
 
 void CompositionScene::reset(const std::shared_ptr<aulos::CompositionData>& composition, size_t viewWidth)

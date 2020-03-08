@@ -35,6 +35,7 @@ class CompositionScene;
 class InfoEditor;
 class Player;
 class SequenceEditor;
+class SequenceScene;
 class TrackEditor;
 class VoiceEditor;
 
@@ -69,6 +70,7 @@ private:
 private:
 	std::shared_ptr<aulos::CompositionData> _composition;
 	std::unique_ptr<CompositionScene> _compositionScene;
+	std::unique_ptr<SequenceScene> _sequenceScene;
 	std::unique_ptr<InfoEditor> _infoEditor;
 	std::unique_ptr<VoiceEditor> _voiceEditor;
 	std::unique_ptr<TrackEditor> _trackEditor;
@@ -94,5 +96,6 @@ private:
 	QAction* _stopAction;
 	QSpinBox* _speedSpin;
 	QGraphicsView* _compositionView;
+	QGraphicsView* _sequenceView;
 	QLabel* _statusPath;
 };
