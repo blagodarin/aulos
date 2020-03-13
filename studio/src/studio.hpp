@@ -68,6 +68,12 @@ private:
 	void closeEvent(QCloseEvent*) override;
 
 private:
+	enum class Mode
+	{
+		Editing,
+		Playing,
+	};
+
 	std::shared_ptr<aulos::CompositionData> _composition;
 	std::unique_ptr<CompositionScene> _compositionScene;
 	std::unique_ptr<SequenceScene> _sequenceScene;
@@ -80,8 +86,11 @@ private:
 	QString _compositionPath;
 	QString _compositionFileName;
 
+	Mode _mode = Mode::Editing;
 	bool _hasComposition = false;
 	bool _changed = false;
+	const std::unique_ptr<aulos::Voice> _sequenceVoice;
+	float _sequenceAmplitude = 1.f;
 
 	QAction* _fileNewAction;
 	QAction* _fileOpenAction;

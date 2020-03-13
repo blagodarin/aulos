@@ -113,6 +113,7 @@ Studio::Studio()
 	, _trackEditor{ std::make_unique<TrackEditor>(this) }
 	, _sequenceEditor{ std::make_unique<SequenceEditor>(this) }
 	, _player{ std::make_unique<Player>() }
+	, _sequenceVoice{ std::make_unique<aulos::Voice>() }
 {
 	resize(1280, 720);
 
@@ -195,11 +196,14 @@ Studio::Studio()
 		const auto composition = _composition->pack();
 		if (!composition)
 			return;
+		assert(_mode == Mode::Editing);
 		_player->reset(*aulos::Renderer::create(*composition, Player::SamplingRate));
+		_mode = Mode::Playing;
 		_player->start();
 		updateStatus();
 	});
 	_stopAction = playbackMenu->addAction(qApp->style()->standardIcon(QStyle::SP_MediaStop), tr("&Stop"), [this] {
+		assert(_mode == Mode::Playing);
 		_player->stop();
 		updateStatus();
 	});
@@ -230,7 +234,6 @@ Studio::Studio()
 
 	_sequenceView = new QGraphicsView{ _sequenceScene.get(), splitter };
 	_sequenceView->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-	_sequenceView->setInteractive(false);
 	splitter->addWidget(_sequenceView);
 
 	splitter->setSizes({ 1, 1 });
@@ -248,10 +251,16 @@ Studio::Studio()
 		updateStatus();
 	});
 	connect(_player.get(), &Player::stateChanged, [this] {
+		if (_mode != Mode::Playing)
+			return;
 		_compositionScene->showCursor(_player->isPlaying());
+		if (!_player->isPlaying())
+			_mode = Mode::Editing;
 		updateStatus();
 	});
 	connect(_player.get(), &Player::timeAdvanced, [this](qint64 microseconds) {
+		if (_mode != Mode::Playing)
+			return;
 		const auto sceneCursorRect = _compositionScene->setCurrentStep(microseconds * _composition->_speed / 1'000'000.0);
 		QRect viewCursorRect{ _compositionView->mapFromScene(sceneCursorRect.topLeft()), _compositionView->mapFromScene(sceneCursorRect.bottomRight()) };
 		const auto viewportRect = _compositionView->viewport()->rect();
@@ -333,6 +342,8 @@ Studio::Studio()
 	connect(_compositionScene.get(), &CompositionScene::sequenceSelected, [this](const void* voiceId, const void* trackId, const void* sequenceId) {
 		if (!sequenceId)
 		{
+			*_sequenceVoice = aulos::Voice{};
+			_sequenceAmplitude = 1.f;
 			_sequenceScene->setSequence({}, _sequenceView->size());
 			return;
 		}
@@ -347,6 +358,8 @@ Studio::Studio()
 		horizontalScrollBar->setValue(horizontalScrollBar->minimum());
 		const auto verticalScrollBar = _sequenceView->verticalScrollBar();
 		verticalScrollBar->setValue(verticalScrollBar->minimum() + std::lround((verticalScrollBar->maximum() - verticalScrollBar->minimum()) * verticalPosition));
+		*_sequenceVoice = *(*part)->_voice;
+		_sequenceAmplitude = ::makeTrackAmplitude(*_composition, (*track)->_weight);
 	});
 	connect(_compositionScene.get(), &CompositionScene::trackActionRequested, [this](const void* voiceId, const void* trackId) {
 		const auto part = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [voiceId](const auto& partData) { return partData->_voice.get() == voiceId; });
@@ -451,6 +464,13 @@ Studio::Studio()
 		_changed = true;
 		updateStatus();
 	});
+	connect(_sequenceScene.get(), &SequenceScene::noteActivated, [this](aulos::Note note) {
+		const auto renderer = aulos::VoiceRenderer::create(*_sequenceVoice, Player::SamplingRate);
+		assert(renderer);
+		renderer->start(note, _sequenceAmplitude);
+		_player->reset(*renderer);
+		_player->start();
+	});
 
 	updateStatus();
 }
@@ -476,6 +496,7 @@ void Studio::closeComposition()
 	_speedSpin->setValue(_speedSpin->minimum());
 	_compositionScene->reset(nullptr, _compositionView->width());
 	_player->stop();
+	_mode = Mode::Editing;
 }
 
 void Studio::createEmptyComposition()
@@ -686,11 +707,14 @@ void Studio::updateStatus()
 	_fileExportAction->setEnabled(_hasComposition);
 	_fileCloseAction->setEnabled(_hasComposition);
 	_editInfoAction->setEnabled(_hasComposition);
-	_playAction->setEnabled(_hasComposition && !_player->isPlaying());
-	_stopAction->setEnabled(_hasComposition && _player->isPlaying());
-	_speedSpin->setEnabled(_hasComposition && !_player->isPlaying());
+	_playAction->setEnabled(_hasComposition && _mode == Mode::Editing);
+	_stopAction->setEnabled(_hasComposition && _mode == Mode::Playing);
+	_speedSpin->setEnabled(_hasComposition && _mode == Mode::Editing);
 	_compositionView->setEnabled(_hasComposition);
-	_compositionView->setInteractive(_hasComposition && !_player->isPlaying());
+	_compositionView->setInteractive(_hasComposition && _mode == Mode::Editing);
+	_sequenceScene->setSequenceEditable(false);
+	_sequenceView->setEnabled(_hasComposition);
+	_sequenceView->setInteractive(_hasComposition && _mode == Mode::Editing);
 	_statusPath->setText(_compositionPath.isEmpty() ? QStringLiteral("<i>%1</i>").arg(tr("No file")) : _compositionPath);
 }
 

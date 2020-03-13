@@ -37,6 +37,7 @@ public:
 
 	aulos::SequenceData sequence() const;
 	qreal setSequence(const aulos::SequenceData&, const QSize& viewSize);
+	void setSequenceEditable(bool);
 
 signals:
 	void noteActivated(aulos::Note);
@@ -50,4 +51,5 @@ private:
 	std::unique_ptr<PianorollItem> _pianorollItem;
 	ElusiveItem* _rightBoundItem = nullptr;
 	std::map<size_t, std::unique_ptr<SoundItem>> _soundItems;
+	bool _editable = true;
 };

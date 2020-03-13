@@ -41,6 +41,8 @@ SequenceScene::SequenceScene(QObject* parent)
 	_pianorollItem->setPos(kWhiteKeyWidth, 0);
 	addItem(_pianorollItem.get());
 	connect(_pianorollItem.get(), &PianorollItem::newSoundRequested, [this](size_t offset, aulos::Note note) {
+		if (!_editable)
+			return;
 		if (const auto i = _soundItems.find(offset); i != _soundItems.end())
 			i->second->setNote(note);
 		else
@@ -88,6 +90,11 @@ qreal SequenceScene::setSequence(const aulos::SequenceData& sequence, const QSiz
 	return (rect.center().y() - viewSize.height() / 2) / heightDifference;
 }
 
+void SequenceScene::setSequenceEditable(bool editable)
+{
+	_editable = editable;
+}
+
 void SequenceScene::insertSound(size_t offset, aulos::Note note)
 {
 	const auto [i, inserted] = _soundItems.emplace(offset, std::make_unique<SoundItem>(offset, note, _pianorollItem.get()));
@@ -95,6 +102,8 @@ void SequenceScene::insertSound(size_t offset, aulos::Note note)
 	const auto soundItem = i->second.get();
 	connect(soundItem, &SoundItem::playRequested, [this, soundItem] { emit noteActivated(soundItem->note()); });
 	connect(soundItem, &SoundItem::removeRequested, [this, soundItem] {
+		if (!_editable)
+			return;
 		const auto i = _soundItems.find(soundItem->offset());
 		assert(i != _soundItems.end());
 		removeItem(i->second.get());
