@@ -735,7 +735,6 @@ void Studio::updateStatus()
 	_speedSpin->setEnabled(_hasComposition && _mode == Mode::Editing);
 	_compositionView->setEnabled(_hasComposition);
 	_compositionView->setInteractive(_hasComposition && _mode == Mode::Editing);
-	_sequenceScene->setSequenceEditable(false);
 	_sequenceView->setEnabled(_hasComposition);
 	_sequenceView->setInteractive(_hasComposition && _mode == Mode::Editing);
 	_statusPath->setText(_compositionPath.isEmpty() ? QStringLiteral("<i>%1</i>").arg(tr("No file")) : _compositionPath);

@@ -40,12 +40,7 @@ SequenceScene::SequenceScene(QObject* parent)
 	_pianorollItem = std::make_unique<PianorollItem>();
 	_pianorollItem->setPos(kWhiteKeyWidth, 0);
 	addItem(_pianorollItem.get());
-	connect(_pianorollItem.get(), &PianorollItem::newSoundRequested, [this](size_t offset, aulos::Note note) {
-		if (_editable)
-			insertSound(offset, note);
-		else
-			emit insertingSound(offset, note);
-	});
+	connect(_pianorollItem.get(), &PianorollItem::newSoundRequested, this, &SequenceScene::insertingSound);
 	_rightBoundItem = new ElusiveItem{ _pianorollItem.get() };
 	_rightBoundItem->setHeight(_pianorollItem->boundingRect().height());
 	connect(_rightBoundItem, &ElusiveItem::elude, [this] { setPianorollLength(_pianorollItem->stepCount() + kPianorollStride); });
@@ -75,18 +70,6 @@ void SequenceScene::removeSound(size_t offset)
 	_soundItems.erase(i);
 }
 
-aulos::SequenceData SequenceScene::sequence() const
-{
-	aulos::SequenceData result;
-	size_t lastOffset = 0;
-	for (const auto& soundItem : _soundItems)
-	{
-		result._sounds.emplace_back(soundItem.first - lastOffset, soundItem.second->note());
-		lastOffset = soundItem.first;
-	}
-	return result;
-}
-
 qreal SequenceScene::setSequence(const aulos::SequenceData& sequence, const QSize& viewSize)
 {
 	removeSoundItems();
@@ -105,23 +88,13 @@ qreal SequenceScene::setSequence(const aulos::SequenceData& sequence, const QSiz
 	return (rect.center().y() - viewSize.height() / 2) / heightDifference;
 }
 
-void SequenceScene::setSequenceEditable(bool editable)
-{
-	_editable = editable;
-}
-
 void SequenceScene::insertNewSound(size_t offset, aulos::Note note)
 {
 	const auto [i, inserted] = _soundItems.emplace(offset, std::make_unique<SoundItem>(offset, note, _pianorollItem.get()));
 	assert(inserted);
 	const auto soundItem = i->second.get();
 	connect(soundItem, &SoundItem::playRequested, [this, soundItem] { emit noteActivated(soundItem->note()); });
-	connect(soundItem, &SoundItem::removeRequested, [this, offset] {
-		if (_editable)
-			removeSound(offset);
-		else
-			emit removingSound(offset);
-	});
+	connect(soundItem, &SoundItem::removeRequested, [this, offset] { emit removingSound(offset); });
 }
 
 void SequenceScene::removeSoundItems()
