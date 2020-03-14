@@ -35,6 +35,7 @@ class CompositionScene;
 class InfoEditor;
 class Player;
 class SequenceScene;
+class SequenceWidget;
 class TrackEditor;
 class VoiceEditor;
 
@@ -105,6 +106,6 @@ private:
 	QAction* _stopAction;
 	QSpinBox* _speedSpin;
 	QGraphicsView* _compositionView;
-	QGraphicsView* _sequenceView;
+	SequenceWidget* _sequenceWidget;
 	QLabel* _statusPath;
 };

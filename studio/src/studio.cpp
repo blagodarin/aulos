@@ -21,6 +21,7 @@
 #include "info_editor.hpp"
 #include "player.hpp"
 #include "sequence_scene.hpp"
+#include "sequence_widget.hpp"
 #include "track_editor.hpp"
 #include "utils.hpp"
 #include "voice_editor.hpp"
@@ -230,9 +231,8 @@ Studio::Studio()
 	_compositionView->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 	splitter->addWidget(_compositionView);
 
-	_sequenceView = new QGraphicsView{ _sequenceScene.get(), splitter };
-	_sequenceView->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-	splitter->addWidget(_sequenceView);
+	_sequenceWidget = new SequenceWidget{ _sequenceScene.get(), splitter };
+	splitter->addWidget(_sequenceWidget);
 
 	splitter->setSizes({ 1, 1 });
 
@@ -693,7 +693,7 @@ void Studio::showSequence(const void* voiceId, const void* trackId, const void* 
 		_sequenceTrackId = nullptr;
 		_sequenceAmplitude = 1.f;
 		_sequenceData.reset();
-		_sequenceScene->setSequence({}, _sequenceView->size());
+		_sequenceWidget->setSequence({});
 		return;
 	}
 	const auto part = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [voiceId](const auto& partData) { return partData->_voice.get() == voiceId; });
@@ -706,11 +706,7 @@ void Studio::showSequence(const void* voiceId, const void* trackId, const void* 
 	_sequenceTrackId = trackId;
 	_sequenceAmplitude = ::makeTrackAmplitude(*_composition, (*track)->_weight);
 	_sequenceData = *sequence;
-	const auto verticalPosition = _sequenceScene->setSequence(**sequence, _sequenceView->size());
-	const auto horizontalScrollBar = _sequenceView->horizontalScrollBar();
-	horizontalScrollBar->setValue(horizontalScrollBar->minimum());
-	const auto verticalScrollBar = _sequenceView->verticalScrollBar();
-	verticalScrollBar->setValue(verticalScrollBar->minimum() + std::lround((verticalScrollBar->maximum() - verticalScrollBar->minimum()) * verticalPosition));
+	_sequenceWidget->setSequence(**sequence);
 }
 
 void Studio::saveRecentFiles() const
@@ -735,8 +731,7 @@ void Studio::updateStatus()
 	_speedSpin->setEnabled(_hasComposition && _mode == Mode::Editing);
 	_compositionView->setEnabled(_hasComposition);
 	_compositionView->setInteractive(_hasComposition && _mode == Mode::Editing);
-	_sequenceView->setEnabled(_hasComposition);
-	_sequenceView->setInteractive(_hasComposition && _mode == Mode::Editing);
+	_sequenceWidget->setInteractive(_hasComposition && _mode == Mode::Editing);
 	_statusPath->setText(_compositionPath.isEmpty() ? QStringLiteral("<i>%1</i>").arg(tr("No file")) : _compositionPath);
 }
 
