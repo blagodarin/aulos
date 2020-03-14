@@ -90,7 +90,9 @@ private:
 	bool _hasComposition = false;
 	bool _changed = false;
 	const std::unique_ptr<aulos::Voice> _sequenceVoice;
+	const void* _sequenceTrackId = nullptr;
 	float _sequenceAmplitude = 1.f;
+	std::shared_ptr<aulos::SequenceData> _sequenceData;
 
 	QAction* _fileNewAction;
 	QAction* _fileOpenAction;

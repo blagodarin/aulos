@@ -41,13 +41,10 @@ SequenceScene::SequenceScene(QObject* parent)
 	_pianorollItem->setPos(kWhiteKeyWidth, 0);
 	addItem(_pianorollItem.get());
 	connect(_pianorollItem.get(), &PianorollItem::newSoundRequested, [this](size_t offset, aulos::Note note) {
-		if (!_editable)
-			return;
-		if (const auto i = _soundItems.find(offset); i != _soundItems.end())
-			i->second->setNote(note);
-		else
+		if (_editable)
 			insertSound(offset, note);
-		emit noteActivated(note);
+		else
+			emit insertingSound(offset, note);
 	});
 	_rightBoundItem = new ElusiveItem{ _pianorollItem.get() };
 	_rightBoundItem->setHeight(_pianorollItem->boundingRect().height());
@@ -58,6 +55,24 @@ SequenceScene::~SequenceScene()
 {
 	removeSoundItems();
 	removeItem(_pianorollItem.get());
+}
+
+void SequenceScene::insertSound(size_t offset, aulos::Note note)
+{
+	if (const auto i = _soundItems.find(offset); i != _soundItems.end())
+		i->second->setNote(note);
+	else
+		insertNewSound(offset, note);
+	emit noteActivated(note);
+}
+
+void SequenceScene::removeSound(size_t offset)
+{
+	const auto i = _soundItems.find(offset);
+	assert(i != _soundItems.end());
+	removeItem(i->second.get());
+	i->second.release()->deleteLater();
+	_soundItems.erase(i);
 }
 
 aulos::SequenceData SequenceScene::sequence() const
@@ -79,7 +94,7 @@ qreal SequenceScene::setSequence(const aulos::SequenceData& sequence, const QSiz
 	for (const auto& sound : sequence._sounds)
 	{
 		offset += sound._delay;
-		insertSound(offset, sound._note);
+		insertNewSound(offset, sound._note);
 	}
 	setPianorollLength(std::max((offset + kPianorollStride) / kPianorollStride * kPianorollStride, viewSize.width() / static_cast<size_t>(kStepWidth) + 1));
 	const auto heightDifference = std::lround(sceneRect().height() - viewSize.height());
@@ -95,20 +110,17 @@ void SequenceScene::setSequenceEditable(bool editable)
 	_editable = editable;
 }
 
-void SequenceScene::insertSound(size_t offset, aulos::Note note)
+void SequenceScene::insertNewSound(size_t offset, aulos::Note note)
 {
 	const auto [i, inserted] = _soundItems.emplace(offset, std::make_unique<SoundItem>(offset, note, _pianorollItem.get()));
 	assert(inserted);
 	const auto soundItem = i->second.get();
 	connect(soundItem, &SoundItem::playRequested, [this, soundItem] { emit noteActivated(soundItem->note()); });
-	connect(soundItem, &SoundItem::removeRequested, [this, soundItem] {
-		if (!_editable)
-			return;
-		const auto i = _soundItems.find(soundItem->offset());
-		assert(i != _soundItems.end());
-		removeItem(i->second.get());
-		i->second.release()->deleteLater();
-		_soundItems.erase(i);
+	connect(soundItem, &SoundItem::removeRequested, [this, offset] {
+		if (_editable)
+			removeSound(offset);
+		else
+			emit removingSound(offset);
 	});
 }
 

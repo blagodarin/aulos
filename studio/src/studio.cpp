@@ -343,7 +343,9 @@ Studio::Studio()
 		if (!sequenceId)
 		{
 			*_sequenceVoice = aulos::Voice{};
+			_sequenceTrackId = nullptr;
 			_sequenceAmplitude = 1.f;
+			_sequenceData.reset();
 			_sequenceScene->setSequence({}, _sequenceView->size());
 			return;
 		}
@@ -353,13 +355,15 @@ Studio::Studio()
 		assert(track != (*part)->_tracks.cend());
 		const auto sequence = std::find_if((*track)->_sequences.cbegin(), (*track)->_sequences.cend(), [sequenceId](const auto& sequenceData) { return sequenceData.get() == sequenceId; });
 		assert(sequence != (*track)->_sequences.end());
+		*_sequenceVoice = *(*part)->_voice;
+		_sequenceTrackId = trackId;
+		_sequenceAmplitude = ::makeTrackAmplitude(*_composition, (*track)->_weight);
+		_sequenceData = *sequence;
 		const auto verticalPosition = _sequenceScene->setSequence(**sequence, _sequenceView->size());
 		const auto horizontalScrollBar = _sequenceView->horizontalScrollBar();
 		horizontalScrollBar->setValue(horizontalScrollBar->minimum());
 		const auto verticalScrollBar = _sequenceView->verticalScrollBar();
 		verticalScrollBar->setValue(verticalScrollBar->minimum() + std::lround((verticalScrollBar->maximum() - verticalScrollBar->minimum()) * verticalPosition));
-		*_sequenceVoice = *(*part)->_voice;
-		_sequenceAmplitude = ::makeTrackAmplitude(*_composition, (*track)->_weight);
 	});
 	connect(_compositionScene.get(), &CompositionScene::trackActionRequested, [this](const void* voiceId, const void* trackId) {
 		const auto part = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [voiceId](const auto& partData) { return partData->_voice.get() == voiceId; });
@@ -464,12 +468,61 @@ Studio::Studio()
 		_changed = true;
 		updateStatus();
 	});
+	connect(_sequenceScene.get(), &SequenceScene::insertingSound, [this](size_t offset, aulos::Note note) {
+		assert(_sequenceData);
+		assert(_sequenceTrackId);
+		size_t position = 0;
+		const auto sound = std::find_if(_sequenceData->_sounds.begin(), _sequenceData->_sounds.end(), [offset, &position](const aulos::Sound& sound) mutable {
+			position += sound._delay;
+			return position >= offset;
+		});
+		if (position > offset)
+		{
+			assert(sound != _sequenceData->_sounds.end());
+			const auto nextDelay = position - offset;
+			assert(sound->_delay > nextDelay || sound->_delay == nextDelay && sound == _sequenceData->_sounds.begin());
+			const auto delay = sound->_delay - nextDelay;
+			sound->_delay = nextDelay;
+			_sequenceData->_sounds.emplace(sound, delay, note);
+		}
+		else if (position < offset)
+		{
+			assert(sound == _sequenceData->_sounds.end());
+			_sequenceData->_sounds.emplace_back(offset - position, note);
+		}
+		else
+		{
+			assert(sound != _sequenceData->_sounds.end());
+			sound->_note = note;
+		}
+		_compositionScene->updateSequence(_sequenceTrackId, _sequenceData);
+		_sequenceScene->insertSound(offset, note);
+		_changed = true;
+		updateStatus();
+	});
 	connect(_sequenceScene.get(), &SequenceScene::noteActivated, [this](aulos::Note note) {
 		const auto renderer = aulos::VoiceRenderer::create(*_sequenceVoice, Player::SamplingRate);
 		assert(renderer);
 		renderer->start(note, _sequenceAmplitude);
 		_player->reset(*renderer);
 		_player->start();
+	});
+	connect(_sequenceScene.get(), &SequenceScene::removingSound, [this](size_t offset) {
+		assert(_sequenceData);
+		assert(_sequenceTrackId);
+		const auto sound = std::find_if(_sequenceData->_sounds.begin(), _sequenceData->_sounds.end(), [offset, position = size_t{}](const aulos::Sound& sound) mutable {
+			position += sound._delay;
+			assert(position <= offset);
+			return position == offset;
+		});
+		assert(sound != _sequenceData->_sounds.end());
+		if (const auto nextSound = std::next(sound); nextSound != _sequenceData->_sounds.end())
+			nextSound->_delay += sound->_delay;
+		_sequenceData->_sounds.erase(sound);
+		_compositionScene->updateSequence(_sequenceTrackId, _sequenceData);
+		_sequenceScene->removeSound(offset);
+		_changed = true;
+		updateStatus();
 	});
 
 	updateStatus();

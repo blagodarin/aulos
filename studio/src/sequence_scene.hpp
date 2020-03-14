@@ -35,15 +35,19 @@ public:
 	SequenceScene(QObject* parent = nullptr);
 	~SequenceScene() override;
 
+	void insertSound(size_t offset, aulos::Note);
+	void removeSound(size_t offset);
 	aulos::SequenceData sequence() const;
 	qreal setSequence(const aulos::SequenceData&, const QSize& viewSize);
 	void setSequenceEditable(bool);
 
 signals:
+	void insertingSound(size_t offset, aulos::Note);
 	void noteActivated(aulos::Note);
+	void removingSound(size_t offset);
 
 private:
-	void insertSound(size_t offset, aulos::Note);
+	void insertNewSound(size_t offset, aulos::Note);
 	void removeSoundItems();
 	void setPianorollLength(size_t steps);
 
