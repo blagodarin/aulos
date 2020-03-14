@@ -17,8 +17,8 @@
 
 #include "timeline_item.hpp"
 
-#include "colors.hpp"
-#include "utils.hpp"
+#include "../colors.hpp"
+#include "../utils.hpp"
 
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>

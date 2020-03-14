@@ -28,53 +28,61 @@ endif()
 source_group("res" FILES ${_res})
 
 set(_src
-	src/add_voice_item.cpp
-	src/add_voice_item.hpp
 	src/button_item.cpp
 	src/button_item.hpp
 	src/colors.cpp
 	src/colors.hpp
-	src/composition_scene.cpp
-	src/composition_scene.hpp
-	src/cursor_item.cpp
-	src/cursor_item.hpp
 	src/elusive_item.cpp
 	src/elusive_item.hpp
-	src/fragment_item.cpp
-	src/fragment_item.hpp
 	src/info_editor.cpp
 	src/info_editor.hpp
-	src/key_item.cpp
-	src/key_item.hpp
 	src/main.cpp
-	src/pianoroll_item.cpp
-	src/pianoroll_item.hpp
 	src/player.cpp
 	src/player.hpp
-	src/sequence_scene.cpp
-	src/sequence_scene.hpp
-	src/sequence_widget.cpp
-	src/sequence_widget.hpp
-	src/sound_item.cpp
-	src/sound_item.hpp
 	src/studio.cpp
 	src/studio.hpp
-	src/timeline_item.cpp
-	src/timeline_item.hpp
 	src/track_editor.cpp
 	src/track_editor.hpp
-	src/track_item.cpp
-	src/track_item.hpp
 	src/utils.cpp
 	src/utils.hpp
 	src/voice_editor.cpp
 	src/voice_editor.hpp
-	src/voice_item.cpp
-	src/voice_item.hpp
 	)
 source_group("src" FILES ${_src})
 
-add_executable(studio WIN32 ${_res} ${_src})
+set(_src_composition
+	src/composition/add_voice_item.cpp
+	src/composition/add_voice_item.hpp
+	src/composition/composition_scene.cpp
+	src/composition/composition_scene.hpp
+	src/composition/cursor_item.cpp
+	src/composition/cursor_item.hpp
+	src/composition/fragment_item.cpp
+	src/composition/fragment_item.hpp
+	src/composition/timeline_item.cpp
+	src/composition/timeline_item.hpp
+	src/composition/track_item.cpp
+	src/composition/track_item.hpp
+	src/composition/voice_item.cpp
+	src/composition/voice_item.hpp
+	)
+source_group("src\\composition" FILES ${_src_composition})
+
+set(_src_sequence
+	src/sequence/key_item.cpp
+	src/sequence/key_item.hpp
+	src/sequence/pianoroll_item.cpp
+	src/sequence/pianoroll_item.hpp
+	src/sequence/sequence_scene.cpp
+	src/sequence/sequence_scene.hpp
+	src/sequence/sequence_widget.cpp
+	src/sequence/sequence_widget.hpp
+	src/sequence/sound_item.cpp
+	src/sequence/sound_item.hpp
+	)
+source_group("src\\sequence" FILES ${_src_sequence})
+
+add_executable(studio WIN32 ${_res} ${_src} ${_src_composition} ${_src_sequence})
 target_compile_options(studio PRIVATE /wd5054)
 target_include_directories(studio PRIVATE ${PROJECT_BINARY_DIR})
 target_link_libraries(studio PRIVATE aulos Qt5::Multimedia Qt5::Widgets)

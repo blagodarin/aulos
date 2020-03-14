@@ -17,11 +17,11 @@
 
 #include "studio.hpp"
 
-#include "composition_scene.hpp"
+#include "composition/composition_scene.hpp"
 #include "info_editor.hpp"
 #include "player.hpp"
-#include "sequence_scene.hpp"
-#include "sequence_widget.hpp"
+#include "sequence/sequence_scene.hpp"
+#include "sequence/sequence_widget.hpp"
 #include "track_editor.hpp"
 #include "utils.hpp"
 #include "voice_editor.hpp"

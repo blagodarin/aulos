@@ -17,8 +17,8 @@
 
 #include "track_item.hpp"
 
-#include "colors.hpp"
-#include "utils.hpp"
+#include "../colors.hpp"
+#include "../utils.hpp"
 
 #include <QGraphicsSceneContextMenuEvent>
 #include <QMenu>

@@ -17,12 +17,12 @@
 
 #include "sequence_scene.hpp"
 
-#include "colors.hpp"
-#include "elusive_item.hpp"
+#include "../colors.hpp"
+#include "../elusive_item.hpp"
+#include "../utils.hpp"
 #include "key_item.hpp"
 #include "pianoroll_item.hpp"
 #include "sound_item.hpp"
-#include "utils.hpp"
 
 #include <cassert>
 

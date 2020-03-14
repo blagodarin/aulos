@@ -15,23 +15,32 @@
 // limitations under the License.
 //
 
-#pragma once
+#include "cursor_item.hpp"
 
-#include "button_item.hpp"
+#include "../colors.hpp"
+#include "../utils.hpp"
 
-class AddVoiceItem final : public ButtonItem
+#include <QPainter>
+
+CursorItem::CursorItem(QGraphicsItem* parent)
+	: QGraphicsItem{ parent }
 {
-	Q_OBJECT
+}
 
-public:
-	AddVoiceItem(QGraphicsItem* parent = nullptr);
+QRectF CursorItem::boundingRect() const
+{
+	return { 0, 0, 2, kTimelineHeight + kTrackHeight * _trackCount };
+}
 
-	QRectF boundingRect() const override;
-	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
-	void setIndex(size_t);
-	void setWidth(qreal);
+void CursorItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*)
+{
+	painter->setPen(kCursorColors._pen);
+	painter->setBrush(kCursorColors._brush);
+	painter->drawRect(boundingRect());
+}
 
-private:
-	size_t _index = 0;
-	qreal _width = 0;
-};
+void CursorItem::setTrackCount(size_t count)
+{
+	prepareGeometryChange();
+	_trackCount = count;
+}

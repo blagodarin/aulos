@@ -17,8 +17,8 @@
 
 #include "sound_item.hpp"
 
-#include "colors.hpp"
-#include "utils.hpp"
+#include "../colors.hpp"
+#include "../utils.hpp"
 
 #include <QGraphicsSceneEvent>
 #include <QPainter>

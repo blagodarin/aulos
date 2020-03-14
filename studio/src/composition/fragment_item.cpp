@@ -17,8 +17,8 @@
 
 #include "fragment_item.hpp"
 
-#include "colors.hpp"
-#include "utils.hpp"
+#include "../colors.hpp"
+#include "../utils.hpp"
 
 #include <aulos/data.hpp>
 
