@@ -30,8 +30,7 @@ source_group("res" FILES ${_res})
 set(_src
 	src/button_item.cpp
 	src/button_item.hpp
-	src/colors.cpp
-	src/colors.hpp
+
 	src/elusive_item.cpp
 	src/elusive_item.hpp
 	src/info_editor.cpp
@@ -39,12 +38,14 @@ set(_src
 	src/main.cpp
 	src/player.cpp
 	src/player.hpp
+	src/sequence_utils.cpp
+	src/sequence_utils.hpp
 	src/studio.cpp
 	src/studio.hpp
+	src/theme.cpp
+	src/theme.hpp
 	src/track_editor.cpp
 	src/track_editor.hpp
-	src/utils.cpp
-	src/utils.hpp
 	src/voice_editor.cpp
 	src/voice_editor.hpp
 	)

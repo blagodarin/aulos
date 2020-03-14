@@ -21,6 +21,27 @@
 
 #include <QColor>
 
+// Composition.
+constexpr auto kStepWidth = 15.0;
+constexpr auto kTrackHeight = 40.0;
+constexpr auto kTimelineHeight = 0.5 * kTrackHeight;
+constexpr auto kTimelineFontSize = kTimelineHeight * 0.75;
+constexpr auto kAddVoiceItemHeight = kTrackHeight * 0.75;
+constexpr auto kAddVoiceArrowHeight = kAddVoiceItemHeight * 0.25;
+constexpr auto kMinVoiceItemWidth = kTrackHeight;
+constexpr auto kFragmentArrowWidth = kStepWidth / 2;
+constexpr auto kFragmentFontSize = kTrackHeight * 0.75;
+constexpr auto kVoiceNameFontSize = kTrackHeight * 0.5;
+constexpr auto kVoiceNameMargin = (kTrackHeight - kVoiceNameFontSize) / 2;
+constexpr auto kCompositionPageSwitchMargin = 50;
+
+// Pianoroll.
+constexpr auto kNoteHeight = 20.0;
+constexpr auto kNoteWidth = 15.0;
+constexpr auto kWhiteKeyWidth = 3 * kNoteHeight;
+constexpr auto kBlackKeyWidth = 2 * kNoteHeight;
+constexpr size_t kPianorollStride = 8;
+
 extern const QColor kBackgroundColor;
 extern const QColor kHoverBrushColor;
 extern const QColor kHoverPenColor;

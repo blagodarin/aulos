@@ -17,8 +17,7 @@
 
 #include "cursor_item.hpp"
 
-#include "../colors.hpp"
-#include "../utils.hpp"
+#include "../theme.hpp"
 
 #include <QPainter>
 

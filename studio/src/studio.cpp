@@ -18,12 +18,13 @@
 #include "studio.hpp"
 
 #include "composition/composition_scene.hpp"
-#include "info_editor.hpp"
-#include "player.hpp"
 #include "sequence/sequence_scene.hpp"
 #include "sequence/sequence_widget.hpp"
+#include "info_editor.hpp"
+#include "player.hpp"
+#include "sequence_utils.hpp"
+#include "theme.hpp"
 #include "track_editor.hpp"
-#include "utils.hpp"
 #include "voice_editor.hpp"
 
 #include <aulos/data.hpp>
@@ -262,9 +263,8 @@ Studio::Studio()
 		const auto sceneCursorRect = _compositionScene->setCurrentStep(microseconds * _composition->_speed / 1'000'000.0);
 		QRect viewCursorRect{ _compositionView->mapFromScene(sceneCursorRect.topLeft()), _compositionView->mapFromScene(sceneCursorRect.bottomRight()) };
 		const auto viewportRect = _compositionView->viewport()->rect();
-		constexpr auto kMargin = 50;
-		if (viewCursorRect.right() > viewportRect.right() - kMargin)
-			viewCursorRect.moveRight(viewCursorRect.right() + viewportRect.width() - kMargin);
+		if (viewCursorRect.right() > viewportRect.right() - kCompositionPageSwitchMargin)
+			viewCursorRect.moveRight(viewCursorRect.right() + viewportRect.width() - kCompositionPageSwitchMargin);
 		else if (viewCursorRect.right() < viewportRect.left())
 			viewCursorRect.moveRight(viewCursorRect.right() - viewportRect.width() / 2);
 		else

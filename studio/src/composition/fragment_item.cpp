@@ -17,8 +17,8 @@
 
 #include "fragment_item.hpp"
 
-#include "../colors.hpp"
-#include "../utils.hpp"
+#include "../sequence_utils.hpp"
+#include "../theme.hpp"
 
 #include <aulos/data.hpp>
 
@@ -28,11 +28,6 @@
 #include <QMenu>
 #include <QPainter>
 #include <QTextOption>
-
-namespace
-{
-	constexpr auto kFragmentArrowWidth = kStepWidth / 2;
-}
 
 FragmentItem::FragmentItem(size_t trackIndex, size_t offset, const void* sequenceId, QGraphicsItem* parent)
 	: QGraphicsObject{ parent }
@@ -58,12 +53,11 @@ void FragmentItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWi
 	painter->drawConvexPolygon(_polygon);
 	if (_length > 0)
 	{
-		constexpr auto fontSize = kTrackHeight * 0.75;
-		constexpr auto xOffset = (kTrackHeight - fontSize) / 2.0;
+		constexpr auto xOffset = (kTrackHeight - kFragmentFontSize) / 2.0;
 		constexpr auto xScale = 7.0 / 16.0;
 		painter->save();
 		auto font = painter->font();
-		font.setPixelSize(fontSize);
+		font.setPixelSize(kFragmentFontSize);
 		painter->setFont(font);
 		painter->setTransform(QTransform::fromScale(xScale, 1.0), true);
 		_name.prepare(painter->transform(), font);

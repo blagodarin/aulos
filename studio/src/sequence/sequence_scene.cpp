@@ -17,9 +17,8 @@
 
 #include "sequence_scene.hpp"
 
-#include "../colors.hpp"
 #include "../elusive_item.hpp"
-#include "../utils.hpp"
+#include "../theme.hpp"
 #include "key_item.hpp"
 #include "pianoroll_item.hpp"
 #include "sound_item.hpp"
@@ -79,7 +78,7 @@ qreal SequenceScene::setSequence(const aulos::SequenceData& sequence, const QSiz
 		offset += sound._delay;
 		insertNewSound(offset, sound._note);
 	}
-	setPianorollLength(std::max((offset + kPianorollStride) / kPianorollStride * kPianorollStride, viewSize.width() / static_cast<size_t>(kStepWidth) + 1));
+	setPianorollLength(std::max((offset + kPianorollStride) / kPianorollStride * kPianorollStride, viewSize.width() / static_cast<size_t>(kNoteWidth) + 1));
 	const auto heightDifference = std::lround(sceneRect().height() - viewSize.height());
 	if (heightDifference <= 0 || _soundItems.empty())
 		return 0.5;
@@ -107,7 +106,7 @@ void SequenceScene::removeSoundItems()
 
 void SequenceScene::setPianorollLength(size_t steps)
 {
-	setSceneRect({ 0, 0, kWhiteKeyWidth + steps * kStepWidth, _pianorollItem->boundingRect().height() });
+	setSceneRect({ 0, 0, kWhiteKeyWidth + steps * kNoteWidth, _pianorollItem->boundingRect().height() });
 	_pianorollItem->setStepCount(steps);
 	_rightBoundItem->setPos(_pianorollItem->boundingRect().topRight());
 }

@@ -17,15 +17,12 @@
 
 #include "add_voice_item.hpp"
 
-#include "../colors.hpp"
-#include "../utils.hpp"
+#include "../theme.hpp"
 
 #include <QPainter>
 
 namespace
 {
-	constexpr auto kAddVoiceArrowHeight = kAddVoiceItemHeight * 0.25;
-
 	QFont makeAddVoiceFont()
 	{
 		QFont font;

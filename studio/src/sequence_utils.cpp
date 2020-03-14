@@ -15,7 +15,7 @@
 // limitations under the License.
 //
 
-#include "utils.hpp"
+#include "sequence_utils.hpp"
 
 #include <aulos/data.hpp>
 

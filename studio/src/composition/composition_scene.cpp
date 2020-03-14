@@ -17,9 +17,8 @@
 
 #include "composition_scene.hpp"
 
-#include "../colors.hpp"
 #include "../elusive_item.hpp"
-#include "../utils.hpp"
+#include "../theme.hpp"
 #include "add_voice_item.hpp"
 #include "cursor_item.hpp"
 #include "fragment_item.hpp"

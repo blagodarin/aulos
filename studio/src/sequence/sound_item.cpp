@@ -17,8 +17,7 @@
 
 #include "sound_item.hpp"
 
-#include "../colors.hpp"
-#include "../utils.hpp"
+#include "../theme.hpp"
 
 #include <QGraphicsSceneEvent>
 #include <QPainter>
@@ -33,12 +32,12 @@ SoundItem::SoundItem(size_t offset, aulos::Note note, QGraphicsItem* parent)
 void SoundItem::setNote(aulos::Note note)
 {
 	_note = note;
-	setPos(_offset * kStepWidth, (119 - static_cast<size_t>(_note)) * kNoteHeight);
+	setPos(_offset * kNoteWidth, (119 - static_cast<size_t>(_note)) * kNoteHeight);
 }
 
 QRectF SoundItem::boundingRect() const
 {
-	return { 0, 0, kStepWidth, kNoteHeight };
+	return { 0, 0, kNoteWidth, kNoteHeight };
 }
 
 void SoundItem::mousePressEvent(QGraphicsSceneMouseEvent* e)

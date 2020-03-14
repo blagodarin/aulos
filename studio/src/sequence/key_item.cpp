@@ -17,7 +17,7 @@
 
 #include "key_item.hpp"
 
-#include "../utils.hpp"
+#include "../theme.hpp"
 
 #include <QPainter>
 

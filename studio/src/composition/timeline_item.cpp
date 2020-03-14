@@ -17,8 +17,7 @@
 
 #include "timeline_item.hpp"
 
-#include "../colors.hpp"
-#include "../utils.hpp"
+#include "../theme.hpp"
 
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
@@ -38,10 +37,9 @@ void TimelineItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* opti
 {
 	size_t index = 0;
 	QRectF rect{ 0, 0, _speed * kStepWidth, kTimelineHeight };
-	constexpr auto fontSize = kTimelineHeight * 0.75;
-	constexpr auto textOffset = (kTimelineHeight - fontSize) / 2.0;
+	constexpr auto textOffset = (kTimelineHeight - kTimelineFontSize) / 2.0;
 	auto font = painter->font();
-	font.setPixelSize(fontSize);
+	font.setPixelSize(kTimelineFontSize);
 	painter->setFont(font);
 	while (index < _length / _speed)
 	{

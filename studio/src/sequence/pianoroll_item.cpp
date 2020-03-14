@@ -17,8 +17,7 @@
 
 #include "pianoroll_item.hpp"
 
-#include "../colors.hpp"
-#include "../utils.hpp"
+#include "../theme.hpp"
 
 #include <cassert>
 
@@ -54,7 +53,7 @@ PianorollItem::PianorollItem(QGraphicsItem* parent)
 
 QRectF PianorollItem::boundingRect() const
 {
-	return { 0, 0, _stepCount * kStepWidth, 120 * kNoteHeight };
+	return { 0, 0, _stepCount * kNoteWidth, 120 * kNoteHeight };
 }
 
 void PianorollItem::setStepCount(size_t count)
@@ -70,7 +69,7 @@ void PianorollItem::mousePressEvent(QGraphicsSceneMouseEvent* e)
 		const auto pos = e->lastPos();
 		const auto row = static_cast<size_t>(std::floor(pos.y() / kNoteHeight));
 		assert(row >= 0 && row < 120);
-		const auto offset = static_cast<size_t>(std::floor(pos.x() / kStepWidth));
+		const auto offset = static_cast<size_t>(std::floor(pos.x() / kNoteWidth));
 		emit newSoundRequested(offset, static_cast<aulos::Note>(119 - row));
 	}
 }
@@ -81,8 +80,8 @@ void PianorollItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* opt
 		return;
 	const auto firstRow = static_cast<size_t>(std::floor(option->exposedRect.top() / kNoteHeight));
 	const auto lastRow = static_cast<size_t>(std::ceil(option->exposedRect.bottom() / kNoteHeight));
-	const auto firstStep = static_cast<size_t>(std::floor(option->exposedRect.left() / kStepWidth));
-	const auto lastStep = static_cast<size_t>(std::ceil(option->exposedRect.right() / kStepWidth));
+	const auto firstStep = static_cast<size_t>(std::floor(option->exposedRect.left() / kNoteWidth));
+	const auto lastStep = static_cast<size_t>(std::ceil(option->exposedRect.right() / kNoteWidth));
 	for (auto row = firstRow; row < lastRow; ++row)
 	{
 		const auto rowTop = row * kNoteHeight;
@@ -95,7 +94,7 @@ void PianorollItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* opt
 	}
 	for (auto step = firstStep; step < lastStep; ++step)
 	{
-		const auto stepLeft = step * kStepWidth;
+		const auto stepLeft = step * kNoteWidth;
 		painter->setPen(step % kPianorollStride ? kPianorollFineGridColor : kPianorollCoarseGridColor);
 		painter->drawLine(QPointF{ stepLeft, option->exposedRect.top() }, QPointF{ stepLeft, option->exposedRect.bottom() });
 	}

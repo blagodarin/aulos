@@ -17,8 +17,7 @@
 
 #include "voice_item.hpp"
 
-#include "../colors.hpp"
-#include "../utils.hpp"
+#include "../theme.hpp"
 
 #include <QGraphicsSceneEvent>
 #include <QMenu>
@@ -26,13 +25,10 @@
 
 namespace
 {
-	constexpr auto kFontSize = kTrackHeight * 0.5;
-	constexpr auto kMargin = (kTrackHeight - kFontSize) / 2;
-
 	QFont makeVoiceFont()
 	{
 		QFont font;
-		font.setPixelSize(kFontSize);
+		font.setPixelSize(kVoiceNameFontSize);
 		return font;
 	}
 }
@@ -57,12 +53,12 @@ void VoiceItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidge
 	painter->setPen(colors._pen);
 	painter->setFont(::makeVoiceFont());
 	const auto nameSize = _name.size();
-	painter->drawStaticText(QPointF{ kMargin, (_trackCount * kTrackHeight - nameSize.height()) / 2 }, _name);
+	painter->drawStaticText(QPointF{ kVoiceNameMargin, (_trackCount * kTrackHeight - nameSize.height()) / 2 }, _name);
 }
 
 qreal VoiceItem::requiredWidth() const
 {
-	return kMargin + _name.size().width() + kMargin;
+	return kVoiceNameMargin + _name.size().width() + kVoiceNameMargin;
 }
 
 void VoiceItem::setTrackCount(size_t count)

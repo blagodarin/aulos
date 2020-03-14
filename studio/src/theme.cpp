@@ -15,7 +15,7 @@
 // limitations under the License.
 //
 
-#include "colors.hpp"
+#include "theme.hpp"
 
 const QColor kBackgroundColor{ "#222" };
 const QColor kHoverBrushColor{ "#999" };
