@@ -114,13 +114,6 @@ void FragmentItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
 		emit fragmentMenuRequested(_offset, e->screenPos());
 }
 
-void FragmentItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* e)
-{
-	e->setAccepted(_polygon.containsPoint(e->pos(), Qt::OddEvenFill));
-	if (e->isAccepted())
-		emit fragmentActionRequested(_offset);
-}
-
 void FragmentItem::mousePressEvent(QGraphicsSceneMouseEvent* e)
 {
 	if (e->button() == Qt::LeftButton)

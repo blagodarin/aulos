@@ -43,13 +43,11 @@ public:
 	void setTrackIndex(size_t index);
 
 signals:
-	void fragmentActionRequested(size_t offset);
 	void fragmentMenuRequested(size_t offset, const QPoint& pos);
 	void sequenceSelected(const void* sequenceId);
 
 private:
 	void contextMenuEvent(QGraphicsSceneContextMenuEvent*) override;
-	void mouseDoubleClickEvent(QGraphicsSceneMouseEvent*) override;
 	void mousePressEvent(QGraphicsSceneMouseEvent*) override;
 
 private:

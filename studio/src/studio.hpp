@@ -34,7 +34,6 @@ namespace aulos
 class CompositionScene;
 class InfoEditor;
 class Player;
-class SequenceEditor;
 class SequenceScene;
 class TrackEditor;
 class VoiceEditor;
@@ -52,7 +51,6 @@ private:
 	void closeComposition();
 	void createEmptyComposition();
 	aulos::Voice defaultVoiceData() const;
-	bool editSequence(const void* trackId, const aulos::Voice&, float weight, const std::shared_ptr<aulos::SequenceData>&);
 	bool editTrack(aulos::TrackData&);
 	bool editVoice(const void* id, aulos::Voice&);
 	void exportComposition();
@@ -62,6 +60,7 @@ private:
 	bool saveCompositionAs();
 	void saveRecentFiles() const;
 	void setRecentFile(const QString& path);
+	void showSequence(const void* voiceId, const void* trackId, const void* sequenceId);
 	void updateStatus();
 
 private:
@@ -80,7 +79,6 @@ private:
 	std::unique_ptr<InfoEditor> _infoEditor;
 	std::unique_ptr<VoiceEditor> _voiceEditor;
 	std::unique_ptr<TrackEditor> _trackEditor;
-	std::unique_ptr<SequenceEditor> _sequenceEditor;
 	std::unique_ptr<Player> _player;
 
 	QString _compositionPath;

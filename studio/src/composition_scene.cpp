@@ -297,6 +297,16 @@ void CompositionScene::reset(const std::shared_ptr<aulos::CompositionData>& comp
 	}
 }
 
+void CompositionScene::selectSequence(const void* voiceId, const void* trackId, const void* sequenceId)
+{
+	if (_selectedSequenceTrackId && _selectedSequenceTrackId != trackId)
+		highlightSequence(_selectedSequenceTrackId, nullptr);
+	_selectedSequenceId = sequenceId;
+	_selectedSequenceTrackId = trackId;
+	highlightSequence(trackId, sequenceId);
+	emit sequenceSelected(voiceId, trackId, sequenceId);
+}
+
 QRectF CompositionScene::setCurrentStep(double step)
 {
 	// Moving cursor leaves artifacts if the view is being scrolled.
@@ -355,20 +365,10 @@ FragmentItem* CompositionScene::addFragmentItem(const void* voiceId, TrackIterat
 	item->setHighlighted(sequence.get() == _selectedSequenceId);
 	item->setPos(offset * kStepWidth, trackIndex * kTrackHeight);
 	item->setSequence(*sequence);
-	connect(item, &FragmentItem::fragmentActionRequested, [this, voiceId, trackId = (*trackIt)->_background->trackId()](size_t offset) {
-		emit fragmentActionRequested(voiceId, trackId, offset);
-	});
 	connect(item, &FragmentItem::fragmentMenuRequested, [this, voiceId, trackId = (*trackIt)->_background->trackId()](size_t offset, const QPoint& pos) {
 		emit fragmentMenuRequested(voiceId, trackId, offset, pos);
 	});
-	connect(item, &FragmentItem::sequenceSelected, [this, voiceId, trackId = (*trackIt)->_background->trackId()](const void* sequenceId) {
-		if (_selectedSequenceTrackId && _selectedSequenceTrackId != trackId)
-			highlightSequence(_selectedSequenceTrackId, nullptr);
-		_selectedSequenceId = sequenceId;
-		_selectedSequenceTrackId = trackId;
-		highlightSequence(trackId, sequenceId);
-		emit sequenceSelected(voiceId, trackId, sequenceId);
-	});
+	connect(item, &FragmentItem::sequenceSelected, [this, voiceId, trackId = (*trackIt)->_background->trackId()](const void* sequenceId) { selectSequence(voiceId, trackId, sequenceId); });
 	const auto fragmentIt = (*trackIt)->_fragments.emplace(offset, item).first;
 	if (const auto nextFragmentIt = std::next(fragmentIt); nextFragmentIt != (*trackIt)->_fragments.end())
 		fragmentIt->second->stackBefore(nextFragmentIt->second);

@@ -51,8 +51,6 @@ set(_src
 	src/pianoroll_item.hpp
 	src/player.cpp
 	src/player.hpp
-	src/sequence_editor.cpp
-	src/sequence_editor.hpp
 	src/sequence_scene.cpp
 	src/sequence_scene.hpp
 	src/sound_item.cpp

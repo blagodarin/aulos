@@ -52,6 +52,7 @@ public:
 	void removeTrack(const void* voiceId, const void* trackId);
 	void removeVoice(const void* voiceId);
 	void reset(const std::shared_ptr<aulos::CompositionData>&, size_t viewWidth);
+	void selectSequence(const void* voiceId, const void* trackId, const void* sequenceId);
 	QRectF setCurrentStep(double step);
 	void setSpeed(unsigned speed);
 	void showCursor(bool);
@@ -60,7 +61,6 @@ public:
 
 signals:
 	void newVoiceRequested();
-	void fragmentActionRequested(const void* voiceId, const void* trackId, size_t offset);
 	void fragmentMenuRequested(const void* voiceId, const void* trackId, size_t offset, const QPoint& pos);
 	void sequenceSelected(const void* voiceId, const void* trackId, const void* sequenceId);
 	void trackActionRequested(const void* voiceId, const void* trackId);
