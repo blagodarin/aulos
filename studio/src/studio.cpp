@@ -267,8 +267,8 @@ Studio::Studio()
 		constexpr auto kMargin = 50;
 		if (viewCursorRect.right() > viewportRect.right() - kMargin)
 			viewCursorRect.moveRight(viewCursorRect.right() + viewportRect.width() - kMargin);
-		else if (viewCursorRect.left() < viewportRect.left() + kMargin)
-			viewCursorRect.moveLeft(viewCursorRect.left() - viewportRect.width() + kMargin);
+		else if (viewCursorRect.right() < viewportRect.left())
+			viewCursorRect.moveRight(viewCursorRect.right() - viewportRect.width() / 2);
 		else
 			return;
 		_compositionView->ensureVisible({ _compositionView->mapToScene(viewCursorRect.topLeft()), _compositionView->mapToScene(viewCursorRect.bottomRight()) }, 0);
