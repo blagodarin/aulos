@@ -17,33 +17,30 @@
 
 #pragma once
 
-#include <memory>
-#include <vector>
+#include <QWidget>
 
-#include <QDialog>
+class QDoubleSpinBox;
+class QLineEdit;
 
 namespace aulos
 {
 	struct Voice;
 }
 
-class Player;
-class VoiceWidget;
-
-class VoiceEditor final : public QDialog
+class VoiceWidget final : public QWidget
 {
-	Q_OBJECT
-
 public:
-	VoiceEditor(QWidget*);
+	VoiceWidget(QWidget* parent);
 
 	void setVoice(const aulos::Voice&);
 	aulos::Voice voice() const;
 
-private slots:
-	void onNoteClicked();
-
 private:
-	VoiceWidget* _voiceWidget = nullptr;
-	std::unique_ptr<Player> _player;
+	struct EnvelopePoint;
+
+	QLineEdit* _nameEdit = nullptr;
+	QDoubleSpinBox* _oscillationSpin = nullptr;
+	std::vector<EnvelopePoint> _amplitudeEnvelope;
+	std::vector<EnvelopePoint> _frequencyEnvelope;
+	std::vector<EnvelopePoint> _asymmetryEnvelope;
 };

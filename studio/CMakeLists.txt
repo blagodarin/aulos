@@ -48,6 +48,8 @@ set(_src
 	src/track_editor.hpp
 	src/voice_editor.cpp
 	src/voice_editor.hpp
+	src/voice_widget.cpp
+	src/voice_widget.hpp
 	)
 source_group("src" FILES ${_src})
 
