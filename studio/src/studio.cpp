@@ -26,6 +26,7 @@
 #include "theme.hpp"
 #include "track_editor.hpp"
 #include "voice_editor.hpp"
+#include "voice_widget.hpp"
 
 #include <aulos/data.hpp>
 
@@ -33,6 +34,7 @@
 #include <QCloseEvent>
 #include <QFileDialog>
 #include <QGraphicsView>
+#include <QHBoxLayout>
 #include <QLabel>
 #include <QMenuBar>
 #include <QMessageBox>
@@ -74,6 +76,14 @@ namespace
 		return std::move(font);
 	}
 
+	QSizePolicy makeExpandingSizePolicy(int horizontalStretch, int verticalStretch)
+	{
+		QSizePolicy policy{ QSizePolicy::Expanding, QSizePolicy::Expanding };
+		policy.setHorizontalStretch(horizontalStretch);
+		policy.setVerticalStretch(verticalStretch);
+		return policy;
+	}
+
 	float makeTrackAmplitude(const aulos::CompositionData& composition, unsigned weight)
 	{
 		unsigned totalWeight = 0;
@@ -113,7 +123,6 @@ Studio::Studio()
 	, _voiceEditor{ std::make_unique<VoiceEditor>(this) }
 	, _trackEditor{ std::make_unique<TrackEditor>(this) }
 	, _player{ std::make_unique<Player>() }
-	, _sequenceVoice{ std::make_unique<aulos::Voice>() }
 {
 	resize(1280, 720);
 
@@ -230,10 +239,23 @@ Studio::Studio()
 
 	_compositionView = new QGraphicsView{ _compositionScene.get(), splitter };
 	_compositionView->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+	_compositionView->setSizePolicy(::makeExpandingSizePolicy(1, 1));
 	splitter->addWidget(_compositionView);
 
-	_sequenceWidget = new SequenceWidget{ _sequenceScene.get(), splitter };
-	splitter->addWidget(_sequenceWidget);
+	const auto bottomPart = new QWidget{ splitter };
+	splitter->addWidget(bottomPart);
+
+	const auto bottomLayout = new QHBoxLayout{ bottomPart };
+	bottomLayout->setContentsMargins({});
+	bottomLayout->setSpacing(0);
+
+	_voiceWidget = new VoiceWidget{ bottomPart };
+	_voiceWidget->setSizePolicy(::makeExpandingSizePolicy(0, 0));
+	bottomLayout->addWidget(_voiceWidget);
+
+	_sequenceWidget = new SequenceWidget{ _sequenceScene.get(), bottomPart };
+	_sequenceWidget->setSizePolicy(::makeExpandingSizePolicy(1, 1));
+	bottomLayout->addWidget(_sequenceWidget);
 
 	splitter->setSizes({ 1, 1 });
 
@@ -453,7 +475,7 @@ Studio::Studio()
 		updateStatus();
 	});
 	connect(_sequenceScene.get(), &SequenceScene::noteActivated, [this](aulos::Note note) {
-		const auto renderer = aulos::VoiceRenderer::create(*_sequenceVoice, Player::SamplingRate);
+		const auto renderer = aulos::VoiceRenderer::create(_voiceWidget->voice(), Player::SamplingRate);
 		assert(renderer);
 		renderer->start(note, _sequenceAmplitude);
 		_player->reset(*renderer);
@@ -689,10 +711,10 @@ void Studio::showSequence(const void* voiceId, const void* trackId, const void* 
 {
 	if (!sequenceId)
 	{
-		*_sequenceVoice = aulos::Voice{};
 		_sequenceTrackId = nullptr;
 		_sequenceAmplitude = 1.f;
 		_sequenceData.reset();
+		_voiceWidget->setVoice({});
 		_sequenceWidget->setSequence({});
 		return;
 	}
@@ -702,11 +724,11 @@ void Studio::showSequence(const void* voiceId, const void* trackId, const void* 
 	assert(track != (*part)->_tracks.cend());
 	const auto sequence = std::find_if((*track)->_sequences.cbegin(), (*track)->_sequences.cend(), [sequenceId](const auto& sequenceData) { return sequenceData.get() == sequenceId; });
 	assert(sequence != (*track)->_sequences.end());
-	*_sequenceVoice = *(*part)->_voice;
 	_sequenceTrackId = trackId;
 	_sequenceAmplitude = ::makeTrackAmplitude(*_composition, (*track)->_weight);
 	_sequenceData = *sequence;
-	_sequenceWidget->setSequence(**sequence);
+	_voiceWidget->setVoice(*(*part)->_voice);
+	_sequenceWidget->setSequence(*_sequenceData);
 }
 
 void Studio::saveRecentFiles() const
@@ -729,8 +751,8 @@ void Studio::updateStatus()
 	_playAction->setEnabled(_hasComposition && _mode == Mode::Editing);
 	_stopAction->setEnabled(_hasComposition && _mode == Mode::Playing);
 	_speedSpin->setEnabled(_hasComposition && _mode == Mode::Editing);
-	_compositionView->setEnabled(_hasComposition);
 	_compositionView->setInteractive(_hasComposition && _mode == Mode::Editing);
+	_voiceWidget->setEnabled(_hasComposition && _mode == Mode::Editing);
 	_sequenceWidget->setInteractive(_hasComposition && _mode == Mode::Editing);
 	_statusPath->setText(_compositionPath.isEmpty() ? QStringLiteral("<i>%1</i>").arg(tr("No file")) : _compositionPath);
 }

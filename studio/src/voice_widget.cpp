@@ -42,6 +42,12 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 	const auto createOscillationWidgets = [this](QWidget* parent) {
 		const auto layout = new QGridLayout{ parent };
 
+		auto margins = layout->contentsMargins();
+		margins.setBottom(0);
+		margins.setLeft(0);
+		margins.setRight(0);
+		layout->setContentsMargins(margins);
+
 		const auto typeCombo = new QComboBox{ parent };
 		typeCombo->addItem(tr("Linear"));
 		layout->addWidget(typeCombo, 0, 0);
@@ -50,12 +56,18 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 		_oscillationSpin->setRange(0.0, 1.0);
 		_oscillationSpin->setSingleStep(0.01);
 		layout->addWidget(_oscillationSpin, 0, 1);
+
+		layout->addItem(new QSpacerItem{ 0, 0, QSizePolicy::Minimum, QSizePolicy::Expanding }, 1, 0, 1, 2);
 	};
 
 	const auto createEnvelopeEditor = [this](QWidget* parent, std::vector<EnvelopePoint>& envelope, double minimum) {
 		const auto layout = new QGridLayout{ parent };
-		layout->addWidget(new QLabel{ tr("Delay"), parent }, 0, 1);
-		layout->addWidget(new QLabel{ tr("Value"), parent }, 0, 2);
+
+		auto margins = layout->contentsMargins();
+		margins.setBottom(0);
+		margins.setLeft(0);
+		margins.setRight(0);
+		layout->setContentsMargins(margins);
 
 		for (int i = 0; i < 5; ++i)
 		{
@@ -64,7 +76,7 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 			point._check = new QCheckBox{ tr("Point %1").arg(i), parent };
 			point._check->setChecked(i == 0);
 			point._check->setEnabled(i == 1);
-			layout->addWidget(point._check, i + 1, 0);
+			layout->addWidget(point._check, i, 0);
 
 			point._delay = new QDoubleSpinBox{ parent };
 			point._delay->setDecimals(2);
@@ -73,7 +85,7 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 			point._delay->setMinimum(0.0);
 			point._delay->setSingleStep(0.01);
 			point._delay->setValue(0.0);
-			layout->addWidget(point._delay, i + 1, 1);
+			layout->addWidget(point._delay, i, 1);
 
 			point._value = new QDoubleSpinBox{ parent };
 			point._value->setDecimals(2);
@@ -82,7 +94,7 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 			point._value->setMinimum(minimum);
 			point._value->setSingleStep(0.01);
 			point._value->setValue(1.0);
-			layout->addWidget(point._value, i + 1, 2);
+			layout->addWidget(point._value, i, 2);
 
 			if (i == 0)
 			{
@@ -102,31 +114,35 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 		}
 	};
 
-	const auto propertyLayout = new QVBoxLayout{ this };
-	propertyLayout->setContentsMargins({});
+	const auto propertyLayout = new QGridLayout{ this };
 
 	_nameEdit = new QLineEdit{ this };
 	_nameEdit->setMaxLength(64);
 	_nameEdit->setValidator(new QRegExpValidator{ QRegExp{ "\\w*" }, _nameEdit });
-	propertyLayout->addWidget(_nameEdit);
+	propertyLayout->addWidget(_nameEdit, 0, 0, 1, 2);
 
 	const auto oscillationGroup = new QGroupBox{ tr("Oscillation"), this };
+	oscillationGroup->setFlat(true);
 	createOscillationWidgets(oscillationGroup);
-	propertyLayout->addWidget(oscillationGroup);
+	propertyLayout->addWidget(oscillationGroup, 1, 0);
 
 	const auto amplitudeGroup = new QGroupBox{ tr("Amplitude"), this };
+	amplitudeGroup->setFlat(true);
 	createEnvelopeEditor(amplitudeGroup, _amplitudeEnvelope, 0.0);
-	propertyLayout->addWidget(amplitudeGroup);
+	propertyLayout->addWidget(amplitudeGroup, 1, 1);
 
 	const auto frequencyGroup = new QGroupBox{ tr("Frequency"), this };
+	frequencyGroup->setFlat(true);
 	createEnvelopeEditor(frequencyGroup, _frequencyEnvelope, 0.5);
-	propertyLayout->addWidget(frequencyGroup);
+	propertyLayout->addWidget(frequencyGroup, 2, 0);
 
 	const auto asymmetryGroup = new QGroupBox{ tr("Asymmetry"), this };
+	asymmetryGroup->setFlat(true);
 	createEnvelopeEditor(asymmetryGroup, _asymmetryEnvelope, 0.0);
-	propertyLayout->addWidget(asymmetryGroup);
+	propertyLayout->addWidget(asymmetryGroup, 2, 1);
 
-	propertyLayout->addItem(new QSpacerItem{ 0, 0, QSizePolicy::Minimum, QSizePolicy::Expanding });
+	propertyLayout->addItem(new QSpacerItem{ 0, 0, QSizePolicy::Minimum, QSizePolicy::Expanding }, 3, 0, 1, 2);
+	propertyLayout->setRowStretch(3, 1);
 }
 
 void VoiceWidget::setVoice(const aulos::Voice& voice)

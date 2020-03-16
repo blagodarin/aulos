@@ -38,6 +38,7 @@ class SequenceScene;
 class SequenceWidget;
 class TrackEditor;
 class VoiceEditor;
+class VoiceWidget;
 
 class Studio : public QMainWindow
 {
@@ -88,7 +89,6 @@ private:
 	Mode _mode = Mode::Editing;
 	bool _hasComposition = false;
 	bool _changed = false;
-	const std::unique_ptr<aulos::Voice> _sequenceVoice;
 	const void* _sequenceTrackId = nullptr;
 	float _sequenceAmplitude = 1.f;
 	std::shared_ptr<aulos::SequenceData> _sequenceData;
@@ -106,6 +106,7 @@ private:
 	QAction* _stopAction;
 	QSpinBox* _speedSpin;
 	QGraphicsView* _compositionView;
+	VoiceWidget* _voiceWidget;
 	SequenceWidget* _sequenceWidget;
 	QLabel* _statusPath;
 };
