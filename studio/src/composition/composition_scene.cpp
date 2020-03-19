@@ -142,7 +142,7 @@ void CompositionScene::appendPart(const std::shared_ptr<aulos::PartData>& partDa
 	assert(partData->_tracks.size() == 1);
 	assert(partData->_tracks.front()->_fragments.empty());
 
-	const auto voiceItem = addVoiceItem(partData->_voice.get(), QString::fromStdString(partData->_voice->_name), partData->_tracks.size());
+	const auto voiceItem = addVoiceItem(partData->_voice.get(), QString::fromStdString(partData->_voiceName), partData->_tracks.size());
 
 	const auto trackIt = addTrackItem(partData->_voice.get(), partData->_tracks.front().get(), _tracks.size(), true);
 	(*trackIt)->_background->setTrackLength(_timelineItem->compositionLength());
@@ -259,7 +259,7 @@ void CompositionScene::reset(const std::shared_ptr<aulos::CompositionData>& comp
 		for (const auto& partData : _composition->_parts)
 		{
 			assert(!partData->_tracks.empty());
-			const auto voiceItem = addVoiceItem(partData->_voice.get(), QString::fromStdString(partData->_voice->_name), partData->_tracks.size());
+			const auto voiceItem = addVoiceItem(partData->_voice.get(), QString::fromStdString(partData->_voiceName), partData->_tracks.size());
 			for (const auto& trackData : partData->_tracks)
 			{
 				const auto trackIt = addTrackItem(partData->_voice.get(), trackData.get(), _tracks.size(), trackData == partData->_tracks.front());

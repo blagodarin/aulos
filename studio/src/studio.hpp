@@ -28,7 +28,6 @@ namespace aulos
 	struct CompositionData;
 	struct SequenceData;
 	struct TrackData;
-	struct Voice;
 }
 
 class CompositionScene;
@@ -52,9 +51,8 @@ private:
 	void clearRecentFiles();
 	void closeComposition();
 	void createEmptyComposition();
-	aulos::Voice defaultVoiceData() const;
 	bool editTrack(aulos::TrackData&);
-	bool editVoice(const void* id, aulos::Voice&);
+	bool editVoiceName(const void* id, std::string&);
 	void exportComposition();
 	bool maybeSaveComposition();
 	bool openComposition(const QString& path);
@@ -89,6 +87,7 @@ private:
 	Mode _mode = Mode::Editing;
 	bool _hasComposition = false;
 	bool _changed = false;
+	const void* _sequenceVoiceId = nullptr;
 	const void* _sequenceTrackId = nullptr;
 	float _sequenceAmplitude = 1.f;
 	std::shared_ptr<aulos::SequenceData> _sequenceData;

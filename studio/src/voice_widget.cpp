@@ -26,8 +26,6 @@
 #include <QDoubleSpinBox>
 #include <QGridLayout>
 #include <QGroupBox>
-#include <QLabel>
-#include <QLineEdit>
 
 struct VoiceWidget::EnvelopePoint
 {
@@ -56,6 +54,7 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 		_oscillationSpin->setRange(0.0, 1.0);
 		_oscillationSpin->setSingleStep(0.01);
 		layout->addWidget(_oscillationSpin, 0, 1);
+		connect(_oscillationSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::voiceChanged);
 
 		layout->addItem(new QSpacerItem{ 0, 0, QSizePolicy::Minimum, QSizePolicy::Expanding }, 1, 0, 1, 2);
 	};
@@ -77,6 +76,7 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 			point._check->setChecked(i == 0);
 			point._check->setEnabled(i == 1);
 			layout->addWidget(point._check, i, 0);
+			connect(point._check, &QCheckBox::toggled, this, &VoiceWidget::voiceChanged);
 
 			point._delay = new QDoubleSpinBox{ parent };
 			point._delay->setDecimals(2);
@@ -86,6 +86,7 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 			point._delay->setSingleStep(0.01);
 			point._delay->setValue(0.0);
 			layout->addWidget(point._delay, i, 1);
+			connect(point._delay, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::voiceChanged);
 
 			point._value = new QDoubleSpinBox{ parent };
 			point._value->setDecimals(2);
@@ -95,6 +96,7 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 			point._value->setSingleStep(0.01);
 			point._value->setValue(1.0);
 			layout->addWidget(point._value, i, 2);
+			connect(point._value, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::voiceChanged);
 
 			if (i == 0)
 			{
@@ -114,35 +116,30 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 		}
 	};
 
-	const auto propertyLayout = new QGridLayout{ this };
-
-	_nameEdit = new QLineEdit{ this };
-	_nameEdit->setMaxLength(64);
-	_nameEdit->setValidator(new QRegExpValidator{ QRegExp{ "\\w*" }, _nameEdit });
-	propertyLayout->addWidget(_nameEdit, 0, 0, 1, 2);
+	const auto layout = new QGridLayout{ this };
 
 	const auto oscillationGroup = new QGroupBox{ tr("Oscillation"), this };
 	oscillationGroup->setFlat(true);
 	createOscillationWidgets(oscillationGroup);
-	propertyLayout->addWidget(oscillationGroup, 1, 0);
+	layout->addWidget(oscillationGroup, 0, 0);
 
 	const auto amplitudeGroup = new QGroupBox{ tr("Amplitude"), this };
 	amplitudeGroup->setFlat(true);
 	createEnvelopeEditor(amplitudeGroup, _amplitudeEnvelope, 0.0);
-	propertyLayout->addWidget(amplitudeGroup, 1, 1);
+	layout->addWidget(amplitudeGroup, 0, 1);
 
 	const auto frequencyGroup = new QGroupBox{ tr("Frequency"), this };
 	frequencyGroup->setFlat(true);
 	createEnvelopeEditor(frequencyGroup, _frequencyEnvelope, 0.5);
-	propertyLayout->addWidget(frequencyGroup, 2, 0);
+	layout->addWidget(frequencyGroup, 1, 0);
 
 	const auto asymmetryGroup = new QGroupBox{ tr("Asymmetry"), this };
 	asymmetryGroup->setFlat(true);
 	createEnvelopeEditor(asymmetryGroup, _asymmetryEnvelope, 0.0);
-	propertyLayout->addWidget(asymmetryGroup, 2, 1);
+	layout->addWidget(asymmetryGroup, 1, 1);
 
-	propertyLayout->addItem(new QSpacerItem{ 0, 0, QSizePolicy::Minimum, QSizePolicy::Expanding }, 3, 0, 1, 2);
-	propertyLayout->setRowStretch(3, 1);
+	layout->addItem(new QSpacerItem{ 0, 0, QSizePolicy::Minimum, QSizePolicy::Expanding }, 2, 0, 1, 2);
+	layout->setRowStretch(2, 1);
 }
 
 void VoiceWidget::setVoice(const aulos::Voice& voice)
@@ -170,7 +167,7 @@ void VoiceWidget::setVoice(const aulos::Voice& voice)
 		}
 	};
 
-	_nameEdit->setText(QString::fromStdString(voice._name));
+	QSignalBlocker blocker{ this };
 	_oscillationSpin->setValue(voice._oscillation);
 	setEnvelope(_amplitudeEnvelope, voice._amplitudeEnvelope);
 	setEnvelope(_frequencyEnvelope, voice._frequencyEnvelope);
@@ -200,6 +197,5 @@ aulos::Voice VoiceWidget::voice() const
 		for (++i; i != _asymmetryEnvelope.end() && i->_check->isChecked(); ++i)
 			result._asymmetryEnvelope._changes.emplace_back(static_cast<float>(i->_delay->value()), static_cast<float>(i->_value->value()));
 	}
-	result._name = _nameEdit->text().toStdString();
 	return result;
 }

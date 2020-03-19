@@ -85,7 +85,6 @@ namespace aulos
 		Envelope _amplitudeEnvelope{ 0.f };
 		Envelope _frequencyEnvelope{ 1.f };
 		Envelope _asymmetryEnvelope{ 0.f };
-		std::string _name;
 	};
 
 	struct SequenceData
@@ -106,6 +105,7 @@ namespace aulos
 	struct PartData
 	{
 		std::shared_ptr<Voice> _voice;
+		std::string _voiceName;
 		std::vector<std::shared_ptr<TrackData>> _tracks;
 
 		PartData(const std::shared_ptr<Voice>& voice) noexcept

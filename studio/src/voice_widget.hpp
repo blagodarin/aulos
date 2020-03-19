@@ -20,7 +20,6 @@
 #include <QWidget>
 
 class QDoubleSpinBox;
-class QLineEdit;
 
 namespace aulos
 {
@@ -29,16 +28,20 @@ namespace aulos
 
 class VoiceWidget final : public QWidget
 {
+	Q_OBJECT
+
 public:
 	VoiceWidget(QWidget* parent);
 
 	void setVoice(const aulos::Voice&);
 	aulos::Voice voice() const;
 
+signals:
+	void voiceChanged();
+
 private:
 	struct EnvelopePoint;
 
-	QLineEdit* _nameEdit = nullptr;
 	QDoubleSpinBox* _oscillationSpin = nullptr;
 	std::vector<EnvelopePoint> _amplitudeEnvelope;
 	std::vector<EnvelopePoint> _frequencyEnvelope;

@@ -17,18 +17,11 @@
 
 #pragma once
 
-#include <memory>
-#include <vector>
+#include <string>
 
 #include <QDialog>
 
-namespace aulos
-{
-	struct Voice;
-}
-
-class Player;
-class VoiceWidget;
+class QLineEdit;
 
 class VoiceEditor final : public QDialog
 {
@@ -37,13 +30,9 @@ class VoiceEditor final : public QDialog
 public:
 	VoiceEditor(QWidget*);
 
-	void setVoice(const aulos::Voice&);
-	aulos::Voice voice() const;
-
-private slots:
-	void onNoteClicked();
+	void setVoiceName(const std::string&);
+	std::string voiceName() const;
 
 private:
-	VoiceWidget* _voiceWidget = nullptr;
-	std::unique_ptr<Player> _player;
+	QLineEdit* _nameEdit = nullptr;
 };

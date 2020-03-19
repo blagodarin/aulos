@@ -378,7 +378,7 @@ namespace aulos
 					currentSection = Section::Voice;
 					currentVoice = &_parts.emplace_back()._voice;
 					if (name)
-						currentVoice->_name = std::move(*name);
+						_parts.back()._voiceName = std::move(*name);
 				}
 				else if (section == "tracks")
 				{
@@ -426,8 +426,8 @@ namespace aulos
 		{
 			const auto partIndex = static_cast<size_t>(&part - _parts.data() + 1);
 			text += "\n\n@voice " + std::to_string(partIndex);
-			if (!part._voice._name.empty())
-				text += " \"" + part._voice._name + '"';
+			if (!part._voiceName.empty())
+				text += " \"" + part._voiceName + '"';
 			text += "\nwave linear " + floatToString(part._voice._oscillation);
 			text += "\namplitude " + floatToString(part._voice._amplitudeEnvelope._initial);
 			for (const auto& change : part._voice._amplitudeEnvelope._changes)
@@ -522,6 +522,7 @@ namespace aulos
 		for (const auto& packedPart : packed._parts)
 		{
 			auto& partData = _parts.emplace_back(std::make_shared<PartData>(std::make_shared<Voice>(packedPart._voice)));
+			partData->_voiceName = packedPart._voiceName;
 			partData->_tracks.reserve(packedPart._tracks.size());
 			for (const auto& packedTrack : packedPart._tracks)
 			{
@@ -547,6 +548,7 @@ namespace aulos
 		{
 			auto& packedPart = packed->_parts.emplace_back();
 			packedPart._voice = *partData->_voice;
+			packedPart._voiceName = partData->_voiceName;
 			packedPart._tracks.reserve(partData->_tracks.size());
 			for (const auto& trackData : partData->_tracks)
 			{

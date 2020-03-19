@@ -76,6 +76,13 @@ namespace
 		return std::move(font);
 	}
 
+	std::shared_ptr<aulos::Voice> makeDefaultVoice()
+	{
+		auto voice = std::make_shared<aulos::Voice>();
+		voice->_amplitudeEnvelope._changes = { { .1f, 1.f }, { .4f, .5f }, { .5f, 0.f } };
+		return voice;
+	}
+
 	QSizePolicy makeExpandingSizePolicy(int horizontalStretch, int verticalStretch)
 	{
 		QSizePolicy policy{ QSizePolicy::Expanding, QSizePolicy::Expanding };
@@ -252,6 +259,14 @@ Studio::Studio()
 	_voiceWidget = new VoiceWidget{ bottomPart };
 	_voiceWidget->setSizePolicy(::makeExpandingSizePolicy(0, 0));
 	bottomLayout->addWidget(_voiceWidget);
+	connect(_voiceWidget, &VoiceWidget::voiceChanged, [this] {
+		assert(_sequenceVoiceId);
+		const auto part = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [this](const auto& partData) { return partData->_voice.get() == _sequenceVoiceId; });
+		assert(part != _composition->_parts.cend());
+		*(*part)->_voice = _voiceWidget->voice();
+		_changed = true;
+		updateStatus();
+	});
 
 	_sequenceWidget = new SequenceWidget{ _sequenceScene.get(), bottomPart };
 	_sequenceWidget->setSizePolicy(::makeExpandingSizePolicy(1, 1));
@@ -294,10 +309,11 @@ Studio::Studio()
 		_compositionView->ensureVisible({ _compositionView->mapToScene(viewCursorRect.topLeft()), _compositionView->mapToScene(viewCursorRect.bottomRight()) }, 0);
 	});
 	connect(_compositionScene.get(), &CompositionScene::newVoiceRequested, [this] {
-		_voiceEditor->setVoice(defaultVoiceData());
+		_voiceEditor->setVoiceName(tr("NewVoice").toStdString());
 		if (_voiceEditor->exec() != QDialog::Accepted)
 			return;
-		const auto& part = _composition->_parts.emplace_back(std::make_shared<aulos::PartData>(std::make_shared<aulos::Voice>(_voiceEditor->voice())));
+		const auto& part = _composition->_parts.emplace_back(std::make_shared<aulos::PartData>(::makeDefaultVoice()));
+		part->_voiceName = _voiceEditor->voiceName();
 		part->_tracks.emplace_back(std::make_shared<aulos::TrackData>(1));
 		_compositionScene->appendPart(part);
 		_compositionView->horizontalScrollBar()->setValue(_compositionView->horizontalScrollBar()->minimum());
@@ -329,7 +345,7 @@ Studio::Studio()
 		}
 		else if (action == removeTrackAction)
 		{
-			if (const auto message = tr("Remove %1 track %2?").arg("<b>" + QString::fromStdString((*part)->_voice->_name) + "</b>").arg(track - (*part)->_tracks.cbegin() + 1);
+			if (const auto message = tr("Remove %1 track %2?").arg("<b>" + QString::fromStdString((*part)->_voiceName) + "</b>").arg(track - (*part)->_tracks.cbegin() + 1);
 				QMessageBox::question(this, {}, message, QMessageBox::Yes | QMessageBox::No, QMessageBox::No) != QMessageBox::Yes)
 				return;
 			_compositionScene->removeTrack(voiceId, trackId);
@@ -384,7 +400,7 @@ Studio::Studio()
 		}
 		else if (action == removeTrackAction)
 		{
-			if (const auto message = tr("Remove %1 track %2?").arg("<b>" + QString::fromStdString((*part)->_voice->_name) + "</b>").arg(track - (*part)->_tracks.cbegin() + 1);
+			if (const auto message = tr("Remove %1 track %2?").arg("<b>" + QString::fromStdString((*part)->_voiceName) + "</b>").arg(track - (*part)->_tracks.cbegin() + 1);
 				QMessageBox::question(this, {}, message, QMessageBox::Yes | QMessageBox::No, QMessageBox::No) != QMessageBox::Yes)
 				return;
 			_compositionScene->removeTrack(voiceId, trackId);
@@ -405,7 +421,7 @@ Studio::Studio()
 	connect(_compositionScene.get(), &CompositionScene::voiceActionRequested, [this](const void* voiceId) {
 		const auto part = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [voiceId](const auto& partData) { return partData->_voice.get() == voiceId; });
 		assert(part != _composition->_parts.cend());
-		if (!editVoice(voiceId, *(*part)->_voice))
+		if (!editVoiceName(voiceId, (*part)->_voiceName))
 			return;
 		_changed = true;
 		updateStatus();
@@ -421,7 +437,7 @@ Studio::Studio()
 		const auto removeVoiceAction = menu.addAction(tr("Remove voice"));
 		if (const auto action = menu.exec(pos); action == editVoiceAction)
 		{
-			if (!editVoice(voiceId, *(*part)->_voice))
+			if (!editVoiceName(voiceId, (*part)->_voiceName))
 				return;
 		}
 		else if (action == addTrackAction)
@@ -431,7 +447,7 @@ Studio::Studio()
 		}
 		else if (action == removeVoiceAction)
 		{
-			if (const auto message = tr("Remove %1 voice?").arg("<b>" + QString::fromStdString((*part)->_voice->_name) + "</b>");
+			if (const auto message = tr("Remove %1 voice?").arg("<b>" + QString::fromStdString((*part)->_voiceName) + "</b>");
 				QMessageBox::question(this, {}, message, QMessageBox::Yes | QMessageBox::No, QMessageBox::No) != QMessageBox::Yes)
 				return;
 			_compositionScene->removeVoice(voiceId);
@@ -532,21 +548,14 @@ void Studio::createEmptyComposition()
 	assert(_compositionPath.isEmpty());
 	_composition = std::make_shared<aulos::CompositionData>();
 	_composition->_speed = 6;
-	const auto& part = _composition->_parts.emplace_back(std::make_shared<aulos::PartData>(std::make_shared<aulos::Voice>(defaultVoiceData())));
+	const auto& part = _composition->_parts.emplace_back(std::make_shared<aulos::PartData>(::makeDefaultVoice()));
+	part->_voiceName = tr("NewVoice").toStdString();
 	part->_tracks.emplace_back(std::make_shared<aulos::TrackData>(1));
 	_compositionFileName = tr("New composition");
 	_speedSpin->setValue(static_cast<int>(_composition->_speed));
 	_compositionScene->reset(_composition, _compositionView->width());
 	_compositionView->horizontalScrollBar()->setValue(_compositionView->horizontalScrollBar()->minimum());
 	_hasComposition = true;
-}
-
-aulos::Voice Studio::defaultVoiceData() const
-{
-	aulos::Voice voice;
-	voice._amplitudeEnvelope._changes = { { .1f, 1.f }, { .4f, .5f }, { .5f, 0.f } };
-	voice._name = tr("NewVoice").toStdString();
-	return voice;
 }
 
 bool Studio::editTrack(aulos::TrackData& track)
@@ -558,13 +567,13 @@ bool Studio::editTrack(aulos::TrackData& track)
 	return true;
 }
 
-bool Studio::editVoice(const void* id, aulos::Voice& voice)
+bool Studio::editVoiceName(const void* id, std::string& voiceName)
 {
-	_voiceEditor->setVoice(voice);
+	_voiceEditor->setVoiceName(voiceName);
 	if (_voiceEditor->exec() != QDialog::Accepted)
 		return false;
-	voice = _voiceEditor->voice();
-	_compositionScene->updateVoice(id, voice._name);
+	voiceName = _voiceEditor->voiceName();
+	_compositionScene->updateVoice(id, voiceName);
 	_compositionView->horizontalScrollBar()->setValue(_compositionView->horizontalScrollBar()->minimum());
 	return true;
 }
@@ -711,6 +720,7 @@ void Studio::showSequence(const void* voiceId, const void* trackId, const void* 
 {
 	if (!sequenceId)
 	{
+		_sequenceVoiceId = nullptr;
 		_sequenceTrackId = nullptr;
 		_sequenceAmplitude = 1.f;
 		_sequenceData.reset();
@@ -724,6 +734,7 @@ void Studio::showSequence(const void* voiceId, const void* trackId, const void* 
 	assert(track != (*part)->_tracks.cend());
 	const auto sequence = std::find_if((*track)->_sequences.cbegin(), (*track)->_sequences.cend(), [sequenceId](const auto& sequenceData) { return sequenceData.get() == sequenceId; });
 	assert(sequence != (*track)->_sequences.end());
+	_sequenceVoiceId = voiceId;
 	_sequenceTrackId = trackId;
 	_sequenceAmplitude = ::makeTrackAmplitude(*_composition, (*track)->_weight);
 	_sequenceData = *sequence;
