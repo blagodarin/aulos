@@ -93,6 +93,7 @@ private:
 	CursorItem* const _cursorItem;
 	std::vector<std::unique_ptr<Track>> _tracks;
 	qreal _voiceColumnWidth;
+	const void* _selectedVoiceId = nullptr;
+	const void* _selectedTrackId = nullptr;
 	const void* _selectedSequenceId = nullptr;
-	const void* _selectedSequenceTrackId = nullptr;
 };

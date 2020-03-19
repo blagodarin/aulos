@@ -459,7 +459,8 @@ Studio::Studio()
 		updateStatus();
 	});
 	connect(_sequenceScene.get(), &SequenceScene::insertingSound, [this](size_t offset, aulos::Note note) {
-		assert(_sequenceData);
+		if (!_sequenceData)
+			return;
 		assert(_sequenceTrackId);
 		size_t position = 0;
 		const auto sound = std::find_if(_sequenceData->_sounds.begin(), _sequenceData->_sounds.end(), [offset, &position](const aulos::Sound& sound) mutable {
@@ -498,7 +499,8 @@ Studio::Studio()
 		_player->start();
 	});
 	connect(_sequenceScene.get(), &SequenceScene::removingSound, [this](size_t offset) {
-		assert(_sequenceData);
+		if (!_sequenceData)
+			return;
 		assert(_sequenceTrackId);
 		const auto sound = std::find_if(_sequenceData->_sounds.begin(), _sequenceData->_sounds.end(), [offset, position = size_t{}](const aulos::Sound& sound) mutable {
 			position += sound._delay;
@@ -718,20 +720,30 @@ void Studio::setRecentFile(const QString& path)
 
 void Studio::showSequence(const void* voiceId, const void* trackId, const void* sequenceId)
 {
-	if (sequenceId)
+	if (voiceId)
 	{
 		const auto part = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [voiceId](const auto& partData) { return partData->_voice.get() == voiceId; });
 		assert(part != _composition->_parts.cend());
-		const auto track = std::find_if((*part)->_tracks.cbegin(), (*part)->_tracks.cend(), [trackId](const auto& trackData) { return trackData.get() == trackId; });
-		assert(track != (*part)->_tracks.cend());
-		const auto sequence = std::find_if((*track)->_sequences.cbegin(), (*track)->_sequences.cend(), [sequenceId](const auto& sequenceData) { return sequenceData.get() == sequenceId; });
-		assert(sequence != (*track)->_sequences.end());
+		if (trackId && sequenceId)
+		{
+			const auto track = std::find_if((*part)->_tracks.cbegin(), (*part)->_tracks.cend(), [trackId](const auto& trackData) { return trackData.get() == trackId; });
+			assert(track != (*part)->_tracks.cend());
+			const auto sequence = std::find_if((*track)->_sequences.cbegin(), (*track)->_sequences.cend(), [sequenceId](const auto& sequenceData) { return sequenceData.get() == sequenceId; });
+			assert(sequence != (*track)->_sequences.end());
+			_sequenceTrackId = trackId;
+			_sequenceAmplitude = ::makeTrackAmplitude(*_composition, (*track)->_weight);
+			_sequenceData = *sequence;
+			_sequenceWidget->setSequence(*_sequenceData);
+		}
+		else
+		{
+			_sequenceTrackId = nullptr;
+			_sequenceAmplitude = 1.f;
+			_sequenceData.reset();
+			_sequenceWidget->setSequence({});
+		}
 		_sequenceVoiceId = voiceId;
-		_sequenceTrackId = trackId;
-		_sequenceAmplitude = ::makeTrackAmplitude(*_composition, (*track)->_weight);
-		_sequenceData = *sequence;
 		_voiceWidget->setVoice(*(*part)->_voice);
-		_sequenceWidget->setSequence(*_sequenceData);
 	}
 	else
 	{
@@ -767,7 +779,7 @@ void Studio::updateStatus()
 	_speedSpin->setEnabled(_hasComposition && _mode == Mode::Editing);
 	_compositionView->setInteractive(_hasComposition && _mode == Mode::Editing);
 	_voiceWidget->setEnabled(_hasComposition && _mode == Mode::Editing && _sequenceVoiceId);
-	_sequenceWidget->setInteractive(_hasComposition && _mode == Mode::Editing);
+	_sequenceWidget->setInteractive(_hasComposition && _mode == Mode::Editing && _sequenceVoiceId);
 	_statusPath->setText(_compositionPath.isEmpty() ? QStringLiteral("<i>%1</i>").arg(tr("No file")) : _compositionPath);
 }
 

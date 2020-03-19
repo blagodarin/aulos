@@ -41,10 +41,12 @@ public:
 signals:
 	void voiceActionRequested(const void* voiceId);
 	void voiceMenuRequested(const void* voiceId, const QPoint& pos);
+	void voiceSelected(const void* voiceId);
 
 private:
 	void contextMenuEvent(QGraphicsSceneContextMenuEvent*) override;
 	void mouseDoubleClickEvent(QGraphicsSceneMouseEvent*) override;
+	void mousePressEvent(QGraphicsSceneMouseEvent*) override;
 
 private:
 	const void* const _voiceId;

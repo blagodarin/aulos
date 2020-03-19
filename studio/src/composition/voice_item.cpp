@@ -99,3 +99,10 @@ void VoiceItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent*)
 {
 	emit voiceActionRequested(_voiceId);
 }
+
+void VoiceItem::mousePressEvent(QGraphicsSceneMouseEvent* e)
+{
+	if (e->button() == Qt::LeftButton)
+		emit voiceSelected(_voiceId);
+	QGraphicsObject::mousePressEvent(e);
+}
