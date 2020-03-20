@@ -299,9 +299,16 @@ void CompositionScene::reset(const std::shared_ptr<aulos::CompositionData>& comp
 
 void CompositionScene::selectSequence(const void* voiceId, const void* trackId, const void* sequenceId)
 {
+	if (_selectedVoiceId != voiceId)
+	{
+		if (_selectedVoiceId)
+			highlightVoice(_selectedVoiceId, false);
+		if (voiceId)
+			highlightVoice(voiceId, true);
+		_selectedVoiceId = voiceId;
+	}
 	if (_selectedTrackId && _selectedTrackId != trackId)
 		highlightSequence(_selectedTrackId, nullptr);
-	_selectedVoiceId = voiceId;
 	_selectedTrackId = trackId;
 	_selectedSequenceId = sequenceId;
 	if (trackId)
@@ -430,6 +437,14 @@ void CompositionScene::highlightSequence(const void* trackId, const void* sequen
 		fragment.second->setHighlighted(shouldBeHighlighted);
 		fragment.second->setZValue(shouldBeHighlighted ? kHighlightZValue : kDefaultZValue);
 	}
+}
+
+void CompositionScene::highlightVoice(const void* id, bool highlight)
+{
+	const auto voiceIt = std::find_if(_voices.begin(), _voices.end(), [id](const auto& voicePtr) { return voicePtr->voiceId() == id; });
+	assert(voiceIt != _voices.end());
+	(*voiceIt)->setHighlighted(highlight);
+	(*voiceIt)->setZValue(highlight ? kHighlightZValue : kDefaultZValue);
 }
 
 qreal CompositionScene::requiredVoiceColumnWidth() const

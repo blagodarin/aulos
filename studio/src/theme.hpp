@@ -59,6 +59,7 @@ extern const std::array<Colors, 6> kFragmentColors;
 extern const std::array<Colors, 6> kFragmentHighlightColors;
 extern const std::array<Colors, 2> kTimelineColors;
 extern const std::array<Colors, 2> kVoiceColors;
+extern const std::array<Colors, 2> kVoiceHighlightColors;
 
 struct TrackColors
 {

@@ -53,6 +53,11 @@ const std::array<Colors, 2> kVoiceColors{
 	Colors{ "#333", "#ddd" },
 };
 
+const std::array<Colors, 2> kVoiceHighlightColors{
+	Colors{ "#444", "#eee" },
+	Colors{ "#333", "#eee" },
+};
+
 const std::array<TrackColors, 2> kTrackColors{
 	TrackColors{ "#777", "#666" },
 	TrackColors{ "#666", "#555" },

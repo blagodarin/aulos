@@ -46,9 +46,11 @@ QRectF VoiceItem::boundingRect() const
 
 void VoiceItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*)
 {
-	const auto& colors = kVoiceColors[_index % kVoiceColors.size()];
+	const auto& colors = _highlighted ? kVoiceHighlightColors[_index % kVoiceHighlightColors.size()] : kVoiceColors[_index % kVoiceColors.size()];
+	QPen pen{ _highlighted ? colors._pen : Qt::transparent };
+	pen.setWidth(_highlighted ? 3 : 0);
+	painter->setPen(pen);
 	painter->setBrush(colors._brush);
-	painter->setPen(Qt::transparent);
 	painter->drawRect(boundingRect());
 	painter->setPen(colors._pen);
 	painter->setFont(::makeVoiceFont());
@@ -59,6 +61,12 @@ void VoiceItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidge
 qreal VoiceItem::requiredWidth() const
 {
 	return kVoiceNameMargin + _name.size().width() + kVoiceNameMargin;
+}
+
+void VoiceItem::setHighlighted(bool highlighted)
+{
+	_highlighted = highlighted;
+	update();
 }
 
 void VoiceItem::setTrackCount(size_t count)

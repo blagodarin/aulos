@@ -79,6 +79,7 @@ private:
 	TrackIterator addTrackItem(const void* voiceId, const void* trackId, size_t trackIndex, bool isFirstTrack);
 	VoiceItem* addVoiceItem(const void* id, const QString& name, size_t trackCount);
 	void highlightSequence(const void* trackId, const void* sequenceId);
+	void highlightVoice(const void* id, bool highlight);
 	qreal requiredVoiceColumnWidth() const;
 	void setVoiceColumnWidth(qreal);
 	void updateSceneRect(size_t compositionLength);

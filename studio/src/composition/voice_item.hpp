@@ -30,6 +30,7 @@ public:
 	QRectF boundingRect() const override;
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
 	qreal requiredWidth() const;
+	void setHighlighted(bool);
 	void setTrackCount(size_t);
 	void setVoiceIndex(size_t);
 	void setVoiceName(const QString& name);
@@ -54,4 +55,5 @@ private:
 	qreal _width = 0;
 	size_t _trackCount = 0;
 	QStaticText _name;
+	bool _highlighted = false;
 };
