@@ -43,7 +43,6 @@ build_script:
   - if "%GENERATOR%"=="VisualStudio" cmake --build . --config %CONFIG% -- /nologo "/verbosity:minimal"
   - if "%GENERATOR%"=="Ninja" cmake --build . --target install
   - if "%GENERATOR%"=="VisualStudio" cmake --build . --config %CONFIG% --target install -- /nologo "/verbosity:minimal"
-  - if not exist vc_redist.x64.exe appveyor DownloadFile "https://aka.ms/vs/16/release/vc_redist.x64.exe"
   - if "%GENERATOR%"=="Ninja" cmake --build . --target studio_installer
   - if "%GENERATOR%"=="VisualStudio" cmake --build . --config %CONFIG% --target studio_installer -- /nologo "/verbosity:minimal"
   - if "%INSTALLER%"=="ON" xcopy AulosStudio-*.exe %APPVEYOR_BUILD_FOLDER%
