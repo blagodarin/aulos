@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <memory>
+
 #include <QWidget>
 
 class QDoubleSpinBox;
@@ -33,11 +35,14 @@ class VoiceWidget final : public QWidget
 public:
 	VoiceWidget(QWidget* parent);
 
-	void setVoice(const aulos::Voice&);
-	aulos::Voice voice() const;
+	void setVoice(const std::shared_ptr<aulos::Voice>&);
+	std::shared_ptr<aulos::Voice> voice() const { return _voice; }
 
 signals:
 	void voiceChanged();
+
+private:
+	void updateVoice();
 
 private:
 	struct EnvelopePoint;
@@ -46,4 +51,5 @@ private:
 	std::vector<EnvelopePoint> _amplitudeEnvelope;
 	std::vector<EnvelopePoint> _frequencyEnvelope;
 	std::vector<EnvelopePoint> _asymmetryEnvelope;
+	std::shared_ptr<aulos::Voice> _voice;
 };

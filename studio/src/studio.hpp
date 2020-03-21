@@ -84,7 +84,6 @@ private:
 	Mode _mode = Mode::Editing;
 	bool _hasComposition = false;
 	bool _changed = false;
-	const void* _sequenceVoiceId = nullptr;
 	const void* _sequenceTrackId = nullptr;
 
 	QAction* _fileNewAction;

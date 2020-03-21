@@ -54,7 +54,7 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 		_oscillationSpin->setRange(0.0, 1.0);
 		_oscillationSpin->setSingleStep(0.01);
 		layout->addWidget(_oscillationSpin, 0, 1);
-		connect(_oscillationSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::voiceChanged);
+		connect(_oscillationSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
 
 		layout->addItem(new QSpacerItem{ 0, 0, QSizePolicy::Minimum, QSizePolicy::Expanding }, 1, 0, 1, 2);
 	};
@@ -76,7 +76,7 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 			point._check->setChecked(i == 0);
 			point._check->setEnabled(i == 1);
 			layout->addWidget(point._check, i, 0);
-			connect(point._check, &QCheckBox::toggled, this, &VoiceWidget::voiceChanged);
+			connect(point._check, &QCheckBox::toggled, this, &VoiceWidget::updateVoice);
 
 			point._delay = new QDoubleSpinBox{ parent };
 			point._delay->setDecimals(2);
@@ -86,7 +86,7 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 			point._delay->setSingleStep(0.01);
 			point._delay->setValue(0.0);
 			layout->addWidget(point._delay, i, 1);
-			connect(point._delay, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::voiceChanged);
+			connect(point._delay, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
 
 			point._value = new QDoubleSpinBox{ parent };
 			point._value->setDecimals(2);
@@ -96,7 +96,7 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 			point._value->setSingleStep(0.01);
 			point._value->setValue(1.0);
 			layout->addWidget(point._value, i, 2);
-			connect(point._value, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::voiceChanged);
+			connect(point._value, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
 
 			if (i == 0)
 			{
@@ -142,7 +142,7 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 	layout->setRowStretch(2, 1);
 }
 
-void VoiceWidget::setVoice(const aulos::Voice& voice)
+void VoiceWidget::setVoice(const std::shared_ptr<aulos::Voice>& voice)
 {
 	const auto setEnvelope = [](std::vector<EnvelopePoint>& dst, const aulos::Envelope& src) {
 		assert(dst[0]._check->isChecked());
@@ -167,35 +167,42 @@ void VoiceWidget::setVoice(const aulos::Voice& voice)
 		}
 	};
 
-	QSignalBlocker blocker{ this };
-	_oscillationSpin->setValue(voice._oscillation);
-	setEnvelope(_amplitudeEnvelope, voice._amplitudeEnvelope);
-	setEnvelope(_frequencyEnvelope, voice._frequencyEnvelope);
-	setEnvelope(_asymmetryEnvelope, voice._asymmetryEnvelope);
+	_voice.reset(); // Prevent handling voice changes.
+	aulos::Voice defaultVoice;
+	const auto usedVoice = voice ? voice.get() : &defaultVoice;
+	_oscillationSpin->setValue(usedVoice->_oscillation);
+	setEnvelope(_amplitudeEnvelope, usedVoice->_amplitudeEnvelope);
+	setEnvelope(_frequencyEnvelope, usedVoice->_frequencyEnvelope);
+	setEnvelope(_asymmetryEnvelope, usedVoice->_asymmetryEnvelope);
+	_voice = voice;
 }
 
-aulos::Voice VoiceWidget::voice() const
+void VoiceWidget::updateVoice()
 {
-	aulos::Voice result;
-	result._wave = aulos::Wave::Linear;
-	result._oscillation = static_cast<float>(_oscillationSpin->value());
+	if (!_voice)
+		return;
+	_voice->_wave = aulos::Wave::Linear;
+	_voice->_oscillation = static_cast<float>(_oscillationSpin->value());
 	if (auto i = _amplitudeEnvelope.begin(); i->_check->isChecked())
 	{
-		result._amplitudeEnvelope._initial = static_cast<float>(i->_value->value());
+		_voice->_amplitudeEnvelope._initial = static_cast<float>(i->_value->value());
+		_voice->_amplitudeEnvelope._changes.clear();
 		for (++i; i != _amplitudeEnvelope.end() && i->_check->isChecked(); ++i)
-			result._amplitudeEnvelope._changes.emplace_back(static_cast<float>(i->_delay->value()), static_cast<float>(i->_value->value()));
+			_voice->_amplitudeEnvelope._changes.emplace_back(static_cast<float>(i->_delay->value()), static_cast<float>(i->_value->value()));
 	}
 	if (auto i = _frequencyEnvelope.begin(); i->_check->isChecked())
 	{
-		result._frequencyEnvelope._initial = static_cast<float>(i->_value->value());
+		_voice->_frequencyEnvelope._initial = static_cast<float>(i->_value->value());
+		_voice->_frequencyEnvelope._changes.clear();
 		for (++i; i != _frequencyEnvelope.end() && i->_check->isChecked(); ++i)
-			result._frequencyEnvelope._changes.emplace_back(static_cast<float>(i->_delay->value()), static_cast<float>(i->_value->value()));
+			_voice->_frequencyEnvelope._changes.emplace_back(static_cast<float>(i->_delay->value()), static_cast<float>(i->_value->value()));
 	}
 	if (auto i = _asymmetryEnvelope.begin(); i->_check->isChecked())
 	{
-		result._asymmetryEnvelope._initial = static_cast<float>(i->_value->value());
+		_voice->_asymmetryEnvelope._initial = static_cast<float>(i->_value->value());
+		_voice->_asymmetryEnvelope._changes.clear();
 		for (++i; i != _asymmetryEnvelope.end() && i->_check->isChecked(); ++i)
-			result._asymmetryEnvelope._changes.emplace_back(static_cast<float>(i->_delay->value()), static_cast<float>(i->_value->value()));
+			_voice->_asymmetryEnvelope._changes.emplace_back(static_cast<float>(i->_delay->value()), static_cast<float>(i->_value->value()));
 	}
-	return result;
+	emit voiceChanged();
 }
