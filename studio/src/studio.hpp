@@ -26,14 +26,12 @@ class QSpinBox;
 namespace aulos
 {
 	struct CompositionData;
-	struct SequenceData;
 	struct TrackData;
 }
 
 class CompositionScene;
 class InfoEditor;
 class Player;
-class SequenceScene;
 class SequenceWidget;
 class TrackEditor;
 class VoiceEditor;
@@ -75,7 +73,6 @@ private:
 
 	std::shared_ptr<aulos::CompositionData> _composition;
 	std::unique_ptr<CompositionScene> _compositionScene;
-	std::unique_ptr<SequenceScene> _sequenceScene;
 	std::unique_ptr<InfoEditor> _infoEditor;
 	std::unique_ptr<VoiceEditor> _voiceEditor;
 	std::unique_ptr<TrackEditor> _trackEditor;
@@ -89,8 +86,6 @@ private:
 	bool _changed = false;
 	const void* _sequenceVoiceId = nullptr;
 	const void* _sequenceTrackId = nullptr;
-	float _sequenceAmplitude = 1.f;
-	std::shared_ptr<aulos::SequenceData> _sequenceData;
 
 	QAction* _fileNewAction;
 	QAction* _fileOpenAction;

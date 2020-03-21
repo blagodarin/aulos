@@ -18,7 +18,6 @@
 #include "studio.hpp"
 
 #include "composition/composition_scene.hpp"
-#include "sequence/sequence_scene.hpp"
 #include "sequence/sequence_widget.hpp"
 #include "info_editor.hpp"
 #include "player.hpp"
@@ -125,7 +124,6 @@ namespace
 
 Studio::Studio()
 	: _compositionScene{ std::make_unique<CompositionScene>() }
-	, _sequenceScene{ std::make_unique<SequenceScene>() }
 	, _infoEditor{ std::make_unique<InfoEditor>(this) }
 	, _voiceEditor{ std::make_unique<VoiceEditor>(this) }
 	, _trackEditor{ std::make_unique<TrackEditor>(this) }
@@ -268,7 +266,7 @@ Studio::Studio()
 		updateStatus();
 	});
 
-	_sequenceWidget = new SequenceWidget{ _sequenceScene.get(), bottomPart };
+	_sequenceWidget = new SequenceWidget{ bottomPart };
 	_sequenceWidget->setSizePolicy(::makeExpandingSizePolicy(1, 1));
 	bottomLayout->addWidget(_sequenceWidget);
 
@@ -458,61 +456,26 @@ Studio::Studio()
 		_changed = true;
 		updateStatus();
 	});
-	connect(_sequenceScene.get(), &SequenceScene::insertingSound, [this](size_t offset, aulos::Note note) {
-		if (!_sequenceData)
-			return;
-		assert(_sequenceTrackId);
-		size_t position = 0;
-		const auto sound = std::find_if(_sequenceData->_sounds.begin(), _sequenceData->_sounds.end(), [offset, &position](const aulos::Sound& sound) mutable {
-			position += sound._delay;
-			return position >= offset;
-		});
-		if (sound == _sequenceData->_sounds.end())
+	connect(_sequenceWidget, &SequenceWidget::noteActivated, [this](aulos::Note note) {
+		float amplitude = 1.f;
+		if (_sequenceTrackId)
 		{
-			assert(position < offset || position == offset && _sequenceData->_sounds.empty());
-			_sequenceData->_sounds.emplace_back(offset - position, note);
+			assert(_sequenceVoiceId);
+			const auto part = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [this](const auto& partData) { return partData->_voice.get() == _sequenceVoiceId; });
+			assert(part != _composition->_parts.cend());
+			const auto track = std::find_if((*part)->_tracks.cbegin(), (*part)->_tracks.cend(), [this](const auto& trackData) { return trackData.get() == _sequenceTrackId; });
+			assert(track != (*part)->_tracks.cend());
+			amplitude = ::makeTrackAmplitude(*_composition, (*track)->_weight);
 		}
-		else if (position > offset)
-		{
-			assert(position > offset);
-			const auto nextDelay = position - offset;
-			assert(sound->_delay > nextDelay || sound->_delay == nextDelay && sound == _sequenceData->_sounds.begin());
-			const auto delay = sound->_delay - nextDelay;
-			sound->_delay = nextDelay;
-			_sequenceData->_sounds.emplace(sound, delay, note);
-		}
-		else
-		{
-			assert(position == offset);
-			sound->_note = note;
-		}
-		_compositionScene->updateSequence(_sequenceTrackId, _sequenceData);
-		_sequenceScene->insertSound(offset, note);
-		_changed = true;
-		updateStatus();
-	});
-	connect(_sequenceScene.get(), &SequenceScene::noteActivated, [this](aulos::Note note) {
 		const auto renderer = aulos::VoiceRenderer::create(_voiceWidget->voice(), Player::SamplingRate);
 		assert(renderer);
-		renderer->start(note, _sequenceAmplitude);
+		renderer->start(note, amplitude);
 		_player->reset(*renderer);
 		_player->start();
 	});
-	connect(_sequenceScene.get(), &SequenceScene::removingSound, [this](size_t offset) {
-		if (!_sequenceData)
-			return;
+	connect(_sequenceWidget, &SequenceWidget::sequenceChanged, [this] {
 		assert(_sequenceTrackId);
-		const auto sound = std::find_if(_sequenceData->_sounds.begin(), _sequenceData->_sounds.end(), [offset, position = size_t{}](const aulos::Sound& sound) mutable {
-			position += sound._delay;
-			assert(position <= offset);
-			return position == offset;
-		});
-		assert(sound != _sequenceData->_sounds.end());
-		if (const auto nextSound = std::next(sound); nextSound != _sequenceData->_sounds.end())
-			nextSound->_delay += sound->_delay;
-		_sequenceData->_sounds.erase(sound);
-		_compositionScene->updateSequence(_sequenceTrackId, _sequenceData);
-		_sequenceScene->removeSound(offset);
+		_compositionScene->updateSequence(_sequenceTrackId, _sequenceWidget->sequence());
 		_changed = true;
 		updateStatus();
 	});
@@ -731,15 +694,11 @@ void Studio::showSequence(const void* voiceId, const void* trackId, const void* 
 			const auto sequence = std::find_if((*track)->_sequences.cbegin(), (*track)->_sequences.cend(), [sequenceId](const auto& sequenceData) { return sequenceData.get() == sequenceId; });
 			assert(sequence != (*track)->_sequences.end());
 			_sequenceTrackId = trackId;
-			_sequenceAmplitude = ::makeTrackAmplitude(*_composition, (*track)->_weight);
-			_sequenceData = *sequence;
-			_sequenceWidget->setSequence(*_sequenceData);
+			_sequenceWidget->setSequence(*sequence);
 		}
 		else
 		{
 			_sequenceTrackId = nullptr;
-			_sequenceAmplitude = 1.f;
-			_sequenceData.reset();
 			_sequenceWidget->setSequence({});
 		}
 		_sequenceVoiceId = voiceId;
@@ -749,8 +708,6 @@ void Studio::showSequence(const void* voiceId, const void* trackId, const void* 
 	{
 		_sequenceVoiceId = nullptr;
 		_sequenceTrackId = nullptr;
-		_sequenceAmplitude = 1.f;
-		_sequenceData.reset();
 		_voiceWidget->setVoice({});
 		_sequenceWidget->setSequence({});
 	}
