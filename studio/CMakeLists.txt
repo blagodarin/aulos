@@ -38,8 +38,6 @@ set(_src
 	src/main.cpp
 	src/player.cpp
 	src/player.hpp
-	src/sequence_utils.cpp
-	src/sequence_utils.hpp
 	src/studio.cpp
 	src/studio.hpp
 	src/theme.cpp

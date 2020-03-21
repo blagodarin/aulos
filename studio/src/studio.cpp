@@ -21,7 +21,6 @@
 #include "sequence/sequence_widget.hpp"
 #include "info_editor.hpp"
 #include "player.hpp"
-#include "sequence_utils.hpp"
 #include "theme.hpp"
 #include "track_editor.hpp"
 #include "voice_editor.hpp"
@@ -51,6 +50,8 @@ namespace
 {
 	constexpr int kMaxRecentFiles = 10;
 	const auto kRecentFileKeyBase = QStringLiteral("RecentFile%1");
+
+	const std::array<char, 12> kNoteNames{ 'C', 'C', 'D', 'D', 'E', 'F', 'F', 'G', 'G', 'A', 'A', 'B' };
 
 	QStringList loadRecentFileList()
 	{
@@ -88,6 +89,26 @@ namespace
 		policy.setHorizontalStretch(horizontalStretch);
 		policy.setVerticalStretch(verticalStretch);
 		return policy;
+	}
+
+	QString makeSequenceName(const aulos::SequenceData& sequence)
+	{
+		QString result;
+		for (const auto& sound : sequence._sounds)
+		{
+			if (!result.isEmpty())
+				result += ' ';
+			for (size_t i = 1; i < sound._delay; ++i)
+				result += ". ";
+			const auto octave = QString::number(static_cast<uint8_t>(sound._note) / 12);
+			const auto note = static_cast<size_t>(sound._note) % 12;
+			result += kNoteNames[note];
+			const bool isSharpNote = note > 0 && kNoteNames[note - 1] == kNoteNames[note];
+			if (isSharpNote)
+				result += '#';
+			result += octave;
+		}
+		return result;
 	}
 
 	float makeTrackAmplitude(const aulos::CompositionData& composition, unsigned weight)
@@ -428,7 +449,7 @@ Studio::Studio()
 		const auto part = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [voiceId](const auto& partData) { return partData->_voice.get() == voiceId; });
 		assert(part != _composition->_parts.cend());
 		QMenu menu;
-		const auto editVoiceAction = menu.addAction(tr("Edit voice..."));
+		const auto editVoiceAction = menu.addAction(tr("Rename voice..."));
 		editVoiceAction->setFont(::makeBold(editVoiceAction->font()));
 		const auto addTrackAction = menu.addAction(tr("Add track"));
 		menu.addSeparator();
