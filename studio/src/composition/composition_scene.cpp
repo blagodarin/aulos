@@ -40,6 +40,37 @@ namespace
 	constexpr qreal kHighlightZValue = 1;
 	constexpr qreal kCursorZValue = 2;
 
+	const std::array<QString, 7> kNoteNameTemplates{
+		QStringLiteral("C<%1>%2</%1>"),
+		QStringLiteral("D<%1>%2</%1>"),
+		QStringLiteral("E<%1>%2</%1>"),
+		QStringLiteral("F<%1>%2</%1>"),
+		QStringLiteral("G<%1>%2</%1>"),
+		QStringLiteral("A<%1>%2</%1>"),
+		QStringLiteral("B<%1>%2</%1>"),
+	};
+
+	struct NoteInfo
+	{
+		unsigned _base = 0;
+		bool _extra = false;
+	};
+
+	const std::array<NoteInfo, 12> kNoteInfo{
+		NoteInfo{ 0, false }, // C
+		NoteInfo{ 0, true },  // C#
+		NoteInfo{ 1, false }, // D
+		NoteInfo{ 1, true },  // D#
+		NoteInfo{ 2, false }, // E
+		NoteInfo{ 3, false }, // F
+		NoteInfo{ 3, true },  // F#
+		NoteInfo{ 4, false }, // G
+		NoteInfo{ 4, true },  // G#
+		NoteInfo{ 5, false }, // A
+		NoteInfo{ 5, true },  // A#
+		NoteInfo{ 6, false }, // B
+	};
+
 	auto findVoice(const std::vector<std::unique_ptr<VoiceItem>>& voices, const void* id)
 	{
 		size_t offset = 0;
@@ -114,6 +145,28 @@ CompositionScene::CompositionScene()
 	});
 	_cursorItem->setVisible(false);
 	_cursorItem->setZValue(kCursorZValue);
+
+	QTextOption textOption;
+	textOption.setWrapMode(QTextOption::NoWrap);
+	for (size_t octave = 0; octave <= 9; ++octave)
+	{
+		for (size_t note = 0; note < 7; ++note)
+		{
+			auto& text = _baseNoteNames[7 * octave + note];
+			text = std::make_shared<QStaticText>(kNoteNameTemplates[note].arg("sub").arg(octave));
+			text->setTextFormat(Qt::RichText);
+			text->setTextOption(textOption);
+			text->setTextWidth(kStepWidth);
+		}
+	}
+	for (size_t note = 0; note < 7; ++note)
+	{
+		auto& text = _extraNoteNames[note];
+		text = std::make_shared<QStaticText>(kNoteNameTemplates[note].arg("sup").arg('#'));
+		text->setTextFormat(Qt::RichText);
+		text->setTextOption(textOption);
+		text->setTextWidth(kStepWidth);
+	}
 }
 
 CompositionScene::~CompositionScene() = default;
@@ -340,9 +393,10 @@ void CompositionScene::updateSequence(const void* trackId, const std::shared_ptr
 {
 	const auto trackIt = std::find_if(_tracks.begin(), _tracks.end(), [trackId](const auto& trackPtr) { return trackPtr->_background->trackId() == trackId; });
 	assert(trackIt != _tracks.end());
+	const auto texts = makeSequenceTexts(*sequence);
 	for (const auto& fragment : (*trackIt)->_fragments)
 		if (fragment.second->sequenceId() == sequence.get())
-			fragment.second->setSequence(*sequence);
+			fragment.second->setSequence(texts);
 }
 
 void CompositionScene::updateVoice(const void* id, const std::string& name)
@@ -373,7 +427,7 @@ FragmentItem* CompositionScene::addFragmentItem(const void* voiceId, TrackIterat
 	const auto item = new FragmentItem{ trackIndex, offset, sequence.get(), _compositionItem.get() };
 	item->setHighlighted(sequence.get() == _selectedSequenceId);
 	item->setPos(offset * kStepWidth, trackIndex * kTrackHeight);
-	item->setSequence(*sequence);
+	item->setSequence(makeSequenceTexts(*sequence));
 	connect(item, &FragmentItem::fragmentMenuRequested, [this, voiceId, trackId = (*trackIt)->_background->trackId()](size_t offset, const QPoint& pos) {
 		emit fragmentMenuRequested(voiceId, trackId, offset, pos);
 	});
@@ -445,6 +499,21 @@ void CompositionScene::highlightVoice(const void* id, bool highlight)
 	assert(voiceIt != _voices.end());
 	(*voiceIt)->setHighlighted(highlight);
 	(*voiceIt)->setZValue(highlight ? kHighlightZValue : kDefaultZValue);
+}
+
+std::vector<FragmentSound> CompositionScene::makeSequenceTexts(const aulos::SequenceData& sequence) const
+{
+	std::vector<FragmentSound> result;
+	result.reserve(sequence._sounds.size()); // A reasonable guess.
+	for (const auto& sound : sequence._sounds)
+	{
+		const auto& info = kNoteInfo[static_cast<size_t>(sound._note) % 12];
+		const auto octave = static_cast<size_t>(sound._note) / 12;
+		result.emplace_back(sound._delay, _baseNoteNames[7 * octave + info._base]);
+		if (info._extra)
+			result.emplace_back(0, _extraNoteNames[info._base]);
+	}
+	return result;
 }
 
 qreal CompositionScene::requiredVoiceColumnWidth() const

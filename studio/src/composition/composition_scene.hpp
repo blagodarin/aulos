@@ -17,10 +17,13 @@
 
 #pragma once
 
+#include <array>
 #include <memory>
 #include <vector>
 
 #include <QGraphicsScene>
+
+class QStaticText;
 
 namespace aulos
 {
@@ -34,6 +37,7 @@ class CompositionItem;
 class CursorItem;
 class ElusiveItem;
 class FragmentItem;
+struct FragmentSound;
 class TimelineItem;
 class VoiceItem;
 
@@ -80,6 +84,7 @@ private:
 	VoiceItem* addVoiceItem(const void* id, const QString& name, size_t trackCount);
 	void highlightSequence(const void* trackId, const void* sequenceId);
 	void highlightVoice(const void* id, bool highlight);
+	std::vector<FragmentSound> makeSequenceTexts(const aulos::SequenceData&) const;
 	qreal requiredVoiceColumnWidth() const;
 	void setVoiceColumnWidth(qreal);
 	void updateSceneRect(size_t compositionLength);
@@ -93,6 +98,8 @@ private:
 	ElusiveItem* const _rightBoundItem;
 	CursorItem* const _cursorItem;
 	std::vector<std::unique_ptr<Track>> _tracks;
+	std::array<std::shared_ptr<QStaticText>, 7 * 10> _baseNoteNames; // C0, D0, ..., C1, D1, ...
+	std::array<std::shared_ptr<QStaticText>, 7> _extraNoteNames;     // C#, D#, ...
 	qreal _voiceColumnWidth;
 	const void* _selectedVoiceId = nullptr;
 	const void* _selectedTrackId = nullptr;

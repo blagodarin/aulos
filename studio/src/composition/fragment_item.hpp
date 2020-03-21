@@ -17,13 +17,21 @@
 
 #pragma once
 
-#include <QGraphicsObject>
-#include <QStaticText>
+#include <memory>
+#include <vector>
 
-namespace aulos
+#include <QGraphicsObject>
+
+class QStaticText;
+
+struct FragmentSound
 {
-	struct SequenceData;
-}
+	size_t _delay = 0;
+	std::shared_ptr<QStaticText> _text;
+
+	FragmentSound(size_t delay, const std::shared_ptr<QStaticText>& text)
+		: _delay{ delay }, _text{ text } {}
+};
 
 class FragmentItem final : public QGraphicsObject
 {
@@ -39,7 +47,7 @@ public:
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
 	const void* sequenceId() const noexcept { return _sequenceId; }
 	void setHighlighted(bool);
-	void setSequence(const aulos::SequenceData&);
+	void setSequence(const std::vector<FragmentSound>&);
 	void setTrackIndex(size_t index);
 
 signals:
@@ -54,7 +62,7 @@ private:
 	size_t _trackIndex;
 	const size_t _offset;
 	const void* const _sequenceId;
-	QStaticText _name;
+	std::vector<FragmentSound> _sounds;
 	size_t _length = 0;
 	qreal _width = 0;
 	QPolygonF _polygon;

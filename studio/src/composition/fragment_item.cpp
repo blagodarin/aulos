@@ -51,19 +51,20 @@ void FragmentItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWi
 	painter->setPen(pen);
 	painter->setBrush(colors._brush);
 	painter->drawConvexPolygon(_polygon);
-	if (_length > 0)
+	if (!_sounds.empty())
 	{
-		constexpr auto xOffset = (kTrackHeight - kFragmentFontSize) / 2.0;
 		constexpr auto xScale = 7.0 / 16.0;
 		painter->save();
 		auto font = painter->font();
 		font.setPixelSize(kFragmentFontSize);
 		painter->setFont(font);
 		painter->setTransform(QTransform::fromScale(xScale, 1.0), true);
-		_name.prepare(painter->transform(), font);
-		const QPointF topLeft{ xOffset / xScale, (kTrackHeight - _name.size().height()) / 2 };
-		painter->setClipRect(QRectF{ { topLeft.x(), 0 }, QPointF{ _width / xScale, kTrackHeight } });
-		painter->drawStaticText(topLeft, _name);
+		QPointF topLeft{ 1 / xScale, (kTrackHeight - QFontMetricsF{ font }.height()) / 2 };
+		for (const auto& sound : _sounds)
+		{
+			topLeft.rx() += sound._delay * kStepWidth / xScale;
+			painter->drawStaticText(topLeft, *sound._text);
+		}
 		painter->restore();
 	}
 }
@@ -74,25 +75,14 @@ void FragmentItem::setHighlighted(bool highlighted)
 	update();
 }
 
-void FragmentItem::setSequence(const aulos::SequenceData& sequence)
+void FragmentItem::setSequence(const std::vector<FragmentSound>& sounds)
 {
 	prepareGeometryChange();
-	_length = sequence._sounds.empty() ? 0 : std::reduce(sequence._sounds.begin(), sequence._sounds.end(), size_t{ 1 }, [](size_t length, const aulos::Sound& sound) { return length + sound._delay; });
+	_sounds = sounds;
+	_length = sounds.empty() ? 0 : std::reduce(sounds.begin(), sounds.end(), size_t{ 1 }, [](size_t length, const FragmentSound& sound) { return length + sound._delay; });
 	_width = _length * kStepWidth;
 	_polygon.clear();
 	_polygon << QPointF{ 0, 0 } << QPointF{ _width, 0 } << QPointF{ _width + kFragmentArrowWidth, kTrackHeight / 2 } << QPointF{ _width, kTrackHeight } << QPointF{ 0, kTrackHeight };
-	if (_length > 0)
-	{
-		QTextOption textOption;
-		textOption.setWrapMode(QTextOption::NoWrap);
-		_name.setText(::makeSequenceName(sequence, true));
-		_name.setTextFormat(Qt::RichText);
-		_name.setTextOption(textOption);
-		_name.setTextWidth((_length - 1) * kStepWidth);
-	}
-	else
-		_name = {};
-	setToolTip(::makeSequenceName(sequence));
 }
 
 void FragmentItem::setTrackIndex(size_t index)
