@@ -25,7 +25,9 @@
 constexpr auto kStepWidth = 15.0;
 constexpr auto kTrackHeight = 40.0;
 constexpr auto kTimelineHeight = 0.5 * kTrackHeight;
+constexpr auto kTimelineMarkingsHeight = kTimelineHeight;
 constexpr auto kTimelineFontSize = kTimelineHeight * 0.75;
+constexpr auto kCompositionHeaderHeight = kTimelineMarkingsHeight + kTimelineHeight;
 constexpr auto kAddVoiceItemHeight = kTrackHeight * 0.75;
 constexpr auto kAddVoiceArrowHeight = kAddVoiceItemHeight * 0.25;
 constexpr auto kMinVoiceItemWidth = kTrackHeight;
@@ -58,6 +60,7 @@ extern const Colors kCursorColors;
 extern const std::array<Colors, 6> kFragmentColors;
 extern const std::array<Colors, 6> kFragmentHighlightColors;
 extern const std::array<Colors, 2> kTimelineColors;
+extern const Colors kTimelineOffsetMarkColors;
 extern const std::array<Colors, 2> kVoiceColors;
 extern const std::array<Colors, 2> kVoiceHighlightColors;
 

@@ -23,7 +23,7 @@
 
 #include <numeric>
 
-#include <QGraphicsSceneContextMenuEvent>
+#include <QGraphicsSceneEvent>
 #include <QMenu>
 #include <QPainter>
 #include <QTextOption>

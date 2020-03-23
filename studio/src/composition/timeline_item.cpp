@@ -19,6 +19,7 @@
 
 #include "../theme.hpp"
 
+#include <QGraphicsSceneEvent>
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
 
@@ -26,17 +27,28 @@ TimelineItem::TimelineItem(QGraphicsItem* parent)
 	: QGraphicsItem{ parent }
 {
 	setFlag(QGraphicsItem::ItemUsesExtendedStyleOption);
+
+	const auto offsetMarkSize = kCompositionHeaderHeight - kTimelineHeight;
+	_offsetMark.reserve(3);
+	_offsetMark << QPointF{ 0, 0 } << QPointF{ kStepWidth, offsetMarkSize / 2 } << QPointF{ 0, offsetMarkSize };
 }
 
 QRectF TimelineItem::boundingRect() const
 {
-	return { 0, 0, _length * kStepWidth, kTimelineHeight };
+	return { 0, 0, _length * kStepWidth, kCompositionHeaderHeight };
 }
 
 void TimelineItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget*)
 {
+	painter->save();
+	painter->translate(QPointF{ _offset * kStepWidth, 0 });
+	painter->setPen(kTimelineOffsetMarkColors._pen);
+	painter->setBrush(kTimelineOffsetMarkColors._brush);
+	painter->drawConvexPolygon(_offsetMark);
+	painter->restore();
+
 	size_t index = 0;
-	QRectF rect{ 0, 0, _speed * kStepWidth, kTimelineHeight };
+	QRectF rect{ 0, kCompositionHeaderHeight - kTimelineHeight, _speed * kStepWidth, kTimelineHeight };
 	constexpr auto textOffset = (kTimelineHeight - kTimelineFontSize) / 2.0;
 	auto font = painter->font();
 	font.setPixelSize(kTimelineFontSize);
@@ -72,8 +84,21 @@ void TimelineItem::setCompositionLength(size_t length)
 	_length = length;
 }
 
+void TimelineItem::setCompositionOffset(size_t offset)
+{
+	_offset = offset;
+	update();
+}
+
 void TimelineItem::setCompositionSpeed(unsigned speed)
 {
 	_speed = speed;
 	update();
+}
+
+void TimelineItem::mousePressEvent(QGraphicsSceneMouseEvent* e)
+{
+	if (e->button() == Qt::LeftButton)
+		setCompositionOffset(static_cast<size_t>(std::ceil(e->pos().x()) / kStepWidth));
+	QGraphicsItem::mousePressEvent(e);
 }

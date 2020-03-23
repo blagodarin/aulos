@@ -232,7 +232,9 @@ Studio::Studio()
 		if (!composition)
 			return;
 		assert(_mode == Mode::Editing);
-		_player->reset(*aulos::Renderer::create(*composition, Player::SamplingRate));
+		const auto renderer = aulos::Renderer::create(*composition, Player::SamplingRate);
+		[[maybe_unused]] const auto skippedBytes = renderer->render(nullptr, _compositionScene->startOffset() * Player::SamplingRate * sizeof(float) / _composition->_speed);
+		_player->reset(*renderer);
 		_mode = Mode::Playing;
 		_player->start();
 		updateStatus();
@@ -312,7 +314,7 @@ Studio::Studio()
 	connect(_player.get(), &Player::timeAdvanced, [this](qint64 microseconds) {
 		if (_mode != Mode::Playing)
 			return;
-		const auto sceneCursorRect = _compositionScene->setCurrentStep(microseconds * _composition->_speed / 1'000'000.0);
+		const auto sceneCursorRect = _compositionScene->setCurrentStep(_compositionScene->startOffset() + microseconds * _composition->_speed / 1'000'000.0);
 		QRect viewCursorRect{ _compositionView->mapFromScene(sceneCursorRect.topLeft()), _compositionView->mapFromScene(sceneCursorRect.bottomRight()) };
 		const auto viewportRect = _compositionView->viewport()->rect();
 		if (viewCursorRect.right() > viewportRect.right() - kCompositionPageSwitchMargin)

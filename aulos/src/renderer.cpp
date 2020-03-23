@@ -321,10 +321,13 @@ namespace
 			while (offset < bufferBytes && _amplitudeModulator.update())
 			{
 				const auto samplesToGenerate = std::min(static_cast<size_t>(std::ceil(_partSamplesRemaining)), std::min((bufferBytes - offset) / kSampleSize, _amplitudeModulator.partSamplesRemaining()));
-				Oscillator oscillator{ _partSamplesRemaining, _partLength, _oscillation };
-				const auto base = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
-				for (size_t i = 0; i < samplesToGenerate; ++i)
-					base[i] += static_cast<float>(_amplitude * oscillator() * _amplitudeModulator.advance());
+				if (buffer)
+				{
+					Oscillator oscillator{ _partSamplesRemaining, _partLength, _oscillation };
+					const auto base = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
+					for (size_t i = 0; i < samplesToGenerate; ++i)
+						base[i] += static_cast<float>(_amplitude * oscillator() * _amplitudeModulator.advance());
+				}
 				advance(samplesToGenerate);
 				offset += samplesToGenerate * kSampleSize;
 			}
@@ -398,7 +401,8 @@ namespace
 
 		size_t render(void* buffer, size_t bufferBytes) noexcept override
 		{
-			std::memset(buffer, 0, bufferBytes);
+			if (buffer)
+				std::memset(buffer, 0, bufferBytes);
 			size_t offset = 0;
 			for (auto& track : _tracks)
 			{
@@ -417,7 +421,7 @@ namespace
 					const auto bytesToGenerate = std::min(track->_soundBytesRemaining, bufferBytes - trackOffset);
 					if (!bytesToGenerate)
 						break;
-					const auto bytesGenerated = track->_voice->render(static_cast<std::byte*>(buffer) + trackOffset, bytesToGenerate);
+					const auto bytesGenerated = track->_voice->render(buffer ? static_cast<std::byte*>(buffer) + trackOffset : nullptr, bytesToGenerate);
 					assert(bytesGenerated <= bytesToGenerate); // Initial and inter-sound silence doesn't generate any data.
 					track->_soundBytesRemaining -= bytesToGenerate;
 					trackOffset += bytesToGenerate;

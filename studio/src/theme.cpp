@@ -48,6 +48,8 @@ const std::array<Colors, 2> kTimelineColors{
 	Colors{ "#333", "#ddd" },
 };
 
+const Colors kTimelineOffsetMarkColors{ Qt::transparent, "#ddd" };
+
 const std::array<Colors, 2> kVoiceColors{
 	Colors{ "#444", "#ddd" },
 	Colors{ "#333", "#ddd" },

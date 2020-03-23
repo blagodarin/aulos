@@ -76,6 +76,8 @@ private:
 	std::unique_ptr<InfoEditor> _infoEditor;
 	std::unique_ptr<VoiceEditor> _voiceEditor;
 	std::unique_ptr<TrackEditor> _trackEditor;
+
+	size_t _startStep = 0;
 	std::unique_ptr<Player> _player;
 
 	QString _compositionPath;

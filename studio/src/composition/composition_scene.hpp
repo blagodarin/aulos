@@ -60,6 +60,7 @@ public:
 	QRectF setCurrentStep(double step);
 	void setSpeed(unsigned speed);
 	void showCursor(bool);
+	size_t startOffset() const;
 	void updateSequence(const void* trackId, const std::shared_ptr<aulos::SequenceData>&);
 	void updateVoice(const void* id, const std::string& name);
 
