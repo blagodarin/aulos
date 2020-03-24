@@ -33,7 +33,6 @@ class CompositionWidget;
 class InfoEditor;
 class Player;
 class SequenceWidget;
-class TrackEditor;
 class VoiceEditor;
 class VoiceWidget;
 
@@ -49,7 +48,6 @@ private:
 	void clearRecentFiles();
 	void closeComposition();
 	void createEmptyComposition();
-	bool editTrack(aulos::TrackData&);
 	bool editVoiceName(const void* id, std::string&);
 	void exportComposition();
 	bool maybeSaveComposition();
@@ -75,7 +73,6 @@ private:
 	std::unique_ptr<CompositionScene> _compositionScene;
 	std::unique_ptr<InfoEditor> _infoEditor;
 	std::unique_ptr<VoiceEditor> _voiceEditor;
-	std::unique_ptr<TrackEditor> _trackEditor;
 
 	size_t _startStep = 0;
 	std::unique_ptr<Player> _player;

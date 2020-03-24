@@ -30,7 +30,6 @@ source_group("res" FILES ${_res})
 set(_src
 	src/button_item.cpp
 	src/button_item.hpp
-
 	src/elusive_item.cpp
 	src/elusive_item.hpp
 	src/info_editor.cpp
@@ -42,8 +41,6 @@ set(_src
 	src/studio.hpp
 	src/theme.cpp
 	src/theme.hpp
-	src/track_editor.cpp
-	src/track_editor.hpp
 	src/voice_editor.cpp
 	src/voice_editor.hpp
 	src/voice_widget.cpp
@@ -64,6 +61,8 @@ set(_src_composition
 	src/composition/fragment_item.hpp
 	src/composition/timeline_item.cpp
 	src/composition/timeline_item.hpp
+	src/composition/track_editor.cpp
+	src/composition/track_editor.hpp
 	src/composition/track_item.cpp
 	src/composition/track_item.hpp
 	src/composition/voice_item.cpp

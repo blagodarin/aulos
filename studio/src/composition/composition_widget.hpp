@@ -26,13 +26,17 @@ class QGraphicsView;
 namespace aulos
 {
 	struct CompositionData;
+	struct TrackData;
 	struct Voice;
 }
 
 class CompositionScene;
+class TrackEditor;
 
 class CompositionWidget final : public QWidget
 {
+	Q_OBJECT
+
 public:
 	CompositionWidget(CompositionScene*, QWidget* parent);
 
@@ -42,7 +46,14 @@ public:
 	void setPlaybackOffset(double);
 	void setVoiceName(const void* id, const std::string& name);
 
+signals:
+	void compositionChanged();
+
 private:
+	bool editTrack(aulos::TrackData&);
+
+private:
+	std::unique_ptr<TrackEditor> _trackEditor;
 	CompositionScene* const _scene;
 	QGraphicsView* _view = nullptr;
 	std::shared_ptr<aulos::CompositionData> _composition;
