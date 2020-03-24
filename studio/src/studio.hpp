@@ -19,7 +19,6 @@
 
 #include <QMainWindow>
 
-class QGraphicsView;
 class QLabel;
 class QSpinBox;
 
@@ -30,6 +29,7 @@ namespace aulos
 }
 
 class CompositionScene;
+class CompositionWidget;
 class InfoEditor;
 class Player;
 class SequenceWidget;
@@ -100,7 +100,7 @@ private:
 	QAction* _playAction;
 	QAction* _stopAction;
 	QSpinBox* _speedSpin;
-	QGraphicsView* _compositionView;
+	CompositionWidget* _compositionWidget;
 	VoiceWidget* _voiceWidget;
 	SequenceWidget* _sequenceWidget;
 	QLabel* _statusPath;

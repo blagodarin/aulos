@@ -56,6 +56,8 @@ set(_src_composition
 	src/composition/add_voice_item.hpp
 	src/composition/composition_scene.cpp
 	src/composition/composition_scene.hpp
+	src/composition/composition_widget.cpp
+	src/composition/composition_widget.hpp
 	src/composition/cursor_item.cpp
 	src/composition/cursor_item.hpp
 	src/composition/fragment_item.cpp

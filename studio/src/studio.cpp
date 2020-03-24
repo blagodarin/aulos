@@ -18,6 +18,7 @@
 #include "studio.hpp"
 
 #include "composition/composition_scene.hpp"
+#include "composition/composition_widget.hpp"
 #include "sequence/sequence_widget.hpp"
 #include "info_editor.hpp"
 #include "player.hpp"
@@ -31,13 +32,11 @@
 #include <QApplication>
 #include <QCloseEvent>
 #include <QFileDialog>
-#include <QGraphicsView>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QSaveFile>
-#include <QScrollBar>
 #include <QSettings>
 #include <QSpinBox>
 #include <QSplitter>
@@ -265,10 +264,9 @@ Studio::Studio()
 	splitter->setChildrenCollapsible(false);
 	setCentralWidget(splitter);
 
-	_compositionView = new QGraphicsView{ _compositionScene.get(), splitter };
-	_compositionView->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-	_compositionView->setSizePolicy(::makeExpandingSizePolicy(1, 1));
-	splitter->addWidget(_compositionView);
+	_compositionWidget = new CompositionWidget{ _compositionScene.get(), splitter };
+	_compositionWidget->setSizePolicy(::makeExpandingSizePolicy(1, 1));
+	splitter->addWidget(_compositionWidget);
 
 	const auto bottomPart = new QWidget{ splitter };
 	splitter->addWidget(bottomPart);
@@ -314,26 +312,13 @@ Studio::Studio()
 	connect(_player.get(), &Player::timeAdvanced, [this](qint64 microseconds) {
 		if (_mode != Mode::Playing)
 			return;
-		const auto sceneCursorRect = _compositionScene->setCurrentStep(_compositionScene->startOffset() + microseconds * _composition->_speed / 1'000'000.0);
-		QRect viewCursorRect{ _compositionView->mapFromScene(sceneCursorRect.topLeft()), _compositionView->mapFromScene(sceneCursorRect.bottomRight()) };
-		const auto viewportRect = _compositionView->viewport()->rect();
-		if (viewCursorRect.right() > viewportRect.right() - kCompositionPageSwitchMargin)
-			viewCursorRect.moveRight(viewCursorRect.right() + viewportRect.width() - kCompositionPageSwitchMargin);
-		else if (viewCursorRect.right() < viewportRect.left())
-			viewCursorRect.moveRight(viewCursorRect.right() - viewportRect.width() / 2);
-		else
-			return;
-		_compositionView->ensureVisible({ _compositionView->mapToScene(viewCursorRect.topLeft()), _compositionView->mapToScene(viewCursorRect.bottomRight()) }, 0);
+		_compositionWidget->setPlaybackOffset(microseconds * _composition->_speed / 1'000'000.0);
 	});
 	connect(_compositionScene.get(), &CompositionScene::newVoiceRequested, [this] {
 		_voiceEditor->setVoiceName(tr("NewVoice").toStdString());
 		if (_voiceEditor->exec() != QDialog::Accepted)
 			return;
-		const auto& part = _composition->_parts.emplace_back(std::make_shared<aulos::PartData>(::makeDefaultVoice()));
-		part->_voiceName = _voiceEditor->voiceName();
-		part->_tracks.emplace_back(std::make_shared<aulos::TrackData>(1));
-		_compositionScene->appendPart(part);
-		_compositionView->horizontalScrollBar()->setValue(_compositionView->horizontalScrollBar()->minimum());
+		_compositionWidget->addCompositionPart(_voiceEditor->voiceName(), ::makeDefaultVoice());
 		_changed = true;
 		updateStatus();
 	});
@@ -522,7 +507,7 @@ void Studio::closeComposition()
 	_compositionPath.clear();
 	_compositionFileName.clear();
 	_speedSpin->setValue(_speedSpin->minimum());
-	_compositionScene->reset(nullptr, _compositionView->width());
+	_compositionWidget->setComposition({});
 	_player->stop();
 	_mode = Mode::Editing;
 }
@@ -538,8 +523,7 @@ void Studio::createEmptyComposition()
 	part->_tracks.emplace_back(std::make_shared<aulos::TrackData>(1));
 	_compositionFileName = tr("New composition");
 	_speedSpin->setValue(static_cast<int>(_composition->_speed));
-	_compositionScene->reset(_composition, _compositionView->width());
-	_compositionView->horizontalScrollBar()->setValue(_compositionView->horizontalScrollBar()->minimum());
+	_compositionWidget->setComposition(_composition);
 	_hasComposition = true;
 }
 
@@ -558,8 +542,7 @@ bool Studio::editVoiceName(const void* id, std::string& voiceName)
 	if (_voiceEditor->exec() != QDialog::Accepted)
 		return false;
 	voiceName = _voiceEditor->voiceName();
-	_compositionScene->updateVoice(id, voiceName);
-	_compositionView->horizontalScrollBar()->setValue(_compositionView->horizontalScrollBar()->minimum());
+	_compositionWidget->setVoiceName(id, voiceName);
 	return true;
 }
 
@@ -633,8 +616,7 @@ bool Studio::openComposition(const QString& path)
 	_compositionPath = path;
 	_compositionFileName = QFileInfo{ file }.fileName();
 	_speedSpin->setValue(static_cast<int>(_composition->_speed));
-	_compositionScene->reset(_composition, _compositionView->width());
-	_compositionView->horizontalScrollBar()->setValue(_compositionView->horizontalScrollBar()->minimum());
+	_compositionWidget->setComposition(_composition);
 	_hasComposition = true;
 	setRecentFile(path);
 	saveRecentFiles();
@@ -752,7 +734,7 @@ void Studio::updateStatus()
 	_playAction->setEnabled(_hasComposition && _mode == Mode::Editing);
 	_stopAction->setEnabled(_hasComposition && _mode == Mode::Playing);
 	_speedSpin->setEnabled(_hasComposition && _mode == Mode::Editing);
-	_compositionView->setInteractive(_hasComposition && _mode == Mode::Editing);
+	_compositionWidget->setInteractive(_hasComposition && _mode == Mode::Editing);
 	_voiceWidget->setEnabled(_hasComposition && _mode == Mode::Editing && _voiceWidget->voice());
 	_sequenceWidget->setInteractive(_hasComposition && _mode == Mode::Editing && _voiceWidget->voice());
 	_statusPath->setText(_compositionPath.isEmpty() ? QStringLiteral("<i>%1</i>").arg(tr("No file")) : _compositionPath);
