@@ -41,8 +41,6 @@ set(_src
 	src/studio.hpp
 	src/theme.cpp
 	src/theme.hpp
-	src/voice_editor.cpp
-	src/voice_editor.hpp
 	src/voice_widget.cpp
 	src/voice_widget.hpp
 	)
@@ -65,6 +63,8 @@ set(_src_composition
 	src/composition/track_editor.hpp
 	src/composition/track_item.cpp
 	src/composition/track_item.hpp
+	src/composition/voice_editor.cpp
+	src/composition/voice_editor.hpp
 	src/composition/voice_item.cpp
 	src/composition/voice_item.hpp
 	)

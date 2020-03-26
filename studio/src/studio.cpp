@@ -23,7 +23,6 @@
 #include "info_editor.hpp"
 #include "player.hpp"
 #include "theme.hpp"
-#include "voice_editor.hpp"
 #include "voice_widget.hpp"
 
 #include <aulos/data.hpp>
@@ -64,12 +63,6 @@ namespace
 			++index;
 		}
 		return result;
-	}
-
-	QFont makeBold(QFont&& font)
-	{
-		font.setBold(true);
-		return std::move(font);
 	}
 
 	std::shared_ptr<aulos::Voice> makeDefaultVoice()
@@ -122,7 +115,6 @@ namespace
 Studio::Studio()
 	: _compositionScene{ std::make_unique<CompositionScene>() }
 	, _infoEditor{ std::make_unique<InfoEditor>(this) }
-	, _voiceEditor{ std::make_unique<VoiceEditor>(this) }
 	, _player{ std::make_unique<Player>() }
 {
 	resize(1280, 720);
@@ -290,56 +282,8 @@ Studio::Studio()
 			return;
 		_compositionWidget->setPlaybackOffset(microseconds * _composition->_speed / 1'000'000.0);
 	});
-	connect(_compositionScene.get(), &CompositionScene::newVoiceRequested, [this] {
-		_voiceEditor->setVoiceName(tr("NewVoice").toStdString());
-		if (_voiceEditor->exec() != QDialog::Accepted)
-			return;
-		_compositionWidget->addCompositionPart(_voiceEditor->voiceName(), ::makeDefaultVoice());
-		_changed = true;
-		updateStatus();
-	});
 	connect(_compositionScene.get(), &CompositionScene::sequenceSelected, this, &Studio::showSequence);
 	connect(_compositionWidget, &CompositionWidget::compositionChanged, [this] {
-		_changed = true;
-		updateStatus();
-	});
-	connect(_compositionScene.get(), &CompositionScene::voiceActionRequested, [this](const void* voiceId) {
-		const auto part = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [voiceId](const auto& partData) { return partData->_voice.get() == voiceId; });
-		assert(part != _composition->_parts.cend());
-		if (!editVoiceName(voiceId, (*part)->_voiceName))
-			return;
-		_changed = true;
-		updateStatus();
-	});
-	connect(_compositionScene.get(), &CompositionScene::voiceMenuRequested, [this](const void* voiceId, const QPoint& pos) {
-		const auto part = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [voiceId](const auto& partData) { return partData->_voice.get() == voiceId; });
-		assert(part != _composition->_parts.cend());
-		QMenu menu;
-		const auto editVoiceAction = menu.addAction(tr("Rename voice..."));
-		editVoiceAction->setFont(::makeBold(editVoiceAction->font()));
-		const auto addTrackAction = menu.addAction(tr("Add track"));
-		menu.addSeparator();
-		const auto removeVoiceAction = menu.addAction(tr("Remove voice"));
-		if (const auto action = menu.exec(pos); action == editVoiceAction)
-		{
-			if (!editVoiceName(voiceId, (*part)->_voiceName))
-				return;
-		}
-		else if (action == addTrackAction)
-		{
-			auto& track = (*part)->_tracks.emplace_back(std::make_shared<aulos::TrackData>(1));
-			_compositionScene->addTrack(voiceId, track.get());
-		}
-		else if (action == removeVoiceAction)
-		{
-			if (const auto message = tr("Remove %1 voice?").arg("<b>" + QString::fromStdString((*part)->_voiceName) + "</b>");
-				QMessageBox::question(this, {}, message, QMessageBox::Yes | QMessageBox::No, QMessageBox::No) != QMessageBox::Yes)
-				return;
-			_compositionScene->removeVoice(voiceId);
-			_composition->_parts.erase(part);
-		}
-		else
-			return;
 		_changed = true;
 		updateStatus();
 	});
@@ -408,16 +352,6 @@ void Studio::createEmptyComposition()
 	_speedSpin->setValue(static_cast<int>(_composition->_speed));
 	_compositionWidget->setComposition(_composition);
 	_hasComposition = true;
-}
-
-bool Studio::editVoiceName(const void* id, std::string& voiceName)
-{
-	_voiceEditor->setVoiceName(voiceName);
-	if (_voiceEditor->exec() != QDialog::Accepted)
-		return false;
-	voiceName = _voiceEditor->voiceName();
-	_compositionWidget->setVoiceName(id, voiceName);
-	return true;
 }
 
 void Studio::exportComposition()

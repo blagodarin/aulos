@@ -20,6 +20,7 @@
 #include "../theme.hpp"
 #include "composition_scene.hpp"
 #include "track_editor.hpp"
+#include "voice_editor.hpp"
 
 #include <aulos/data.hpp>
 
@@ -37,6 +38,13 @@ namespace
 	{
 		font.setBold(true);
 		return std::move(font);
+	}
+
+	std::shared_ptr<aulos::Voice> makeDefaultVoice()
+	{
+		auto voice = std::make_shared<aulos::Voice>();
+		voice->_amplitudeEnvelope._changes = { { .1f, 1.f }, { .4f, .5f }, { .5f, 0.f } };
+		return voice;
 	}
 
 	QString makeSequenceName(const aulos::SequenceData& sequence)
@@ -62,6 +70,7 @@ namespace
 
 CompositionWidget::CompositionWidget(CompositionScene* scene, QWidget* parent)
 	: QWidget{ parent }
+	, _voiceEditor{ std::make_unique<VoiceEditor>(this) }
 	, _trackEditor{ std::make_unique<TrackEditor>(this) }
 	, _scene{ scene }
 {
@@ -105,6 +114,17 @@ CompositionWidget::CompositionWidget(CompositionScene* scene, QWidget* parent)
 		}
 		else
 			return;
+		emit compositionChanged();
+	});
+	connect(_scene, &CompositionScene::newVoiceRequested, [this] {
+		_voiceEditor->setVoiceName(tr("NewVoice").toStdString());
+		if (_voiceEditor->exec() != QDialog::Accepted)
+			return;
+		const auto& part = _composition->_parts.emplace_back(std::make_shared<aulos::PartData>(::makeDefaultVoice()));
+		part->_voiceName = _voiceEditor->voiceName();
+		part->_tracks.emplace_back(std::make_shared<aulos::TrackData>(1));
+		_scene->appendPart(part);
+		_view->horizontalScrollBar()->setValue(_view->horizontalScrollBar()->minimum());
 		emit compositionChanged();
 	});
 	connect(_scene, &CompositionScene::trackActionRequested, [this](const void* voiceId, const void* trackId) {
@@ -166,15 +186,44 @@ CompositionWidget::CompositionWidget(CompositionScene* scene, QWidget* parent)
 			return;
 		emit compositionChanged();
 	});
-}
-
-void CompositionWidget::addCompositionPart(const std::string& name, const std::shared_ptr<aulos::Voice>& voice)
-{
-	const auto& part = _composition->_parts.emplace_back(std::make_shared<aulos::PartData>(voice));
-	part->_voiceName = name;
-	part->_tracks.emplace_back(std::make_shared<aulos::TrackData>(1));
-	_scene->appendPart(part);
-	_view->horizontalScrollBar()->setValue(_view->horizontalScrollBar()->minimum());
+	connect(_scene, &CompositionScene::voiceActionRequested, [this](const void* voiceId) {
+		const auto part = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [voiceId](const auto& partData) { return partData->_voice.get() == voiceId; });
+		assert(part != _composition->_parts.cend());
+		if (!editVoiceName(voiceId, (*part)->_voiceName))
+			return;
+		emit compositionChanged();
+	});
+	connect(_scene, &CompositionScene::voiceMenuRequested, [this](const void* voiceId, const QPoint& pos) {
+		const auto part = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [voiceId](const auto& partData) { return partData->_voice.get() == voiceId; });
+		assert(part != _composition->_parts.cend());
+		QMenu menu;
+		const auto editVoiceAction = menu.addAction(tr("Rename voice..."));
+		editVoiceAction->setFont(::makeBold(editVoiceAction->font()));
+		const auto addTrackAction = menu.addAction(tr("Add track"));
+		menu.addSeparator();
+		const auto removeVoiceAction = menu.addAction(tr("Remove voice"));
+		if (const auto action = menu.exec(pos); action == editVoiceAction)
+		{
+			if (!editVoiceName(voiceId, (*part)->_voiceName))
+				return;
+		}
+		else if (action == addTrackAction)
+		{
+			auto& track = (*part)->_tracks.emplace_back(std::make_shared<aulos::TrackData>(1));
+			_scene->addTrack(voiceId, track.get());
+		}
+		else if (action == removeVoiceAction)
+		{
+			if (const auto message = tr("Remove %1 voice?").arg("<b>" + QString::fromStdString((*part)->_voiceName) + "</b>");
+				QMessageBox::question(this, {}, message, QMessageBox::Yes | QMessageBox::No, QMessageBox::No) != QMessageBox::Yes)
+				return;
+			_scene->removeVoice(voiceId);
+			_composition->_parts.erase(part);
+		}
+		else
+			return;
+		emit compositionChanged();
+	});
 }
 
 void CompositionWidget::setComposition(const std::shared_ptr<aulos::CompositionData>& composition)
@@ -203,17 +252,22 @@ void CompositionWidget::setPlaybackOffset(double step)
 	_view->ensureVisible({ _view->mapToScene(viewCursorRect.topLeft()), _view->mapToScene(viewCursorRect.bottomRight()) }, 0);
 }
 
-void CompositionWidget::setVoiceName(const void* id, const std::string& name)
-{
-	_scene->updateVoice(id, name);
-	_view->horizontalScrollBar()->setValue(_view->horizontalScrollBar()->minimum());
-}
-
 bool CompositionWidget::editTrack(aulos::TrackData& track)
 {
 	_trackEditor->setTrackWeight(track._weight);
 	if (_trackEditor->exec() != QDialog::Accepted)
 		return false;
 	track._weight = _trackEditor->trackWeight();
+	return true;
+}
+
+bool CompositionWidget::editVoiceName(const void* id, std::string& voiceName)
+{
+	_voiceEditor->setVoiceName(voiceName);
+	if (_voiceEditor->exec() != QDialog::Accepted)
+		return false;
+	voiceName = _voiceEditor->voiceName();
+	_scene->updateVoice(id, voiceName);
+	_view->horizontalScrollBar()->setValue(_view->horizontalScrollBar()->minimum());
 	return true;
 }

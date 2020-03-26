@@ -33,7 +33,6 @@ class CompositionWidget;
 class InfoEditor;
 class Player;
 class SequenceWidget;
-class VoiceEditor;
 class VoiceWidget;
 
 class Studio : public QMainWindow
@@ -48,7 +47,6 @@ private:
 	void clearRecentFiles();
 	void closeComposition();
 	void createEmptyComposition();
-	bool editVoiceName(const void* id, std::string&);
 	void exportComposition();
 	bool maybeSaveComposition();
 	bool openComposition(const QString& path);
@@ -72,7 +70,6 @@ private:
 	std::shared_ptr<aulos::CompositionData> _composition;
 	std::unique_ptr<CompositionScene> _compositionScene;
 	std::unique_ptr<InfoEditor> _infoEditor;
-	std::unique_ptr<VoiceEditor> _voiceEditor;
 
 	size_t _startStep = 0;
 	std::unique_ptr<Player> _player;

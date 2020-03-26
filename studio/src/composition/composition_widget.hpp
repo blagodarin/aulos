@@ -18,6 +18,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 
 #include <QWidget>
 
@@ -32,6 +33,7 @@ namespace aulos
 
 class CompositionScene;
 class TrackEditor;
+class VoiceEditor;
 
 class CompositionWidget final : public QWidget
 {
@@ -40,19 +42,19 @@ class CompositionWidget final : public QWidget
 public:
 	CompositionWidget(CompositionScene*, QWidget* parent);
 
-	void addCompositionPart(const std::string& name, const std::shared_ptr<aulos::Voice>&);
 	void setComposition(const std::shared_ptr<aulos::CompositionData>&);
 	void setInteractive(bool);
 	void setPlaybackOffset(double);
-	void setVoiceName(const void* id, const std::string& name);
 
 signals:
 	void compositionChanged();
 
 private:
 	bool editTrack(aulos::TrackData&);
+	bool editVoiceName(const void* id, std::string&);
 
 private:
+	std::unique_ptr<VoiceEditor> _voiceEditor;
 	std::unique_ptr<TrackEditor> _trackEditor;
 	CompositionScene* const _scene;
 	QGraphicsView* _view = nullptr;
