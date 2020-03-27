@@ -80,7 +80,6 @@ private:
 	Mode _mode = Mode::Editing;
 	bool _hasComposition = false;
 	bool _changed = false;
-	const void* _sequenceTrackId = nullptr;
 
 	QAction* _fileNewAction;
 	QAction* _fileOpenAction;

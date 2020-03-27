@@ -370,6 +370,22 @@ void CompositionScene::selectSequence(const void* voiceId, const void* trackId, 
 	emit sequenceSelected(voiceId, trackId, sequenceId);
 }
 
+float CompositionScene::selectedTrackWeight() const
+{
+	if (!_selectedTrackId)
+		return 1.f;
+	assert(_selectedVoiceId);
+	const auto partIt = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [this](const auto& partData) { return partData->_voice.get() == _selectedVoiceId; });
+	assert(partIt != _composition->_parts.cend());
+	const auto trackIt = std::find_if((*partIt)->_tracks.cbegin(), (*partIt)->_tracks.cend(), [this](const auto& trackData) { return trackData.get() == _selectedTrackId; });
+	assert(trackIt != (*partIt)->_tracks.cend());
+	unsigned totalWeight = 0;
+	for (const auto& part : _composition->_parts)
+		for (const auto& track : part->_tracks)
+			totalWeight += track->_weight;
+	return static_cast<float>((*trackIt)->_weight) / totalWeight;
+}
+
 QRectF CompositionScene::setCurrentStep(double step)
 {
 	// Moving cursor leaves artifacts if the view is being scrolled.
@@ -395,9 +411,10 @@ size_t CompositionScene::startOffset() const
 	return _timelineItem->compositionOffset();
 }
 
-void CompositionScene::updateSequence(const void* trackId, const std::shared_ptr<aulos::SequenceData>& sequence)
+void CompositionScene::updateSelectedSequence(const std::shared_ptr<aulos::SequenceData>& sequence)
 {
-	const auto trackIt = std::find_if(_tracks.begin(), _tracks.end(), [trackId](const auto& trackPtr) { return trackPtr->_background->trackId() == trackId; });
+	assert(_selectedTrackId);
+	const auto trackIt = std::find_if(_tracks.begin(), _tracks.end(), [this](const auto& trackPtr) { return trackPtr->_background->trackId() == _selectedTrackId; });
 	assert(trackIt != _tracks.end());
 	const auto texts = makeSequenceTexts(*sequence);
 	for (const auto& fragment : (*trackIt)->_fragments)

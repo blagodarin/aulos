@@ -80,15 +80,6 @@ namespace
 		return policy;
 	}
 
-	float makeTrackAmplitude(const aulos::CompositionData& composition, unsigned weight)
-	{
-		unsigned totalWeight = 0;
-		for (const auto& part : composition._parts)
-			for (const auto& track : part->_tracks)
-				totalWeight += track->_weight;
-		return static_cast<float>(weight) / totalWeight;
-	}
-
 	void saveRecentFileList(const QStringList& files)
 	{
 		QSettings settings;
@@ -290,24 +281,14 @@ Studio::Studio()
 	connect(_sequenceWidget, &SequenceWidget::noteActivated, [this](aulos::Note note) {
 		const auto voice = _voiceWidget->voice();
 		assert(voice);
-		float amplitude = 1.f;
-		if (_sequenceTrackId)
-		{
-			const auto part = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [voice](const auto& partData) { return partData->_voice == voice; });
-			assert(part != _composition->_parts.cend());
-			const auto track = std::find_if((*part)->_tracks.cbegin(), (*part)->_tracks.cend(), [this](const auto& trackData) { return trackData.get() == _sequenceTrackId; });
-			assert(track != (*part)->_tracks.cend());
-			amplitude = ::makeTrackAmplitude(*_composition, (*track)->_weight);
-		}
 		const auto renderer = aulos::VoiceRenderer::create(*voice, Player::SamplingRate);
 		assert(renderer);
-		renderer->start(note, amplitude);
+		renderer->start(note, _compositionScene->selectedTrackWeight());
 		_player->reset(*renderer);
 		_player->start();
 	});
 	connect(_sequenceWidget, &SequenceWidget::sequenceChanged, [this] {
-		assert(_sequenceTrackId);
-		_compositionScene->updateSequence(_sequenceTrackId, _sequenceWidget->sequence());
+		_compositionScene->updateSelectedSequence(_sequenceWidget->sequence());
 		_changed = true;
 		updateStatus();
 	});
@@ -497,25 +478,20 @@ void Studio::showSequence(const void* voiceId, const void* trackId, const void* 
 	{
 		const auto part = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [voiceId](const auto& partData) { return partData->_voice.get() == voiceId; });
 		assert(part != _composition->_parts.cend());
+		_voiceWidget->setVoice((*part)->_voice);
 		if (trackId && sequenceId)
 		{
 			const auto track = std::find_if((*part)->_tracks.cbegin(), (*part)->_tracks.cend(), [trackId](const auto& trackData) { return trackData.get() == trackId; });
 			assert(track != (*part)->_tracks.cend());
 			const auto sequence = std::find_if((*track)->_sequences.cbegin(), (*track)->_sequences.cend(), [sequenceId](const auto& sequenceData) { return sequenceData.get() == sequenceId; });
 			assert(sequence != (*track)->_sequences.end());
-			_sequenceTrackId = trackId;
 			_sequenceWidget->setSequence(*sequence);
 		}
 		else
-		{
-			_sequenceTrackId = nullptr;
 			_sequenceWidget->setSequence({});
-		}
-		_voiceWidget->setVoice((*part)->_voice);
 	}
 	else
 	{
-		_sequenceTrackId = nullptr;
 		_voiceWidget->setVoice({});
 		_sequenceWidget->setSequence({});
 	}
