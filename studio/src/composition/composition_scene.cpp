@@ -124,8 +124,9 @@ struct CompositionScene::Track
 	}
 };
 
-CompositionScene::CompositionScene()
-	: _addVoiceItem{ std::make_unique<AddVoiceItem>() }
+CompositionScene::CompositionScene(QObject* parent)
+	: QGraphicsScene{ parent }
+	, _addVoiceItem{ std::make_unique<AddVoiceItem>() }
 	, _compositionItem{ std::make_unique<CompositionItem>() }
 	, _timelineItem{ new TimelineItem{ _compositionItem.get() } }
 	, _rightBoundItem{ new ElusiveItem{ _compositionItem.get() } }

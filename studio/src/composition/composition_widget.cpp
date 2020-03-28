@@ -68,11 +68,11 @@ namespace
 	}
 }
 
-CompositionWidget::CompositionWidget(CompositionScene* scene, QWidget* parent)
+CompositionWidget::CompositionWidget(QWidget* parent)
 	: QWidget{ parent }
 	, _voiceEditor{ std::make_unique<VoiceEditor>(this) }
 	, _trackEditor{ std::make_unique<TrackEditor>(this) }
-	, _scene{ scene }
+	, _scene{ new CompositionScene{ this } }
 {
 	const auto layout = new QGridLayout{ this };
 	layout->setContentsMargins({});
@@ -126,6 +126,26 @@ CompositionWidget::CompositionWidget(CompositionScene* scene, QWidget* parent)
 		_scene->appendPart(part);
 		_view->horizontalScrollBar()->setValue(_view->horizontalScrollBar()->minimum());
 		emit compositionChanged();
+	});
+	connect(_scene, &CompositionScene::sequenceSelected, [this](const void* voiceId, const void* trackId, const void* sequenceId) {
+		std::shared_ptr<aulos::Voice> voice;
+		std::shared_ptr<aulos::SequenceData> sequence;
+		if (voiceId)
+		{
+			const auto partIt = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [voiceId](const auto& partData) { return partData->_voice.get() == voiceId; });
+			assert(partIt != _composition->_parts.cend());
+			voice = (*partIt)->_voice;
+			if (sequenceId)
+			{
+				assert(trackId);
+				const auto trackIt = std::find_if((*partIt)->_tracks.cbegin(), (*partIt)->_tracks.cend(), [trackId](const auto& trackData) { return trackData.get() == trackId; });
+				assert(trackIt != (*partIt)->_tracks.cend());
+				const auto sequenceIt = std::find_if((*trackIt)->_sequences.cbegin(), (*trackIt)->_sequences.cend(), [sequenceId](const auto& sequenceData) { return sequenceData.get() == sequenceId; });
+				assert(sequenceIt != (*trackIt)->_sequences.end());
+				sequence = *sequenceIt;
+			}
+		}
+		emit selectionChanged(voice, sequence);
 	});
 	connect(_scene, &CompositionScene::trackActionRequested, [this](const void* voiceId, const void* trackId) {
 		const auto part = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [voiceId](const auto& partData) { return partData->_voice.get() == voiceId; });
@@ -226,6 +246,11 @@ CompositionWidget::CompositionWidget(CompositionScene* scene, QWidget* parent)
 	});
 }
 
+float CompositionWidget::selectedTrackWeight() const
+{
+	return _scene->selectedTrackWeight();
+}
+
 void CompositionWidget::setComposition(const std::shared_ptr<aulos::CompositionData>& composition)
 {
 	_scene->reset(composition, _view->width());
@@ -250,6 +275,26 @@ void CompositionWidget::setPlaybackOffset(double step)
 	else
 		return;
 	_view->ensureVisible({ _view->mapToScene(viewCursorRect.topLeft()), _view->mapToScene(viewCursorRect.bottomRight()) }, 0);
+}
+
+void CompositionWidget::setSpeed(unsigned speed)
+{
+	_scene->setSpeed(speed);
+}
+
+void CompositionWidget::showCursor(bool visible)
+{
+	_scene->showCursor(visible);
+}
+
+size_t CompositionWidget::startOffset() const
+{
+	return _scene->startOffset();
+}
+
+void CompositionWidget::updateSelectedSequence(const std::shared_ptr<aulos::SequenceData>& sequence)
+{
+	_scene->updateSelectedSequence(sequence);
 }
 
 bool CompositionWidget::editTrack(aulos::TrackData& track)

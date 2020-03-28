@@ -25,10 +25,8 @@ class QSpinBox;
 namespace aulos
 {
 	struct CompositionData;
-	struct TrackData;
 }
 
-class CompositionScene;
 class CompositionWidget;
 class InfoEditor;
 class Player;
@@ -54,7 +52,6 @@ private:
 	bool saveCompositionAs();
 	void saveRecentFiles() const;
 	void setRecentFile(const QString& path);
-	void showSequence(const void* voiceId, const void* trackId, const void* sequenceId);
 	void updateStatus();
 
 private:
@@ -68,7 +65,6 @@ private:
 	};
 
 	std::shared_ptr<aulos::CompositionData> _composition;
-	std::unique_ptr<CompositionScene> _compositionScene;
 	std::unique_ptr<InfoEditor> _infoEditor;
 
 	size_t _startStep = 0;

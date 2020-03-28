@@ -17,7 +17,6 @@
 
 #include "studio.hpp"
 
-#include "composition/composition_scene.hpp"
 #include "composition/composition_widget.hpp"
 #include "sequence/sequence_widget.hpp"
 #include "info_editor.hpp"
@@ -104,8 +103,7 @@ namespace
 }
 
 Studio::Studio()
-	: _compositionScene{ std::make_unique<CompositionScene>() }
-	, _infoEditor{ std::make_unique<InfoEditor>(this) }
+	: _infoEditor{ std::make_unique<InfoEditor>(this) }
 	, _player{ std::make_unique<Player>() }
 {
 	resize(1280, 720);
@@ -191,7 +189,7 @@ Studio::Studio()
 			return;
 		assert(_mode == Mode::Editing);
 		const auto renderer = aulos::Renderer::create(*composition, Player::SamplingRate);
-		[[maybe_unused]] const auto skippedBytes = renderer->render(nullptr, _compositionScene->startOffset() * Player::SamplingRate * sizeof(float) / _composition->_speed);
+		[[maybe_unused]] const auto skippedBytes = renderer->render(nullptr, _compositionWidget->startOffset() * Player::SamplingRate * sizeof(float) / _composition->_speed);
 		_player->reset(*renderer);
 		_mode = Mode::Playing;
 		_player->start();
@@ -223,7 +221,7 @@ Studio::Studio()
 	splitter->setChildrenCollapsible(false);
 	setCentralWidget(splitter);
 
-	_compositionWidget = new CompositionWidget{ _compositionScene.get(), splitter };
+	_compositionWidget = new CompositionWidget{ splitter };
 	_compositionWidget->setSizePolicy(::makeExpandingSizePolicy(1, 1));
 	splitter->addWidget(_compositionWidget);
 
@@ -256,14 +254,14 @@ Studio::Studio()
 		if (!_hasComposition)
 			return;
 		_composition->_speed = static_cast<unsigned>(_speedSpin->value());
-		_compositionScene->setSpeed(_composition->_speed);
+		_compositionWidget->setSpeed(_composition->_speed);
 		_changed = true;
 		updateStatus();
 	});
 	connect(_player.get(), &Player::stateChanged, [this] {
 		if (_mode != Mode::Playing)
 			return;
-		_compositionScene->showCursor(_player->isPlaying());
+		_compositionWidget->showCursor(_player->isPlaying());
 		if (!_player->isPlaying())
 			_mode = Mode::Editing;
 		updateStatus();
@@ -273,7 +271,11 @@ Studio::Studio()
 			return;
 		_compositionWidget->setPlaybackOffset(microseconds * _composition->_speed / 1'000'000.0);
 	});
-	connect(_compositionScene.get(), &CompositionScene::sequenceSelected, this, &Studio::showSequence);
+	connect(_compositionWidget, &CompositionWidget::selectionChanged, [this](const std::shared_ptr<aulos::Voice>& voice, const std::shared_ptr<aulos::SequenceData>& sequence) {
+		_voiceWidget->setVoice(voice);
+		_sequenceWidget->setSequence(sequence);
+		updateStatus();
+	});
 	connect(_compositionWidget, &CompositionWidget::compositionChanged, [this] {
 		_changed = true;
 		updateStatus();
@@ -283,12 +285,12 @@ Studio::Studio()
 		assert(voice);
 		const auto renderer = aulos::VoiceRenderer::create(*voice, Player::SamplingRate);
 		assert(renderer);
-		renderer->start(note, _compositionScene->selectedTrackWeight());
+		renderer->start(note, _compositionWidget->selectedTrackWeight());
 		_player->reset(*renderer);
 		_player->start();
 	});
 	connect(_sequenceWidget, &SequenceWidget::sequenceChanged, [this] {
-		_compositionScene->updateSelectedSequence(_sequenceWidget->sequence());
+		_compositionWidget->updateSelectedSequence(_sequenceWidget->sequence());
 		_changed = true;
 		updateStatus();
 	});
@@ -470,32 +472,6 @@ void Studio::setRecentFile(const QString& path)
 			delete oldAction;
 		}
 	}
-}
-
-void Studio::showSequence(const void* voiceId, const void* trackId, const void* sequenceId)
-{
-	if (voiceId)
-	{
-		const auto part = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [voiceId](const auto& partData) { return partData->_voice.get() == voiceId; });
-		assert(part != _composition->_parts.cend());
-		_voiceWidget->setVoice((*part)->_voice);
-		if (trackId && sequenceId)
-		{
-			const auto track = std::find_if((*part)->_tracks.cbegin(), (*part)->_tracks.cend(), [trackId](const auto& trackData) { return trackData.get() == trackId; });
-			assert(track != (*part)->_tracks.cend());
-			const auto sequence = std::find_if((*track)->_sequences.cbegin(), (*track)->_sequences.cend(), [sequenceId](const auto& sequenceData) { return sequenceData.get() == sequenceId; });
-			assert(sequence != (*track)->_sequences.end());
-			_sequenceWidget->setSequence(*sequence);
-		}
-		else
-			_sequenceWidget->setSequence({});
-	}
-	else
-	{
-		_voiceWidget->setVoice({});
-		_sequenceWidget->setSequence({});
-	}
-	updateStatus();
 }
 
 void Studio::saveRecentFiles() const

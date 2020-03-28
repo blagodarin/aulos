@@ -27,6 +27,7 @@ class QGraphicsView;
 namespace aulos
 {
 	struct CompositionData;
+	struct SequenceData;
 	struct TrackData;
 	struct Voice;
 }
@@ -40,14 +41,20 @@ class CompositionWidget final : public QWidget
 	Q_OBJECT
 
 public:
-	CompositionWidget(CompositionScene*, QWidget* parent);
+	CompositionWidget(QWidget* parent);
 
+	float selectedTrackWeight() const;
 	void setComposition(const std::shared_ptr<aulos::CompositionData>&);
 	void setInteractive(bool);
 	void setPlaybackOffset(double);
+	void setSpeed(unsigned speed);
+	void showCursor(bool);
+	size_t startOffset() const;
+	void updateSelectedSequence(const std::shared_ptr<aulos::SequenceData>&);
 
 signals:
 	void compositionChanged();
+	void selectionChanged(const std::shared_ptr<aulos::Voice>&, const std::shared_ptr<aulos::SequenceData>&);
 
 private:
 	bool editTrack(aulos::TrackData&);
