@@ -385,6 +385,38 @@ namespace
 		double _lastValue;
 	};
 
+	// C2 = 6 * oscillation * totalSamples^2
+	// C3 = 4 * oscillation * totalSamples^3
+	// F(X) = 1 - C2 * X^2 + C3 * X^3
+	// F(X) = F(X - 1) - [C2 * (2 * X - 1) - C3 * (3 * X * (X - 1) + 1)]
+	class CubicOscillator
+	{
+	public:
+		constexpr CubicOscillator(double generatedSamples, double totalSamples, double oscillation) noexcept
+			: _coefficient2{ 6 * oscillation / squared(totalSamples) }
+			, _coefficient3{ 4 * oscillation / cubed(totalSamples) }
+			, _lastX{ generatedSamples - 1 }
+			, _lastValue{ 1 - _coefficient2 * squared(_lastX) + _coefficient3 * cubed(_lastX) }
+		{
+		}
+
+		constexpr double operator()() noexcept
+		{
+			_lastX += 1;
+			return _lastValue -= _coefficient2 * (2 * _lastX - 1) - _coefficient3 * (3 * _lastX * (_lastX - 1) + 1);
+		}
+
+	private:
+		static constexpr double squared(double x) noexcept { return x * x; }
+		static constexpr double cubed(double x) noexcept { return x * x * x; }
+
+	private:
+		const double _coefficient2;
+		const double _coefficient3;
+		double _lastX;
+		double _lastValue;
+	};
+
 	class RendererImpl final : public aulos::Renderer
 	{
 	public:
@@ -508,6 +540,7 @@ namespace aulos
 		{
 		case Wave::Linear: return std::make_unique<TwoPartWave<LinearOscillator>>(voice, samplingRate);
 		case Wave::Quadratic: return std::make_unique<TwoPartWave<QuadraticOscillator>>(voice, samplingRate);
+		case Wave::Cubic: return std::make_unique<TwoPartWave<CubicOscillator>>(voice, samplingRate);
 		}
 		return {};
 	}

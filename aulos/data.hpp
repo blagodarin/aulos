@@ -54,7 +54,8 @@ namespace aulos
 	enum class Wave
 	{
 		Linear,    // Linear wave (includes square, rectangular, sawtooth and triangle waveforms).
-		Quadratic, // Quadratic wave.
+		Quadratic, // Quadratic wave with zero derivative on left end.
+		Cubic,     // Cubic wave with zero derivatives on both ends.
 	};
 
 	struct Point

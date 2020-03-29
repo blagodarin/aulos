@@ -9,7 +9,7 @@ frequency 0.80 0.01 1.00
 asymmetry 0.90
 
 @voice 2 "Melody"
-wave Linear 1.00
+wave Cubic 1.00
 amplitude 0.00 0.02 1.00 0.08 0.25 0.60 0.00
 frequency 0.80 0.02 1.00 0.08 1.00 0.40 0.99
 asymmetry 0.10 0.02 0.80 0.08 0.80 0.40 0.10
