@@ -296,6 +296,12 @@ namespace aulos
 					currentVoice->_wave = Wave::Cubic;
 					currentVoice->_oscillation = oscillation ? *oscillation : 1.f;
 				}
+				else if (type == "Cosine")
+				{
+					const auto oscillation = tryReadFloat(0.f, 1.f);
+					currentVoice->_wave = Wave::Cosine;
+					currentVoice->_oscillation = oscillation ? *oscillation : 1.f;
+				}
 				else
 					throw CompositionError{ location(), "Bad voice wave type" };
 			}
@@ -446,6 +452,7 @@ namespace aulos
 			case Wave::Linear: text += "Linear"; break;
 			case Wave::Quadratic: text += "Quadratic"; break;
 			case Wave::Cubic: text += "Cubic"; break;
+			case Wave::Cosine: text += "Cosine"; break;
 			}
 			text += ' ' + floatToString(part._voice._oscillation);
 			text += "\namplitude " + floatToString(part._voice._amplitudeEnvelope._initial);

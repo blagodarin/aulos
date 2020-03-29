@@ -50,6 +50,7 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 		_typeCombo->addItem(tr("Linear"), static_cast<int>(aulos::Wave::Linear));
 		_typeCombo->addItem(tr("Quadratic"), static_cast<int>(aulos::Wave::Quadratic));
 		_typeCombo->addItem(tr("Cubic"), static_cast<int>(aulos::Wave::Cubic));
+		_typeCombo->addItem(tr("Cosine"), static_cast<int>(aulos::Wave::Cosine));
 		layout->addWidget(_typeCombo, 0, 0);
 		connect(_typeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &VoiceWidget::updateVoice);
 

@@ -21,6 +21,7 @@
 #include <array>
 #include <cassert>
 #include <cmath>
+#include <numbers>
 #include <numeric>
 
 namespace
@@ -417,6 +418,32 @@ namespace
 		double _lastValue;
 	};
 
+	class CosineOscillator
+	{
+	public:
+		CosineOscillator(double generatedSamples, double totalSamples, double) noexcept
+			: _delta{ std::numbers::pi / totalSamples }
+			, _cosDelta{ std::cos(_delta) }
+			, _sinDelta{ std::sin(_delta) }
+			, _lastX{ generatedSamples - 1 }
+			, _lastValue{ std::cos(_delta * _lastX) }
+		{
+		}
+
+		double operator()() noexcept
+		{
+			_lastX += 1;
+			return _lastValue = (_lastValue - _sinDelta * std::sin(_delta * _lastX)) / _cosDelta;
+		}
+
+	private:
+		const double _delta;
+		const double _cosDelta;
+		const double _sinDelta;
+		double _lastX;
+		double _lastValue;
+	};
+
 	class RendererImpl final : public aulos::Renderer
 	{
 	public:
@@ -541,6 +568,7 @@ namespace aulos
 		case Wave::Linear: return std::make_unique<TwoPartWave<LinearOscillator>>(voice, samplingRate);
 		case Wave::Quadratic: return std::make_unique<TwoPartWave<QuadraticOscillator>>(voice, samplingRate);
 		case Wave::Cubic: return std::make_unique<TwoPartWave<CubicOscillator>>(voice, samplingRate);
+		case Wave::Cosine: return std::make_unique<TwoPartWave<CosineOscillator>>(voice, samplingRate);
 		}
 		return {};
 	}
