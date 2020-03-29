@@ -46,9 +46,11 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 		margins.setRight(0);
 		layout->setContentsMargins(margins);
 
-		const auto typeCombo = new QComboBox{ parent };
-		typeCombo->addItem(tr("Linear"));
-		layout->addWidget(typeCombo, 0, 0);
+		_typeCombo = new QComboBox{ parent };
+		_typeCombo->addItem(tr("Linear"), static_cast<int>(aulos::Wave::Linear));
+		_typeCombo->addItem(tr("Quadratic"), static_cast<int>(aulos::Wave::Quadratic));
+		layout->addWidget(_typeCombo, 0, 0);
+		connect(_typeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &VoiceWidget::updateVoice);
 
 		_oscillationSpin = new QDoubleSpinBox{ parent };
 		_oscillationSpin->setRange(0.0, 1.0);
@@ -170,6 +172,7 @@ void VoiceWidget::setVoice(const std::shared_ptr<aulos::Voice>& voice)
 	_voice.reset(); // Prevent handling voice changes.
 	aulos::Voice defaultVoice;
 	const auto usedVoice = voice ? voice.get() : &defaultVoice;
+	_typeCombo->setCurrentIndex(_typeCombo->findData(static_cast<int>(usedVoice->_wave)));
 	_oscillationSpin->setValue(usedVoice->_oscillation);
 	setEnvelope(_amplitudeEnvelope, usedVoice->_amplitudeEnvelope);
 	setEnvelope(_frequencyEnvelope, usedVoice->_frequencyEnvelope);
@@ -181,7 +184,7 @@ void VoiceWidget::updateVoice()
 {
 	if (!_voice)
 		return;
-	_voice->_wave = aulos::Wave::Linear;
+	_voice->_wave = static_cast<aulos::Wave>(_typeCombo->currentData().toInt());
 	_voice->_oscillation = static_cast<float>(_oscillationSpin->value());
 	if (auto i = _amplitudeEnvelope.begin(); i->_check->isChecked())
 	{

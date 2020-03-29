@@ -3,19 +3,19 @@ speed 8
 title "Popcorn"
 
 @voice 1 "Rhythm"
-wave linear 1.00
+wave Linear 1.00
 amplitude 0.00 0.01 1.00 0.04 1.00 0.05 0.50 0.90 0.00
 frequency 0.80 0.01 1.00
 asymmetry 0.90
 
 @voice 2 "Melody"
-wave linear 1.00
+wave Linear 1.00
 amplitude 0.00 0.02 1.00 0.08 0.25 0.60 0.00
 frequency 0.80 0.02 1.00 0.08 1.00 0.40 0.99
 asymmetry 0.10 0.02 0.80 0.08 0.80 0.40 0.10
 
 @voice 3 "Bass"
-wave linear 0.90
+wave Linear 0.90
 amplitude 0.00 0.10 1.00 0.40 0.50 0.50 0.00
 frequency 1.00
 asymmetry 0.10

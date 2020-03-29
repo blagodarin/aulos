@@ -21,6 +21,7 @@
 
 #include <QWidget>
 
+class QComboBox;
 class QDoubleSpinBox;
 
 namespace aulos
@@ -47,6 +48,7 @@ private:
 private:
 	struct EnvelopePoint;
 
+	QComboBox* _typeCombo = nullptr;
 	QDoubleSpinBox* _oscillationSpin = nullptr;
 	std::vector<EnvelopePoint> _amplitudeEnvelope;
 	std::vector<EnvelopePoint> _frequencyEnvelope;

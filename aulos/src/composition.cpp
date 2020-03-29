@@ -91,12 +91,12 @@ namespace aulos
 		};
 
 		const auto readIdentifier = [&] {
-			if (*source < 'a' || *source > 'z')
+			if (!(*source >= 'a' && *source <= 'z' || *source >= 'A' && *source <= 'Z'))
 				throw CompositionError{ location(), "Identifier expected" };
 			const auto begin = source;
 			do
 				++source;
-			while (*source >= 'a' && *source <= 'z');
+			while (*source >= 'a' && *source <= 'z' || *source >= 'A' && *source <= 'Z');
 			const std::string_view result{ begin, static_cast<size_t>(source - begin) };
 			skipSpaces();
 			return result;
@@ -278,10 +278,16 @@ namespace aulos
 			{
 				if (currentSection != Section::Voice)
 					throw CompositionError{ location(), "Unexpected command" };
-				if (const auto type = readIdentifier(); type == "linear")
+				if (const auto type = readIdentifier(); type == "Linear")
 				{
 					const auto oscillation = tryReadFloat(0.f, 1.f);
 					currentVoice->_wave = Wave::Linear;
+					currentVoice->_oscillation = oscillation ? *oscillation : 1.f;
+				}
+				else if (type == "Quadratic")
+				{
+					const auto oscillation = tryReadFloat(0.f, 1.f);
+					currentVoice->_wave = Wave::Quadratic;
 					currentVoice->_oscillation = oscillation ? *oscillation : 1.f;
 				}
 				else
@@ -428,7 +434,13 @@ namespace aulos
 			text += "\n\n@voice " + std::to_string(partIndex);
 			if (!part._voiceName.empty())
 				text += " \"" + part._voiceName + '"';
-			text += "\nwave linear " + floatToString(part._voice._oscillation);
+			text += "\nwave ";
+			switch (part._voice._wave)
+			{
+			case Wave::Linear: text += "Linear"; break;
+			case Wave::Quadratic: text += "Quadratic"; break;
+			}
+			text += ' ' + floatToString(part._voice._oscillation);
 			text += "\namplitude " + floatToString(part._voice._amplitudeEnvelope._initial);
 			for (const auto& change : part._voice._amplitudeEnvelope._changes)
 				text += ' ' + floatToString(change._delay) + ' ' + floatToString(change._value);

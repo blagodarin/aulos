@@ -323,7 +323,7 @@ namespace
 				const auto samplesToGenerate = std::min(static_cast<size_t>(std::ceil(_partSamplesRemaining)), std::min((bufferBytes - offset) / kSampleSize, _amplitudeModulator.partSamplesRemaining()));
 				if (buffer)
 				{
-					Oscillator oscillator{ _partSamplesRemaining, _partLength, _oscillation };
+					Oscillator oscillator{ _partLength - _partSamplesRemaining, _partLength, _oscillation };
 					const auto base = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
 					for (size_t i = 0; i < samplesToGenerate; ++i)
 						base[i] += static_cast<float>(_amplitude * oscillator() * _amplitudeModulator.advance());
@@ -335,18 +335,54 @@ namespace
 		}
 	};
 
-	struct LinearOscillator
+	// C = 2 * oscillation / totalSamples
+	// F(X) = 1 - C * X
+	// F(X) = F(X - 1) - C
+	class LinearOscillator
 	{
-		const double _increment;
-		double _value;
-
-		constexpr LinearOscillator(double remainingSamples, double totalSamples, double oscillation) noexcept
-			: _increment{ 2.0 * oscillation / totalSamples }, _value{ 1.0 - _increment * (remainingSamples - 1.0) } {}
+	public:
+		constexpr LinearOscillator(double generatedSamples, double totalSamples, double oscillation) noexcept
+			: _coefficient{ 2 * oscillation / totalSamples }
+			, _lastValue{ 1 - _coefficient * (generatedSamples - 1) }
+		{
+		}
 
 		constexpr double operator()() noexcept
 		{
-			return _value += _increment;
+			return _lastValue -= _coefficient;
 		}
+
+	private:
+		const double _coefficient;
+		double _lastValue;
+	};
+
+	// C = 2 * oscillation / totalSamples^2
+	// F(X) = 1 - C * X^2
+	// F(X) = F(X - 1) - C * (2 * X - 1)
+	class QuadraticOscillator
+	{
+	public:
+		constexpr QuadraticOscillator(double generatedSamples, double totalSamples, double oscillation) noexcept
+			: _coefficient{ 2 * oscillation / squared(totalSamples) }
+			, _lastX{ generatedSamples - 1 }
+			, _lastValue{ 1 - _coefficient * squared(_lastX) }
+		{
+		}
+
+		constexpr double operator()() noexcept
+		{
+			_lastX += 1;
+			return _lastValue -= _coefficient * (2 * _lastX - 1);
+		}
+
+	private:
+		static constexpr double squared(double x) noexcept { return x * x; }
+
+	private:
+		const double _coefficient;
+		double _lastX;
+		double _lastValue;
 	};
 
 	class RendererImpl final : public aulos::Renderer
@@ -471,6 +507,7 @@ namespace aulos
 		switch (voice._wave)
 		{
 		case Wave::Linear: return std::make_unique<TwoPartWave<LinearOscillator>>(voice, samplingRate);
+		case Wave::Quadratic: return std::make_unique<TwoPartWave<QuadraticOscillator>>(voice, samplingRate);
 		}
 		return {};
 	}
