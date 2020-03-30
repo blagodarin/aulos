@@ -16,12 +16,11 @@
 //
 
 #include "composition.hpp"
+#include "oscillators.hpp"
 
 #include <algorithm>
 #include <array>
 #include <cassert>
-#include <cmath>
-#include <numbers>
 #include <numeric>
 
 namespace
@@ -324,7 +323,7 @@ namespace
 				const auto samplesToGenerate = std::min(static_cast<size_t>(std::ceil(_partSamplesRemaining)), std::min((bufferBytes - offset) / kSampleSize, _amplitudeModulator.partSamplesRemaining()));
 				if (buffer)
 				{
-					Oscillator oscillator{ _partLength - _partSamplesRemaining, _partLength, _oscillation };
+					Oscillator oscillator{ _partLength, _partLength - _partSamplesRemaining, _oscillation };
 					const auto base = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
 					for (size_t i = 0; i < samplesToGenerate; ++i)
 						base[i] += static_cast<float>(_amplitude * oscillator() * _amplitudeModulator.advance());
@@ -334,114 +333,6 @@ namespace
 			}
 			return offset;
 		}
-	};
-
-	// C = 2 * oscillation / totalSamples
-	// F(X) = 1 - C * X
-	// F(X) = F(X - 1) - C
-	class LinearOscillator
-	{
-	public:
-		constexpr LinearOscillator(double generatedSamples, double totalSamples, double oscillation) noexcept
-			: _coefficient{ 2 * oscillation / totalSamples }
-			, _lastValue{ 1 - _coefficient * (generatedSamples - 1) }
-		{
-		}
-
-		constexpr double operator()() noexcept
-		{
-			return _lastValue -= _coefficient;
-		}
-
-	private:
-		const double _coefficient;
-		double _lastValue;
-	};
-
-	// C = 2 * oscillation / totalSamples^2
-	// F(X) = 1 - C * X^2
-	// F(X) = F(X - 1) - C * (2 * X - 1)
-	class QuadraticOscillator
-	{
-	public:
-		constexpr QuadraticOscillator(double generatedSamples, double totalSamples, double oscillation) noexcept
-			: _coefficient{ 2 * oscillation / squared(totalSamples) }
-			, _lastX{ generatedSamples - 1 }
-			, _lastValue{ 1 - _coefficient * squared(_lastX) }
-		{
-		}
-
-		constexpr double operator()() noexcept
-		{
-			_lastX += 1;
-			return _lastValue -= _coefficient * (2 * _lastX - 1);
-		}
-
-	private:
-		static constexpr double squared(double x) noexcept { return x * x; }
-
-	private:
-		const double _coefficient;
-		double _lastX;
-		double _lastValue;
-	};
-
-	// C2 = 6 * oscillation * totalSamples^2
-	// C3 = 4 * oscillation * totalSamples^3
-	// F(X) = 1 - C2 * X^2 + C3 * X^3
-	// F(X) = F(X - 1) - [C2 * (2 * X - 1) - C3 * (3 * X * (X - 1) + 1)]
-	class CubicOscillator
-	{
-	public:
-		constexpr CubicOscillator(double generatedSamples, double totalSamples, double oscillation) noexcept
-			: _coefficient2{ 6 * oscillation / squared(totalSamples) }
-			, _coefficient3{ 4 * oscillation / cubed(totalSamples) }
-			, _lastX{ generatedSamples - 1 }
-			, _lastValue{ 1 - _coefficient2 * squared(_lastX) + _coefficient3 * cubed(_lastX) }
-		{
-		}
-
-		constexpr double operator()() noexcept
-		{
-			_lastX += 1;
-			return _lastValue -= _coefficient2 * (2 * _lastX - 1) - _coefficient3 * (3 * _lastX * (_lastX - 1) + 1);
-		}
-
-	private:
-		static constexpr double squared(double x) noexcept { return x * x; }
-		static constexpr double cubed(double x) noexcept { return x * x * x; }
-
-	private:
-		const double _coefficient2;
-		const double _coefficient3;
-		double _lastX;
-		double _lastValue;
-	};
-
-	class CosineOscillator
-	{
-	public:
-		CosineOscillator(double generatedSamples, double totalSamples, double) noexcept
-			: _delta{ std::numbers::pi / totalSamples }
-			, _cosDelta{ std::cos(_delta) }
-			, _sinDelta{ std::sin(_delta) }
-			, _lastX{ generatedSamples - 1 }
-			, _lastValue{ std::cos(_delta * _lastX) }
-		{
-		}
-
-		double operator()() noexcept
-		{
-			_lastX += 1;
-			return _lastValue = (_lastValue - _sinDelta * std::sin(_delta * _lastX)) / _cosDelta;
-		}
-
-	private:
-		const double _delta;
-		const double _cosDelta;
-		const double _sinDelta;
-		double _lastX;
-		double _lastValue;
 	};
 
 	class RendererImpl final : public aulos::Renderer
