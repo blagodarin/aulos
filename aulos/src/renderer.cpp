@@ -323,7 +323,7 @@ namespace
 				const auto samplesToGenerate = std::min(static_cast<size_t>(std::ceil(_partSamplesRemaining)), std::min((bufferBytes - offset) / kSampleSize, _amplitudeModulator.partSamplesRemaining()));
 				if (buffer)
 				{
-					Oscillator oscillator{ _partLength, _partLength - _partSamplesRemaining, _amplitude, _oscillation };
+					Oscillator oscillator{ _partLength, _partLength - _partSamplesRemaining, _amplitude, _oscillation * _amplitude };
 					const auto base = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
 					for (size_t i = 0; i < samplesToGenerate; ++i)
 						base[i] += static_cast<float>(oscillator() * _amplitudeModulator.advance());
