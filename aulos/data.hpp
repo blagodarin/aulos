@@ -84,10 +84,10 @@ namespace aulos
 	struct Voice
 	{
 		Wave _wave = Wave::Linear;
-		float _oscillation = 1.f;
 		Envelope _amplitudeEnvelope{ 0.f };
 		Envelope _frequencyEnvelope{ 1.f };
 		Envelope _asymmetryEnvelope{ 0.f };
+		Envelope _oscillationEnvelope{ 1.f };
 	};
 
 	struct SequenceData

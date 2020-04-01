@@ -3,22 +3,25 @@ speed 10
 title "Example 1"
 
 @voice 1 "Melody"
-wave Linear 1.00
+wave Linear
 amplitude 0.00 0.01 1.00 0.04 0.50 0.95 0.00
 frequency 0.80 0.01 0.80 0.04 1.00 0.95 0.99
 asymmetry 0.50 0.05 0.90 0.95 0.00
+oscillation 1.00
 
 @voice 2 "Bass"
-wave Linear 1.00
+wave Linear
 amplitude 0.00 0.02 1.00 0.08 0.25 0.90 0.00
 frequency 0.80 0.02 1.00 0.08 1.00 0.90 0.99
 asymmetry 0.10 0.02 0.80 0.08 0.80 0.90 0.10
+oscillation 1.00
 
 @voice 3 "Ding"
-wave Linear 1.00
+wave Linear
 amplitude 0.00 0.01 1.00 0.04 1.00 0.05 0.50 0.90 0.00
 frequency 1.00
 asymmetry 1.00
+oscillation 1.00
 
 @tracks
 1 1 2

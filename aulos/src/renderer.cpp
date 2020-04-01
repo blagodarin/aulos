@@ -243,7 +243,7 @@ namespace
 		TwoPartWaveBase(const aulos::Voice& voice, unsigned samplingRate) noexcept
 			: VoiceRendererImpl{ voice, samplingRate }
 			, _asymmetryEnvelope{ voice._asymmetryEnvelope, samplingRate }
-			, _oscillation{ voice._oscillation }
+			, _oscillationEnvelope{ voice._oscillationEnvelope, samplingRate }
 			, _samplingRate{ static_cast<double>(samplingRate) }
 		{
 		}
@@ -267,6 +267,7 @@ namespace
 			}
 			_frequencyModulator.start(1.0);
 			_asymmetryModulator.start(0.0);
+			_oscillationModulator.start(1.0);
 			_frequency = kNoteTable[note];
 			updatePeriodParts();
 			_partSamplesRemaining = _partLength * partRemaining;
@@ -278,6 +279,7 @@ namespace
 		{
 			_frequencyModulator.advance(samples);
 			_asymmetryModulator.advance(samples);
+			_oscillationModulator.advance(samples);
 			auto remaining = _partSamplesRemaining - samples;
 			while (remaining <= 0.0)
 			{
@@ -299,7 +301,8 @@ namespace
 	protected:
 		SampledEnvelope _asymmetryEnvelope;
 		LinearModulator _asymmetryModulator{ _asymmetryEnvelope };
-		const double _oscillation;
+		SampledEnvelope _oscillationEnvelope;
+		LinearModulator _oscillationModulator{ _oscillationEnvelope };
 		const double _samplingRate;
 		float _amplitude = 0.f;
 		double _frequency = 0.0;
@@ -323,7 +326,7 @@ namespace
 				const auto samplesToGenerate = std::min(static_cast<size_t>(std::ceil(_partSamplesRemaining)), std::min((bufferBytes - offset) / kSampleSize, _amplitudeModulator.partSamplesRemaining()));
 				if (buffer)
 				{
-					Oscillator oscillator{ _partLength, _partLength - _partSamplesRemaining, _amplitude, _oscillation * _amplitude };
+					Oscillator oscillator{ _partLength, _partLength - _partSamplesRemaining, _amplitude, _oscillationModulator.value() * _amplitude };
 					const auto base = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
 					for (size_t i = 0; i < samplesToGenerate; ++i)
 						base[i] += static_cast<float>(oscillator() * _amplitudeModulator.advance());

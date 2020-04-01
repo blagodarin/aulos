@@ -274,34 +274,28 @@ namespace aulos
 				while (const auto delay = tryReadFloat(0.f, kMaxEnvelopePartDuration))
 					envelope._changes.emplace_back(*delay, readFloat(minFrequency, 1.f));
 			}
+			else if (command == "oscillation")
+			{
+				if (currentSection != Section::Voice)
+					throw CompositionError{ location(), "Unexpected command" };
+				auto& envelope = currentVoice->_oscillationEnvelope;
+				envelope._initial = readFloat(0.f, 1.f);
+				envelope._changes.clear();
+				while (const auto delay = tryReadFloat(0.f, kMaxEnvelopePartDuration))
+					envelope._changes.emplace_back(*delay, readFloat(0.f, 1.f));
+			}
 			else if (command == "wave")
 			{
 				if (currentSection != Section::Voice)
 					throw CompositionError{ location(), "Unexpected command" };
 				if (const auto type = readIdentifier(); type == "Linear")
-				{
-					const auto oscillation = tryReadFloat(0.f, 1.f);
 					currentVoice->_wave = Wave::Linear;
-					currentVoice->_oscillation = oscillation ? *oscillation : 1.f;
-				}
 				else if (type == "Quadratic")
-				{
-					const auto oscillation = tryReadFloat(0.f, 1.f);
 					currentVoice->_wave = Wave::Quadratic;
-					currentVoice->_oscillation = oscillation ? *oscillation : 1.f;
-				}
 				else if (type == "Cubic")
-				{
-					const auto oscillation = tryReadFloat(0.f, 1.f);
 					currentVoice->_wave = Wave::Cubic;
-					currentVoice->_oscillation = oscillation ? *oscillation : 1.f;
-				}
 				else if (type == "Cosine")
-				{
-					const auto oscillation = tryReadFloat(0.f, 1.f);
 					currentVoice->_wave = Wave::Cosine;
-					currentVoice->_oscillation = oscillation ? *oscillation : 1.f;
-				}
 				else
 					throw CompositionError{ location(), "Bad voice wave type" };
 			}
@@ -454,7 +448,6 @@ namespace aulos
 			case Wave::Cubic: text += "Cubic"; break;
 			case Wave::Cosine: text += "Cosine"; break;
 			}
-			text += ' ' + floatToString(part._voice._oscillation);
 			text += "\namplitude " + floatToString(part._voice._amplitudeEnvelope._initial);
 			for (const auto& change : part._voice._amplitudeEnvelope._changes)
 				text += ' ' + floatToString(change._delay) + ' ' + floatToString(change._value);
@@ -463,6 +456,9 @@ namespace aulos
 				text += ' ' + floatToString(change._delay) + ' ' + floatToString(change._value);
 			text += "\nasymmetry " + floatToString(part._voice._asymmetryEnvelope._initial);
 			for (const auto& change : part._voice._asymmetryEnvelope._changes)
+				text += ' ' + floatToString(change._delay) + ' ' + floatToString(change._value);
+			text += "\noscillation " + floatToString(part._voice._oscillationEnvelope._initial);
+			for (const auto& change : part._voice._oscillationEnvelope._changes)
 				text += ' ' + floatToString(change._delay) + ' ' + floatToString(change._value);
 		}
 		text += "\n\n@tracks";

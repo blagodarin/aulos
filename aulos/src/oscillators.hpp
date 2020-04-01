@@ -22,7 +22,7 @@
 
 namespace aulos
 {
-	// Oscillators are stateful object which produce half-period wave parts.
+	// Oscillators are stateful objects which produce half-period wave parts.
 	//
 	// An oscillator is parameterized with:
 	//   * length of the half-period;
