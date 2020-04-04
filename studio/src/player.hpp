@@ -35,8 +35,6 @@ class Player : public QObject
 	Q_OBJECT
 
 public:
-	static constexpr unsigned SamplingRate = 48'000;
-
 	Player(QObject* parent = nullptr);
 
 	constexpr bool isPlaying() const noexcept { return _state == State::Starting || _state == State::Started; }

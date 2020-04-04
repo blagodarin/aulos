@@ -91,6 +91,7 @@ private:
 	QAction* _stopAction;
 	QSpinBox* _speedSpin;
 	QComboBox* _channelsCombo;
+	QComboBox* _samplingRateCombo;
 	CompositionWidget* _compositionWidget;
 	VoiceWidget* _voiceWidget;
 	SequenceWidget* _sequenceWidget;

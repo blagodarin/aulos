@@ -408,7 +408,7 @@ namespace
 		RendererImpl(const aulos::CompositionImpl& composition, unsigned samplingRate, unsigned channels)
 			: _samplingRate{ samplingRate }
 			, _channels{ channels }
-			, _stepBytes{ static_cast<size_t>(std::lround(static_cast<double>(samplingRate * channels * kSampleSize) / composition._speed)) }
+			, _stepBytes{ static_cast<size_t>(std::lround(static_cast<double>(samplingRate) / composition._speed)) * _blockBytes }
 		{
 			size_t trackCount = 0;
 			const auto totalWeight = static_cast<float>(std::reduce(composition._parts.cbegin(), composition._parts.cend(), 0u, [&trackCount](unsigned weight, const aulos::Part& part) {
@@ -473,8 +473,8 @@ namespace
 						const auto nextIndex = track->_soundIndex + 1;
 						track->_soundBytesRemaining = nextIndex != track->_sounds.size()
 							? _stepBytes * track->_sounds[nextIndex]._delay
-							: track->_waveRenderer->duration() * _channels * kSampleSize;
-						assert(track->_soundBytesRemaining % (_channels * kSampleSize) == 0);
+							: track->_waveRenderer->duration() * _blockBytes;
+						assert(track->_soundBytesRemaining % _blockBytes == 0);
 						track->_waveRenderer->start(track->_sounds[track->_soundIndex]._note, track->_normalizedWeight);
 					}
 					const auto bytesToGenerate = std::min(track->_soundBytesRemaining, bufferBytes - trackOffset);
@@ -524,6 +524,7 @@ namespace
 
 		const unsigned _samplingRate;
 		const unsigned _channels;
+		const size_t _blockBytes = _channels * kSampleSize;
 		const size_t _stepBytes;
 		std::vector<std::unique_ptr<TrackState>> _tracks;
 	};
