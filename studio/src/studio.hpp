@@ -19,6 +19,7 @@
 
 #include <QMainWindow>
 
+class QComboBox;
 class QLabel;
 class QSpinBox;
 
@@ -89,6 +90,7 @@ private:
 	QAction* _playAction;
 	QAction* _stopAction;
 	QSpinBox* _speedSpin;
+	QComboBox* _channelsCombo;
 	CompositionWidget* _compositionWidget;
 	VoiceWidget* _voiceWidget;
 	SequenceWidget* _sequenceWidget;

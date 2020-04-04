@@ -28,6 +28,7 @@
 
 #include <QApplication>
 #include <QCloseEvent>
+#include <QComboBox>
 #include <QFileDialog>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -188,8 +189,8 @@ Studio::Studio()
 		if (!composition)
 			return;
 		assert(_mode == Mode::Editing);
-		const auto renderer = aulos::Renderer::create(*composition, Player::SamplingRate);
-		[[maybe_unused]] const auto skippedBytes = renderer->render(nullptr, _compositionWidget->startOffset() * Player::SamplingRate * sizeof(float) / _composition->_speed);
+		const auto renderer = aulos::Renderer::create(*composition, Player::SamplingRate, _channelsCombo->currentData().toUInt());
+		[[maybe_unused]] const auto skippedBytes = renderer->render(nullptr, _compositionWidget->startOffset() * Player::SamplingRate * renderer->channels() * sizeof(float) / _composition->_speed);
 		_player->reset(*renderer);
 		_mode = Mode::Playing;
 		_player->start();
@@ -205,6 +206,10 @@ Studio::Studio()
 	_speedSpin->setRange(1, 32);
 	_speedSpin->setSuffix("x");
 
+	_channelsCombo = new QComboBox{ this };
+	_channelsCombo->addItem(tr("Mono"), 1u);
+	_channelsCombo->addItem(tr("Stereo"), 2u);
+
 	const auto toolBar = new QToolBar{ this };
 	toolBar->setFloatable(false);
 	toolBar->setMovable(false);
@@ -215,6 +220,8 @@ Studio::Studio()
 	toolBar->addAction(_playAction);
 	toolBar->addAction(_stopAction);
 	toolBar->addWidget(_speedSpin);
+	toolBar->addSeparator();
+	toolBar->addWidget(_channelsCombo);
 	addToolBar(toolBar);
 
 	const auto splitter = new QSplitter{ Qt::Vertical, this };
@@ -283,7 +290,7 @@ Studio::Studio()
 	connect(_sequenceWidget, &SequenceWidget::noteActivated, [this](aulos::Note note) {
 		const auto voice = _voiceWidget->voice();
 		assert(voice);
-		const auto renderer = aulos::VoiceRenderer::create(*voice, Player::SamplingRate);
+		const auto renderer = aulos::VoiceRenderer::create(*voice, Player::SamplingRate, _channelsCombo->currentData().toUInt());
 		assert(renderer);
 		renderer->start(note, _compositionWidget->selectedTrackWeight());
 		_player->reset(*renderer);
@@ -351,8 +358,10 @@ void Studio::exportComposition()
 	if (!file.open(QIODevice::WriteOnly))
 		return;
 
+	const auto channels = _channelsCombo->currentData().toUInt();
+
 	QByteArray rawData;
-	Player::renderData(rawData, *aulos::Renderer::create(*composition, Player::SamplingRate));
+	Player::renderData(rawData, *aulos::Renderer::create(*composition, Player::SamplingRate, channels));
 
 	constexpr size_t chunkHeaderSize = 8;
 	constexpr size_t fmtChunkSize = 16;
@@ -364,12 +373,12 @@ void Studio::exportComposition()
 	file.write("WAVE");
 	file.write("fmt ");
 	::writeValue<uint32_t>(file, fmtChunkSize);
-	::writeValue<uint16_t>(file, 3);                                    // Data format: IEEE float PCM samples.
-	::writeValue<uint16_t>(file, 1);                                    // Channels.
-	::writeValue<uint32_t>(file, Player::SamplingRate);                 // Samples per second.
-	::writeValue<uint32_t>(file, Player::SamplingRate * sizeof(float)); // Bytes per second.
-	::writeValue<uint16_t>(file, sizeof(float));                        // Bytes per frame.
-	::writeValue<uint16_t>(file, sizeof(float) * 8);                    // Bits per sample.
+	::writeValue<uint16_t>(file, 3);                                               // Data format: IEEE float PCM samples.
+	::writeValue<uint16_t>(file, channels);                                        // Channels.
+	::writeValue<uint32_t>(file, Player::SamplingRate);                            // Samples per second.
+	::writeValue<uint32_t>(file, Player::SamplingRate * channels * sizeof(float)); // Bytes per second.
+	::writeValue<uint16_t>(file, static_cast<uint16_t>(channels * sizeof(float))); // Bytes per frame.
+	::writeValue<uint16_t>(file, sizeof(float) * 8);                               // Bits per sample.
 	file.write("data");
 	::writeValue<uint32_t>(file, rawData.size());
 	assert(file.pos() == totalHeadersSize);
@@ -494,6 +503,7 @@ void Studio::updateStatus()
 	_playAction->setEnabled(_hasComposition && _mode == Mode::Editing);
 	_stopAction->setEnabled(_hasComposition && _mode == Mode::Playing);
 	_speedSpin->setEnabled(_hasComposition && _mode == Mode::Editing);
+	_channelsCombo->setEnabled(_hasComposition && _mode == Mode::Editing);
 	_compositionWidget->setInteractive(_hasComposition && _mode == Mode::Editing);
 	_voiceWidget->setEnabled(_hasComposition && _mode == Mode::Editing && _voiceWidget->voice());
 	_sequenceWidget->setInteractive(_hasComposition && _mode == Mode::Editing && _voiceWidget->voice());

@@ -25,11 +25,20 @@ Player::Player(QObject* parent)
 	: QObject{ parent }
 	, _buffer{ &_data }
 {
+}
+
+void Player::reset(aulos::Renderer& renderer)
+{
+	stop();
+	_output.reset();
+	_buffer.close();
+	renderData(_data, renderer);
+	_buffer.open(QIODevice::ReadOnly);
 	QAudioFormat format;
 	format.setByteOrder(QAudioFormat::LittleEndian);
-	format.setChannelCount(1);
+	format.setChannelCount(renderer.channels());
 	format.setCodec("audio/pcm");
-	format.setSampleRate(SamplingRate);
+	format.setSampleRate(renderer.samplingRate());
 	format.setSampleSize(32);
 	format.setSampleType(QAudioFormat::Float);
 	_output = std::make_unique<QAudioOutput>(format);
@@ -41,14 +50,6 @@ Player::Player(QObject* parent)
 		_state = state == QAudio::ActiveState ? State::Started : State::Stopped;
 		emit stateChanged();
 	});
-}
-
-void Player::reset(aulos::Renderer& renderer)
-{
-	stop();
-	_buffer.close();
-	renderData(_data, renderer);
-	_buffer.open(QIODevice::ReadOnly);
 }
 
 void Player::start()

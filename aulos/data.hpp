@@ -136,11 +136,10 @@ namespace aulos
 	class VoiceRenderer : public Renderer
 	{
 	public:
-		[[nodiscard]] static std::unique_ptr<VoiceRenderer> create(const Voice&, unsigned samplingRate);
+		[[nodiscard]] static std::unique_ptr<VoiceRenderer> create(const Voice&, unsigned samplingRate, unsigned channels);
 
 		virtual ~VoiceRenderer() noexcept = default;
 
-		[[nodiscard]] virtual size_t duration() const noexcept = 0;
 		virtual void start(Note, float amplitude) noexcept = 0;
 	};
 }

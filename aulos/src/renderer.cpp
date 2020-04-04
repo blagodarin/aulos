@@ -216,39 +216,35 @@ namespace
 		double _currentValue = 0.0;
 	};
 
-	class VoiceRendererImpl : public aulos::VoiceRenderer
+	class WaveRenderer : public aulos::VoiceRenderer
 	{
 	public:
-		VoiceRendererImpl(const aulos::Voice& voice, unsigned samplingRate)
-			: _amplitudeEnvelope{ voice._amplitudeEnvelope, samplingRate }
+		WaveRenderer(const aulos::Voice& voice, unsigned samplingRate, unsigned channels) noexcept
+			: _samplingRate{ samplingRate }
+			, _channels{ channels }
+			, _amplitudeEnvelope{ voice._amplitudeEnvelope, samplingRate }
 			, _frequencyEnvelope{ voice._frequencyEnvelope, samplingRate }
-		{
-		}
-
-		size_t duration() const noexcept override
-		{
-			return _amplitudeModulator.duration() * kSampleSize;
-		}
-
-	protected:
-		SampledEnvelope _amplitudeEnvelope;
-		AmplitudeModulator _amplitudeModulator{ _amplitudeEnvelope };
-		SampledEnvelope _frequencyEnvelope;
-		LinearModulator _frequencyModulator{ _frequencyEnvelope };
-	};
-
-	class TwoPartWaveBase : public VoiceRendererImpl
-	{
-	public:
-		TwoPartWaveBase(const aulos::Voice& voice, unsigned samplingRate) noexcept
-			: VoiceRendererImpl{ voice, samplingRate }
 			, _asymmetryEnvelope{ voice._asymmetryEnvelope, samplingRate }
 			, _oscillationEnvelope{ voice._oscillationEnvelope, samplingRate }
-			, _samplingRate{ static_cast<double>(samplingRate) }
 		{
 		}
 
-		void start(aulos::Note note, float amplitude) noexcept override
+		unsigned channels() const noexcept final
+		{
+			return _channels;
+		}
+
+		size_t duration() const noexcept
+		{
+			return _amplitudeModulator.duration();
+		}
+
+		unsigned samplingRate() const noexcept final
+		{
+			return _samplingRate;
+		}
+
+		void start(aulos::Note note, float amplitude) noexcept final
 		{
 			const auto clampedAmplitude = std::clamp(amplitude, -1.f, 1.f);
 			double partRemaining;
@@ -299,11 +295,16 @@ namespace
 		}
 
 	protected:
+		const unsigned _samplingRate;
+		const unsigned _channels;
+		SampledEnvelope _amplitudeEnvelope;
+		AmplitudeModulator _amplitudeModulator{ _amplitudeEnvelope };
+		SampledEnvelope _frequencyEnvelope;
+		LinearModulator _frequencyModulator{ _frequencyEnvelope };
 		SampledEnvelope _asymmetryEnvelope;
 		LinearModulator _asymmetryModulator{ _asymmetryEnvelope };
 		SampledEnvelope _oscillationEnvelope;
 		LinearModulator _oscillationModulator{ _oscillationEnvelope };
-		const double _samplingRate;
 		float _amplitude = 0.f;
 		double _frequency = 0.0;
 		size_t _partIndex = 0;
@@ -312,10 +313,11 @@ namespace
 	};
 
 	template <typename Oscillator>
-	class TwoPartWave final : public TwoPartWaveBase
+	class MonoWaveRenderer final : public WaveRenderer
 	{
 	public:
-		using TwoPartWaveBase::TwoPartWaveBase;
+		MonoWaveRenderer(const aulos::Voice& voice, unsigned samplingRate) noexcept
+			: WaveRenderer{ voice, samplingRate, 1 } {}
 
 		size_t render(void* buffer, size_t bufferBytes) noexcept override
 		{
@@ -338,12 +340,75 @@ namespace
 		}
 	};
 
+	template <typename Oscillator>
+	class StereoWaveRenderer final : public WaveRenderer
+	{
+	public:
+		StereoWaveRenderer(const aulos::Voice& voice, unsigned samplingRate) noexcept
+			: WaveRenderer{ voice, samplingRate, 2 } {}
+
+		size_t render(void* buffer, size_t bufferBytes) noexcept override
+		{
+			bufferBytes -= bufferBytes % kBlockSize;
+			size_t offset = 0;
+			while (offset < bufferBytes && _amplitudeModulator.update())
+			{
+				const auto samplesToGenerate = std::min(static_cast<size_t>(std::ceil(_partSamplesRemaining)), std::min((bufferBytes - offset) / kBlockSize, _amplitudeModulator.partSamplesRemaining()));
+				if (buffer)
+				{
+					Oscillator oscillator{ _partLength, _partLength - _partSamplesRemaining, _amplitude, _oscillationModulator.value() * _amplitude };
+					auto output = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
+					for (size_t i = 0; i < samplesToGenerate; ++i)
+					{
+						const auto value = static_cast<float>(oscillator() * _amplitudeModulator.advance());
+						*output++ += value;
+						*output++ -= value;
+					}
+				}
+				advance(samplesToGenerate);
+				offset += samplesToGenerate * kBlockSize;
+			}
+			return offset;
+		}
+
+	private:
+		static constexpr auto kBlockSize = 2 * kSampleSize;
+	};
+
+	std::unique_ptr<WaveRenderer> createWaveRenderer(const aulos::Voice& voice, unsigned samplingRate, unsigned channels)
+	{
+		switch (channels)
+		{
+		case 1:
+			switch (voice._wave)
+			{
+			case aulos::Wave::Linear: return std::make_unique<MonoWaveRenderer<aulos::LinearOscillator>>(voice, samplingRate);
+			case aulos::Wave::Quadratic: return std::make_unique<MonoWaveRenderer<aulos::QuadraticOscillator>>(voice, samplingRate);
+			case aulos::Wave::Cubic: return std::make_unique<MonoWaveRenderer<aulos::CubicOscillator>>(voice, samplingRate);
+			case aulos::Wave::Cosine: return std::make_unique<MonoWaveRenderer<aulos::CosineOscillator>>(voice, samplingRate);
+			}
+			break;
+
+		case 2:
+			switch (voice._wave)
+			{
+			case aulos::Wave::Linear: return std::make_unique<StereoWaveRenderer<aulos::LinearOscillator>>(voice, samplingRate);
+			case aulos::Wave::Quadratic: return std::make_unique<StereoWaveRenderer<aulos::QuadraticOscillator>>(voice, samplingRate);
+			case aulos::Wave::Cubic: return std::make_unique<StereoWaveRenderer<aulos::CubicOscillator>>(voice, samplingRate);
+			case aulos::Wave::Cosine: return std::make_unique<StereoWaveRenderer<aulos::CosineOscillator>>(voice, samplingRate);
+			}
+			break;
+		}
+		return {};
+	}
+
 	class RendererImpl final : public aulos::Renderer
 	{
 	public:
-		RendererImpl(const aulos::CompositionImpl& composition, unsigned samplingRate)
+		RendererImpl(const aulos::CompositionImpl& composition, unsigned samplingRate, unsigned channels)
 			: _samplingRate{ samplingRate }
-			, _stepBytes{ static_cast<size_t>(std::lround(_samplingRate / composition._speed)) * kSampleSize }
+			, _channels{ channels }
+			, _stepBytes{ static_cast<size_t>(std::lround(static_cast<double>(samplingRate * channels * kSampleSize) / composition._speed)) }
 		{
 			size_t trackCount = 0;
 			const auto totalWeight = static_cast<float>(std::reduce(composition._parts.cbegin(), composition._parts.cend(), 0u, [&trackCount](unsigned weight, const aulos::Part& part) {
@@ -357,7 +422,7 @@ namespace
 			{
 				for (const auto& track : part._tracks)
 				{
-					auto& trackSounds = _tracks.emplace_back(std::make_unique<TrackState>(part._voice, track._weight / totalWeight, samplingRate))->_sounds;
+					auto& trackSounds = _tracks.emplace_back(std::make_unique<TrackState>(part._voice, track._weight / totalWeight, samplingRate, channels))->_sounds;
 					size_t fragmentOffset = 0;
 					for (const auto& fragment : track._fragments)
 					{
@@ -388,6 +453,11 @@ namespace
 					}
 		}
 
+		unsigned channels() const noexcept
+		{
+			return _channels;
+		}
+
 		size_t render(void* buffer, size_t bufferBytes) noexcept override
 		{
 			if (buffer)
@@ -403,14 +473,14 @@ namespace
 						const auto nextIndex = track->_soundIndex + 1;
 						track->_soundBytesRemaining = nextIndex != track->_sounds.size()
 							? _stepBytes * track->_sounds[nextIndex]._delay
-							: track->_voice->duration();
-						assert(track->_soundBytesRemaining % kSampleSize == 0);
-						track->_voice->start(track->_sounds[track->_soundIndex]._note, track->_normalizedWeight);
+							: track->_waveRenderer->duration() * _channels * kSampleSize;
+						assert(track->_soundBytesRemaining % (_channels * kSampleSize) == 0);
+						track->_waveRenderer->start(track->_sounds[track->_soundIndex]._note, track->_normalizedWeight);
 					}
 					const auto bytesToGenerate = std::min(track->_soundBytesRemaining, bufferBytes - trackOffset);
 					if (!bytesToGenerate)
 						break;
-					const auto bytesGenerated = track->_voice->render(buffer ? static_cast<std::byte*>(buffer) + trackOffset : nullptr, bytesToGenerate);
+					const auto bytesGenerated = track->_waveRenderer->render(buffer ? static_cast<std::byte*>(buffer) + trackOffset : nullptr, bytesToGenerate);
 					assert(bytesGenerated <= bytesToGenerate); // Initial and inter-sound silence doesn't generate any data.
 					track->_soundBytesRemaining -= bytesToGenerate;
 					trackOffset += bytesToGenerate;
@@ -420,6 +490,11 @@ namespace
 				offset = std::max(offset, trackOffset);
 			}
 			return offset;
+		}
+
+		unsigned samplingRate() const noexcept
+		{
+			return _samplingRate;
 		}
 
 	public:
@@ -434,20 +509,21 @@ namespace
 
 		struct TrackState
 		{
-			std::unique_ptr<aulos::VoiceRenderer> _voice;
+			std::unique_ptr<WaveRenderer> _waveRenderer;
 			const float _normalizedWeight;
 			std::vector<TrackSound> _sounds;
 			size_t _soundIndex = 0;
 			size_t _soundBytesRemaining = 0;
 
-			TrackState(const aulos::Voice& voice, float normalizedWeight, unsigned samplingRate)
-				: _voice{ aulos::VoiceRenderer::create(voice, samplingRate) }
+			TrackState(const aulos::Voice& voice, float normalizedWeight, unsigned samplingRate, unsigned channels)
+				: _waveRenderer{ ::createWaveRenderer(voice, samplingRate, channels) }
 				, _normalizedWeight{ normalizedWeight }
 			{
 			}
 		};
 
 		const unsigned _samplingRate;
+		const unsigned _channels;
 		const size_t _stepBytes;
 		std::vector<std::unique_ptr<TrackState>> _tracks;
 	};
@@ -455,20 +531,15 @@ namespace
 
 namespace aulos
 {
-	std::unique_ptr<VoiceRenderer> VoiceRenderer::create(const Voice& voice, unsigned samplingRate)
+	std::unique_ptr<VoiceRenderer> VoiceRenderer::create(const Voice& voice, unsigned samplingRate, unsigned channels)
 	{
-		switch (voice._wave)
-		{
-		case Wave::Linear: return std::make_unique<TwoPartWave<LinearOscillator>>(voice, samplingRate);
-		case Wave::Quadratic: return std::make_unique<TwoPartWave<QuadraticOscillator>>(voice, samplingRate);
-		case Wave::Cubic: return std::make_unique<TwoPartWave<CubicOscillator>>(voice, samplingRate);
-		case Wave::Cosine: return std::make_unique<TwoPartWave<CosineOscillator>>(voice, samplingRate);
-		}
-		return {};
+		return ::createWaveRenderer(voice, samplingRate, channels);
 	}
 
-	std::unique_ptr<Renderer> Renderer::create(const Composition& composition, unsigned samplingRate)
+	std::unique_ptr<Renderer> Renderer::create(const Composition& composition, unsigned samplingRate, unsigned channels)
 	{
-		return std::make_unique<RendererImpl>(static_cast<const CompositionImpl&>(composition), samplingRate);
+		return channels == 1 || channels == 2
+			? std::make_unique<RendererImpl>(static_cast<const CompositionImpl&>(composition), samplingRate, channels)
+			: nullptr;
 	}
 }

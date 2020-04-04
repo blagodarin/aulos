@@ -30,17 +30,19 @@ namespace aulos
 
 		virtual ~Composition() noexcept = default;
 
-		virtual std::vector<std::byte> save() const = 0;
+		[[nodiscard]] virtual std::vector<std::byte> save() const = 0;
 	};
 
 	// Generates PCM audio for a composition.
 	class Renderer
 	{
 	public:
-		[[nodiscard]] static std::unique_ptr<Renderer> create(const Composition&, unsigned samplingRate);
+		[[nodiscard]] static std::unique_ptr<Renderer> create(const Composition&, unsigned samplingRate, unsigned channels);
 
 		virtual ~Renderer() noexcept = default;
 
+		[[nodiscard]] virtual unsigned channels() const noexcept = 0;
 		[[nodiscard]] virtual size_t render(void* buffer, size_t bufferBytes) noexcept = 0;
+		[[nodiscard]] virtual unsigned samplingRate() const noexcept = 0;
 	};
 }
