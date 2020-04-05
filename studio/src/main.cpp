@@ -19,8 +19,19 @@
 
 #include <QApplication>
 
+namespace
+{
+	QtMessageHandler messageHandler;
+}
+
 int main(int argc, char** argv)
 {
+	::messageHandler = qInstallMessageHandler([](QtMsgType type, const QMessageLogContext& context, const QString& message) {
+		assert(type == QtDebugMsg || type == QtInfoMsg
+			|| message.startsWith("QWindowsWindow::setGeometry: Unable to set geometry ") // A window was too small to contain all its widgets, so its size was increased.
+		);
+		::messageHandler(type, context, message);
+	});
 	QApplication app{ argc, argv };
 	QCoreApplication::setApplicationName("Aulos Studio");
 	QCoreApplication::setOrganizationDomain("blagodarin.me");

@@ -300,13 +300,16 @@ void CompositionScene::removeVoice(const void* voiceId)
 
 void CompositionScene::reset(const std::shared_ptr<aulos::CompositionData>& composition, size_t viewWidth)
 {
-	removeItem(_compositionItem.get());
-	_voices.clear();
-	_tracks.clear();
-	removeItem(_addVoiceItem.get());
-	clear();
+	if (_composition)
+	{
+		_tracks.clear();
+		removeItem(_compositionItem.get());
+		removeItem(_addVoiceItem.get());
+		_voices.clear();
+		clear();
+	}
 	_composition = composition;
-	if (_composition && !_composition->_parts.empty())
+	if (_composition)
 	{
 		auto compositionLength = viewWidth / static_cast<size_t>(kStepWidth) + 1;
 		_voices.reserve(_composition->_parts.size());
