@@ -26,6 +26,8 @@ set(_src
 	src/composition.hpp
 	src/oscillators.hpp
 	src/renderer.cpp
+	src/voice.cpp
+	src/voice.hpp
 	)
 source_group("src" FILES ${_src})
 

@@ -118,7 +118,7 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 	layout->setRowStretch(3, 1);
 }
 
-void VoiceWidget::setVoice(const std::shared_ptr<aulos::Voice>& voice)
+void VoiceWidget::setVoice(const std::shared_ptr<aulos::VoiceData>& voice)
 {
 	const auto setEnvelope = [](std::vector<EnvelopePoint>& dst, const aulos::Envelope& src) {
 		assert(dst[0]._check->isChecked());
@@ -144,7 +144,7 @@ void VoiceWidget::setVoice(const std::shared_ptr<aulos::Voice>& voice)
 	};
 
 	_voice.reset(); // Prevent handling voice changes.
-	aulos::Voice defaultVoice;
+	aulos::VoiceData defaultVoice;
 	const auto usedVoice = voice ? voice.get() : &defaultVoice;
 	_typeCombo->setCurrentIndex(_typeCombo->findData(static_cast<int>(usedVoice->_wave)));
 	setEnvelope(_amplitudeEnvelope, usedVoice->_amplitudeEnvelope);

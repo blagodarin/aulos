@@ -59,7 +59,7 @@ namespace aulos
 		size_t line = 1;
 		const char* lineBase = source;
 		Section currentSection = Section::Global;
-		Voice* currentVoice = nullptr;
+		VoiceData* currentVoice = nullptr;
 		Track* currentTrack = nullptr;
 
 		const auto location = [&]() -> Location { return { line, source - lineBase }; };
@@ -543,7 +543,7 @@ namespace aulos
 		_parts.reserve(packed._parts.size());
 		for (const auto& packedPart : packed._parts)
 		{
-			auto& partData = _parts.emplace_back(std::make_shared<PartData>(std::make_shared<Voice>(packedPart._voice)));
+			auto& partData = _parts.emplace_back(std::make_shared<PartData>(std::make_shared<VoiceData>(packedPart._voice)));
 			partData->_voiceName = packedPart._voiceName;
 			partData->_tracks.reserve(packedPart._tracks.size());
 			for (const auto& packedTrack : packedPart._tracks)

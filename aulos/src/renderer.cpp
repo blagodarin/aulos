@@ -17,385 +17,35 @@
 
 #include "composition.hpp"
 #include "oscillators.hpp"
+#include "voice.hpp"
 
 #include <algorithm>
-#include <array>
 #include <cassert>
 #include <numeric>
 
 namespace
 {
-	constexpr auto kSampleSize = sizeof(float);
-	constexpr auto kNoteRatio = 1.0594630943592952645618252949463;
-
-	class NoteTable
-	{
-	public:
-		NoteTable() noexcept
-		{
-			_frequencies[static_cast<size_t>(aulos::Note::A0)] = 27.5; // A0 for the standard A440 pitch (A4 = 440 Hz).
-			for (auto a = static_cast<size_t>(aulos::Note::A1); a <= static_cast<size_t>(aulos::Note::A9); a += 12)
-				_frequencies[a] = _frequencies[a - 12] * 2.0;
-			for (size_t base = static_cast<size_t>(aulos::Note::C0); base < _frequencies.size() - 1; base += 12)
-			{
-				const auto a = base + static_cast<size_t>(aulos::Note::A0) - static_cast<size_t>(aulos::Note::C0);
-				for (auto note = a; note > base; --note)
-					_frequencies[note - 1] = _frequencies[note] / kNoteRatio;
-				for (auto note = a; note < base + static_cast<size_t>(aulos::Note::B0) - static_cast<size_t>(aulos::Note::C0); ++note)
-					_frequencies[note + 1] = _frequencies[note] * kNoteRatio;
-			}
-		}
-
-		constexpr double operator[](aulos::Note note) const noexcept
-		{
-			return _frequencies[static_cast<size_t>(note)];
-		}
-
-	private:
-		std::array<double, 120> _frequencies;
-	};
-
-	const NoteTable kNoteTable;
-
-	struct SampledEnvelope
-	{
-	public:
-		struct Point
-		{
-			size_t _delay;
-			double _value;
-		};
-
-		SampledEnvelope(const aulos::Envelope& envelope, size_t samplingRate) noexcept
-		{
-			assert(envelope._changes.size() < _points.size());
-			_points[_size++] = { 0, envelope._initial };
-			for (const auto& point : envelope._changes)
-			{
-				assert(point._delay >= 0.f);
-				_points[_size++] = { static_cast<size_t>(double{ point._delay } * samplingRate), point._value };
-			}
-		}
-
-		const Point* begin() const noexcept
-		{
-			return _points.data();
-		}
-
-		size_t duration() const noexcept
-		{
-			return std::reduce(_points.begin(), _points.end(), size_t{}, [](size_t duration, const Point& point) {
-				return duration + point._delay;
-			});
-		}
-
-		const Point* end() const noexcept
-		{
-			return _points.data() + _size;
-		}
-
-	private:
-		size_t _size = 0;
-		std::array<Point, 5> _points{};
-	};
-
-	class AmplitudeModulator
-	{
-	public:
-		AmplitudeModulator(const SampledEnvelope& envelope) noexcept
-			: _envelope{ envelope } {}
-
-		void start(double value) noexcept
-		{
-			_nextPoint = std::find_if(_envelope.begin(), _envelope.end(), [](const SampledEnvelope::Point& point) { return point._delay > 0; });
-			_baseValue = value;
-			_offset = 0;
-			_currentValue = _baseValue;
-		}
-
-		double advance() noexcept
-		{
-			assert(_nextPoint != _envelope.end());
-			assert(_nextPoint->_delay > 0);
-			assert(_offset < _nextPoint->_delay);
-			const auto progress = static_cast<double>(_offset) / _nextPoint->_delay;
-			_currentValue = _baseValue * (1.f - progress) + _nextPoint->_value * progress;
-			++_offset;
-			return _currentValue;
-		}
-
-		size_t duration() const noexcept
-		{
-			return _envelope.duration();
-		}
-
-		size_t partSamplesRemaining() const noexcept
-		{
-			assert(_nextPoint != _envelope.end());
-			return _nextPoint->_delay - _offset;
-		}
-
-		bool stopped() const noexcept
-		{
-			return _nextPoint == _envelope.end();
-		}
-
-		bool update() noexcept
-		{
-			for (;;)
-			{
-				if (_nextPoint == _envelope.end())
-					return false;
-				assert(_offset <= _nextPoint->_delay);
-				if (_offset < _nextPoint->_delay)
-					return true;
-				_baseValue = _nextPoint->_value;
-				++_nextPoint;
-				_offset = 0;
-				_currentValue = _baseValue;
-			}
-		}
-
-		constexpr double value() const noexcept
-		{
-			return _currentValue;
-		}
-
-	private:
-		const SampledEnvelope& _envelope;
-		double _baseValue = 0.f;
-		const SampledEnvelope::Point* _nextPoint = _envelope.end();
-		size_t _offset = 0;
-		double _currentValue = 0.f;
-	};
-
-	class LinearModulator
-	{
-	public:
-		LinearModulator(const SampledEnvelope& envelope) noexcept
-			: _envelope{ envelope } {}
-
-		void start(double value) noexcept
-		{
-			_nextPoint = std::find_if(_envelope.begin(), _envelope.end(), [](const SampledEnvelope::Point& point) { return point._delay > 0; });
-			_baseValue = _nextPoint != _envelope.begin() ? std::prev(_nextPoint)->_value : value;
-			_offset = 0;
-			_currentValue = _baseValue;
-		}
-
-		void advance(size_t samples) noexcept
-		{
-			while (_nextPoint != _envelope.end())
-			{
-				const auto remainingSamples = _nextPoint->_delay - _offset;
-				if (remainingSamples > samples)
-				{
-					_offset += samples;
-					const auto progress = static_cast<double>(_offset) / _nextPoint->_delay;
-					_currentValue = (_baseValue * (1.0 - progress) + _nextPoint->_value * progress);
-					break;
-				}
-				samples -= remainingSamples;
-				_baseValue = _nextPoint->_value;
-				++_nextPoint;
-				_offset = 0;
-				_currentValue = _baseValue;
-			}
-		}
-
-		constexpr double value() const noexcept
-		{
-			return _currentValue;
-		}
-
-	private:
-		const SampledEnvelope& _envelope;
-		double _baseValue = 1.0;
-		const SampledEnvelope::Point* _nextPoint = _envelope.end();
-		size_t _offset = 0;
-		double _currentValue = 0.0;
-	};
-
-	class WaveRenderer : public aulos::VoiceRenderer
-	{
-	public:
-		WaveRenderer(const aulos::Voice& voice, unsigned samplingRate, unsigned channels) noexcept
-			: _samplingRate{ samplingRate }
-			, _channels{ channels }
-			, _amplitudeEnvelope{ voice._amplitudeEnvelope, samplingRate }
-			, _frequencyEnvelope{ voice._frequencyEnvelope, samplingRate }
-			, _asymmetryEnvelope{ voice._asymmetryEnvelope, samplingRate }
-			, _oscillationEnvelope{ voice._oscillationEnvelope, samplingRate }
-		{
-		}
-
-		unsigned channels() const noexcept final
-		{
-			return _channels;
-		}
-
-		size_t duration() const noexcept
-		{
-			return _amplitudeModulator.duration();
-		}
-
-		unsigned samplingRate() const noexcept final
-		{
-			return _samplingRate;
-		}
-
-		void start(aulos::Note note, float amplitude) noexcept final
-		{
-			const auto clampedAmplitude = std::clamp(amplitude, -1.f, 1.f);
-			double partRemaining;
-			if (_amplitudeModulator.stopped())
-			{
-				_amplitudeModulator.start(0.f);
-				_amplitude = clampedAmplitude;
-				_partIndex = 0;
-				partRemaining = 1.0;
-			}
-			else
-			{
-				_amplitudeModulator.start(_amplitudeModulator.value());
-				_amplitude = std::copysign(clampedAmplitude, _amplitude);
-				partRemaining = _partSamplesRemaining / _partLength;
-			}
-			_frequencyModulator.start(1.0);
-			_asymmetryModulator.start(0.0);
-			_oscillationModulator.start(1.0);
-			_frequency = kNoteTable[note];
-			updatePeriodParts();
-			_partSamplesRemaining = _partLength * partRemaining;
-			advance(0);
-		}
-
-	protected:
-		void advance(size_t samples) noexcept
-		{
-			_frequencyModulator.advance(samples);
-			_asymmetryModulator.advance(samples);
-			_oscillationModulator.advance(samples);
-			auto remaining = _partSamplesRemaining - samples;
-			while (remaining <= 0.0)
-			{
-				_amplitude = -_amplitude;
-				_partIndex = 1 - _partIndex;
-				updatePeriodParts();
-				remaining += _partLength;
-			}
-			_partSamplesRemaining = remaining;
-		}
-
-		void updatePeriodParts() noexcept
-		{
-			const auto periodSamples = _samplingRate / (_frequency * _frequencyModulator.value());
-			const auto dutyCycle = _asymmetryModulator.value() * 0.5 + 0.5;
-			_partLength = periodSamples * (_partIndex == 0 ? dutyCycle : 1.0 - dutyCycle);
-		}
-
-	protected:
-		const unsigned _samplingRate;
-		const unsigned _channels;
-		SampledEnvelope _amplitudeEnvelope;
-		AmplitudeModulator _amplitudeModulator{ _amplitudeEnvelope };
-		SampledEnvelope _frequencyEnvelope;
-		LinearModulator _frequencyModulator{ _frequencyEnvelope };
-		SampledEnvelope _asymmetryEnvelope;
-		LinearModulator _asymmetryModulator{ _asymmetryEnvelope };
-		SampledEnvelope _oscillationEnvelope;
-		LinearModulator _oscillationModulator{ _oscillationEnvelope };
-		float _amplitude = 0.f;
-		double _frequency = 0.0;
-		size_t _partIndex = 0;
-		double _partLength = 0.0;
-		double _partSamplesRemaining = 0.0;
-	};
-
-	template <typename Oscillator>
-	class MonoWaveRenderer final : public WaveRenderer
-	{
-	public:
-		MonoWaveRenderer(const aulos::Voice& voice, unsigned samplingRate) noexcept
-			: WaveRenderer{ voice, samplingRate, 1 } {}
-
-		size_t render(void* buffer, size_t bufferBytes) noexcept override
-		{
-			bufferBytes -= bufferBytes % kSampleSize;
-			size_t offset = 0;
-			while (offset < bufferBytes && _amplitudeModulator.update())
-			{
-				const auto samplesToGenerate = std::min(static_cast<size_t>(std::ceil(_partSamplesRemaining)), std::min((bufferBytes - offset) / kSampleSize, _amplitudeModulator.partSamplesRemaining()));
-				if (buffer)
-				{
-					Oscillator oscillator{ _partLength, _partLength - _partSamplesRemaining, _amplitude, _oscillationModulator.value() * _amplitude };
-					const auto base = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
-					for (size_t i = 0; i < samplesToGenerate; ++i)
-						base[i] += static_cast<float>(oscillator() * _amplitudeModulator.advance());
-				}
-				advance(samplesToGenerate);
-				offset += samplesToGenerate * kSampleSize;
-			}
-			return offset;
-		}
-	};
-
-	template <typename Oscillator>
-	class StereoWaveRenderer final : public WaveRenderer
-	{
-	public:
-		StereoWaveRenderer(const aulos::Voice& voice, unsigned samplingRate) noexcept
-			: WaveRenderer{ voice, samplingRate, 2 } {}
-
-		size_t render(void* buffer, size_t bufferBytes) noexcept override
-		{
-			bufferBytes -= bufferBytes % kBlockSize;
-			size_t offset = 0;
-			while (offset < bufferBytes && _amplitudeModulator.update())
-			{
-				const auto samplesToGenerate = std::min(static_cast<size_t>(std::ceil(_partSamplesRemaining)), std::min((bufferBytes - offset) / kBlockSize, _amplitudeModulator.partSamplesRemaining()));
-				if (buffer)
-				{
-					Oscillator oscillator{ _partLength, _partLength - _partSamplesRemaining, _amplitude, _oscillationModulator.value() * _amplitude };
-					auto output = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
-					for (size_t i = 0; i < samplesToGenerate; ++i)
-					{
-						const auto value = static_cast<float>(oscillator() * _amplitudeModulator.advance());
-						*output++ += value;
-						*output++ -= value;
-					}
-				}
-				advance(samplesToGenerate);
-				offset += samplesToGenerate * kBlockSize;
-			}
-			return offset;
-		}
-
-	private:
-		static constexpr auto kBlockSize = 2 * kSampleSize;
-	};
-
-	std::unique_ptr<WaveRenderer> createWaveRenderer(const aulos::Voice& voice, unsigned samplingRate, unsigned channels)
+	std::unique_ptr<aulos::VoiceImpl> createVoice(const aulos::VoiceData& data, unsigned samplingRate, unsigned channels)
 	{
 		switch (channels)
 		{
 		case 1:
-			switch (voice._wave)
+			switch (data._wave)
 			{
-			case aulos::Wave::Linear: return std::make_unique<MonoWaveRenderer<aulos::LinearOscillator>>(voice, samplingRate);
-			case aulos::Wave::Quadratic: return std::make_unique<MonoWaveRenderer<aulos::QuadraticOscillator>>(voice, samplingRate);
-			case aulos::Wave::Cubic: return std::make_unique<MonoWaveRenderer<aulos::CubicOscillator>>(voice, samplingRate);
-			case aulos::Wave::Cosine: return std::make_unique<MonoWaveRenderer<aulos::CosineOscillator>>(voice, samplingRate);
+			case aulos::Wave::Linear: return std::make_unique<aulos::MonoVoice<aulos::LinearOscillator>>(data, samplingRate);
+			case aulos::Wave::Quadratic: return std::make_unique<aulos::MonoVoice<aulos::QuadraticOscillator>>(data, samplingRate);
+			case aulos::Wave::Cubic: return std::make_unique<aulos::MonoVoice<aulos::CubicOscillator>>(data, samplingRate);
+			case aulos::Wave::Cosine: return std::make_unique<aulos::MonoVoice<aulos::CosineOscillator>>(data, samplingRate);
 			}
 			break;
 
 		case 2:
-			switch (voice._wave)
+			switch (data._wave)
 			{
-			case aulos::Wave::Linear: return std::make_unique<StereoWaveRenderer<aulos::LinearOscillator>>(voice, samplingRate);
-			case aulos::Wave::Quadratic: return std::make_unique<StereoWaveRenderer<aulos::QuadraticOscillator>>(voice, samplingRate);
-			case aulos::Wave::Cubic: return std::make_unique<StereoWaveRenderer<aulos::CubicOscillator>>(voice, samplingRate);
-			case aulos::Wave::Cosine: return std::make_unique<StereoWaveRenderer<aulos::CosineOscillator>>(voice, samplingRate);
+			case aulos::Wave::Linear: return std::make_unique<aulos::StereoVoice<aulos::LinearOscillator>>(data, samplingRate);
+			case aulos::Wave::Quadratic: return std::make_unique<aulos::StereoVoice<aulos::QuadraticOscillator>>(data, samplingRate);
+			case aulos::Wave::Cubic: return std::make_unique<aulos::StereoVoice<aulos::CubicOscillator>>(data, samplingRate);
+			case aulos::Wave::Cosine: return std::make_unique<aulos::StereoVoice<aulos::CosineOscillator>>(data, samplingRate);
 			}
 			break;
 		}
@@ -473,14 +123,14 @@ namespace
 						const auto nextIndex = track->_soundIndex + 1;
 						track->_soundBytesRemaining = nextIndex != track->_sounds.size()
 							? _stepBytes * track->_sounds[nextIndex]._delay
-							: track->_waveRenderer->duration() * _blockBytes;
+							: track->_voice->duration() * _blockBytes;
 						assert(track->_soundBytesRemaining % _blockBytes == 0);
-						track->_waveRenderer->start(track->_sounds[track->_soundIndex]._note, track->_normalizedWeight);
+						track->_voice->start(track->_sounds[track->_soundIndex]._note, track->_normalizedWeight);
 					}
 					const auto bytesToGenerate = std::min(track->_soundBytesRemaining, bufferBytes - trackOffset);
 					if (!bytesToGenerate)
 						break;
-					const auto bytesGenerated = track->_waveRenderer->render(buffer ? static_cast<std::byte*>(buffer) + trackOffset : nullptr, bytesToGenerate);
+					const auto bytesGenerated = track->_voice->render(buffer ? static_cast<std::byte*>(buffer) + trackOffset : nullptr, bytesToGenerate);
 					assert(bytesGenerated <= bytesToGenerate); // Initial and inter-sound silence doesn't generate any data.
 					track->_soundBytesRemaining -= bytesToGenerate;
 					trackOffset += bytesToGenerate;
@@ -509,14 +159,14 @@ namespace
 
 		struct TrackState
 		{
-			std::unique_ptr<WaveRenderer> _waveRenderer;
+			std::unique_ptr<aulos::VoiceImpl> _voice;
 			const float _normalizedWeight;
 			std::vector<TrackSound> _sounds;
 			size_t _soundIndex = 0;
 			size_t _soundBytesRemaining = 0;
 
-			TrackState(const aulos::Voice& voice, float normalizedWeight, unsigned samplingRate, unsigned channels)
-				: _waveRenderer{ ::createWaveRenderer(voice, samplingRate, channels) }
+			TrackState(const aulos::VoiceData& voiceData, float normalizedWeight, unsigned samplingRate, unsigned channels)
+				: _voice{ ::createVoice(voiceData, samplingRate, channels) }
 				, _normalizedWeight{ normalizedWeight }
 			{
 			}
@@ -524,7 +174,7 @@ namespace
 
 		const unsigned _samplingRate;
 		const unsigned _channels;
-		const size_t _blockBytes = _channels * kSampleSize;
+		const size_t _blockBytes = _channels * aulos::kSampleSize;
 		const size_t _stepBytes;
 		std::vector<std::unique_ptr<TrackState>> _tracks;
 	};
@@ -532,9 +182,9 @@ namespace
 
 namespace aulos
 {
-	std::unique_ptr<VoiceRenderer> VoiceRenderer::create(const Voice& voice, unsigned samplingRate, unsigned channels)
+	std::unique_ptr<VoiceRenderer> VoiceRenderer::create(const VoiceData& voiceData, unsigned samplingRate, unsigned channels)
 	{
-		return ::createWaveRenderer(voice, samplingRate, channels);
+		return ::createVoice(voiceData, samplingRate, channels);
 	}
 
 	std::unique_ptr<Renderer> Renderer::create(const Composition& composition, unsigned samplingRate, unsigned channels)

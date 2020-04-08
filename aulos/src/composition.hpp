@@ -42,7 +42,7 @@ namespace aulos
 
 	struct Part
 	{
-		Voice _voice;
+		VoiceData _voice;
 		std::string _voiceName;
 		std::vector<Track> _tracks;
 	};

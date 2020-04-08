@@ -25,7 +25,7 @@ class QComboBox;
 
 namespace aulos
 {
-	struct Voice;
+	struct VoiceData;
 }
 
 class VoiceWidget final : public QWidget
@@ -35,8 +35,8 @@ class VoiceWidget final : public QWidget
 public:
 	VoiceWidget(QWidget* parent);
 
-	void setVoice(const std::shared_ptr<aulos::Voice>&);
-	std::shared_ptr<aulos::Voice> voice() const { return _voice; }
+	void setVoice(const std::shared_ptr<aulos::VoiceData>&);
+	std::shared_ptr<aulos::VoiceData> voice() const { return _voice; }
 
 signals:
 	void voiceChanged();
@@ -52,5 +52,5 @@ private:
 	std::vector<EnvelopePoint> _frequencyEnvelope;
 	std::vector<EnvelopePoint> _asymmetryEnvelope;
 	std::vector<EnvelopePoint> _oscillationEnvelope;
-	std::shared_ptr<aulos::Voice> _voice;
+	std::shared_ptr<aulos::VoiceData> _voice;
 };

@@ -40,9 +40,9 @@ namespace
 		return std::move(font);
 	}
 
-	std::shared_ptr<aulos::Voice> makeDefaultVoice()
+	std::shared_ptr<aulos::VoiceData> makeDefaultVoice()
 	{
-		auto voice = std::make_shared<aulos::Voice>();
+		auto voice = std::make_shared<aulos::VoiceData>();
 		voice->_amplitudeEnvelope._changes = { { .1f, 1.f }, { .4f, .5f }, { .5f, 0.f } };
 		return voice;
 	}
@@ -128,7 +128,7 @@ CompositionWidget::CompositionWidget(QWidget* parent)
 		emit compositionChanged();
 	});
 	connect(_scene, &CompositionScene::sequenceSelected, [this](const void* voiceId, const void* trackId, const void* sequenceId) {
-		std::shared_ptr<aulos::Voice> voice;
+		std::shared_ptr<aulos::VoiceData> voice;
 		std::shared_ptr<aulos::SequenceData> sequence;
 		if (voiceId)
 		{

@@ -65,9 +65,9 @@ namespace
 		return result;
 	}
 
-	std::shared_ptr<aulos::Voice> makeDefaultVoice()
+	std::shared_ptr<aulos::VoiceData> makeDefaultVoice()
 	{
-		auto voice = std::make_shared<aulos::Voice>();
+		auto voice = std::make_shared<aulos::VoiceData>();
 		voice->_amplitudeEnvelope._changes = { { .1f, 1.f }, { .4f, .5f }, { .5f, 0.f } };
 		return voice;
 	}
@@ -285,7 +285,7 @@ Studio::Studio()
 			return;
 		_compositionWidget->setPlaybackOffset(microseconds * _composition->_speed / 1'000'000.0);
 	});
-	connect(_compositionWidget, &CompositionWidget::selectionChanged, [this](const std::shared_ptr<aulos::Voice>& voice, const std::shared_ptr<aulos::SequenceData>& sequence) {
+	connect(_compositionWidget, &CompositionWidget::selectionChanged, [this](const std::shared_ptr<aulos::VoiceData>& voice, const std::shared_ptr<aulos::SequenceData>& sequence) {
 		_voiceWidget->setVoice(voice);
 		_sequenceWidget->setSequence(sequence);
 		updateStatus();

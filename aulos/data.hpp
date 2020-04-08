@@ -81,7 +81,7 @@ namespace aulos
 	};
 
 	// Specifies how to generate a waveform for a sound.
-	struct Voice
+	struct VoiceData
 	{
 		Wave _wave = Wave::Linear;
 		Envelope _amplitudeEnvelope{ 0.f };
@@ -107,11 +107,11 @@ namespace aulos
 
 	struct PartData
 	{
-		std::shared_ptr<Voice> _voice;
+		std::shared_ptr<VoiceData> _voice;
 		std::string _voiceName;
 		std::vector<std::shared_ptr<TrackData>> _tracks;
 
-		PartData(const std::shared_ptr<Voice>& voice) noexcept
+		PartData(const std::shared_ptr<VoiceData>& voice) noexcept
 			: _voice{ voice } {}
 	};
 
@@ -136,7 +136,7 @@ namespace aulos
 	class VoiceRenderer : public Renderer
 	{
 	public:
-		[[nodiscard]] static std::unique_ptr<VoiceRenderer> create(const Voice&, unsigned samplingRate, unsigned channels);
+		[[nodiscard]] static std::unique_ptr<VoiceRenderer> create(const VoiceData&, unsigned samplingRate, unsigned channels);
 
 		virtual ~VoiceRenderer() noexcept = default;
 

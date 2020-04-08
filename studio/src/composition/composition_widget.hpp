@@ -29,7 +29,7 @@ namespace aulos
 	struct CompositionData;
 	struct SequenceData;
 	struct TrackData;
-	struct Voice;
+	struct VoiceData;
 }
 
 class CompositionScene;
@@ -54,7 +54,7 @@ public:
 
 signals:
 	void compositionChanged();
-	void selectionChanged(const std::shared_ptr<aulos::Voice>&, const std::shared_ptr<aulos::SequenceData>&);
+	void selectionChanged(const std::shared_ptr<aulos::VoiceData>&, const std::shared_ptr<aulos::SequenceData>&);
 
 private:
 	bool editTrack(aulos::TrackData&);
