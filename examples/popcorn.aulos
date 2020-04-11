@@ -13,12 +13,12 @@ wave Cosine
 
 @voice 2 "Melody"
 amplitude 0.00 0.02 1.00 0.08 0.25 0.60 0.00
-asymmetry 0.10 0.02 0.80 0.08 0.80 0.40 0.10
-frequency 0.80 0.02 1.00 0.08 1.00 0.40 0.99
-oscillation 1.00
+asymmetry 0.00 0.02 0.90 0.08 0.75 0.60 0.00
+frequency 0.80 0.02 1.00 0.08 1.00 0.60 0.99
+oscillation 0.95 0.10 1.00
 pan 0.00
 phase 0.00
-wave Cubic
+wave Cosine
 
 @voice 3 "Drum"
 amplitude 0.00 0.01 1.00 0.09 0.20 0.40 0.00
@@ -39,10 +39,10 @@ phase 1.00
 wave Linear
 
 @tracks
-1 1 2
-2 1 3
-3 1 5
-4 1 2
+1 1 1
+2 1 1
+3 1 2
+4 1 1
 
 @sequences
 1 1 1 B2 . . . B2
