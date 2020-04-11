@@ -207,8 +207,8 @@ Studio::Studio()
 	_speedSpin->setSuffix("x");
 
 	_channelsCombo = new QComboBox{ this };
-	_channelsCombo->addItem(tr("Mono"), 1u);
 	_channelsCombo->addItem(tr("Stereo"), 2u);
+	_channelsCombo->addItem(tr("Mono"), 1u);
 
 	_samplingRateCombo = new QComboBox{ this };
 	const auto hz = tr("%L1 Hz");

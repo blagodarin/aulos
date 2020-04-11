@@ -274,6 +274,17 @@ namespace aulos
 				while (const auto delay = tryReadFloat(0.f, kMaxEnvelopePartDuration))
 					envelope._changes.emplace_back(*delay, readFloat(minFrequency, 1.f));
 			}
+			else if (command == "phase")
+			{
+				if (currentSection != Section::Voice)
+					throw CompositionError{ location(), "Unexpected command" };
+				if (const auto phase = readFloat(0.f, 1.f); phase == 0)
+					currentVoice->_outOfPhase = false;
+				else if (phase == 1)
+					currentVoice->_outOfPhase = true;
+				else
+					throw CompositionError{ location(), "Bad phase value" };
+			}
 			else if (command == "oscillation")
 			{
 				if (currentSection != Section::Voice)
@@ -448,6 +459,7 @@ namespace aulos
 			case Wave::Cubic: text += "Cubic"; break;
 			case Wave::Cosine: text += "Cosine"; break;
 			}
+			text += "\nphase " + floatToString(part._voice._outOfPhase ? 1.f : 0.f);
 			text += "\namplitude " + floatToString(part._voice._amplitudeEnvelope._initial);
 			for (const auto& change : part._voice._amplitudeEnvelope._changes)
 				text += ' ' + floatToString(change._delay) + ' ' + floatToString(change._value);

@@ -84,6 +84,7 @@ namespace aulos
 	struct VoiceData
 	{
 		Wave _wave = Wave::Linear;
+		bool _outOfPhase = true;
 		Envelope _amplitudeEnvelope{ 0.f };
 		Envelope _frequencyEnvelope{ 1.f };
 		Envelope _asymmetryEnvelope{ 0.f };

@@ -98,24 +98,28 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 	layout->addWidget(_typeCombo, 0, 0, 1, 2);
 	connect(_typeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &VoiceWidget::updateVoice);
 
+	_outOfPhaseCheck = new QCheckBox{ tr("Out of phase"), this };
+	layout->addWidget(_outOfPhaseCheck, 1, 0, 1, 2);
+	connect(_outOfPhaseCheck, &QCheckBox::toggled, this, &VoiceWidget::updateVoice);
+
 	const auto amplitudeGroup = new QGroupBox{ tr("Amplitude"), this };
 	createEnvelopeEditor(amplitudeGroup, _amplitudeEnvelope, 0.0);
-	layout->addWidget(amplitudeGroup, 1, 0);
+	layout->addWidget(amplitudeGroup, 2, 0);
 
 	const auto frequencyGroup = new QGroupBox{ tr("Frequency"), this };
 	createEnvelopeEditor(frequencyGroup, _frequencyEnvelope, 0.5);
-	layout->addWidget(frequencyGroup, 1, 1);
+	layout->addWidget(frequencyGroup, 2, 1);
 
 	const auto asymmetryGroup = new QGroupBox{ tr("Asymmetry"), this };
 	createEnvelopeEditor(asymmetryGroup, _asymmetryEnvelope, 0.0);
-	layout->addWidget(asymmetryGroup, 2, 0);
+	layout->addWidget(asymmetryGroup, 3, 0);
 
 	const auto oscillationGroup = new QGroupBox{ tr("Oscillation"), this };
 	createEnvelopeEditor(oscillationGroup, _oscillationEnvelope, 0.0);
-	layout->addWidget(oscillationGroup, 2, 1);
+	layout->addWidget(oscillationGroup, 3, 1);
 
-	layout->addItem(new QSpacerItem{ 0, 0, QSizePolicy::Minimum, QSizePolicy::Expanding }, 3, 0, 1, 2);
-	layout->setRowStretch(3, 1);
+	layout->addItem(new QSpacerItem{ 0, 0, QSizePolicy::Minimum, QSizePolicy::Expanding }, 4, 0, 1, 2);
+	layout->setRowStretch(4, 1);
 }
 
 void VoiceWidget::setVoice(const std::shared_ptr<aulos::VoiceData>& voice)
@@ -147,6 +151,7 @@ void VoiceWidget::setVoice(const std::shared_ptr<aulos::VoiceData>& voice)
 	aulos::VoiceData defaultVoice;
 	const auto usedVoice = voice ? voice.get() : &defaultVoice;
 	_typeCombo->setCurrentIndex(_typeCombo->findData(static_cast<int>(usedVoice->_wave)));
+	_outOfPhaseCheck->setChecked(usedVoice->_outOfPhase);
 	setEnvelope(_amplitudeEnvelope, usedVoice->_amplitudeEnvelope);
 	setEnvelope(_frequencyEnvelope, usedVoice->_frequencyEnvelope);
 	setEnvelope(_asymmetryEnvelope, usedVoice->_asymmetryEnvelope);
@@ -159,6 +164,7 @@ void VoiceWidget::updateVoice()
 	if (!_voice)
 		return;
 	_voice->_wave = static_cast<aulos::Wave>(_typeCombo->currentData().toInt());
+	_voice->_outOfPhase = _outOfPhaseCheck->isChecked();
 	if (auto i = _amplitudeEnvelope.begin(); i->_check->isChecked())
 	{
 		_voice->_amplitudeEnvelope._initial = static_cast<float>(i->_value->value());

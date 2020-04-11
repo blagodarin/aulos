@@ -21,6 +21,7 @@
 
 #include <QWidget>
 
+class QCheckBox;
 class QComboBox;
 
 namespace aulos
@@ -48,6 +49,7 @@ private:
 	struct EnvelopePoint;
 
 	QComboBox* _typeCombo = nullptr;
+	QCheckBox* _outOfPhaseCheck = nullptr;
 	std::vector<EnvelopePoint> _amplitudeEnvelope;
 	std::vector<EnvelopePoint> _frequencyEnvelope;
 	std::vector<EnvelopePoint> _asymmetryEnvelope;

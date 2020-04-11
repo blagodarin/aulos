@@ -155,10 +155,42 @@ namespace aulos
 	};
 
 	template <typename Oscillator>
-	class StereoVoice final : public BasicVoice<2>
+	class InPhaseStereoVoice final : public BasicVoice<2>
 	{
 	public:
-		StereoVoice(const VoiceData& data, unsigned samplingRate) noexcept
+		InPhaseStereoVoice(const VoiceData& data, unsigned samplingRate) noexcept
+			: BasicVoice{ data, samplingRate } {}
+
+		size_t render(void* buffer, size_t bufferBytes) noexcept override
+		{
+			bufferBytes -= bufferBytes % kBlockSize;
+			size_t offset = 0;
+			while (offset < bufferBytes && _amplitudeModulator.update())
+			{
+				const auto samplesToGenerate = std::min(static_cast<size_t>(std::ceil(_partSamplesRemaining)), std::min((bufferBytes - offset) / kBlockSize, _amplitudeModulator.partSamplesRemaining()));
+				if (buffer)
+				{
+					Oscillator oscillator{ _partLength, _partLength - _partSamplesRemaining, _amplitude, _oscillationModulator.value() * _amplitude };
+					auto output = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
+					for (size_t i = 0; i < samplesToGenerate; ++i)
+					{
+						const auto value = static_cast<float>(oscillator() * _amplitudeModulator.advance());
+						*output++ += value;
+						*output++ += value;
+					}
+				}
+				advance(samplesToGenerate);
+				offset += samplesToGenerate * kBlockSize;
+			}
+			return offset;
+		}
+	};
+
+	template <typename Oscillator>
+	class OutOfPhaseStereoVoice final : public BasicVoice<2>
+	{
+	public:
+		OutOfPhaseStereoVoice(const VoiceData& data, unsigned samplingRate) noexcept
 			: BasicVoice{ data, samplingRate } {}
 
 		size_t render(void* buffer, size_t bufferBytes) noexcept override

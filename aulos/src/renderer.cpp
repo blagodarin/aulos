@@ -40,12 +40,25 @@ namespace
 			break;
 
 		case 2:
-			switch (data._wave)
+			if (data._outOfPhase)
 			{
-			case aulos::Wave::Linear: return std::make_unique<aulos::StereoVoice<aulos::LinearOscillator>>(data, samplingRate);
-			case aulos::Wave::Quadratic: return std::make_unique<aulos::StereoVoice<aulos::QuadraticOscillator>>(data, samplingRate);
-			case aulos::Wave::Cubic: return std::make_unique<aulos::StereoVoice<aulos::CubicOscillator>>(data, samplingRate);
-			case aulos::Wave::Cosine: return std::make_unique<aulos::StereoVoice<aulos::CosineOscillator>>(data, samplingRate);
+				switch (data._wave)
+				{
+				case aulos::Wave::Linear: return std::make_unique<aulos::OutOfPhaseStereoVoice<aulos::LinearOscillator>>(data, samplingRate);
+				case aulos::Wave::Quadratic: return std::make_unique<aulos::OutOfPhaseStereoVoice<aulos::QuadraticOscillator>>(data, samplingRate);
+				case aulos::Wave::Cubic: return std::make_unique<aulos::OutOfPhaseStereoVoice<aulos::CubicOscillator>>(data, samplingRate);
+				case aulos::Wave::Cosine: return std::make_unique<aulos::OutOfPhaseStereoVoice<aulos::CosineOscillator>>(data, samplingRate);
+				}
+			}
+			else
+			{
+				switch (data._wave)
+				{
+				case aulos::Wave::Linear: return std::make_unique<aulos::InPhaseStereoVoice<aulos::LinearOscillator>>(data, samplingRate);
+				case aulos::Wave::Quadratic: return std::make_unique<aulos::InPhaseStereoVoice<aulos::QuadraticOscillator>>(data, samplingRate);
+				case aulos::Wave::Cubic: return std::make_unique<aulos::InPhaseStereoVoice<aulos::CubicOscillator>>(data, samplingRate);
+				case aulos::Wave::Cosine: return std::make_unique<aulos::InPhaseStereoVoice<aulos::CosineOscillator>>(data, samplingRate);
+				}
 			}
 			break;
 		}
