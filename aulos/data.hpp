@@ -85,6 +85,7 @@ namespace aulos
 	{
 		Wave _wave = Wave::Linear;
 		bool _outOfPhase = true;
+		float _pan = 0.f;
 		Envelope _amplitudeEnvelope{ 0.f };
 		Envelope _frequencyEnvelope{ 1.f };
 		Envelope _asymmetryEnvelope{ 0.f };

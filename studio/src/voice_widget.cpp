@@ -26,6 +26,7 @@
 #include <QDoubleSpinBox>
 #include <QGridLayout>
 #include <QGroupBox>
+#include <QLabel>
 
 struct VoiceWidget::EnvelopePoint
 {
@@ -99,8 +100,22 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 	connect(_typeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &VoiceWidget::updateVoice);
 
 	_outOfPhaseCheck = new QCheckBox{ tr("Out of phase"), this };
-	layout->addWidget(_outOfPhaseCheck, 1, 0, 1, 2);
+	layout->addWidget(_outOfPhaseCheck, 1, 0);
 	connect(_outOfPhaseCheck, &QCheckBox::toggled, this, &VoiceWidget::updateVoice);
+
+	const auto panLayout = new QHBoxLayout{};
+	layout->addLayout(panLayout, 1, 1);
+
+	panLayout->addWidget(new QLabel{ tr("Pan:"), this });
+
+	_panSpin = new QDoubleSpinBox{ parent };
+	_panSpin->setDecimals(2);
+	_panSpin->setMaximum(1.0);
+	_panSpin->setMinimum(-1.0);
+	_panSpin->setSingleStep(0.01);
+	_panSpin->setValue(0.0);
+	panLayout->addWidget(_panSpin);
+	connect(_panSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
 
 	const auto amplitudeGroup = new QGroupBox{ tr("Amplitude"), this };
 	createEnvelopeEditor(amplitudeGroup, _amplitudeEnvelope, 0.0);
@@ -152,6 +167,7 @@ void VoiceWidget::setVoice(const std::shared_ptr<aulos::VoiceData>& voice)
 	const auto usedVoice = voice ? voice.get() : &defaultVoice;
 	_typeCombo->setCurrentIndex(_typeCombo->findData(static_cast<int>(usedVoice->_wave)));
 	_outOfPhaseCheck->setChecked(usedVoice->_outOfPhase);
+	_panSpin->setValue(usedVoice->_pan);
 	setEnvelope(_amplitudeEnvelope, usedVoice->_amplitudeEnvelope);
 	setEnvelope(_frequencyEnvelope, usedVoice->_frequencyEnvelope);
 	setEnvelope(_asymmetryEnvelope, usedVoice->_asymmetryEnvelope);
@@ -165,6 +181,7 @@ void VoiceWidget::updateVoice()
 		return;
 	_voice->_wave = static_cast<aulos::Wave>(_typeCombo->currentData().toInt());
 	_voice->_outOfPhase = _outOfPhaseCheck->isChecked();
+	_voice->_pan = static_cast<float>(_panSpin->value());
 	if (auto i = _amplitudeEnvelope.begin(); i->_check->isChecked())
 	{
 		_voice->_amplitudeEnvelope._initial = static_cast<float>(i->_value->value());

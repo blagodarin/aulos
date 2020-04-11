@@ -126,7 +126,7 @@ namespace aulos
 		};
 
 		const auto tryReadFloat = [&](float min, float max) -> std::optional<float> {
-			if (*source < '0' || *source > '9')
+			if (!(*source >= '0' && *source <= '9') && *source != '-')
 				return {};
 			const auto begin = source;
 			do
@@ -274,17 +274,6 @@ namespace aulos
 				while (const auto delay = tryReadFloat(0.f, kMaxEnvelopePartDuration))
 					envelope._changes.emplace_back(*delay, readFloat(minFrequency, 1.f));
 			}
-			else if (command == "phase")
-			{
-				if (currentSection != Section::Voice)
-					throw CompositionError{ location(), "Unexpected command" };
-				if (const auto phase = readFloat(0.f, 1.f); phase == 0)
-					currentVoice->_outOfPhase = false;
-				else if (phase == 1)
-					currentVoice->_outOfPhase = true;
-				else
-					throw CompositionError{ location(), "Bad phase value" };
-			}
 			else if (command == "oscillation")
 			{
 				if (currentSection != Section::Voice)
@@ -294,6 +283,23 @@ namespace aulos
 				envelope._changes.clear();
 				while (const auto delay = tryReadFloat(0.f, kMaxEnvelopePartDuration))
 					envelope._changes.emplace_back(*delay, readFloat(0.f, 1.f));
+			}
+			else if (command == "pan")
+			{
+				if (currentSection != Section::Voice)
+					throw CompositionError{ location(), "Unexpected command" };
+				currentVoice->_pan = readFloat(-1.f, 1.f);
+			}
+			else if (command == "phase")
+			{
+				if (currentSection != Section::Voice)
+					throw CompositionError{ location(), "Unexpected command" };
+				if (const auto phase = readFloat(-1.f, 1.f); phase == 0)
+					currentVoice->_outOfPhase = false;
+				else if (phase == 1 || phase == -1)
+					currentVoice->_outOfPhase = true;
+				else
+					throw CompositionError{ location(), "Bad phase value" };
 			}
 			else if (command == "wave")
 			{
@@ -433,10 +439,10 @@ namespace aulos
 	std::vector<std::byte> CompositionImpl::save() const
 	{
 		const auto floatToString = [](float value) {
-			const auto roundedValue = std::lround(value * 100.f);
+			const auto roundedValue = std::lround(std::abs(value) * 100.f);
 			auto result = std::to_string(roundedValue / 100);
 			const auto remainder = roundedValue % 100;
-			return result + (remainder >= 10 ? '.' + std::to_string(remainder) : ".0" + std::to_string(remainder));
+			return (value < 0 ? "-" : "") + result + (remainder >= 10 ? '.' + std::to_string(remainder) : ".0" + std::to_string(remainder));
 		};
 
 		std::string text;
@@ -460,6 +466,7 @@ namespace aulos
 			case Wave::Cosine: text += "Cosine"; break;
 			}
 			text += "\nphase " + floatToString(part._voice._outOfPhase ? 1.f : 0.f);
+			text += "\npan " + floatToString(part._voice._pan);
 			text += "\namplitude " + floatToString(part._voice._amplitudeEnvelope._initial);
 			for (const auto& change : part._voice._amplitudeEnvelope._changes)
 				text += ' ' + floatToString(change._delay) + ' ' + floatToString(change._value);

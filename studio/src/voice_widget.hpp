@@ -23,6 +23,7 @@
 
 class QCheckBox;
 class QComboBox;
+class QDoubleSpinBox;
 
 namespace aulos
 {
@@ -50,6 +51,7 @@ private:
 
 	QComboBox* _typeCombo = nullptr;
 	QCheckBox* _outOfPhaseCheck = nullptr;
+	QDoubleSpinBox* _panSpin = nullptr;
 	std::vector<EnvelopePoint> _amplitudeEnvelope;
 	std::vector<EnvelopePoint> _frequencyEnvelope;
 	std::vector<EnvelopePoint> _asymmetryEnvelope;
