@@ -3,40 +3,40 @@ speed 8
 title "Popcorn"
 
 @voice 1 "Rhythm"
-wave Cosine
-phase 1.00
-pan 0.00
 amplitude 0.00 0.01 1.00 0.04 1.00 0.05 0.50 0.90 0.00
-frequency 0.80 0.01 1.00
 asymmetry 0.90
+frequency 0.80 0.01 1.00
 oscillation 1.00
+pan 0.00
+phase 1.00
+wave Cosine
 
 @voice 2 "Melody"
-wave Cubic
-phase 0.00
-pan 0.00
 amplitude 0.00 0.02 1.00 0.08 0.25 0.60 0.00
-frequency 0.80 0.02 1.00 0.08 1.00 0.40 0.99
 asymmetry 0.10 0.02 0.80 0.08 0.80 0.40 0.10
+frequency 0.80 0.02 1.00 0.08 1.00 0.40 0.99
 oscillation 1.00
+pan 0.00
+phase 0.00
+wave Cubic
 
 @voice 3 "Drum"
-wave Cosine
-phase 1.00
-pan 0.25
 amplitude 0.00 0.01 1.00 0.09 0.20 0.40 0.00
-frequency 1.00 0.01 1.00 0.09 0.75
 asymmetry 0.25
+frequency 1.00 0.01 1.00 0.09 0.75
 oscillation 0.97 0.10 1.00
+pan 0.25
+phase 1.00
+wave Cosine
 
 @voice 4 "Bass"
-wave Linear
-phase 1.00
-pan -0.25
 amplitude 0.00 0.10 1.00 0.40 0.50 0.50 0.00
-frequency 1.00
 asymmetry 0.10
+frequency 1.00
 oscillation 0.90
+pan -0.25
+phase 1.00
+wave Linear
 
 @tracks
 1 1 2

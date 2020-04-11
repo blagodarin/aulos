@@ -457,6 +457,20 @@ namespace aulos
 			text += "\n\n@voice " + std::to_string(partIndex);
 			if (!part._voiceName.empty())
 				text += " \"" + part._voiceName + '"';
+			text += "\namplitude " + floatToString(part._voice._amplitudeEnvelope._initial);
+			for (const auto& change : part._voice._amplitudeEnvelope._changes)
+				text += ' ' + floatToString(change._delay) + ' ' + floatToString(change._value);
+			text += "\nasymmetry " + floatToString(part._voice._asymmetryEnvelope._initial);
+			for (const auto& change : part._voice._asymmetryEnvelope._changes)
+				text += ' ' + floatToString(change._delay) + ' ' + floatToString(change._value);
+			text += "\nfrequency " + floatToString(part._voice._frequencyEnvelope._initial);
+			for (const auto& change : part._voice._frequencyEnvelope._changes)
+				text += ' ' + floatToString(change._delay) + ' ' + floatToString(change._value);
+			text += "\noscillation " + floatToString(part._voice._oscillationEnvelope._initial);
+			for (const auto& change : part._voice._oscillationEnvelope._changes)
+				text += ' ' + floatToString(change._delay) + ' ' + floatToString(change._value);
+			text += "\npan " + floatToString(part._voice._pan);
+			text += "\nphase " + floatToString(part._voice._outOfPhase ? 1.f : 0.f);
 			text += "\nwave ";
 			switch (part._voice._wave)
 			{
@@ -465,20 +479,6 @@ namespace aulos
 			case Wave::Cubic: text += "Cubic"; break;
 			case Wave::Cosine: text += "Cosine"; break;
 			}
-			text += "\nphase " + floatToString(part._voice._outOfPhase ? 1.f : 0.f);
-			text += "\npan " + floatToString(part._voice._pan);
-			text += "\namplitude " + floatToString(part._voice._amplitudeEnvelope._initial);
-			for (const auto& change : part._voice._amplitudeEnvelope._changes)
-				text += ' ' + floatToString(change._delay) + ' ' + floatToString(change._value);
-			text += "\nfrequency " + floatToString(part._voice._frequencyEnvelope._initial);
-			for (const auto& change : part._voice._frequencyEnvelope._changes)
-				text += ' ' + floatToString(change._delay) + ' ' + floatToString(change._value);
-			text += "\nasymmetry " + floatToString(part._voice._asymmetryEnvelope._initial);
-			for (const auto& change : part._voice._asymmetryEnvelope._changes)
-				text += ' ' + floatToString(change._delay) + ' ' + floatToString(change._value);
-			text += "\noscillation " + floatToString(part._voice._oscillationEnvelope._initial);
-			for (const auto& change : part._voice._oscillationEnvelope._changes)
-				text += ' ' + floatToString(change._delay) + ' ' + floatToString(change._value);
 		}
 		text += "\n\n@tracks";
 		for (const auto& part : _parts)

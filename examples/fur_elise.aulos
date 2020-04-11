@@ -3,22 +3,22 @@ speed 6
 title "Fur Elise"
 
 @voice 1 "RightHand"
-wave Quadratic
-phase 1.00
-pan 0.00
 amplitude 0.00 0.01 1.00 0.04 0.50 0.95 0.00
-frequency 0.80 0.01 0.80 0.04 1.00 0.95 0.99
 asymmetry 0.50 0.05 0.90 0.95 0.00
+frequency 0.80 0.01 0.80 0.04 1.00 0.95 0.99
 oscillation 0.80
+pan 0.00
+phase 1.00
+wave Quadratic
 
 @voice 2 "LeftHand"
-wave Linear
-phase 1.00
-pan 0.00
 amplitude 0.00 0.01 1.00 0.04 1.00 0.05 0.40 0.90 0.00
-frequency 0.50 0.01 1.00 0.09 1.00 0.10 0.99 0.80 0.95
 asymmetry 0.30 0.10 0.00 0.90 0.90
+frequency 0.50 0.01 1.00 0.09 1.00 0.10 0.99 0.80 0.95
 oscillation 0.00
+pan 0.00
+phase 1.00
+wave Linear
 
 @tracks
 1 1 3
