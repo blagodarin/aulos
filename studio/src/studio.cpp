@@ -231,32 +231,31 @@ Studio::Studio()
 	toolBar->addWidget(_samplingRateCombo);
 	addToolBar(toolBar);
 
-	const auto splitter = new QSplitter{ Qt::Vertical, this };
-	splitter->setChildrenCollapsible(false);
-	setCentralWidget(splitter);
+	const auto centralWidget = new QWidget{ this };
+	setCentralWidget(centralWidget);
 
-	_compositionWidget = new CompositionWidget{ splitter };
-	_compositionWidget->setSizePolicy(::makeExpandingSizePolicy(1, 1));
-	splitter->addWidget(_compositionWidget);
+	const auto rootLayout = new QHBoxLayout{ centralWidget };
+	rootLayout->setContentsMargins({});
+	rootLayout->setSpacing(0);
 
-	const auto bottomPart = new QWidget{ splitter };
-	splitter->addWidget(bottomPart);
-
-	const auto bottomLayout = new QHBoxLayout{ bottomPart };
-	bottomLayout->setContentsMargins({});
-	bottomLayout->setSpacing(0);
-
-	_voiceWidget = new VoiceWidget{ bottomPart };
+	_voiceWidget = new VoiceWidget{ centralWidget };
 	_voiceWidget->setSizePolicy(::makeExpandingSizePolicy(0, 0));
-	bottomLayout->addWidget(_voiceWidget);
+	rootLayout->addWidget(_voiceWidget);
 	connect(_voiceWidget, &VoiceWidget::voiceChanged, [this] {
 		_changed = true;
 		updateStatus();
 	});
 
-	_sequenceWidget = new SequenceWidget{ bottomPart };
-	_sequenceWidget->setSizePolicy(::makeExpandingSizePolicy(1, 1));
-	bottomLayout->addWidget(_sequenceWidget);
+	const auto splitter = new QSplitter{ Qt::Vertical, this };
+	splitter->setChildrenCollapsible(false);
+	splitter->setSizePolicy(::makeExpandingSizePolicy(1, 1));
+	rootLayout->addWidget(splitter);
+
+	_compositionWidget = new CompositionWidget{ splitter };
+	splitter->addWidget(_compositionWidget);
+
+	_sequenceWidget = new SequenceWidget{ splitter };
+	splitter->addWidget(_sequenceWidget);
 
 	splitter->setSizes({ 1, 1 });
 

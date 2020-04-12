@@ -38,37 +38,73 @@ struct VoiceWidget::EnvelopePoint
 VoiceWidget::VoiceWidget(QWidget* parent)
 	: QWidget{ parent }
 {
-	const auto createEnvelopeEditor = [this](QWidget* parent, std::vector<EnvelopePoint>& envelope, double minimum) {
-		const auto layout = new QGridLayout{ parent };
+	const auto layout = new QGridLayout{ this };
+	int row = 0;
 
-		for (int i = 0; i < 5; ++i)
+	const auto createHeader = [this, layout, &row](const QString& title) {
+		const auto header = new QLabel{ title, this };
+		header->setStyleSheet("font-weight: bold");
+		layout->addWidget(header, row, 0, 1, 4);
+		++row;
+	};
+
+	_typeCombo = new QComboBox{ this };
+	_typeCombo->addItem(tr("Linear wave"), static_cast<int>(aulos::Wave::Linear));
+	_typeCombo->addItem(tr("Quadratic wave"), static_cast<int>(aulos::Wave::Quadratic));
+	_typeCombo->addItem(tr("Cubic wave"), static_cast<int>(aulos::Wave::Cubic));
+	_typeCombo->addItem(tr("Cosine wave"), static_cast<int>(aulos::Wave::Cosine));
+	layout->addItem(new QSpacerItem{ 0, 0, QSizePolicy::Fixed, QSizePolicy::Fixed }, row, 0);
+	layout->addWidget(_typeCombo, row, 1, 1, 3);
+	connect(_typeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &VoiceWidget::updateVoice);
+	++row;
+
+	createHeader(tr("Stereo settings"));
+
+	_outOfPhaseCheck = new QCheckBox{ tr("Out of phase"), this };
+	layout->addWidget(_outOfPhaseCheck, row, 1, 1, 3);
+	connect(_outOfPhaseCheck, &QCheckBox::toggled, this, &VoiceWidget::updateVoice);
+	++row;
+
+	_panSpin = new QDoubleSpinBox{ parent };
+	_panSpin->setDecimals(2);
+	_panSpin->setMaximum(1.0);
+	_panSpin->setMinimum(-1.0);
+	_panSpin->setSingleStep(0.01);
+	_panSpin->setValue(0.0);
+	layout->addWidget(new QLabel{ tr("Pan:"), this }, row, 1);
+	layout->addWidget(_panSpin, row, 2, 1, 2);
+	connect(_panSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
+	++row;
+
+	const auto createEnvelopeWidgets = [this, layout, &row](std::vector<EnvelopePoint>& envelope, double minimum) {
+		for (int i = 0; i < 5; ++i, ++row)
 		{
 			auto& point = envelope.emplace_back();
 
-			point._check = new QCheckBox{ tr("Point %1").arg(i), parent };
+			point._check = new QCheckBox{ tr("Point %1").arg(i), this };
 			point._check->setChecked(i == 0);
 			point._check->setEnabled(i == 1);
-			layout->addWidget(point._check, i, 0);
+			layout->addWidget(point._check, row, 1);
 			connect(point._check, &QCheckBox::toggled, this, &VoiceWidget::updateVoice);
 
-			point._delay = new QDoubleSpinBox{ parent };
+			point._delay = new QDoubleSpinBox{ this };
 			point._delay->setDecimals(2);
 			point._delay->setEnabled(false);
 			point._delay->setMaximum(60.0);
 			point._delay->setMinimum(0.0);
 			point._delay->setSingleStep(0.01);
 			point._delay->setValue(0.0);
-			layout->addWidget(point._delay, i, 1);
+			layout->addWidget(point._delay, row, 2);
 			connect(point._delay, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
 
-			point._value = new QDoubleSpinBox{ parent };
+			point._value = new QDoubleSpinBox{ this };
 			point._value->setDecimals(2);
 			point._value->setEnabled(i == 0);
 			point._value->setMaximum(1.0);
 			point._value->setMinimum(minimum);
 			point._value->setSingleStep(0.01);
 			point._value->setValue(1.0);
-			layout->addWidget(point._value, i, 2);
+			layout->addWidget(point._value, row, 3);
 			connect(point._value, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
 
 			if (i == 0)
@@ -89,52 +125,20 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 		}
 	};
 
-	const auto layout = new QGridLayout{ this };
+	createHeader(tr("Amplitude modulation"));
+	createEnvelopeWidgets(_amplitudeEnvelope, 0.0);
 
-	_typeCombo = new QComboBox{ this };
-	_typeCombo->addItem(tr("Linear"), static_cast<int>(aulos::Wave::Linear));
-	_typeCombo->addItem(tr("Quadratic"), static_cast<int>(aulos::Wave::Quadratic));
-	_typeCombo->addItem(tr("Cubic"), static_cast<int>(aulos::Wave::Cubic));
-	_typeCombo->addItem(tr("Cosine"), static_cast<int>(aulos::Wave::Cosine));
-	layout->addWidget(_typeCombo, 0, 0, 1, 2);
-	connect(_typeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &VoiceWidget::updateVoice);
+	createHeader(tr("Frequency modulation"));
+	createEnvelopeWidgets(_frequencyEnvelope, 0.5);
 
-	_outOfPhaseCheck = new QCheckBox{ tr("Out of phase"), this };
-	layout->addWidget(_outOfPhaseCheck, 1, 0);
-	connect(_outOfPhaseCheck, &QCheckBox::toggled, this, &VoiceWidget::updateVoice);
+	createHeader(tr("Asymmetry modulation"));
+	createEnvelopeWidgets(_asymmetryEnvelope, 0.0);
 
-	const auto panLayout = new QHBoxLayout{};
-	layout->addLayout(panLayout, 1, 1);
+	createHeader(tr("Oscillation modulation"));
+	createEnvelopeWidgets(_oscillationEnvelope, 0.0);
 
-	panLayout->addWidget(new QLabel{ tr("Pan:"), this });
-
-	_panSpin = new QDoubleSpinBox{ parent };
-	_panSpin->setDecimals(2);
-	_panSpin->setMaximum(1.0);
-	_panSpin->setMinimum(-1.0);
-	_panSpin->setSingleStep(0.01);
-	_panSpin->setValue(0.0);
-	panLayout->addWidget(_panSpin);
-	connect(_panSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
-
-	const auto amplitudeGroup = new QGroupBox{ tr("Amplitude"), this };
-	createEnvelopeEditor(amplitudeGroup, _amplitudeEnvelope, 0.0);
-	layout->addWidget(amplitudeGroup, 2, 0);
-
-	const auto frequencyGroup = new QGroupBox{ tr("Frequency"), this };
-	createEnvelopeEditor(frequencyGroup, _frequencyEnvelope, 0.5);
-	layout->addWidget(frequencyGroup, 2, 1);
-
-	const auto asymmetryGroup = new QGroupBox{ tr("Asymmetry"), this };
-	createEnvelopeEditor(asymmetryGroup, _asymmetryEnvelope, 0.0);
-	layout->addWidget(asymmetryGroup, 3, 0);
-
-	const auto oscillationGroup = new QGroupBox{ tr("Oscillation"), this };
-	createEnvelopeEditor(oscillationGroup, _oscillationEnvelope, 0.0);
-	layout->addWidget(oscillationGroup, 3, 1);
-
-	layout->addItem(new QSpacerItem{ 0, 0, QSizePolicy::Minimum, QSizePolicy::Expanding }, 4, 0, 1, 2);
-	layout->setRowStretch(4, 1);
+	layout->addItem(new QSpacerItem{ 0, 0, QSizePolicy::Minimum, QSizePolicy::Expanding }, row, 0, 1, 4);
+	layout->setRowStretch(row, 1);
 }
 
 void VoiceWidget::setVoice(const std::shared_ptr<aulos::VoiceData>& voice)
