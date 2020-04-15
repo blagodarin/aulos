@@ -34,6 +34,7 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 option(PUBLIC_BUILD "Build for public distribution" OFF)
 option(WITH_STUDIO "Build Aulos Studio (requires Qt)" OFF)
 option(WITH_STUDIO_INSTALLER "Build Aulos Studio installer (requires NSIS)" OFF)
+option(WITH_TOOLS "Build tools" OFF)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 	add_compile_options(/std:c++latest /WX /W4)
@@ -52,6 +53,10 @@ add_subdirectory(aulos)
 if(WITH_STUDIO)
 	find_package(Qt5 COMPONENTS Multimedia Widgets REQUIRED)
 	add_subdirectory(studio)
+endif()
+
+if(WITH_TOOLS)
+	add_subdirectory(tools/aulosmark)
 endif()
 
 if(WIN32)
