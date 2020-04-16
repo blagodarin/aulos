@@ -67,6 +67,7 @@ namespace
 int main(int argc, char** argv)
 {
 	std::filesystem::path path;
+	unsigned samplingRate = 48'000;
 	if (int i = 1; i < argc)
 		path = argv[i];
 	else
@@ -86,7 +87,7 @@ int main(int argc, char** argv)
 
 	std::unique_ptr<aulos::Renderer> renderer;
 	const auto prepareTime = ::measure(
-		[&renderer, &composition] { renderer = aulos::Renderer::create(*composition, 48'000, 2); },
+		[&renderer, &composition, samplingRate] { renderer = aulos::Renderer::create(*composition, samplingRate, 2); },
 		[&renderer] { renderer.reset(); });
 
 	const auto renderTime = ::measure([&renderer] {
@@ -94,8 +95,11 @@ int main(int argc, char** argv)
 			;
 	});
 
-	std::cout << "parse:" << parseTime << "us\n";
-	std::cout << "prepare:" << prepareTime << "us\n";
-	std::cout << "render:" << renderTime << "us\n";
+	const auto compositionDuration = renderer->totalSamples() * double{ std::chrono::microseconds::period::den } / samplingRate;
+
+	std::cout << "ParseTime:" << parseTime << "us\n";
+	std::cout << "PrepareTime:" << prepareTime << "us\n";
+	std::cout << "RenderTime:" << renderTime << "us\n";
+	std::cout << "RenderSpeed:" << compositionDuration / renderTime << "x\n";
 	return 0;
 }

@@ -88,9 +88,9 @@ namespace aulos
 	public:
 		VoiceImpl(const VoiceData&, unsigned samplingRate) noexcept;
 
-		size_t duration() const noexcept { return _amplitudeModulator.duration(); }
 		unsigned samplingRate() const noexcept final { return _samplingRate; }
 		void start(Note note, float amplitude) noexcept final;
+		size_t totalSamples() const noexcept final { return _amplitudeModulator.duration(); }
 
 	protected:
 		void advance(size_t samples) noexcept;

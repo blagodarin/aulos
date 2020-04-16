@@ -58,7 +58,7 @@ namespace
 		RendererImpl(const aulos::CompositionImpl& composition, unsigned samplingRate, unsigned channels)
 			: _samplingRate{ samplingRate }
 			, _channels{ channels }
-			, _stepBytes{ static_cast<size_t>(std::lround(static_cast<double>(samplingRate) / composition._speed)) * _blockBytes }
+			, _stepSamples{ static_cast<size_t>(std::lround(static_cast<double>(samplingRate) / composition._speed)) }
 		{
 			size_t trackCount = 0;
 			const auto totalWeight = static_cast<float>(std::reduce(composition._parts.cbegin(), composition._parts.cend(), 0u, [&trackCount](unsigned weight, const aulos::Part& part) {
@@ -72,23 +72,23 @@ namespace
 			{
 				for (const auto& track : part._tracks)
 				{
-					auto& trackSounds = _tracks.emplace_back(std::make_unique<TrackState>(part._voice, track._weight / totalWeight, samplingRate, channels))->_sounds;
+					auto& trackState = *_tracks.emplace_back(std::make_unique<TrackState>(part._voice, track._weight / totalWeight, samplingRate, channels));
 					size_t fragmentOffset = 0;
 					for (const auto& fragment : track._fragments)
 					{
 						fragmentOffset += fragment._delay;
-						auto lastSoundOffset = std::reduce(trackSounds.cbegin(), trackSounds.cend(), size_t{}, [](size_t offset, const TrackSound& sound) { return offset + sound._delay; });
-						while (!trackSounds.empty() && lastSoundOffset >= fragmentOffset)
+						auto lastSoundOffset = trackState.lastSoundOffset();
+						while (!trackState._sounds.empty() && lastSoundOffset >= fragmentOffset)
 						{
-							lastSoundOffset -= trackSounds.back()._delay;
-							trackSounds.pop_back();
+							lastSoundOffset -= trackState._sounds.back()._delay;
+							trackState._sounds.pop_back();
 						}
 						if (const auto& sequence = track._sequences[fragment._sequence]; !sequence.empty())
 						{
-							trackSounds.reserve(trackSounds.size() + sequence.size());
-							trackSounds.emplace_back(fragmentOffset - lastSoundOffset + sequence.front()._delay, sequence.front()._note);
-							std::for_each(std::next(sequence.begin()), sequence.end(), [&trackSounds](const aulos::Sound& sound) {
-								trackSounds.emplace_back(sound._delay, sound._note);
+							trackState._sounds.reserve(trackState._sounds.size() + sequence.size());
+							trackState._sounds.emplace_back(fragmentOffset - lastSoundOffset + sequence.front()._delay, sequence.front()._note);
+							std::for_each(std::next(sequence.begin()), sequence.end(), [&trackState](const aulos::Sound& sound) {
+								trackState._sounds.emplace_back(sound._delay, sound._note);
 							});
 						}
 					}
@@ -123,7 +123,7 @@ namespace
 						const auto nextIndex = track->_soundIndex + 1;
 						track->_soundBytesRemaining = nextIndex != track->_sounds.size()
 							? _stepBytes * track->_sounds[nextIndex]._delay
-							: track->_voice->duration() * _blockBytes;
+							: track->_voice->totalSamples() * _blockBytes;
 						assert(track->_soundBytesRemaining % _blockBytes == 0);
 						track->_voice->start(track->_sounds[track->_soundIndex]._note, track->_normalizedWeight);
 					}
@@ -145,6 +145,15 @@ namespace
 		unsigned samplingRate() const noexcept
 		{
 			return _samplingRate;
+		}
+
+		size_t totalSamples() const noexcept
+		{
+			size_t result = 0;
+			for (const auto& track : _tracks)
+				if (!track->_sounds.empty())
+					result = std::max(result, track->lastSoundOffset() * _stepSamples + track->_voice->totalSamples());
+			return result;
 		}
 
 	public:
@@ -170,12 +179,18 @@ namespace
 				, _normalizedWeight{ normalizedWeight }
 			{
 			}
+
+			size_t lastSoundOffset() const noexcept
+			{
+				return std::reduce(_sounds.cbegin(), _sounds.cend(), size_t{}, [](size_t offset, const TrackSound& sound) { return offset + sound._delay; });
+			}
 		};
 
 		const unsigned _samplingRate;
 		const unsigned _channels;
 		const size_t _blockBytes = _channels * aulos::kSampleSize;
-		const size_t _stepBytes;
+		const size_t _stepSamples;
+		const size_t _stepBytes = _stepSamples * _blockBytes;
 		std::vector<std::unique_ptr<TrackState>> _tracks;
 	};
 }
