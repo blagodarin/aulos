@@ -94,16 +94,10 @@ namespace
 					}
 				}
 			}
-			for (auto& track : _tracks)
-				if (!track->_sounds.empty())
-					if (const auto delay = track->_sounds.front()._delay; delay > 0)
-					{
-						track->_soundIndex = std::numeric_limits<size_t>::max();
-						track->_soundBytesRemaining = _stepBytes * delay;
-					}
+			restart();
 		}
 
-		unsigned channels() const noexcept
+		unsigned channels() const noexcept override
 		{
 			return _channels;
 		}
@@ -142,12 +136,23 @@ namespace
 			return offset;
 		}
 
-		unsigned samplingRate() const noexcept
+		void restart() noexcept override
+		{
+			for (auto& track : _tracks)
+			{
+				track->_voice->stop();
+				const auto delay = !track->_sounds.empty() ? track->_sounds.front()._delay : 0;
+				track->_soundIndex = delay ? std::numeric_limits<size_t>::max() : 0;
+				track->_soundBytesRemaining = _stepBytes * delay;
+			}
+		}
+
+		unsigned samplingRate() const noexcept override
 		{
 			return _samplingRate;
 		}
 
-		size_t totalSamples() const noexcept
+		size_t totalSamples() const noexcept override
 		{
 			size_t result = 0;
 			for (const auto& track : _tracks)

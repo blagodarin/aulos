@@ -43,22 +43,22 @@ namespace
 		return { std::move(result), size };
 	}
 
-	template <typename Callable>
-	auto measure(Callable&& callable, std::function<void()>&& cleanup = {})
+	template <typename Payload, typename Cleanup>
+	auto measure(Payload&& payload, Cleanup&& cleanup)
 	{
 		std::chrono::high_resolution_clock::duration duration{ 0 };
 		std::chrono::microseconds::rep iterations = 0;
 		for (;;)
 		{
 			const auto startTime = std::chrono::high_resolution_clock::now();
-			callable();
+			payload();
 			duration += std::chrono::high_resolution_clock::now() - startTime;
 			++iterations;
-			if (!cleanup || duration >= std::chrono::seconds{ 1 })
+			if (duration >= std::chrono::seconds{ 1 })
 				break;
 			cleanup();
 		}
-		return (std::chrono::duration_cast<std::chrono::microseconds>(duration).count() + iterations - 1) / iterations;
+		return std::pair{ (std::chrono::duration_cast<std::chrono::microseconds>(duration).count() + iterations - 1) / iterations, iterations };
 	}
 
 	std::array<std::byte, 65'536> buffer;
@@ -81,25 +81,24 @@ int main(int argc, char** argv)
 		return 1;
 
 	std::unique_ptr<aulos::Composition> composition;
-	const auto parseTime = ::measure(
+	const auto [parseTime, parseIterations] = ::measure(
 		[&composition, &data] { composition = aulos::Composition::create(data.get()); },
 		[&composition] { composition.reset(); });
 
 	std::unique_ptr<aulos::Renderer> renderer;
-	const auto prepareTime = ::measure(
+	const auto [prepareTime, prepareIterations] = ::measure(
 		[&renderer, &composition, samplingRate] { renderer = aulos::Renderer::create(*composition, samplingRate, 2); },
 		[&renderer] { renderer.reset(); });
 
-	const auto renderTime = ::measure([&renderer] {
-		while (renderer->render(buffer.data(), buffer.size()) > 0)
-			;
-	});
+	const auto [renderTime, renderIterations] = ::measure(
+		[&renderer] { while (renderer->render(buffer.data(), buffer.size()) > 0) ; },
+		[&renderer] { renderer->restart(); });
 
 	const auto compositionDuration = renderer->totalSamples() * double{ std::chrono::microseconds::period::den } / samplingRate;
 
-	std::cout << "ParseTime:" << parseTime << "us\n";
-	std::cout << "PrepareTime:" << prepareTime << "us\n";
-	std::cout << "RenderTime:" << renderTime << "us\n";
-	std::cout << "RenderSpeed:" << compositionDuration / renderTime << "x\n";
+	std::cout << "ParseTime: " << parseTime << "us [N=" << parseIterations << "]\n";
+	std::cout << "PrepareTime: " << prepareTime << "us [N=" << prepareIterations << "]\n";
+	std::cout << "RenderTime: " << renderTime << "us [N=" << renderIterations << "]\n";
+	std::cout << "RenderSpeed: " << compositionDuration / renderTime << "x\n";
 	return 0;
 }

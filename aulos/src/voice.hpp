@@ -54,6 +54,7 @@ namespace aulos
 		double advance() noexcept;
 		size_t duration() const noexcept { return _envelope.duration(); }
 		size_t partSamplesRemaining() const noexcept;
+		void stop() noexcept { _nextPoint = _envelope.end(); }
 		bool stopped() const noexcept { return _nextPoint == _envelope.end(); }
 		bool update() noexcept;
 		constexpr double value() const noexcept { return _currentValue; }
@@ -88,25 +89,28 @@ namespace aulos
 	public:
 		VoiceImpl(const VoiceData&, unsigned samplingRate) noexcept;
 
+		void restart() noexcept final;
 		unsigned samplingRate() const noexcept final { return _samplingRate; }
 		void start(Note note, float amplitude) noexcept final;
+		void stop() noexcept { _amplitudeModulator.stop(); }
 		size_t totalSamples() const noexcept final { return _amplitudeModulator.duration(); }
 
 	protected:
 		void advance(size_t samples) noexcept;
 
 	private:
+		void startImpl(float clampedAmplitude) noexcept;
 		void updatePeriodParts() noexcept;
 
 	protected:
 		const unsigned _samplingRate;
-		SampledEnvelope _amplitudeEnvelope;
+		const SampledEnvelope _amplitudeEnvelope;
 		AmplitudeModulator _amplitudeModulator{ _amplitudeEnvelope };
-		SampledEnvelope _frequencyEnvelope;
+		const SampledEnvelope _frequencyEnvelope;
 		LinearModulator _frequencyModulator{ _frequencyEnvelope };
-		SampledEnvelope _asymmetryEnvelope;
+		const SampledEnvelope _asymmetryEnvelope;
 		LinearModulator _asymmetryModulator{ _asymmetryEnvelope };
-		SampledEnvelope _oscillationEnvelope;
+		const SampledEnvelope _oscillationEnvelope;
 		LinearModulator _oscillationModulator{ _oscillationEnvelope };
 		float _amplitude = 0.f;
 		double _frequency = 0.0;

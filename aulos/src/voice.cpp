@@ -162,9 +162,37 @@ namespace aulos
 	{
 	}
 
+	void VoiceImpl::restart() noexcept
+	{
+		stop();
+		startImpl(_amplitude); // TODO: Fix initial amplitude sign.
+	}
+
 	void VoiceImpl::start(Note note, float amplitude) noexcept
 	{
-		const auto clampedAmplitude = std::clamp(amplitude, -1.f, 1.f);
+		_frequency = kNoteTable[note];
+		startImpl(std::clamp(amplitude, -1.f, 1.f));
+	}
+
+	void VoiceImpl::advance(size_t samples) noexcept
+	{
+		_frequencyModulator.advance(samples);
+		_asymmetryModulator.advance(samples);
+		_oscillationModulator.advance(samples);
+		auto remaining = _partSamplesRemaining - samples;
+		while (remaining <= 0.0)
+		{
+			_amplitude = -_amplitude;
+			_partIndex = 1 - _partIndex;
+			updatePeriodParts();
+			remaining += _partLength;
+		}
+		_partSamplesRemaining = remaining;
+	}
+
+	void VoiceImpl::startImpl(float clampedAmplitude) noexcept
+	{
+		assert(-1.f <= clampedAmplitude && clampedAmplitude <= 1.f);
 		double partRemaining;
 		if (_amplitudeModulator.stopped())
 		{
@@ -182,26 +210,9 @@ namespace aulos
 		_frequencyModulator.start(1.0);
 		_asymmetryModulator.start(0.0);
 		_oscillationModulator.start(1.0);
-		_frequency = kNoteTable[note];
 		updatePeriodParts();
 		_partSamplesRemaining = _partLength * partRemaining;
 		advance(0);
-	}
-
-	void VoiceImpl::advance(size_t samples) noexcept
-	{
-		_frequencyModulator.advance(samples);
-		_asymmetryModulator.advance(samples);
-		_oscillationModulator.advance(samples);
-		auto remaining = _partSamplesRemaining - samples;
-		while (remaining <= 0.0)
-		{
-			_amplitude = -_amplitude;
-			_partIndex = 1 - _partIndex;
-			updatePeriodParts();
-			remaining += _partLength;
-		}
-		_partSamplesRemaining = remaining;
 	}
 
 	void VoiceImpl::updatePeriodParts() noexcept
