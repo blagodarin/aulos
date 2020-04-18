@@ -15,15 +15,6 @@
 # limitations under the License.
 #
 
-function(download_file _url)
-	string(REGEX REPLACE "^.*/([^/]+)$" "\\1" _name ${_url})
-	set(_path ${PROJECT_BINARY_DIR}/${_name})
-	if(NOT EXISTS ${_path})
-		message(STATUS "Downloading ${_name}")
-		file(DOWNLOAD ${_url} ${_path} TLS_VERIFY ON)
-	endif()
-endfunction()
-
 find_program(NSIS_EXECUTABLE makensis.exe PATHS [HKEY_LOCAL_MACHINE\\Software\\NSIS])
 if(NSIS_EXECUTABLE MATCHES ".*-NOTFOUND$")
 	message(FATAL_ERROR "Can't find NSIS executable")

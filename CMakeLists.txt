@@ -34,6 +34,7 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 option(PUBLIC_BUILD "Build for public distribution" OFF)
 option(WITH_STUDIO "Build Aulos Studio (requires Qt)" OFF)
 option(WITH_STUDIO_INSTALLER "Build Aulos Studio installer (requires NSIS)" OFF)
+option(WITH_TESTS "Build tests" OFF)
 option(WITH_TOOLS "Build tools" OFF)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
@@ -48,6 +49,21 @@ set(AULOS_RC_VERSION "${PROJECT_VERSION_MAJOR},${PROJECT_VERSION_MINOR},${PROJEC
 set(AULOS_VERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
 configure_file(config.h.in ${PROJECT_BINARY_DIR}/aulos_config.h)
 
+function(download_file _url)
+	cmake_parse_arguments(_arg "" "SHA1" "" ${ARGN})
+	string(REGEX REPLACE "^.*/([^/]+)$" "\\1" _name ${_url})
+	set(_path ${PROJECT_BINARY_DIR}/${_name})
+	if(EXISTS ${_path})
+		return()
+	endif()
+	message(STATUS "Downloading ${_name}")
+	if(_arg_SHA1)
+		file(DOWNLOAD ${_url} ${_path} TLS_VERIFY ON EXPECTED_HASH SHA1=${_arg_SHA1})
+	else()
+		file(DOWNLOAD ${_url} ${_path} TLS_VERIFY ON)
+	endif()
+endfunction()
+
 add_subdirectory(aulos)
 
 if(WITH_STUDIO)
@@ -57,6 +73,10 @@ endif()
 
 if(WITH_TOOLS)
 	add_subdirectory(tools/aulosmark)
+endif()
+
+if(WITH_TESTS)
+	add_subdirectory(tests)
 endif()
 
 if(WIN32)
