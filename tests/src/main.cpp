@@ -17,40 +17,4 @@
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 
-#include <aulos/data.hpp>
-
 #include <doctest.h>
-
-TEST_CASE("VoiceRenderer")
-{
-	aulos::VoiceData data;
-	data._amplitudeEnvelope._initial = 1.f;
-	data._amplitudeEnvelope._changes.emplace_back(.5f, 1.f);
-	const auto renderer = aulos::VoiceRenderer::create(data, 44'000, 1);
-	REQUIRE(renderer);
-	CHECK(renderer->channels() == 1);
-	CHECK(renderer->samplingRate() == 44'000);
-	CHECK(renderer->totalSamples() == 22'000);
-	renderer->start(aulos::Note::A4, 1.f); // A4 note frequency is exactly 440 Hz, so the period should be exactly 100 samples.
-	const auto renderSample = [&renderer] {
-		float sample = 0.f;
-		REQUIRE(renderer->render(&sample, sizeof sample) == sizeof sample);
-		return sample;
-	};
-	auto sample = renderSample();
-	CHECK(sample == 1.f);
-	for (int i = 1; i < 50; ++i)
-	{
-		const auto nextSample = renderSample();
-		CHECK(nextSample < sample);
-		sample = nextSample;
-	}
-	sample = renderSample();
-	CHECK(sample == -1.f);
-	for (int i = 1; i < 50; ++i)
-	{
-		const auto nextSample = renderSample();
-		CHECK(nextSample > sample);
-		sample = nextSample;
-	}
-}
