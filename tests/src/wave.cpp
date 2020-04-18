@@ -55,6 +55,16 @@ TEST_CASE("wave_sawtooth")
 	TestVoice voice{ data, amplitude };
 	auto sample = voice.renderSample();
 	CHECK(sample == amplitude);
+	for (int i = 1; i < 50; ++i)
+	{
+		const auto nextSample = voice.renderSample();
+		CHECK(nextSample > 0.f);
+		CHECK(sample > nextSample);
+		sample = nextSample;
+	}
+	voice._renderer->restart();
+	sample = voice.renderSample();
+	CHECK(sample == amplitude);
 	for (int i = 1; i < 100; ++i)
 	{
 		const auto nextSample = voice.renderSample();
@@ -100,6 +110,16 @@ TEST_CASE("wave_triangle")
 	}
 	sample = voice.renderSample();
 	CHECK(sample == -amplitude);
+	for (int i = 1; i < 25; ++i)
+	{
+		const auto nextSample = voice.renderSample();
+		CHECK(nextSample < 0.f);
+		CHECK(sample < nextSample);
+		sample = nextSample;
+	}
+	voice._renderer->restart();
+	sample = voice.renderSample();
+	CHECK(sample == -amplitude);
 	for (int i = 1; i < 50; ++i)
 	{
 		const auto nextSample = voice.renderSample();
@@ -120,6 +140,16 @@ TEST_CASE("wave_triangle_asymmetric")
 	constexpr auto amplitude = .4f;
 	TestVoice voice{ data, amplitude };
 	auto sample = voice.renderSample();
+	CHECK(sample == amplitude);
+	for (int i = 1; i < 50; ++i)
+	{
+		const auto nextSample = voice.renderSample();
+		CHECK(nextSample > -amplitude / 3);
+		CHECK(sample > nextSample);
+		sample = nextSample;
+	}
+	voice._renderer->restart();
+	sample = voice.renderSample();
 	CHECK(sample == amplitude);
 	for (int i = 1; i < 75; ++i)
 	{
