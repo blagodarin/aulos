@@ -196,7 +196,8 @@ namespace aulos
 		double partRemaining;
 		if (_amplitudeModulator.stopped())
 		{
-			_amplitudeModulator.start(0.f);
+			assert(_amplitudeEnvelope.begin()->_delay == 0);
+			_amplitudeModulator.start(_amplitudeEnvelope.begin()->_value);
 			_amplitude = clampedAmplitude;
 			_partIndex = 0;
 			partRemaining = 1.0;
