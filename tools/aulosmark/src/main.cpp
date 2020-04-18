@@ -43,22 +43,40 @@ namespace
 		return { std::move(result), size };
 	}
 
+	struct Measurement
+	{
+		using Duration = std::chrono::high_resolution_clock::duration;
+
+		Duration::rep _iterations = 0;
+		Duration _totalDuration{ 0 };
+		Duration _minDuration = Duration::max();
+		Duration _maxDuration{ 0 };
+
+		auto average() const noexcept { return (std::chrono::duration_cast<std::chrono::microseconds>(_totalDuration).count() + _iterations - 1) / _iterations; }
+		auto maximum() const noexcept { return std::chrono::duration_cast<std::chrono::microseconds>(_maxDuration).count(); }
+		auto minimum() const noexcept { return std::chrono::duration_cast<std::chrono::microseconds>(_minDuration).count(); }
+	};
+
 	template <typename Payload, typename Cleanup>
 	auto measure(Payload&& payload, Cleanup&& cleanup)
 	{
-		std::chrono::high_resolution_clock::duration duration{ 0 };
-		std::chrono::microseconds::rep iterations = 0;
+		Measurement measurement;
 		for (;;)
 		{
 			const auto startTime = std::chrono::high_resolution_clock::now();
 			payload();
-			duration += std::chrono::high_resolution_clock::now() - startTime;
-			++iterations;
-			if (duration >= std::chrono::seconds{ 1 })
+			const auto duration = std::chrono::high_resolution_clock::now() - startTime;
+			++measurement._iterations;
+			measurement._totalDuration += duration;
+			if (measurement._minDuration > duration)
+				measurement._minDuration = duration;
+			if (measurement._maxDuration < duration)
+				measurement._maxDuration = duration;
+			if (measurement._totalDuration >= std::chrono::seconds{ 1 })
 				break;
 			cleanup();
 		}
-		return std::pair{ (std::chrono::duration_cast<std::chrono::microseconds>(duration).count() + iterations - 1) / iterations, iterations };
+		return measurement;
 	}
 
 	std::array<std::byte, 65'536> buffer;
@@ -81,24 +99,24 @@ int main(int argc, char** argv)
 		return 1;
 
 	std::unique_ptr<aulos::Composition> composition;
-	const auto [parseTime, parseIterations] = ::measure(
+	const auto parsing = ::measure(
 		[&composition, &data] { composition = aulos::Composition::create(data.get()); },
 		[&composition] { composition.reset(); });
 
 	std::unique_ptr<aulos::Renderer> renderer;
-	const auto [prepareTime, prepareIterations] = ::measure(
+	const auto preparation = ::measure(
 		[&renderer, &composition, samplingRate] { renderer = aulos::Renderer::create(*composition, samplingRate, 2); },
 		[&renderer] { renderer.reset(); });
 
-	const auto [renderTime, renderIterations] = ::measure(
+	const auto rendering = ::measure(
 		[&renderer] { while (renderer->render(buffer.data(), buffer.size()) > 0) ; },
 		[&renderer] { renderer->restart(); });
 
 	const auto compositionDuration = renderer->totalSamples() * double{ std::chrono::microseconds::period::den } / samplingRate;
 
-	std::cout << "ParseTime: " << parseTime << "us [N=" << parseIterations << "]\n";
-	std::cout << "PrepareTime: " << prepareTime << "us [N=" << prepareIterations << "]\n";
-	std::cout << "RenderTime: " << renderTime << "us [N=" << renderIterations << "]\n";
-	std::cout << "RenderSpeed: " << compositionDuration / renderTime << "x\n";
+	std::cout << "ParseTime: " << parsing.average() << "us [N=" << parsing._iterations << ", min=" << parsing.minimum() << "us, max=" << parsing.maximum() << "us]\n";
+	std::cout << "PrepareTime: " << preparation.average() << "us [N=" << preparation._iterations << ", min=" << preparation.minimum() << "us, max=" << preparation.maximum() << "us]\n";
+	std::cout << "RenderTime: " << rendering.average() << "us [N=" << rendering._iterations << ", min=" << rendering.minimum() << "us, max=" << rendering.maximum() << "us]\n";
+	std::cout << "RenderSpeed: " << compositionDuration / rendering.average() << "x\n";
 	return 0;
 }
