@@ -48,6 +48,10 @@ build_script:
   - if "%GENERATOR%"=="VisualStudio" cmake --build . --config %CONFIG% --target studio_installer -- /nologo "/verbosity:minimal"
   - if "%INSTALLER%"=="ON" xcopy AulosStudio-*.exe %APPVEYOR_BUILD_FOLDER%
 
+test_script:
+  - if "%GENERATOR%"=="Ninja" ctest --output-on-failure
+  - if "%GENERATOR%"=="VisualStudio" ctest --build-config %CONFIG% --output-on-failure
+
 artifacts:
   - path: AulosStudio-*.exe
     type: file

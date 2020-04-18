@@ -15,8 +15,6 @@
 # limitations under the License.
 #
 
-download_file("https://raw.githubusercontent.com/onqtam/doctest/2.3.7/doctest/doctest.h" SHA1 "7b361ca6edac7cb1b9b894dcaaf925b2c9674fef")
-
 set(_src
 	src/main.cpp
 	)
@@ -25,3 +23,5 @@ source_group("src" FILES ${_src})
 add_executable(tests ${_src})
 target_include_directories(tests PRIVATE ${PROJECT_BINARY_DIR})
 target_link_libraries(tests PRIVATE aulos)
+
+add_test(NAME aulos COMMAND tests)

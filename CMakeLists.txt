@@ -76,6 +76,8 @@ if(WITH_TOOLS)
 endif()
 
 if(WITH_TESTS)
+	enable_testing()
+	download_file("https://raw.githubusercontent.com/onqtam/doctest/2.3.7/doctest/doctest.h" SHA1 "7b361ca6edac7cb1b9b894dcaaf925b2c9674fef")
 	add_subdirectory(tests)
 endif()
 
