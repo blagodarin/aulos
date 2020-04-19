@@ -64,5 +64,8 @@ script:
   - cmake --build . --target install
   - popd
 
+after_success:
+  - ${HOME}/aulos.install/bin/aulosmark ${TRAVIS_BUILD_DIR}/examples/popcorn.aulos
+
 notifications:
   email: false

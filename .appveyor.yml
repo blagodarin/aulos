@@ -51,6 +51,8 @@ build_script:
 test_script:
   - if "%GENERATOR%"=="Ninja" ctest --output-on-failure
   - if "%GENERATOR%"=="VisualStudio" ctest --build-config %CONFIG% --output-on-failure
+  - cd %APPVEYOR_BUILD_FOLDER%
+  - _install\bin\aulosmark.exe %APPVEYOR_BUILD_FOLDER%\examples\popcorn.aulos
 
 artifacts:
   - path: AulosStudio-*.exe
