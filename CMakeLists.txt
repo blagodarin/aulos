@@ -32,6 +32,7 @@ set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER ".cmake")
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 option(PUBLIC_BUILD "Build for public distribution" OFF)
+option(USE_SANITIZERS "Use sanitizers" OFF)
 option(WITH_STUDIO "Build Aulos Studio (requires Qt)" OFF)
 option(WITH_STUDIO_INSTALLER "Build Aulos Studio installer (requires NSIS)" OFF)
 option(WITH_TESTS "Build tests" OFF)
@@ -68,6 +69,13 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 	set(STUDIO_WARNINGS /W4
 		/wd5054 # operator '___': deprecated between enumerations of different types
 		)
+endif()
+
+if(USE_SANITIZERS)
+	if(CMAKE_CXX_COMPILER_ID MATCHES "^(Clang|GNU)$")
+		add_compile_options(-fsanitize=address -fsanitize=undefined)
+		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address -fsanitize=undefined")
+	endif()
 endif()
 
 if(NOT CMAKE_GENERATOR MATCHES "^Visual Studio")

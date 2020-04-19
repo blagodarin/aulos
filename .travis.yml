@@ -52,12 +52,12 @@ before_install:
 
 install:
   - mkdir "${HOME}/_cmake" && pushd "${HOME}/_cmake"
-  - wget -q -O - https://github.com/Kitware/CMake/releases/download/v3.17.1/cmake-3.17.1-Linux-x86_64.tar.gz | tar -x --gzip --strip-components 1
+  - wget --output-document=- --quiet https://github.com/Kitware/CMake/releases/download/v3.17.1/cmake-3.17.1-Linux-x86_64.tar.gz | tar -x --gzip --strip-components 1
   - export PATH="$(pwd)/bin:${PATH}"
   - popd
 
 script:
-  - cmake -H. -B"${HOME}/aulos.build" -G"Ninja" -DCMAKE_BUILD_TYPE=${CONFIG} -DCMAKE_INSTALL_PREFIX="${HOME}/aulos.install" -DWITH_STUDIO=ON -DWITH_TESTS=ON -DWITH_TOOLS=ON
+  - cmake -H. -B"${HOME}/aulos.build" -G"Ninja" -DCMAKE_BUILD_TYPE=${CONFIG} -DCMAKE_INSTALL_PREFIX="${HOME}/aulos.install" -DUSE_SANITIZERS=ON -DWITH_STUDIO=ON -DWITH_TESTS=ON -DWITH_TOOLS=ON
   - pushd "${HOME}/aulos.build"
   - TERM=dumb cmake --build .
   - ctest --output-on-failure
