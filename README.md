@@ -1,5 +1,6 @@
 [![Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![AppVeyor status](https://ci.appveyor.com/api/projects/status/kha9y50o39k3uscu?svg=true)](https://ci.appveyor.com/project/blagodarin/aulos)
+[![Travis CI status](https://travis-ci.org/blagodarin/aulos.svg?branch=master)](https://travis-ci.org/github/blagodarin/aulos)
 
 [Download the latest unstable Aulos Studio installer](https://ci.appveyor.com/api/projects/blagodarin/aulos/artifacts/AulosStudio-0.0.2-unstable.exe?branch=master&job=Environment%3A%20CONFIG%3DRelease%2C%20ARCH%3Damd64%2C%20QTDIR%3DC%3A%5CQt%5C5.13.2%5Cmsvc2017_64%2C%20INSTALLER%3DON)
 
