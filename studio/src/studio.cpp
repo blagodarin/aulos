@@ -26,6 +26,8 @@
 
 #include <aulos/data.hpp>
 
+#include <cassert>
+
 #include <QApplication>
 #include <QCloseEvent>
 #include <QComboBox>

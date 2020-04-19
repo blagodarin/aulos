@@ -78,7 +78,7 @@ void FragmentItem::setSequence(const std::vector<FragmentSound>& sounds)
 {
 	prepareGeometryChange();
 	_sounds = sounds;
-	_length = sounds.empty() ? 0 : std::reduce(sounds.begin(), sounds.end(), size_t{ 1 }, [](size_t length, const FragmentSound& sound) { return length + sound._delay; });
+	_length = sounds.empty() ? 0 : std::accumulate(sounds.begin(), sounds.end(), size_t{ 1 }, [](size_t length, const FragmentSound& sound) { return length + sound._delay; });
 	_width = _length * kStepWidth;
 	_polygon.clear();
 	_polygon << QPointF{ 0, 0 } << QPointF{ _width, 0 } << QPointF{ _width + kFragmentArrowWidth, kTrackHeight / 2 } << QPointF{ _width, kTrackHeight } << QPointF{ 0, kTrackHeight };

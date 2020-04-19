@@ -91,12 +91,12 @@ namespace aulos
 		};
 
 		const auto readIdentifier = [&] {
-			if (!(*source >= 'a' && *source <= 'z' || *source >= 'A' && *source <= 'Z'))
+			if (!((*source >= 'a' && *source <= 'z') || (*source >= 'A' && *source <= 'Z')))
 				throw CompositionError{ location(), "Identifier expected" };
 			const auto begin = source;
 			do
 				++source;
-			while (*source >= 'a' && *source <= 'z' || *source >= 'A' && *source <= 'Z');
+			while ((*source >= 'a' && *source <= 'z') || (*source >= 'A' && *source <= 'Z'));
 			const std::string_view result{ begin, static_cast<size_t>(source - begin) };
 			skipSpaces();
 			return result;
@@ -136,9 +136,13 @@ namespace aulos
 				do
 					++source;
 				while (*source >= '0' && *source <= '9');
+#ifdef _MSC_VER
 			float result;
 			if (std::from_chars(begin, source, result).ec != std::errc{})
 				throw CompositionError{ { line, begin - lineBase }, "Bad number" };
+#else
+			const auto result = std::strtof(std::string{ begin, source }.c_str(), nullptr);
+#endif
 			if (result < min || result > max)
 				throw CompositionError{ { line, begin - lineBase }, "Number is out of range" };
 			skipSpaces();

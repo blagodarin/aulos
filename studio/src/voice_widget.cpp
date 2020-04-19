@@ -141,6 +141,8 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 	layout->setRowStretch(row, 1);
 }
 
+VoiceWidget::~VoiceWidget() = default;
+
 void VoiceWidget::setVoice(const std::shared_ptr<aulos::VoiceData>& voice)
 {
 	const auto setEnvelope = [](std::vector<EnvelopePoint>& dst, const aulos::Envelope& src) {

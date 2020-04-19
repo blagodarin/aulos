@@ -17,6 +17,8 @@
 
 #include "studio.hpp"
 
+#include <cassert>
+
 #include <QApplication>
 
 namespace

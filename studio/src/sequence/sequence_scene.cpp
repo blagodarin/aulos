@@ -24,6 +24,7 @@
 #include "sound_item.hpp"
 
 #include <cassert>
+#include <cmath>
 
 SequenceScene::SequenceScene(QObject* parent)
 	: QGraphicsScene{ parent }

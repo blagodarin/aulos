@@ -17,6 +17,7 @@
 
 #include "voice.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <numeric>
 
@@ -69,7 +70,7 @@ namespace aulos
 
 	size_t SampledEnvelope::duration() const noexcept
 	{
-		return std::reduce(_points.begin(), _points.end(), size_t{}, [](size_t duration, const Point& point) {
+		return std::accumulate(_points.begin(), _points.end(), size_t{}, [](size_t duration, const Point& point) {
 			return duration + point._delay;
 		});
 	}

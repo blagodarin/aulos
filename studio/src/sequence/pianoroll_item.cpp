@@ -20,6 +20,7 @@
 #include "../theme.hpp"
 
 #include <cassert>
+#include <cmath>
 
 #include <QGraphicsSceneEvent>
 #include <QPainter>
@@ -68,7 +69,7 @@ void PianorollItem::mousePressEvent(QGraphicsSceneMouseEvent* e)
 	{
 		const auto pos = e->lastPos();
 		const auto row = static_cast<size_t>(std::floor(pos.y() / kNoteHeight));
-		assert(row >= 0 && row < 120);
+		assert(row < 120);
 		const auto offset = static_cast<size_t>(std::floor(pos.x() / kNoteWidth));
 		emit newSoundRequested(offset, static_cast<aulos::Note>(119 - row));
 	}
@@ -85,7 +86,6 @@ void PianorollItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* opt
 	for (auto row = firstRow; row < lastRow; ++row)
 	{
 		const auto rowTop = row * kNoteHeight;
-		const auto rowBottom = rowTop + kNoteHeight;
 		painter->setPen(Qt::transparent);
 		painter->setBrush(kPianorollBackgroundColor[::rowToColorIndex(row)]);
 		painter->drawRect({ { option->exposedRect.left(), rowTop }, QSizeF{ option->exposedRect.width(), kNoteHeight } });

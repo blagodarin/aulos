@@ -21,6 +21,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstring>
 #include <numeric>
 
 namespace
@@ -61,8 +62,8 @@ namespace
 			, _stepSamples{ static_cast<size_t>(std::lround(static_cast<double>(samplingRate) / composition._speed)) }
 		{
 			size_t trackCount = 0;
-			const auto totalWeight = static_cast<float>(std::reduce(composition._parts.cbegin(), composition._parts.cend(), 0u, [&trackCount](unsigned weight, const aulos::Part& part) {
-				return weight + std::reduce(part._tracks.cbegin(), part._tracks.cend(), 0u, [&trackCount](unsigned partWeight, const aulos::Track& track) {
+			const auto totalWeight = static_cast<float>(std::accumulate(composition._parts.cbegin(), composition._parts.cend(), 0u, [&trackCount](unsigned weight, const aulos::Part& part) {
+				return weight + std::accumulate(part._tracks.cbegin(), part._tracks.cend(), 0u, [&trackCount](unsigned partWeight, const aulos::Track& track) {
 					++trackCount;
 					return partWeight + track._weight;
 				});
@@ -124,7 +125,7 @@ namespace
 					const auto bytesToGenerate = std::min(track->_soundBytesRemaining, bufferBytes - trackOffset);
 					if (!bytesToGenerate)
 						break;
-					const auto bytesGenerated = track->_voice->render(buffer ? static_cast<std::byte*>(buffer) + trackOffset : nullptr, bytesToGenerate);
+					[[maybe_unused]] const auto bytesGenerated = track->_voice->render(buffer ? static_cast<std::byte*>(buffer) + trackOffset : nullptr, bytesToGenerate);
 					assert(bytesGenerated <= bytesToGenerate); // Initial and inter-sound silence doesn't generate any data.
 					track->_soundBytesRemaining -= bytesToGenerate;
 					trackOffset += bytesToGenerate;
@@ -187,7 +188,7 @@ namespace
 
 			size_t lastSoundOffset() const noexcept
 			{
-				return std::reduce(_sounds.cbegin(), _sounds.cend(), size_t{}, [](size_t offset, const TrackSound& sound) { return offset + sound._delay; });
+				return std::accumulate(_sounds.cbegin(), _sounds.cend(), size_t{}, [](size_t offset, const TrackSound& sound) { return offset + sound._delay; });
 			}
 		};
 

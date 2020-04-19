@@ -19,6 +19,8 @@
 
 #include "../theme.hpp"
 
+#include <cmath>
+
 #include <QGraphicsSceneContextMenuEvent>
 #include <QMenu>
 #include <QPainter>

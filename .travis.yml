@@ -7,45 +7,55 @@ matrix:
   include:
 
     - os: linux
-      dist: xenial
+      dist: bionic
       compiler: gcc
-      env: GCC=9 CONFIG=Release
-      addons: &gcc9
+      env: GCC=10 CONFIG=Release
+      addons: &gcc10
         apt:
           sources: &all_sources
-            - llvm-toolchain-xenial-8
             - ubuntu-toolchain-r-test
           packages:
-            - g++-9
+            - g++-10
             - ninja-build
+            - qtbase5-dev
+            - qtmultimedia5-dev
 
     - os: linux
-      dist: xenial
+      dist: bionic
       compiler: gcc
-      env: GCC=9 CONFIG=Debug
-      addons: *gcc9
+      env: GCC=10 CONFIG=Debug
+      addons: *gcc10
+
+  exclude:
 
     - os: linux
-      dist: xenial
+      dist: bionic
       compiler: clang
-      env: CLANG=8 CONFIG=Release
-      addons: &clang8
+      env: CLANG=9 CONFIG=Release
+      addons: &clang9
         apt:
           sources: *all_sources
           packages:
-            - clang-8
-            - libstdc++-8-dev
+            - clang-9
             - ninja-build
+            - qtbase5-dev
+            - qtmultimedia5-dev
 
     - os: linux
-      dist: xenial
+      dist: bionic
       compiler: clang
-      env: CLANG=8 CONFIG=Debug
-      addons: *clang8
+      env: CLANG=9 CONFIG=Debug
+      addons: *clang9
 
 before_install:
   - if [ -n "${CLANG}" ]; then export CXX=clang++-${CLANG}; fi
   - if [ -n "${GCC}" ]; then export CXX=g++-${GCC}; fi
+
+install:
+  - mkdir "${HOME}/_cmake" && pushd "${HOME}/_cmake"
+  - wget -q -O - https://github.com/Kitware/CMake/releases/download/v3.17.1/cmake-3.17.1-Linux-x86_64.tar.gz | tar -x --gzip --strip-components 1
+  - export PATH="$(pwd)/bin:${PATH}"
+  - popd
 
 script:
   - cmake -H. -B"${HOME}/aulos.build" -G"Ninja" -DCMAKE_BUILD_TYPE=${CONFIG} -DCMAKE_INSTALL_PREFIX="${HOME}/aulos.install" -DWITH_STUDIO=ON -DWITH_TESTS=ON -DWITH_TOOLS=ON

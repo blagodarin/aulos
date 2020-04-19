@@ -20,6 +20,7 @@
 #include <aulos/data.hpp>
 
 #include <array>
+#include <cmath>
 
 namespace aulos
 {

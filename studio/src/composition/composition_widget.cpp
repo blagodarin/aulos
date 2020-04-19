@@ -24,6 +24,8 @@
 
 #include <aulos/data.hpp>
 
+#include <cassert>
+
 #include <QGraphicsView>
 #include <QGridLayout>
 #include <QMenu>
@@ -167,7 +169,7 @@ CompositionWidget::CompositionWidget(QWidget* parent)
 		const auto insertSubmenu = menu.addMenu(tr("Insert sequence"));
 		const auto sequenceCount = (*track)->_sequences.size();
 		for (size_t sequenceIndex = 0; sequenceIndex < sequenceCount; ++sequenceIndex)
-			insertSubmenu->addAction(::makeSequenceName(*(*track)->_sequences[sequenceIndex]))->setData(sequenceIndex);
+			insertSubmenu->addAction(::makeSequenceName(*(*track)->_sequences[sequenceIndex]))->setData(static_cast<unsigned>(sequenceIndex));
 		if (!(*track)->_sequences.empty())
 			insertSubmenu->addSeparator();
 		const auto newSequenceAction = insertSubmenu->addAction(tr("New sequence..."));

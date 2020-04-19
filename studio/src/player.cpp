@@ -19,6 +19,8 @@
 
 #include <aulos/playback.hpp>
 
+#include <cstring>
+
 #include <QAudioOutput>
 
 Player::Player(QObject* parent)
@@ -26,6 +28,8 @@ Player::Player(QObject* parent)
 	, _buffer{ &_data }
 {
 }
+
+Player::~Player() = default;
 
 void Player::reset(aulos::Renderer& renderer)
 {

@@ -19,6 +19,9 @@
 
 #include "sequence_scene.hpp"
 
+#include <cassert>
+#include <cmath>
+
 #include <QGraphicsView>
 #include <QGridLayout>
 #include <QScrollBar>
@@ -44,14 +47,14 @@ SequenceWidget::SequenceWidget(QWidget* parent)
 		});
 		if (sound == _sequenceData->_sounds.end())
 		{
-			assert(position < offset || position == offset && _sequenceData->_sounds.empty());
+			assert(position < offset || (position == offset && _sequenceData->_sounds.empty()));
 			_sequenceData->_sounds.emplace_back(offset - position, note);
 		}
 		else if (position > offset)
 		{
 			assert(position > offset);
 			const auto nextDelay = position - offset;
-			assert(sound->_delay > nextDelay || sound->_delay == nextDelay && sound == _sequenceData->_sounds.begin());
+			assert(sound->_delay > nextDelay || (sound->_delay == nextDelay && sound == _sequenceData->_sounds.begin()));
 			const auto delay = sound->_delay - nextDelay;
 			sound->_delay = nextDelay;
 			_sequenceData->_sounds.emplace(sound, delay, note);

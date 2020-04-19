@@ -30,12 +30,13 @@ namespace aulos
 	class Renderer;
 }
 
-class Player : public QObject
+class Player final : public QObject
 {
 	Q_OBJECT
 
 public:
 	Player(QObject* parent = nullptr);
+	~Player() override;
 
 	constexpr bool isPlaying() const noexcept { return _state == State::Starting || _state == State::Started; }
 	void reset(aulos::Renderer&);

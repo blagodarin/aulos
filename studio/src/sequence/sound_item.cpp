@@ -42,16 +42,15 @@ QRectF SoundItem::boundingRect() const
 
 void SoundItem::mousePressEvent(QGraphicsSceneMouseEvent* e)
 {
-	switch (e->button())
+	if (const auto button = e->button(); button == Qt::LeftButton)
 	{
-	case Qt::LeftButton:
 		e->accept();
 		emit playRequested();
-		break;
-	case Qt::RightButton:
+	}
+	else if (button == Qt::RightButton)
+	{
 		e->accept();
 		emit removeRequested();
-		break;
 	}
 }
 

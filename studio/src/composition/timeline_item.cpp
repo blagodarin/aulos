@@ -19,6 +19,8 @@
 
 #include "../theme.hpp"
 
+#include <cmath>
+
 #include <QGraphicsSceneEvent>
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
