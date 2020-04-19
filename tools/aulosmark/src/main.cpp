@@ -38,7 +38,7 @@ namespace
 		const auto size = static_cast<size_t>(stream.tellg());
 		auto result = std::make_unique<char[]>(size + 1);
 		stream.seekg(0, std::ios::beg);
-		stream.read(result.get(), size);
+		stream.read(result.get(), static_cast<std::streamsize>(size));
 		result[size] = '\0';
 		return { std::move(result), size };
 	}

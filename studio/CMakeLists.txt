@@ -85,7 +85,7 @@ set(_src_sequence
 source_group("src\\sequence" FILES ${_src_sequence})
 
 add_executable(studio WIN32 ${_res} ${_src} ${_src_composition} ${_src_sequence})
-target_compile_options(studio PRIVATE /wd5054)
+target_compile_options(studio PRIVATE ${STUDIO_WARNINGS})
 target_include_directories(studio PRIVATE ${PROJECT_BINARY_DIR})
 target_link_libraries(studio PRIVATE aulos Qt5::Multimedia Qt5::Widgets)
 if(WIN32)

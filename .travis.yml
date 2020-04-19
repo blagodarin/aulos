@@ -1,0 +1,59 @@
+language: cpp
+
+git:
+  depth: 1
+
+matrix:
+  include:
+
+    - os: linux
+      dist: xenial
+      compiler: gcc
+      env: GCC=9 CONFIG=Release
+      addons: &gcc9
+        apt:
+          sources: &all_sources
+            - llvm-toolchain-xenial-8
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-9
+            - ninja-build
+
+    - os: linux
+      dist: xenial
+      compiler: gcc
+      env: GCC=9 CONFIG=Debug
+      addons: *gcc9
+
+    - os: linux
+      dist: xenial
+      compiler: clang
+      env: CLANG=8 CONFIG=Release
+      addons: &clang8
+        apt:
+          sources: *all_sources
+          packages:
+            - clang-8
+            - libstdc++-8-dev
+            - ninja-build
+
+    - os: linux
+      dist: xenial
+      compiler: clang
+      env: CLANG=8 CONFIG=Debug
+      addons: *clang8
+
+before_install:
+  - if [ -n "${CLANG}" ]; then export CXX=clang++-${CLANG}; fi
+  - if [ -n "${GCC}" ]; then export CXX=g++-${GCC}; fi
+
+script:
+  - cmake -H. -B"${HOME}/aulos.build" -G"Ninja" -DCMAKE_BUILD_TYPE=${CONFIG} -DCMAKE_INSTALL_PREFIX="${HOME}/aulos.install" -DWITH_STUDIO=ON -DWITH_TESTS=ON -DWITH_TOOLS=ON
+  - pushd "${HOME}/aulos.build"
+  - TERM=dumb cmake --build .
+  - ctest --output-on-failure
+  - cmake --build . --target install
+  - popd
+
+notifications:
+  email: false

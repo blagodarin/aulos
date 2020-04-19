@@ -174,7 +174,7 @@ namespace aulos
 
 		const auto parseNote = [&](std::vector<Sound>& sequence, size_t& delay, size_t baseOffset) {
 			assert(*source >= 'A' && *source <= 'G');
-			assert(baseOffset >= 0 && baseOffset < 12);
+			assert(baseOffset < 12);
 			++source;
 			if (*source == '#')
 			{
@@ -604,7 +604,7 @@ namespace aulos
 					const auto s = std::find(trackData->_sequences.begin(), trackData->_sequences.end(), fragmentData.second);
 					if (s == trackData->_sequences.end())
 						return {};
-					packedTrack._fragments.emplace_back(fragmentData.first - lastOffset, s - trackData->_sequences.begin());
+					packedTrack._fragments.emplace_back(fragmentData.first - lastOffset, static_cast<size_t>(s - trackData->_sequences.begin()));
 					lastOffset = fragmentData.first;
 				}
 			}

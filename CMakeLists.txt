@@ -37,8 +37,36 @@ option(WITH_STUDIO_INSTALLER "Build Aulos Studio installer (requires NSIS)" OFF)
 option(WITH_TESTS "Build tests" OFF)
 option(WITH_TOOLS "Build tools" OFF)
 
+# Qt headers don't compile with high warning levels,
+# so a separate set of warning settings is needed.
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+	add_compile_options(-Werror -Wall -Wextra)
+endif()
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	add_compile_options(-Werror -Wall -Wextra)
+endif()
+
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-	add_compile_options(/std:c++latest /WX /W4)
+	add_compile_options(/std:c++latest /WX)
+	set(MAX_WARNINGS /Wall
+		/wd4061 # enumerator '___' in switch of enum '___' is not explicitly handled by a case label
+		/wd4514 # unreferenced inline function has been removed
+		/wd4571 # Informational: catch(...) semantics changed since Visual C++ 7.1; structured exceptions (SEH) are no longer caught
+		/wd4623 # default constructor was implicitly defined as deleted
+		/wd4625 # copy constructor was implicitly defined as deleted
+		/wd4626 # assignment operator was implicitly defined as deleted
+		/wd4710 # function not inlined
+		/wd4711 # function '___' selected for automatic inline expansion
+		/wd4820 # '___' bytes padding added after data member '___'
+		/wd5026 # move constructor was implicitly defined as deleted
+		/wd5027 # move assignment operator was implicitly defined as deleted
+		/wd5045 # Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
+		)
+	set(STUDIO_WARNINGS /W4
+		/wd5054 # operator '___': deprecated between enumerations of different types
+		)
 endif()
 
 if(NOT CMAKE_GENERATOR MATCHES "^Visual Studio")
