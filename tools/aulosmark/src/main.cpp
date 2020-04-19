@@ -100,7 +100,7 @@ int main(int argc, char** argv)
 
 	std::unique_ptr<aulos::Composition> composition;
 	const auto parsing = ::measure(
-		[&composition, &data] { composition = aulos::Composition::create(data.get()); },
+		[&composition, source = data.get()] { composition = aulos::Composition::create(source); }, // Clang 9 is unable to capture 'data' by reference.
 		[&composition] { composition.reset(); });
 
 	std::unique_ptr<aulos::Renderer> renderer;

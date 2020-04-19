@@ -26,8 +26,6 @@ matrix:
       env: GCC=10 CONFIG=Debug
       addons: *gcc10
 
-  exclude:
-
     - os: linux
       dist: bionic
       compiler: clang
@@ -37,6 +35,7 @@ matrix:
           sources: *all_sources
           packages:
             - clang-9
+            - libstdc++-10-dev
             - ninja-build
             - qtbase5-dev
             - qtmultimedia5-dev

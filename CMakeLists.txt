@@ -59,6 +59,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 		/wd4626 # assignment operator was implicitly defined as deleted
 		/wd4710 # function not inlined
 		/wd4711 # function '___' selected for automatic inline expansion
+		/wd4738 # storing 32-bit float result in memory, possible loss of performance
 		/wd4820 # '___' bytes padding added after data member '___'
 		/wd5026 # move constructor was implicitly defined as deleted
 		/wd5027 # move assignment operator was implicitly defined as deleted

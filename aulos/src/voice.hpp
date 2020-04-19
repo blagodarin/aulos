@@ -185,9 +185,9 @@ namespace aulos
 					auto output = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
 					for (size_t i = 0; i < samplesToGenerate; ++i)
 					{
-						const auto value = static_cast<float>(oscillator() * _amplitudeModulator.advance());
-						*output++ += value * _leftAmplitude;
-						*output++ += value * _rightAmplitude;
+						const auto value = oscillator() * _amplitudeModulator.advance();
+						*output++ += static_cast<float>(value * _leftAmplitude);
+						*output++ += static_cast<float>(value * _rightAmplitude);
 					}
 				}
 				advance(samplesToGenerate);

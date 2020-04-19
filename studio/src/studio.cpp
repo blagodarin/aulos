@@ -462,7 +462,7 @@ bool Studio::saveCompositionAs()
 
 void Studio::setRecentFile(const QString& path)
 {
-	if (const auto i = std::find_if(_recentFilesActions.begin(), _recentFilesActions.end(), [this, &path](const QAction* action) { return action->text() == path; }); i != _recentFilesActions.end())
+	if (const auto i = std::find_if(_recentFilesActions.begin(), _recentFilesActions.end(), [&path](const QAction* action) { return action->text() == path; }); i != _recentFilesActions.end())
 	{
 		const auto action = *i;
 		_recentFilesActions.erase(i);
