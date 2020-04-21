@@ -131,6 +131,9 @@ namespace aulos
 		unsigned channels() const noexcept final { return kChannels; }
 	};
 
+	// NOTE!
+	// Keeping intermediate calculations in 'double' produces a measurable performance hit (e.g. 104ms -> 114 ms).
+
 	template <typename Oscillator>
 	class MonoVoice final : public BasicVoice<1>
 	{
@@ -185,9 +188,9 @@ namespace aulos
 					auto output = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
 					for (size_t i = 0; i < samplesToGenerate; ++i)
 					{
-						const auto value = oscillator() * _amplitudeModulator.advance();
-						*output++ += static_cast<float>(value * _leftAmplitude);
-						*output++ += static_cast<float>(value * _rightAmplitude);
+						const auto value = static_cast<float>(oscillator() * _amplitudeModulator.advance());
+						*output++ += value * _leftAmplitude;
+						*output++ += value * _rightAmplitude;
 					}
 				}
 				advance(samplesToGenerate);

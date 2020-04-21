@@ -25,11 +25,11 @@ namespace
 	{
 		const std::unique_ptr<aulos::VoiceRenderer> _renderer;
 
-		TestVoice(const aulos::VoiceData& data, float amplitude)
-			: _renderer{ aulos::VoiceRenderer::create(data, 44'000, 1) }
+		TestVoice(const aulos::VoiceData& data, float amplitude, unsigned channels = 1)
+			: _renderer{ aulos::VoiceRenderer::create(data, 44'000, channels) }
 		{
 			REQUIRE(_renderer);
-			CHECK(_renderer->channels() == 1);
+			CHECK(_renderer->channels() == channels);
 			CHECK(_renderer->samplingRate() == 44'000);
 			CHECK(_renderer->totalSamples() == 22'000);
 			_renderer->start(aulos::Note::A4, amplitude); // A4 note frequency is exactly 440 Hz, so the period should be exactly 100 samples.
@@ -41,10 +41,17 @@ namespace
 			REQUIRE(_renderer->render(&sample, sizeof sample) == sizeof sample);
 			return sample;
 		}
+
+		auto renderStereo()
+		{
+			std::pair<float, float> block{ 0.f, 0.f };
+			REQUIRE(_renderer->render(&block.first, sizeof block) == sizeof block);
+			return block;
+		}
 	};
 }
 
-TEST_CASE("wave_sawtooth")
+TEST_CASE("wave_sawtooth_mono")
 {
 	aulos::VoiceData data;
 	data._amplitudeEnvelope._initial = 1.f;
@@ -75,7 +82,46 @@ TEST_CASE("wave_sawtooth")
 	CHECK(voice.renderSample() == amplitude);
 }
 
-TEST_CASE("wave_square")
+TEST_CASE("wave_sawtooth_stereo_antiphase")
+{
+	aulos::VoiceData data;
+	data._amplitudeEnvelope._initial = 1.f;
+	data._amplitudeEnvelope._changes.emplace_back(.5f, 1.f);
+	data._asymmetryEnvelope._initial = 1.f;
+
+	constexpr auto amplitude = .1f;
+	TestVoice voice{ data, amplitude, 2 };
+	auto block = voice.renderStereo();
+	CHECK(block.first == amplitude);
+	CHECK(block.second == -amplitude);
+	for (int i = 1; i < 50; ++i)
+	{
+		const auto nextBlock = voice.renderStereo();
+		CHECK(nextBlock.first > 0.f);
+		CHECK(block.first > nextBlock.first);
+		CHECK(nextBlock.second < 0.f);
+		CHECK(block.second < nextBlock.second);
+		block = nextBlock;
+	}
+	voice._renderer->restart();
+	block = voice.renderStereo();
+	CHECK(block.first == amplitude);
+	CHECK(block.second == -amplitude);
+	for (int i = 1; i < 100; ++i)
+	{
+		const auto nextBlock = voice.renderStereo();
+		CHECK(nextBlock.first > -amplitude);
+		CHECK(block.first > nextBlock.first);
+		CHECK(nextBlock.second < amplitude);
+		CHECK(block.second < nextBlock.second);
+		block = nextBlock;
+	}
+	block = voice.renderStereo();
+	CHECK(block.first == amplitude);
+	CHECK(block.second == -amplitude);
+}
+
+TEST_CASE("wave_square_mono")
 {
 	aulos::VoiceData data;
 	data._amplitudeEnvelope._initial = 1.f;
@@ -91,7 +137,7 @@ TEST_CASE("wave_square")
 	CHECK(voice.renderSample() == amplitude);
 }
 
-TEST_CASE("wave_triangle")
+TEST_CASE("wave_triangle_mono")
 {
 	aulos::VoiceData data;
 	data._amplitudeEnvelope._initial = 1.f;
@@ -130,7 +176,7 @@ TEST_CASE("wave_triangle")
 	CHECK(voice.renderSample() == amplitude);
 }
 
-TEST_CASE("wave_triangle_asymmetric")
+TEST_CASE("wave_triangle_asymmetric_mono")
 {
 	aulos::VoiceData data;
 	data._amplitudeEnvelope._initial = 1.f;
