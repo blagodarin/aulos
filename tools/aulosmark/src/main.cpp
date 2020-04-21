@@ -18,11 +18,14 @@
 #include <aulos/playback.hpp>
 
 #include <array>
+#include <cassert>
 #include <chrono>
 #include <filesystem>
 #include <functional>
 #include <fstream>
 #include <iostream>
+#include <limits>
+#include <string>
 
 namespace
 {
@@ -43,6 +46,38 @@ namespace
 		return { std::move(result), size };
 	}
 
+	std::string print(const std::chrono::nanoseconds& duration)
+	{
+		struct Bound
+		{
+			const char* _units;
+			std::chrono::nanoseconds::rep _scale;
+			std::chrono::nanoseconds::rep _maximum;
+		};
+
+		static const std::array<Bound, 10> bounds{
+			Bound{ "ns", 1, 999 },
+			Bound{ "us", 100, 9'999 },
+			Bound{ "us", 10, 99'999 },
+			Bound{ "us", 1, 999'999 },
+			Bound{ "ms", 100, 9'999'999 },
+			Bound{ "ms", 10, 99'999'999 },
+			Bound{ "ms", 1, 999'999'999 },
+			Bound{ "s", 100, 9'999'999'999 },
+			Bound{ "s", 10, 99'999'999'999 },
+			Bound{ "s", 1, std::numeric_limits<std::chrono::nanoseconds::rep>::max() },
+		};
+
+		const auto nanoseconds = duration.count();
+		const auto i = std::find_if_not(bounds.begin(), bounds.end(), [nanoseconds](const Bound& bound) { return nanoseconds > bound._maximum; });
+		assert(i != bounds.end());
+		const auto scale = (i->_maximum + 1) / 1'000;
+		const auto value = (nanoseconds + scale - 1) / scale;
+		const auto whole = value / i->_scale;
+		const auto fraction = value % i->_scale;
+		return (fraction ? std::to_string(whole) + '.' + std::to_string(fraction) : std::to_string(whole)) + i->_units;
+	}
+
 	struct Measurement
 	{
 		using Duration = std::chrono::high_resolution_clock::duration;
@@ -52,13 +87,11 @@ namespace
 		Duration _minDuration = Duration::max();
 		Duration _maxDuration{ 0 };
 
-		auto average() const noexcept { return (std::chrono::duration_cast<std::chrono::microseconds>(_totalDuration).count() + _iterations - 1) / _iterations; }
-		auto maximum() const noexcept { return std::chrono::duration_cast<std::chrono::microseconds>(_maxDuration).count(); }
-		auto minimum() const noexcept { return std::chrono::duration_cast<std::chrono::microseconds>(_minDuration).count(); }
+		auto average() const noexcept { return Duration{ (_totalDuration.count() + _iterations - 1) / _iterations }; }
 	};
 
-	template <typename Payload, typename Cleanup>
-	auto measure(Payload&& payload, Cleanup&& cleanup)
+	template <Measurement::Duration::rep maxIterations = std::numeric_limits<Measurement::Duration::rep>::max(), typename Payload, typename Cleanup>
+	auto measure(Payload&& payload, Cleanup&& cleanup, const std::chrono::seconds& minDuration = std::chrono::seconds{ 1 })
 	{
 		Measurement measurement;
 		for (;;)
@@ -72,7 +105,7 @@ namespace
 				measurement._minDuration = duration;
 			if (measurement._maxDuration < duration)
 				measurement._maxDuration = duration;
-			if (measurement._totalDuration >= std::chrono::seconds{ 1 })
+			if (measurement._iterations >= maxIterations || measurement._totalDuration >= minDuration)
 				break;
 			cleanup();
 		}
@@ -99,24 +132,25 @@ int main(int argc, char** argv)
 		return 1;
 
 	std::unique_ptr<aulos::Composition> composition;
-	const auto parsing = ::measure(
+	const auto parsing = ::measure<10'000>(
 		[&composition, source = data.get()] { composition = aulos::Composition::create(source); }, // Clang 9 is unable to capture 'data' by reference.
 		[&composition] { composition.reset(); });
 
 	std::unique_ptr<aulos::Renderer> renderer;
-	const auto preparation = ::measure(
+	const auto preparation = ::measure<10'000>(
 		[&renderer, &composition, samplingRate] { renderer = aulos::Renderer::create(*composition, samplingRate, 2); },
 		[&renderer] { renderer.reset(); });
 
 	const auto rendering = ::measure(
 		[&renderer] { while (renderer->render(buffer.data(), buffer.size()) > 0) ; },
-		[&renderer] { renderer->restart(); });
+		[&renderer] { renderer->restart(); },
+		std::chrono::seconds{ 5 });
 
-	const auto compositionDuration = renderer->totalSamples() * double{ std::chrono::microseconds::period::den } / samplingRate;
+	const auto compositionDuration = renderer->totalSamples() * double{ Measurement::Duration::period::den } / samplingRate;
 
-	std::cout << "ParseTime: " << parsing.average() << "us [N=" << parsing._iterations << ", min=" << parsing.minimum() << "us, max=" << parsing.maximum() << "us]\n";
-	std::cout << "PrepareTime: " << preparation.average() << "us [N=" << preparation._iterations << ", min=" << preparation.minimum() << "us, max=" << preparation.maximum() << "us]\n";
-	std::cout << "RenderTime: " << rendering.average() << "us [N=" << rendering._iterations << ", min=" << rendering.minimum() << "us, max=" << rendering.maximum() << "us]\n";
-	std::cout << "RenderSpeed: " << compositionDuration / rendering.average() << "x\n";
+	std::cout << "ParseTime: " << ::print(parsing.average()) << " [N=" << parsing._iterations << ", min=" << ::print(parsing._minDuration) << ", max=" << ::print(parsing._maxDuration) << "]\n";
+	std::cout << "PrepareTime: " << ::print(preparation.average()) << " [N=" << preparation._iterations << ", min=" << ::print(preparation._minDuration) << ", max=" << ::print(preparation._maxDuration) << "]\n";
+	std::cout << "RenderTime: " << ::print(rendering.average()) << " [N=" << rendering._iterations << ", min=" << ::print(rendering._minDuration) << ", max=" << ::print(rendering._maxDuration) << "]\n";
+	std::cout << "RenderSpeed: " << compositionDuration / rendering.average().count() << "x\n";
 	return 0;
 }
