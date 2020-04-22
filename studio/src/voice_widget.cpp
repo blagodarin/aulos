@@ -60,9 +60,20 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 
 	createHeader(tr("Stereo settings"));
 
-	_outOfPhaseCheck = new QCheckBox{ tr("Out of phase"), this };
-	layout->addWidget(_outOfPhaseCheck, row, 1, 1, 3);
-	connect(_outOfPhaseCheck, &QCheckBox::toggled, this, &VoiceWidget::updateVoice);
+	_phaseShiftSpin = new QDoubleSpinBox{ parent };
+	_phaseShiftSpin->setDecimals(2);
+	_phaseShiftSpin->setMaximum(1.0);
+	_phaseShiftSpin->setMinimum(-1.0);
+	_phaseShiftSpin->setSingleStep(0.01);
+	_phaseShiftSpin->setValue(0.0);
+	layout->addWidget(new QLabel{ tr("Phase shift:"), this }, row, 1);
+	layout->addWidget(_phaseShiftSpin, row, 2, 1, 2);
+	connect(_phaseShiftSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
+	++row;
+
+	_antiphaseCheck = new QCheckBox{ tr("Antiphase"), this };
+	layout->addWidget(_antiphaseCheck, row, 1, 1, 3);
+	connect(_antiphaseCheck, &QCheckBox::toggled, this, &VoiceWidget::updateVoice);
 	++row;
 
 	_panSpin = new QDoubleSpinBox{ parent };
@@ -172,7 +183,8 @@ void VoiceWidget::setVoice(const std::shared_ptr<aulos::VoiceData>& voice)
 	aulos::VoiceData defaultVoice;
 	const auto usedVoice = voice ? voice.get() : &defaultVoice;
 	_typeCombo->setCurrentIndex(_typeCombo->findData(static_cast<int>(usedVoice->_wave)));
-	_outOfPhaseCheck->setChecked(usedVoice->_outOfPhase);
+	_phaseShiftSpin->setValue(usedVoice->_phaseShift);
+	_antiphaseCheck->setChecked(usedVoice->_antiphase);
 	_panSpin->setValue(usedVoice->_pan);
 	setEnvelope(_amplitudeEnvelope, usedVoice->_amplitudeEnvelope);
 	setEnvelope(_frequencyEnvelope, usedVoice->_frequencyEnvelope);
@@ -186,7 +198,8 @@ void VoiceWidget::updateVoice()
 	if (!_voice)
 		return;
 	_voice->_wave = static_cast<aulos::Wave>(_typeCombo->currentData().toInt());
-	_voice->_outOfPhase = _outOfPhaseCheck->isChecked();
+	_voice->_phaseShift = static_cast<float>(_phaseShiftSpin->value());
+	_voice->_antiphase = _antiphaseCheck->isChecked();
 	_voice->_pan = static_cast<float>(_panSpin->value());
 	if (auto i = _amplitudeEnvelope.begin(); i->_check->isChecked())
 	{

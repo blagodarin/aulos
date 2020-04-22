@@ -171,7 +171,7 @@ namespace aulos
 		StereoVoice(const VoiceData& data, unsigned samplingRate) noexcept
 			: BasicVoice{ data, samplingRate }
 			, _leftAmplitude{ std::min(1.f - data._pan, 1.f) }
-			, _rightAmplitude{ std::copysign(std::min(1.f + data._pan, 1.f), data._outOfPhase ? -1.f : 1.f) }
+			, _rightAmplitude{ std::copysign(std::min(1.f + data._pan, 1.f), data._antiphase ? -1.f : 1.f) }
 		{
 		}
 

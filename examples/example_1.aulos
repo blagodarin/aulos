@@ -4,29 +4,32 @@ title "Example 1"
 
 @voice 1 "Melody"
 amplitude 0.00 0.01 1.00 0.04 0.50 0.95 0.00
+antiphase 1
 asymmetry 0.50 0.05 0.90 0.95 0.00
 frequency 0.80 0.01 0.80 0.04 1.00 0.95 0.99
 oscillation 1.00
 pan 0.00
-phase 1.00
+phaseshift 0.00
 wave Linear
 
 @voice 2 "Bass"
 amplitude 0.00 0.02 1.00 0.08 0.25 0.90 0.00
+antiphase 1
 asymmetry 0.10 0.02 0.80 0.08 0.80 0.90 0.10
 frequency 0.80 0.02 1.00 0.08 1.00 0.90 0.99
 oscillation 1.00
 pan 0.00
-phase 1.00
+phaseshift 0.00
 wave Linear
 
 @voice 3 "Ding"
 amplitude 0.00 0.01 1.00 0.04 1.00 0.05 0.50 0.90 0.00
+antiphase 1
 asymmetry 1.00
 frequency 1.00
 oscillation 1.00
 pan 0.00
-phase 1.00
+phaseshift 0.00
 wave Linear
 
 @tracks

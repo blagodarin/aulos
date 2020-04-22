@@ -258,6 +258,12 @@ namespace aulos
 				while (const auto delay = tryReadFloat(0.f, kMaxEnvelopePartDuration))
 					envelope._changes.emplace_back(*delay, readFloat(0.f, 1.f));
 			}
+			else if (command == "antiphase")
+			{
+				if (currentSection != Section::Voice)
+					throw CompositionError{ location(), "Unexpected command" };
+				currentVoice->_antiphase = readUnsigned(0, 1) == 1;
+			}
 			else if (command == "asymmetry")
 			{
 				if (currentSection != Section::Voice)
@@ -294,16 +300,11 @@ namespace aulos
 					throw CompositionError{ location(), "Unexpected command" };
 				currentVoice->_pan = readFloat(-1.f, 1.f);
 			}
-			else if (command == "phase")
+			else if (command == "phaseshift")
 			{
 				if (currentSection != Section::Voice)
 					throw CompositionError{ location(), "Unexpected command" };
-				if (const auto phase = readFloat(-1.f, 1.f); phase == 0)
-					currentVoice->_outOfPhase = false;
-				else if (phase == 1 || phase == -1)
-					currentVoice->_outOfPhase = true;
-				else
-					throw CompositionError{ location(), "Bad phase value" };
+				currentVoice->_phaseShift = readFloat(-1.f, 1.f);
 			}
 			else if (command == "wave")
 			{
@@ -464,6 +465,8 @@ namespace aulos
 			text += "\namplitude " + floatToString(part._voice._amplitudeEnvelope._initial);
 			for (const auto& change : part._voice._amplitudeEnvelope._changes)
 				text += ' ' + floatToString(change._delay) + ' ' + floatToString(change._value);
+			text += "\nantiphase ";
+			text += part._voice._antiphase ? "1" : "0";
 			text += "\nasymmetry " + floatToString(part._voice._asymmetryEnvelope._initial);
 			for (const auto& change : part._voice._asymmetryEnvelope._changes)
 				text += ' ' + floatToString(change._delay) + ' ' + floatToString(change._value);
@@ -474,7 +477,7 @@ namespace aulos
 			for (const auto& change : part._voice._oscillationEnvelope._changes)
 				text += ' ' + floatToString(change._delay) + ' ' + floatToString(change._value);
 			text += "\npan " + floatToString(part._voice._pan);
-			text += "\nphase " + floatToString(part._voice._outOfPhase ? 1.f : 0.f);
+			text += "\nphaseshift " + floatToString(part._voice._phaseShift);
 			text += "\nwave ";
 			switch (part._voice._wave)
 			{
