@@ -41,12 +41,25 @@ namespace
 			break;
 
 		case 2:
-			switch (data._wave)
+			if (data._phaseShift == 0.f)
 			{
-			case aulos::Wave::Linear: return std::make_unique<aulos::StereoVoice<aulos::LinearOscillator>>(data, samplingRate);
-			case aulos::Wave::Quadratic: return std::make_unique<aulos::StereoVoice<aulos::QuadraticOscillator>>(data, samplingRate);
-			case aulos::Wave::Cubic: return std::make_unique<aulos::StereoVoice<aulos::CubicOscillator>>(data, samplingRate);
-			case aulos::Wave::Cosine: return std::make_unique<aulos::StereoVoice<aulos::CosineOscillator>>(data, samplingRate);
+				switch (data._wave)
+				{
+				case aulos::Wave::Linear: return std::make_unique<aulos::StereoVoice<aulos::LinearOscillator>>(data, samplingRate);
+				case aulos::Wave::Quadratic: return std::make_unique<aulos::StereoVoice<aulos::QuadraticOscillator>>(data, samplingRate);
+				case aulos::Wave::Cubic: return std::make_unique<aulos::StereoVoice<aulos::CubicOscillator>>(data, samplingRate);
+				case aulos::Wave::Cosine: return std::make_unique<aulos::StereoVoice<aulos::CosineOscillator>>(data, samplingRate);
+				}
+			}
+			else
+			{
+				switch (data._wave)
+				{
+				case aulos::Wave::Linear: return std::make_unique<aulos::PhasedStereoVoice<aulos::LinearOscillator>>(data, samplingRate);
+				case aulos::Wave::Quadratic: return std::make_unique<aulos::PhasedStereoVoice<aulos::QuadraticOscillator>>(data, samplingRate);
+				case aulos::Wave::Cubic: return std::make_unique<aulos::PhasedStereoVoice<aulos::CubicOscillator>>(data, samplingRate);
+				case aulos::Wave::Cosine: return std::make_unique<aulos::PhasedStereoVoice<aulos::CosineOscillator>>(data, samplingRate);
+				}
 			}
 			break;
 		}
@@ -194,7 +207,7 @@ namespace
 
 		const unsigned _samplingRate;
 		const unsigned _channels;
-		const size_t _blockBytes = _channels * aulos::kSampleSize;
+		const size_t _blockBytes = _channels * sizeof(float);
 		const size_t _stepSamples;
 		const size_t _stepBytes = _stepSamples * _blockBytes;
 		std::vector<std::unique_ptr<TrackState>> _tracks;

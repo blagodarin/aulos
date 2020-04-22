@@ -171,7 +171,7 @@ namespace aulos
 
 	void VoiceImpl::start(Note note, float amplitude) noexcept
 	{
-		_frequency = kNoteTable[note];
+		_baseFrequency = kNoteTable[note];
 		startImpl(std::clamp(amplitude, -1.f, 1.f));
 	}
 
@@ -219,7 +219,7 @@ namespace aulos
 
 	void VoiceImpl::updatePeriodParts() noexcept
 	{
-		const auto periodSamples = _samplingRate / (_frequency * _frequencyModulator.value());
+		const auto periodSamples = _samplingRate / (_baseFrequency * _frequencyModulator.value());
 		const auto dutyCycle = _asymmetryModulator.value() * 0.5 + 0.5;
 		_partLength = periodSamples * (_partIndex == 0 ? dutyCycle : 1.0 - dutyCycle);
 	}

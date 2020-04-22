@@ -24,8 +24,6 @@
 
 namespace aulos
 {
-	constexpr auto kSampleSize = sizeof(float);
-
 	struct SampledEnvelope
 	{
 	public:
@@ -114,32 +112,82 @@ namespace aulos
 		const SampledEnvelope _oscillationEnvelope;
 		LinearModulator _oscillationModulator{ _oscillationEnvelope };
 		float _amplitude = 0.f;
-		double _frequency = 0.0;
+		double _baseFrequency = 0.0;
+
+		// Oscillation parameters.
 		size_t _partIndex = 0;
 		double _partLength = 0.0;
 		double _partSamplesRemaining = 0.0;
-	};
-
-	template <unsigned kChannels>
-	class BasicVoice : public VoiceImpl
-	{
-	public:
-		static constexpr auto kBlockSize = kSampleSize * kChannels;
-
-		using VoiceImpl::VoiceImpl;
-
-		unsigned channels() const noexcept final { return kChannels; }
 	};
 
 	// NOTE!
 	// Keeping intermediate calculations in 'double' produces a measurable performance hit (e.g. 104ms -> 114 ms).
 
 	template <typename Oscillator>
-	class MonoVoice final : public BasicVoice<1>
+	class MonoVoice final : public VoiceImpl
 	{
 	public:
+		static constexpr auto kBlockSize = sizeof(float);
+
 		MonoVoice(const VoiceData& data, unsigned samplingRate) noexcept
-			: BasicVoice{ data, samplingRate }
+			: VoiceImpl{ data, samplingRate }
+		{
+		}
+
+		unsigned channels() const noexcept final
+		{
+			return 1;
+		}
+
+		size_t render(void* buffer, size_t bufferBytes) noexcept override
+		{
+			bufferBytes -= bufferBytes % kBlockSize;
+			size_t offset = 0;
+			while (offset < bufferBytes && _amplitudeModulator.update())
+			{
+				const auto blocksToGenerate = std::min(static_cast<size_t>(std::ceil(_partSamplesRemaining)), std::min((bufferBytes - offset) / kBlockSize, _amplitudeModulator.partSamplesRemaining()));
+				if (buffer)
+				{
+					Oscillator oscillator{ _partLength, _partLength - _partSamplesRemaining, _amplitude, _oscillationModulator.value() * _amplitude };
+					const auto base = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
+					for (size_t i = 0; i < blocksToGenerate; ++i)
+						base[i] += static_cast<float>(oscillator() * _amplitudeModulator.advance());
+				}
+				advance(blocksToGenerate);
+				offset += blocksToGenerate * kBlockSize;
+			}
+			return offset;
+		}
+	};
+
+	class BasicStereoVoice : public VoiceImpl
+	{
+	public:
+		static constexpr auto kBlockSize = 2 * sizeof(float);
+
+		BasicStereoVoice(const VoiceData& data, unsigned samplingRate) noexcept
+			: VoiceImpl{ data, samplingRate }
+			, _leftAmplitude{ std::min(1.f - data._pan, 1.f) }
+			, _rightAmplitude{ std::copysign(std::min(1.f + data._pan, 1.f), data._antiphase ? -1.f : 1.f) }
+		{
+		}
+
+		unsigned channels() const noexcept final
+		{
+			return 2;
+		}
+
+	protected:
+		const float _leftAmplitude;
+		const float _rightAmplitude;
+	};
+
+	template <typename Oscillator>
+	class StereoVoice final : public BasicStereoVoice
+	{
+	public:
+		StereoVoice(const VoiceData& data, unsigned samplingRate) noexcept
+			: BasicStereoVoice{ data, samplingRate }
 		{
 		}
 
@@ -149,29 +197,31 @@ namespace aulos
 			size_t offset = 0;
 			while (offset < bufferBytes && _amplitudeModulator.update())
 			{
-				const auto samplesToGenerate = std::min(static_cast<size_t>(std::ceil(_partSamplesRemaining)), std::min((bufferBytes - offset) / kBlockSize, _amplitudeModulator.partSamplesRemaining()));
+				const auto blocksToGenerate = std::min(static_cast<size_t>(std::ceil(_partSamplesRemaining)), std::min((bufferBytes - offset) / kBlockSize, _amplitudeModulator.partSamplesRemaining()));
 				if (buffer)
 				{
 					Oscillator oscillator{ _partLength, _partLength - _partSamplesRemaining, _amplitude, _oscillationModulator.value() * _amplitude };
-					const auto base = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
-					for (size_t i = 0; i < samplesToGenerate; ++i)
-						base[i] += static_cast<float>(oscillator() * _amplitudeModulator.advance());
+					auto output = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
+					for (size_t i = 0; i < blocksToGenerate; ++i)
+					{
+						const auto value = static_cast<float>(oscillator() * _amplitudeModulator.advance());
+						*output++ += value * _leftAmplitude;
+						*output++ += value * _rightAmplitude;
+					}
 				}
-				advance(samplesToGenerate);
-				offset += samplesToGenerate * kBlockSize;
+				advance(blocksToGenerate);
+				offset += blocksToGenerate * kBlockSize;
 			}
 			return offset;
 		}
 	};
 
 	template <typename Oscillator>
-	class StereoVoice final : public BasicVoice<2>
+	class PhasedStereoVoice final : public BasicStereoVoice
 	{
 	public:
-		StereoVoice(const VoiceData& data, unsigned samplingRate) noexcept
-			: BasicVoice{ data, samplingRate }
-			, _leftAmplitude{ std::min(1.f - data._pan, 1.f) }
-			, _rightAmplitude{ std::copysign(std::min(1.f + data._pan, 1.f), data._antiphase ? -1.f : 1.f) }
+		PhasedStereoVoice(const VoiceData& data, unsigned samplingRate) noexcept
+			: BasicStereoVoice{ data, samplingRate }
 		{
 		}
 
@@ -198,9 +248,5 @@ namespace aulos
 			}
 			return offset;
 		}
-
-	private:
-		const float _leftAmplitude;
-		const float _rightAmplitude;
 	};
 }
