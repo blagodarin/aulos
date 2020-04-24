@@ -165,15 +165,15 @@ TEST_CASE("wave_triangle_mono")
 	}
 	voice._renderer->restart();
 	sample = voice.renderSample();
-	CHECK(sample == -amplitude);
+	CHECK(sample == amplitude);
 	for (int i = 1; i < 50; ++i)
 	{
 		const auto nextSample = voice.renderSample();
-		CHECK(nextSample < amplitude);
-		CHECK(sample < nextSample);
+		CHECK(nextSample > -amplitude);
+		CHECK(sample > nextSample);
 		sample = nextSample;
 	}
-	CHECK(voice.renderSample() == amplitude);
+	CHECK(voice.renderSample() == -amplitude);
 }
 
 TEST_CASE("wave_triangle_asymmetric_mono")

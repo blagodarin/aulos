@@ -83,13 +83,42 @@ namespace aulos
 		double _currentValue = 0.0;
 	};
 
+	// A wave period is represented by two stages.
+	// The first stage (+1) starts at maximum amplitude and advances towards the minimum,
+	// and the second stage (-1) starts at minimum amplitude and advances towards the maximum.
+	// A stager holds the state of a current stage and controls switching between stages.
+	class Stager
+	{
+	public:
+		constexpr explicit Stager(unsigned samplingRate) noexcept
+			: _samplingRate{ samplingRate } {}
+
+		void startStage(double frequency, double asymmetry) noexcept;
+		void adjustStage(double frequency, double asymmetry) noexcept;
+		void advance(size_t samples, double nextFrequency, double nextAsymmetry) noexcept;
+		auto samplesRemaining() const noexcept { return static_cast<size_t>(std::ceil(_stageRemainder)); }
+		constexpr auto samplingRate() const noexcept { return _samplingRate; }
+		constexpr auto stageLength() const noexcept { return _stageLength; }
+		constexpr auto stageOffset() const noexcept { return _stageLength - _stageRemainder; }
+		constexpr auto stageSign() const noexcept { return _amplitudeSign; }
+
+	private:
+		void resetStage(double frequency, double asymmetry) noexcept;
+
+	private:
+		const unsigned _samplingRate;
+		double _stageLength = 0.0;
+		double _stageRemainder = 0.0;
+		float _amplitudeSign = 1.f;
+	};
+
 	class VoiceImpl : public VoiceRenderer
 	{
 	public:
 		VoiceImpl(const VoiceData&, unsigned samplingRate) noexcept;
 
 		void restart() noexcept final;
-		unsigned samplingRate() const noexcept final { return _samplingRate; }
+		unsigned samplingRate() const noexcept final { return _stager.samplingRate(); }
 		void start(Note note, float amplitude) noexcept final;
 		void stop() noexcept { _amplitudeModulator.stop(); }
 		size_t totalSamples() const noexcept final { return _amplitudeModulator.duration(); }
@@ -98,11 +127,9 @@ namespace aulos
 		void advance(size_t samples) noexcept;
 
 	private:
-		void startImpl(float clampedAmplitude) noexcept;
-		void updatePeriodParts() noexcept;
+		void startImpl() noexcept;
 
 	protected:
-		const unsigned _samplingRate;
 		const SampledEnvelope _amplitudeEnvelope;
 		AmplitudeModulator _amplitudeModulator{ _amplitudeEnvelope };
 		const SampledEnvelope _frequencyEnvelope;
@@ -111,13 +138,9 @@ namespace aulos
 		LinearModulator _asymmetryModulator{ _asymmetryEnvelope };
 		const SampledEnvelope _oscillationEnvelope;
 		LinearModulator _oscillationModulator{ _oscillationEnvelope };
-		float _amplitude = 0.f;
+		float _baseAmplitude = 0.f;
 		double _baseFrequency = 0.0;
-
-		// Oscillation parameters.
-		size_t _partIndex = 0;
-		double _partLength = 0.0;
-		double _partSamplesRemaining = 0.0;
+		Stager _stager;
 	};
 
 	// NOTE!
@@ -145,10 +168,11 @@ namespace aulos
 			size_t offset = 0;
 			while (offset < bufferBytes && _amplitudeModulator.update())
 			{
-				const auto blocksToGenerate = std::min(static_cast<size_t>(std::ceil(_partSamplesRemaining)), std::min((bufferBytes - offset) / kBlockSize, _amplitudeModulator.partSamplesRemaining()));
+				const auto blocksToGenerate = std::min(_stager.samplesRemaining(), std::min((bufferBytes - offset) / kBlockSize, _amplitudeModulator.partSamplesRemaining()));
 				if (buffer)
 				{
-					Oscillator oscillator{ _partLength, _partLength - _partSamplesRemaining, _amplitude, _oscillationModulator.value() * _amplitude };
+					const auto amplitude = _baseAmplitude * _stager.stageSign();
+					Oscillator oscillator{ _stager.stageLength(), _stager.stageOffset(), amplitude, _oscillationModulator.value() * amplitude };
 					const auto base = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
 					for (size_t i = 0; i < blocksToGenerate; ++i)
 						base[i] += static_cast<float>(oscillator() * _amplitudeModulator.advance());
@@ -197,10 +221,11 @@ namespace aulos
 			size_t offset = 0;
 			while (offset < bufferBytes && _amplitudeModulator.update())
 			{
-				const auto blocksToGenerate = std::min(static_cast<size_t>(std::ceil(_partSamplesRemaining)), std::min((bufferBytes - offset) / kBlockSize, _amplitudeModulator.partSamplesRemaining()));
+				const auto blocksToGenerate = std::min(_stager.samplesRemaining(), std::min((bufferBytes - offset) / kBlockSize, _amplitudeModulator.partSamplesRemaining()));
 				if (buffer)
 				{
-					Oscillator oscillator{ _partLength, _partLength - _partSamplesRemaining, _amplitude, _oscillationModulator.value() * _amplitude };
+					const auto amplitude = _baseAmplitude * _stager.stageSign();
+					Oscillator oscillator{ _stager.stageLength(), _stager.stageOffset(), amplitude, _oscillationModulator.value() * amplitude };
 					auto output = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
 					for (size_t i = 0; i < blocksToGenerate; ++i)
 					{
@@ -231,10 +256,11 @@ namespace aulos
 			size_t offset = 0;
 			while (offset < bufferBytes && _amplitudeModulator.update())
 			{
-				const auto samplesToGenerate = std::min(static_cast<size_t>(std::ceil(_partSamplesRemaining)), std::min((bufferBytes - offset) / kBlockSize, _amplitudeModulator.partSamplesRemaining()));
+				const auto samplesToGenerate = std::min(_stager.samplesRemaining(), std::min((bufferBytes - offset) / kBlockSize, _amplitudeModulator.partSamplesRemaining()));
 				if (buffer)
 				{
-					Oscillator oscillator{ _partLength, _partLength - _partSamplesRemaining, _amplitude, _oscillationModulator.value() * _amplitude };
+					const auto amplitude = _baseAmplitude * _stager.stageSign();
+					Oscillator oscillator{ _stager.stageLength(), _stager.stageOffset(), amplitude, _oscillationModulator.value() * amplitude };
 					auto output = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
 					for (size_t i = 0; i < samplesToGenerate; ++i)
 					{

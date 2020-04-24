@@ -64,7 +64,10 @@ namespace aulos
 		for (const auto& point : envelope._changes)
 		{
 			assert(point._delay >= 0.f);
-			_points[_size++] = { static_cast<size_t>(double{ point._delay } * samplingRate), point._value };
+			if (point._delay > 0.f)
+				_points[_size++] = { static_cast<size_t>(double{ point._delay } * samplingRate), point._value };
+			else
+				_points[_size]._value = point._value;
 		}
 	}
 
@@ -154,25 +157,68 @@ namespace aulos
 		}
 	}
 
+	void Stager::startStage(double frequency, double asymmetry) noexcept
+	{
+		_amplitudeSign = 1.f;
+		resetStage(frequency, asymmetry);
+		_stageRemainder = _stageLength;
+	}
+
+	void Stager::adjustStage(double frequency, double asymmetry) noexcept
+	{
+		const auto partRatio = _stageRemainder / _stageLength;
+		resetStage(frequency, asymmetry);
+		_stageRemainder = _stageLength * partRatio;
+	}
+
+	void Stager::advance(size_t samples, double nextFrequency, double nextAsymmetry) noexcept
+	{
+		auto remaining = _stageRemainder - samples;
+		assert(remaining > -1);
+		while (remaining <= 0)
+		{
+			_amplitudeSign = -_amplitudeSign;
+			resetStage(nextFrequency, nextAsymmetry);
+			remaining += _stageLength;
+		}
+		_stageRemainder = remaining;
+	}
+
+	void Stager::resetStage(double frequency, double asymmetry) noexcept
+	{
+		assert(frequency > 0);
+		assert(asymmetry >= -1 && asymmetry <= 1);
+		auto orientedAsymmetry = _amplitudeSign * asymmetry;
+		if (orientedAsymmetry == -1)
+		{
+			_amplitudeSign = -_amplitudeSign;
+			orientedAsymmetry = 1;
+		}
+		const auto partLength = _samplingRate * (1 + orientedAsymmetry) / (2 * frequency);
+		assert(partLength > 0);
+		_stageLength = partLength;
+	}
+
 	VoiceImpl::VoiceImpl(const VoiceData& data, unsigned samplingRate) noexcept
-		: _samplingRate{ samplingRate }
-		, _amplitudeEnvelope{ data._amplitudeEnvelope, samplingRate }
+		: _amplitudeEnvelope{ data._amplitudeEnvelope, samplingRate }
 		, _frequencyEnvelope{ data._frequencyEnvelope, samplingRate }
 		, _asymmetryEnvelope{ data._asymmetryEnvelope, samplingRate }
 		, _oscillationEnvelope{ data._oscillationEnvelope, samplingRate }
+		, _stager{ samplingRate }
 	{
 	}
 
 	void VoiceImpl::restart() noexcept
 	{
 		stop();
-		startImpl(_amplitude); // TODO: Fix initial amplitude sign.
+		startImpl();
 	}
 
 	void VoiceImpl::start(Note note, float amplitude) noexcept
 	{
 		_baseFrequency = kNoteTable[note];
-		startImpl(std::clamp(amplitude, -1.f, 1.f));
+		_baseAmplitude = std::clamp(amplitude, -1.f, 1.f);
+		startImpl();
 	}
 
 	void VoiceImpl::advance(size_t samples) noexcept
@@ -180,47 +226,24 @@ namespace aulos
 		_frequencyModulator.advance(samples);
 		_asymmetryModulator.advance(samples);
 		_oscillationModulator.advance(samples);
-		auto remaining = _partSamplesRemaining - samples;
-		while (remaining <= 0.0)
-		{
-			_amplitude = -_amplitude;
-			_partIndex = 1 - _partIndex;
-			updatePeriodParts();
-			remaining += _partLength;
-		}
-		_partSamplesRemaining = remaining;
+		_stager.advance(samples, _baseFrequency * _frequencyModulator.value(), _asymmetryModulator.value());
 	}
 
-	void VoiceImpl::startImpl(float clampedAmplitude) noexcept
+	void VoiceImpl::startImpl() noexcept
 	{
-		assert(-1.f <= clampedAmplitude && clampedAmplitude <= 1.f);
-		double partRemaining;
+		_frequencyModulator.start(1.0);
+		_asymmetryModulator.start(0.0);
+		_oscillationModulator.start(1.0);
 		if (_amplitudeModulator.stopped())
 		{
 			assert(_amplitudeEnvelope.begin()->_delay == 0);
 			_amplitudeModulator.start(_amplitudeEnvelope.begin()->_value);
-			_amplitude = clampedAmplitude;
-			_partIndex = 0;
-			partRemaining = 1.0;
+			_stager.startStage(_baseFrequency * _frequencyModulator.value(), _asymmetryModulator.value());
 		}
 		else
 		{
 			_amplitudeModulator.start(_amplitudeModulator.value());
-			_amplitude = std::copysign(clampedAmplitude, _amplitude);
-			partRemaining = _partSamplesRemaining / _partLength;
+			_stager.adjustStage(_baseFrequency * _frequencyModulator.value(), _asymmetryModulator.value());
 		}
-		_frequencyModulator.start(1.0);
-		_asymmetryModulator.start(0.0);
-		_oscillationModulator.start(1.0);
-		updatePeriodParts();
-		_partSamplesRemaining = _partLength * partRemaining;
-		advance(0);
-	}
-
-	void VoiceImpl::updatePeriodParts() noexcept
-	{
-		const auto periodSamples = _samplingRate / (_baseFrequency * _frequencyModulator.value());
-		const auto dutyCycle = _asymmetryModulator.value() * 0.5 + 0.5;
-		_partLength = periodSamples * (_partIndex == 0 ? dutyCycle : 1.0 - dutyCycle);
 	}
 }
