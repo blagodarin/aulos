@@ -86,6 +86,7 @@ namespace aulos
 	void AmplitudeModulator::start(double value) noexcept
 	{
 		_nextPoint = std::find_if(_envelope.begin(), _envelope.end(), [](const SampledEnvelope::Point& point) { return point._delay > 0; });
+		assert(_nextPoint == _envelope.end() || _nextPoint->_delay > 0);
 		_baseValue = value;
 		_offset = 0;
 		_currentValue = _baseValue;
@@ -108,15 +109,13 @@ namespace aulos
 		return _nextPoint->_delay - _offset;
 	}
 
-	bool AmplitudeModulator::update() noexcept
+	void AmplitudeModulator::update() noexcept
 	{
-		for (;;)
+		while (_nextPoint != _envelope.end())
 		{
-			if (_nextPoint == _envelope.end())
-				return false;
 			assert(_offset <= _nextPoint->_delay);
 			if (_offset < _nextPoint->_delay)
-				return true;
+				break;
 			_baseValue = _nextPoint->_value;
 			++_nextPoint;
 			_offset = 0;
@@ -157,7 +156,7 @@ namespace aulos
 		}
 	}
 
-	Modulation::Modulation(const VoiceData& data, unsigned samplingRate) noexcept
+	Modulator::Modulator(const VoiceData& data, unsigned samplingRate) noexcept
 		: _amplitudeEnvelope{ data._amplitudeEnvelope, samplingRate }
 		, _frequencyEnvelope{ data._frequencyEnvelope, samplingRate }
 		, _asymmetryEnvelope{ data._asymmetryEnvelope, samplingRate }
@@ -165,18 +164,16 @@ namespace aulos
 	{
 	}
 
-	void Modulation::advance(size_t samples) noexcept
+	void Modulator::advance(size_t samples) noexcept
 	{
+		_amplitudeModulator.update();
 		_frequencyModulator.advance(samples);
 		_asymmetryModulator.advance(samples);
 		_oscillationModulator.advance(samples);
 	}
 
-	void Modulation::start() noexcept
+	void Modulator::start() noexcept
 	{
-		_frequencyModulator.start(1.0);
-		_asymmetryModulator.start(0.0);
-		_oscillationModulator.start(1.0);
 		if (_amplitudeModulator.stopped())
 		{
 			assert(_amplitudeEnvelope.begin()->_delay == 0);
@@ -184,6 +181,9 @@ namespace aulos
 		}
 		else
 			_amplitudeModulator.start(_amplitudeModulator.value());
+		_frequencyModulator.start(1.0);
+		_asymmetryModulator.start(0.0);
+		_oscillationModulator.start(1.0);
 	}
 
 	void Oscillator::adjustStage(double frequency, double asymmetry) noexcept
@@ -226,11 +226,6 @@ namespace aulos
 		const auto partLength = _samplingRate * (1 + orientedAsymmetry) / (2 * frequency);
 		assert(partLength > 0);
 		_stageLength = partLength;
-	}
-
-	VoiceImpl::VoiceImpl(const VoiceData& data, unsigned samplingRate) noexcept
-		: _modulation{ data, samplingRate }
-	{
 	}
 
 	void VoiceImpl::startImpl(Note note, float amplitude) noexcept

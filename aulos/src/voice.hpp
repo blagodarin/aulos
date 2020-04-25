@@ -55,7 +55,7 @@ namespace aulos
 		size_t partSamplesRemaining() const noexcept;
 		void stop() noexcept { _nextPoint = _envelope.end(); }
 		bool stopped() const noexcept { return _nextPoint == _envelope.end(); }
-		bool update() noexcept;
+		void update() noexcept;
 		constexpr double value() const noexcept { return _currentValue; }
 
 	private:
@@ -83,10 +83,10 @@ namespace aulos
 		double _currentValue = 0.0;
 	};
 
-	class Modulation
+	class Modulator
 	{
 	public:
-		Modulation(const VoiceData&, unsigned samplingRate) noexcept;
+		Modulator(const VoiceData&, unsigned samplingRate) noexcept;
 
 		void advance(size_t samples) noexcept;
 		constexpr auto currentAsymmetry() const noexcept { return _asymmetryModulator.value(); }
@@ -98,7 +98,6 @@ namespace aulos
 		void stop() noexcept { _amplitudeModulator.stop(); }
 		auto stopped() const noexcept { return _amplitudeModulator.stopped(); }
 		auto totalSamples() const noexcept { return _amplitudeModulator.duration(); }
-		bool update() noexcept { return _amplitudeModulator.update(); }
 
 	private:
 		const SampledEnvelope _amplitudeEnvelope;
@@ -143,10 +142,11 @@ namespace aulos
 	class VoiceImpl : public VoiceRenderer
 	{
 	public:
-		VoiceImpl(const VoiceData&, unsigned samplingRate) noexcept;
+		VoiceImpl(const VoiceData& data, unsigned samplingRate) noexcept
+			: _modulator{ data, samplingRate } {}
 
-		void stop() noexcept { _modulation.stop(); }
-		size_t totalSamples() const noexcept final { return _modulation.totalSamples(); }
+		void stop() noexcept { _modulator.stop(); }
+		size_t totalSamples() const noexcept final { return _modulator.totalSamples(); }
 
 	protected:
 		void startImpl(Note note, float amplitude) noexcept;
@@ -154,7 +154,7 @@ namespace aulos
 	protected:
 		float _baseAmplitude = 0.f;
 		double _baseFrequency = 0.0;
-		Modulation _modulation;
+		Modulator _modulator;
 	};
 
 	// NOTE!
@@ -181,19 +181,19 @@ namespace aulos
 		{
 			bufferBytes -= bufferBytes % kBlockSize;
 			size_t offset = 0;
-			while (offset < bufferBytes && _modulation.update())
+			while (offset < bufferBytes && !_modulator.stopped())
 			{
-				const auto blocksToGenerate = std::min({ (bufferBytes - offset) / kBlockSize, _modulation.maxAdvance(), _oscillator.maxAdvance() });
+				const auto blocksToGenerate = std::min({ (bufferBytes - offset) / kBlockSize, _modulator.maxAdvance(), _oscillator.maxAdvance() });
 				if (buffer)
 				{
 					const auto amplitude = _baseAmplitude * _oscillator.stageSign();
-					Generator generator{ _oscillator.stageLength(), _oscillator.stageOffset(), amplitude, _modulation.currentOscillation() * amplitude };
+					Generator generator{ _oscillator.stageLength(), _oscillator.stageOffset(), amplitude, _modulator.currentOscillation() * amplitude };
 					const auto base = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
 					for (size_t i = 0; i < blocksToGenerate; ++i)
-						base[i] += static_cast<float>(generator() * _modulation.nextAmplitude());
+						base[i] += static_cast<float>(generator() * _modulator.nextAmplitude());
 				}
-				_modulation.advance(blocksToGenerate);
-				_oscillator.advance(blocksToGenerate, _baseFrequency * _modulation.currentFrequency(), _modulation.currentAsymmetry());
+				_modulator.advance(blocksToGenerate);
+				_oscillator.advance(blocksToGenerate, _baseFrequency * _modulator.currentFrequency(), _modulator.currentAsymmetry());
 				offset += blocksToGenerate * kBlockSize;
 			}
 			return offset;
@@ -201,9 +201,9 @@ namespace aulos
 
 		void restart() noexcept override
 		{
-			_modulation.stop();
-			_modulation.start();
-			_oscillator.restart(_baseFrequency * _modulation.currentFrequency(), _modulation.currentAsymmetry());
+			_modulator.stop();
+			_modulator.start();
+			_oscillator.restart(_baseFrequency * _modulator.currentFrequency(), _modulator.currentAsymmetry());
 		}
 
 		unsigned samplingRate() const noexcept override
@@ -214,10 +214,10 @@ namespace aulos
 		void start(Note note, float amplitude) noexcept override
 		{
 			startImpl(note, amplitude);
-			const bool wasStopped = _modulation.stopped();
-			_modulation.start();
-			const auto frequency = _baseFrequency * _modulation.currentFrequency();
-			const auto asymmetry = _modulation.currentAsymmetry();
+			const bool wasStopped = _modulator.stopped();
+			_modulator.start();
+			const auto frequency = _baseFrequency * _modulator.currentFrequency();
+			const auto asymmetry = _modulator.currentAsymmetry();
 			if (wasStopped)
 				_oscillator.restart(frequency, asymmetry);
 			else
@@ -264,23 +264,23 @@ namespace aulos
 		{
 			bufferBytes -= bufferBytes % kBlockSize;
 			size_t offset = 0;
-			while (offset < bufferBytes && _modulation.update())
+			while (offset < bufferBytes && !_modulator.stopped())
 			{
-				const auto blocksToGenerate = std::min({ (bufferBytes - offset) / kBlockSize, _modulation.maxAdvance(), _oscillator.maxAdvance() });
+				const auto blocksToGenerate = std::min({ (bufferBytes - offset) / kBlockSize, _modulator.maxAdvance(), _oscillator.maxAdvance() });
 				if (buffer)
 				{
 					const auto amplitude = _baseAmplitude * _oscillator.stageSign();
-					Generator generator{ _oscillator.stageLength(), _oscillator.stageOffset(), amplitude, _modulation.currentOscillation() * amplitude };
+					Generator generator{ _oscillator.stageLength(), _oscillator.stageOffset(), amplitude, _modulator.currentOscillation() * amplitude };
 					auto output = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
 					for (size_t i = 0; i < blocksToGenerate; ++i)
 					{
-						const auto value = static_cast<float>(generator() * _modulation.nextAmplitude());
+						const auto value = static_cast<float>(generator() * _modulator.nextAmplitude());
 						*output++ += value * _leftAmplitude;
 						*output++ += value * _rightAmplitude;
 					}
 				}
-				_modulation.advance(blocksToGenerate);
-				_oscillator.advance(blocksToGenerate, _baseFrequency * _modulation.currentFrequency(), _modulation.currentAsymmetry());
+				_modulator.advance(blocksToGenerate);
+				_oscillator.advance(blocksToGenerate, _baseFrequency * _modulator.currentFrequency(), _modulator.currentAsymmetry());
 				offset += blocksToGenerate * kBlockSize;
 			}
 			return offset;
@@ -288,9 +288,9 @@ namespace aulos
 
 		void restart() noexcept override
 		{
-			_modulation.stop();
-			_modulation.start();
-			_oscillator.restart(_baseFrequency * _modulation.currentFrequency(), _modulation.currentAsymmetry());
+			_modulator.stop();
+			_modulator.start();
+			_oscillator.restart(_baseFrequency * _modulator.currentFrequency(), _modulator.currentAsymmetry());
 		}
 
 		unsigned samplingRate() const noexcept override
@@ -301,10 +301,10 @@ namespace aulos
 		void start(Note note, float amplitude) noexcept override
 		{
 			startImpl(note, amplitude);
-			const bool wasStopped = _modulation.stopped();
-			_modulation.start();
-			const auto frequency = _baseFrequency * _modulation.currentFrequency();
-			const auto asymmetry = _modulation.currentAsymmetry();
+			const bool wasStopped = _modulator.stopped();
+			_modulator.start();
+			const auto frequency = _baseFrequency * _modulator.currentFrequency();
+			const auto asymmetry = _modulator.currentAsymmetry();
 			if (wasStopped)
 				_oscillator.restart(frequency, asymmetry);
 			else
@@ -330,28 +330,28 @@ namespace aulos
 		{
 			bufferBytes -= bufferBytes % kBlockSize;
 			size_t offset = 0;
-			while (offset < bufferBytes && _modulation.update())
+			while (offset < bufferBytes && !_modulator.stopped())
 			{
-				const auto samplesToGenerate = std::min({ (bufferBytes - offset) / kBlockSize, _modulation.maxAdvance(), _leftOscillator.maxAdvance(), _rightOscillator.maxAdvance() });
+				const auto samplesToGenerate = std::min({ (bufferBytes - offset) / kBlockSize, _modulator.maxAdvance(), _leftOscillator.maxAdvance(), _rightOscillator.maxAdvance() });
 				if (buffer)
 				{
 					const auto leftAmplitude = _baseAmplitude * _leftOscillator.stageSign() * _leftAmplitude;
-					Generator leftGenerator{ _leftOscillator.stageLength(), _leftOscillator.stageOffset(), leftAmplitude, _modulation.currentOscillation() * leftAmplitude };
+					Generator leftGenerator{ _leftOscillator.stageLength(), _leftOscillator.stageOffset(), leftAmplitude, _modulator.currentOscillation() * leftAmplitude };
 
 					const auto rightAmplitude = _baseAmplitude * _rightOscillator.stageSign() * _rightAmplitude;
-					Generator rightGenerator{ _rightOscillator.stageLength(), _rightOscillator.stageOffset(), rightAmplitude, _modulation.currentOscillation() * rightAmplitude };
+					Generator rightGenerator{ _rightOscillator.stageLength(), _rightOscillator.stageOffset(), rightAmplitude, _modulator.currentOscillation() * rightAmplitude };
 
 					auto output = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
 					for (size_t i = 0; i < samplesToGenerate; ++i)
 					{
-						const auto amplitudeModulation = _modulation.nextAmplitude();
+						const auto amplitudeModulation = _modulator.nextAmplitude();
 						*output++ += static_cast<float>(leftGenerator() * amplitudeModulation);
 						*output++ += static_cast<float>(rightGenerator() * amplitudeModulation);
 					}
 				}
-				_modulation.advance(samplesToGenerate);
-				const auto frequency = _baseFrequency * _modulation.currentFrequency();
-				const auto asymmetry = _modulation.currentAsymmetry();
+				_modulator.advance(samplesToGenerate);
+				const auto frequency = _baseFrequency * _modulator.currentFrequency();
+				const auto asymmetry = _modulator.currentAsymmetry();
 				_leftOscillator.advance(samplesToGenerate, frequency, asymmetry);
 				_rightOscillator.advance(samplesToGenerate, frequency, asymmetry);
 				offset += samplesToGenerate * kBlockSize;
@@ -361,10 +361,10 @@ namespace aulos
 
 		void restart() noexcept override
 		{
-			_modulation.stop();
-			_modulation.start();
-			const auto frequency = _baseFrequency * _modulation.currentFrequency();
-			const auto asymmetry = _modulation.currentAsymmetry();
+			_modulator.stop();
+			_modulator.start();
+			const auto frequency = _baseFrequency * _modulator.currentFrequency();
+			const auto asymmetry = _modulator.currentAsymmetry();
 			_leftOscillator.restart(frequency, asymmetry);
 			_rightOscillator.restart(frequency, asymmetry);
 		}
@@ -377,10 +377,10 @@ namespace aulos
 		void start(Note note, float amplitude) noexcept override
 		{
 			startImpl(note, amplitude);
-			const bool wasStopped = _modulation.stopped();
-			_modulation.start();
-			const auto frequency = _baseFrequency * _modulation.currentFrequency();
-			const auto asymmetry = _modulation.currentAsymmetry();
+			const bool wasStopped = _modulator.stopped();
+			_modulator.start();
+			const auto frequency = _baseFrequency * _modulator.currentFrequency();
+			const auto asymmetry = _modulator.currentAsymmetry();
 			if (wasStopped)
 			{
 				_leftOscillator.restart(frequency, asymmetry);
