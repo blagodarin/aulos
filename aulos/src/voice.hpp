@@ -38,6 +38,7 @@ namespace aulos
 		const Point* begin() const noexcept { return _points.data(); }
 		size_t duration() const noexcept;
 		const Point* end() const noexcept { return _points.data() + _size; }
+		constexpr auto size() const noexcept { return _size; }
 
 	private:
 		size_t _size = 0;
@@ -52,7 +53,7 @@ namespace aulos
 		void advance(size_t samples) noexcept;
 		size_t duration() const noexcept { return _envelope.duration(); }
 		size_t maxContinuousAdvance() const noexcept;
-		void start(double value, bool restart) noexcept;
+		void start(bool fromCurrent) noexcept;
 		void stop() noexcept { _nextPoint = _envelope.end(); }
 		bool stopped() const noexcept { return _nextPoint == _envelope.end(); }
 		constexpr double value() const noexcept { return _currentValue; }

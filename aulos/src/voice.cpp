@@ -109,10 +109,13 @@ namespace aulos
 		return _nextPoint->_delay - _offset;
 	}
 
-	void LinearModulator::start(double value, bool restart) noexcept
+	void LinearModulator::start(bool fromCurrent) noexcept
 	{
-		_nextPoint = std::find_if(_envelope.begin(), _envelope.end(), [](const SampledEnvelope::Point& point) { return point._delay > 0; });
-		_baseValue = restart || _nextPoint == _envelope.begin() ? value : std::prev(_nextPoint)->_value;
+		assert(_envelope.size() > 0);
+		assert(_envelope.begin()->_delay == 0);
+		_nextPoint = std::next(_envelope.begin());
+		assert(_nextPoint == _envelope.end() || _nextPoint->_delay > 0);
+		_baseValue = fromCurrent ? _currentValue : _envelope.begin()->_value;
 		_offset = 0;
 		_currentValue = _baseValue;
 	}
@@ -143,16 +146,10 @@ namespace aulos
 
 	void Modulator::start() noexcept
 	{
-		if (_amplitudeModulator.stopped())
-		{
-			assert(_amplitudeEnvelope.begin()->_delay == 0);
-			_amplitudeModulator.start(_amplitudeEnvelope.begin()->_value, true);
-		}
-		else
-			_amplitudeModulator.start(_amplitudeModulator.value(), true);
-		_frequencyModulator.start(1.0, false);
-		_asymmetryModulator.start(0.0, false);
-		_oscillationModulator.start(1.0, false);
+		_amplitudeModulator.start(!_amplitudeModulator.stopped());
+		_frequencyModulator.start(false);
+		_asymmetryModulator.start(false);
+		_oscillationModulator.start(false);
 	}
 
 	void Oscillator::adjustStage(double frequency, double asymmetry) noexcept
