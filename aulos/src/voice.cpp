@@ -157,11 +157,33 @@ namespace aulos
 		}
 	}
 
-	void Stager::startStage(double frequency, double asymmetry) noexcept
+	Modulation::Modulation(const VoiceData& data, unsigned samplingRate) noexcept
+		: _amplitudeEnvelope{ data._amplitudeEnvelope, samplingRate }
+		, _frequencyEnvelope{ data._frequencyEnvelope, samplingRate }
+		, _asymmetryEnvelope{ data._asymmetryEnvelope, samplingRate }
+		, _oscillationEnvelope{ data._oscillationEnvelope, samplingRate }
 	{
-		_amplitudeSign = 1.f;
-		resetStage(frequency, asymmetry);
-		_stageRemainder = _stageLength;
+	}
+
+	void Modulation::advance(size_t samples) noexcept
+	{
+		_frequencyModulator.advance(samples);
+		_asymmetryModulator.advance(samples);
+		_oscillationModulator.advance(samples);
+	}
+
+	void Modulation::start() noexcept
+	{
+		_frequencyModulator.start(1.0);
+		_asymmetryModulator.start(0.0);
+		_oscillationModulator.start(1.0);
+		if (_amplitudeModulator.stopped())
+		{
+			assert(_amplitudeEnvelope.begin()->_delay == 0);
+			_amplitudeModulator.start(_amplitudeEnvelope.begin()->_value);
+		}
+		else
+			_amplitudeModulator.start(_amplitudeModulator.value());
 	}
 
 	void Stager::adjustStage(double frequency, double asymmetry) noexcept
@@ -184,6 +206,13 @@ namespace aulos
 		_stageRemainder = remaining;
 	}
 
+	void Stager::restart(double frequency, double asymmetry) noexcept
+	{
+		_amplitudeSign = 1.f;
+		resetStage(frequency, asymmetry);
+		_stageRemainder = _stageLength;
+	}
+
 	void Stager::resetStage(double frequency, double asymmetry) noexcept
 	{
 		assert(frequency > 0);
@@ -200,50 +229,13 @@ namespace aulos
 	}
 
 	VoiceImpl::VoiceImpl(const VoiceData& data, unsigned samplingRate) noexcept
-		: _amplitudeEnvelope{ data._amplitudeEnvelope, samplingRate }
-		, _frequencyEnvelope{ data._frequencyEnvelope, samplingRate }
-		, _asymmetryEnvelope{ data._asymmetryEnvelope, samplingRate }
-		, _oscillationEnvelope{ data._oscillationEnvelope, samplingRate }
-		, _stager{ samplingRate }
+		: _modulation{ data, samplingRate }
 	{
 	}
 
-	void VoiceImpl::restart() noexcept
-	{
-		stop();
-		startImpl();
-	}
-
-	void VoiceImpl::start(Note note, float amplitude) noexcept
+	void VoiceImpl::startImpl(Note note, float amplitude) noexcept
 	{
 		_baseFrequency = kNoteTable[note];
 		_baseAmplitude = std::clamp(amplitude, -1.f, 1.f);
-		startImpl();
-	}
-
-	void VoiceImpl::advance(size_t samples) noexcept
-	{
-		_frequencyModulator.advance(samples);
-		_asymmetryModulator.advance(samples);
-		_oscillationModulator.advance(samples);
-		_stager.advance(samples, _baseFrequency * _frequencyModulator.value(), _asymmetryModulator.value());
-	}
-
-	void VoiceImpl::startImpl() noexcept
-	{
-		_frequencyModulator.start(1.0);
-		_asymmetryModulator.start(0.0);
-		_oscillationModulator.start(1.0);
-		if (_amplitudeModulator.stopped())
-		{
-			assert(_amplitudeEnvelope.begin()->_delay == 0);
-			_amplitudeModulator.start(_amplitudeEnvelope.begin()->_value);
-			_stager.startStage(_baseFrequency * _frequencyModulator.value(), _asymmetryModulator.value());
-		}
-		else
-		{
-			_amplitudeModulator.start(_amplitudeModulator.value());
-			_stager.adjustStage(_baseFrequency * _frequencyModulator.value(), _asymmetryModulator.value());
-		}
 	}
 }

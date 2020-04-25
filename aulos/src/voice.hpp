@@ -83,6 +83,34 @@ namespace aulos
 		double _currentValue = 0.0;
 	};
 
+	class Modulation
+	{
+	public:
+		Modulation(const VoiceData&, unsigned samplingRate) noexcept;
+
+		void advance(size_t samples) noexcept;
+		constexpr auto currentAsymmetry() const noexcept { return _asymmetryModulator.value(); }
+		constexpr auto currentFrequency() const noexcept { return _frequencyModulator.value(); }
+		constexpr auto currentOscillation() const noexcept { return _oscillationModulator.value(); }
+		auto maxAdvance() const noexcept { return _amplitudeModulator.partSamplesRemaining(); }
+		auto nextAmplitude() noexcept { return _amplitudeModulator.advance(); }
+		void start() noexcept;
+		void stop() noexcept { _amplitudeModulator.stop(); }
+		auto stopped() const noexcept { return _amplitudeModulator.stopped(); }
+		auto totalSamples() const noexcept { return _amplitudeModulator.duration(); }
+		bool update() noexcept { return _amplitudeModulator.update(); }
+
+	private:
+		const SampledEnvelope _amplitudeEnvelope;
+		AmplitudeModulator _amplitudeModulator{ _amplitudeEnvelope };
+		const SampledEnvelope _frequencyEnvelope;
+		LinearModulator _frequencyModulator{ _frequencyEnvelope };
+		const SampledEnvelope _asymmetryEnvelope;
+		LinearModulator _asymmetryModulator{ _asymmetryEnvelope };
+		const SampledEnvelope _oscillationEnvelope;
+		LinearModulator _oscillationModulator{ _oscillationEnvelope };
+	};
+
 	// A wave period is represented by two stages.
 	// The first stage (+1) starts at maximum amplitude and advances towards the minimum,
 	// and the second stage (-1) starts at minimum amplitude and advances towards the maximum.
@@ -93,10 +121,10 @@ namespace aulos
 		constexpr explicit Stager(unsigned samplingRate) noexcept
 			: _samplingRate{ samplingRate } {}
 
-		void startStage(double frequency, double asymmetry) noexcept;
 		void adjustStage(double frequency, double asymmetry) noexcept;
 		void advance(size_t samples, double nextFrequency, double nextAsymmetry) noexcept;
-		auto samplesRemaining() const noexcept { return static_cast<size_t>(std::ceil(_stageRemainder)); }
+		auto maxAdvance() const noexcept { return static_cast<size_t>(std::ceil(_stageRemainder)); }
+		void restart(double frequency, double asymmetry) noexcept;
 		constexpr auto samplingRate() const noexcept { return _samplingRate; }
 		constexpr auto stageLength() const noexcept { return _stageLength; }
 		constexpr auto stageOffset() const noexcept { return _stageLength - _stageRemainder; }
@@ -117,30 +145,16 @@ namespace aulos
 	public:
 		VoiceImpl(const VoiceData&, unsigned samplingRate) noexcept;
 
-		void restart() noexcept final;
-		unsigned samplingRate() const noexcept final { return _stager.samplingRate(); }
-		void start(Note note, float amplitude) noexcept final;
-		void stop() noexcept { _amplitudeModulator.stop(); }
-		size_t totalSamples() const noexcept final { return _amplitudeModulator.duration(); }
+		void stop() noexcept { _modulation.stop(); }
+		size_t totalSamples() const noexcept final { return _modulation.totalSamples(); }
 
 	protected:
-		void advance(size_t samples) noexcept;
-
-	private:
-		void startImpl() noexcept;
+		void startImpl(Note note, float amplitude) noexcept;
 
 	protected:
-		const SampledEnvelope _amplitudeEnvelope;
-		AmplitudeModulator _amplitudeModulator{ _amplitudeEnvelope };
-		const SampledEnvelope _frequencyEnvelope;
-		LinearModulator _frequencyModulator{ _frequencyEnvelope };
-		const SampledEnvelope _asymmetryEnvelope;
-		LinearModulator _asymmetryModulator{ _asymmetryEnvelope };
-		const SampledEnvelope _oscillationEnvelope;
-		LinearModulator _oscillationModulator{ _oscillationEnvelope };
 		float _baseAmplitude = 0.f;
 		double _baseFrequency = 0.0;
-		Stager _stager;
+		Modulation _modulation;
 	};
 
 	// NOTE!
@@ -154,10 +168,11 @@ namespace aulos
 
 		MonoVoice(const VoiceData& data, unsigned samplingRate) noexcept
 			: VoiceImpl{ data, samplingRate }
+			, _stager{ samplingRate }
 		{
 		}
 
-		unsigned channels() const noexcept final
+		unsigned channels() const noexcept override
 		{
 			return 1;
 		}
@@ -166,22 +181,51 @@ namespace aulos
 		{
 			bufferBytes -= bufferBytes % kBlockSize;
 			size_t offset = 0;
-			while (offset < bufferBytes && _amplitudeModulator.update())
+			while (offset < bufferBytes && _modulation.update())
 			{
-				const auto blocksToGenerate = std::min(_stager.samplesRemaining(), std::min((bufferBytes - offset) / kBlockSize, _amplitudeModulator.partSamplesRemaining()));
+				const auto blocksToGenerate = std::min({ (bufferBytes - offset) / kBlockSize, _modulation.maxAdvance(), _stager.maxAdvance() });
 				if (buffer)
 				{
 					const auto amplitude = _baseAmplitude * _stager.stageSign();
-					Oscillator oscillator{ _stager.stageLength(), _stager.stageOffset(), amplitude, _oscillationModulator.value() * amplitude };
+					Oscillator oscillator{ _stager.stageLength(), _stager.stageOffset(), amplitude, _modulation.currentOscillation() * amplitude };
 					const auto base = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
 					for (size_t i = 0; i < blocksToGenerate; ++i)
-						base[i] += static_cast<float>(oscillator() * _amplitudeModulator.advance());
+						base[i] += static_cast<float>(oscillator() * _modulation.nextAmplitude());
 				}
-				advance(blocksToGenerate);
+				_modulation.advance(blocksToGenerate);
+				_stager.advance(blocksToGenerate, _baseFrequency * _modulation.currentFrequency(), _modulation.currentAsymmetry());
 				offset += blocksToGenerate * kBlockSize;
 			}
 			return offset;
 		}
+
+		void restart() noexcept override
+		{
+			_modulation.stop();
+			_modulation.start();
+			_stager.restart(_baseFrequency * _modulation.currentFrequency(), _modulation.currentAsymmetry());
+		}
+
+		unsigned samplingRate() const noexcept override
+		{
+			return _stager.samplingRate();
+		}
+
+		void start(Note note, float amplitude) noexcept override
+		{
+			startImpl(note, amplitude);
+			const bool wasStopped = _modulation.stopped();
+			_modulation.start();
+			const auto frequency = _baseFrequency * _modulation.currentFrequency();
+			const auto asymmetry = _modulation.currentAsymmetry();
+			if (wasStopped)
+				_stager.restart(frequency, asymmetry);
+			else
+				_stager.adjustStage(frequency, asymmetry);
+		}
+
+	private:
+		Stager _stager;
 	};
 
 	class BasicStereoVoice : public VoiceImpl
@@ -212,6 +256,7 @@ namespace aulos
 	public:
 		StereoVoice(const VoiceData& data, unsigned samplingRate) noexcept
 			: BasicStereoVoice{ data, samplingRate }
+			, _stager{ samplingRate }
 		{
 		}
 
@@ -219,26 +264,55 @@ namespace aulos
 		{
 			bufferBytes -= bufferBytes % kBlockSize;
 			size_t offset = 0;
-			while (offset < bufferBytes && _amplitudeModulator.update())
+			while (offset < bufferBytes && _modulation.update())
 			{
-				const auto blocksToGenerate = std::min(_stager.samplesRemaining(), std::min((bufferBytes - offset) / kBlockSize, _amplitudeModulator.partSamplesRemaining()));
+				const auto blocksToGenerate = std::min({ (bufferBytes - offset) / kBlockSize, _modulation.maxAdvance(), _stager.maxAdvance() });
 				if (buffer)
 				{
 					const auto amplitude = _baseAmplitude * _stager.stageSign();
-					Oscillator oscillator{ _stager.stageLength(), _stager.stageOffset(), amplitude, _oscillationModulator.value() * amplitude };
+					Oscillator oscillator{ _stager.stageLength(), _stager.stageOffset(), amplitude, _modulation.currentOscillation() * amplitude };
 					auto output = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
 					for (size_t i = 0; i < blocksToGenerate; ++i)
 					{
-						const auto value = static_cast<float>(oscillator() * _amplitudeModulator.advance());
+						const auto value = static_cast<float>(oscillator() * _modulation.nextAmplitude());
 						*output++ += value * _leftAmplitude;
 						*output++ += value * _rightAmplitude;
 					}
 				}
-				advance(blocksToGenerate);
+				_modulation.advance(blocksToGenerate);
+				_stager.advance(blocksToGenerate, _baseFrequency * _modulation.currentFrequency(), _modulation.currentAsymmetry());
 				offset += blocksToGenerate * kBlockSize;
 			}
 			return offset;
 		}
+
+		void restart() noexcept override
+		{
+			_modulation.stop();
+			_modulation.start();
+			_stager.restart(_baseFrequency * _modulation.currentFrequency(), _modulation.currentAsymmetry());
+		}
+
+		unsigned samplingRate() const noexcept override
+		{
+			return _stager.samplingRate();
+		}
+
+		void start(Note note, float amplitude) noexcept override
+		{
+			startImpl(note, amplitude);
+			const bool wasStopped = _modulation.stopped();
+			_modulation.start();
+			const auto frequency = _baseFrequency * _modulation.currentFrequency();
+			const auto asymmetry = _modulation.currentAsymmetry();
+			if (wasStopped)
+				_stager.restart(frequency, asymmetry);
+			else
+				_stager.adjustStage(frequency, asymmetry);
+		}
+
+	private:
+		Stager _stager;
 	};
 
 	template <typename Oscillator>
@@ -247,6 +321,8 @@ namespace aulos
 	public:
 		PhasedStereoVoice(const VoiceData& data, unsigned samplingRate) noexcept
 			: BasicStereoVoice{ data, samplingRate }
+			, _leftStager{ samplingRate }
+			, _rightStager{ samplingRate }
 		{
 		}
 
@@ -254,25 +330,71 @@ namespace aulos
 		{
 			bufferBytes -= bufferBytes % kBlockSize;
 			size_t offset = 0;
-			while (offset < bufferBytes && _amplitudeModulator.update())
+			while (offset < bufferBytes && _modulation.update())
 			{
-				const auto samplesToGenerate = std::min(_stager.samplesRemaining(), std::min((bufferBytes - offset) / kBlockSize, _amplitudeModulator.partSamplesRemaining()));
+				const auto samplesToGenerate = std::min({ (bufferBytes - offset) / kBlockSize, _modulation.maxAdvance(), _leftStager.maxAdvance(), _rightStager.maxAdvance() });
 				if (buffer)
 				{
-					const auto amplitude = _baseAmplitude * _stager.stageSign();
-					Oscillator oscillator{ _stager.stageLength(), _stager.stageOffset(), amplitude, _oscillationModulator.value() * amplitude };
+					const auto leftAmplitude = _baseAmplitude * _leftStager.stageSign();
+					Oscillator leftOscillator{ _leftStager.stageLength(), _leftStager.stageOffset(), leftAmplitude, _modulation.currentOscillation() * leftAmplitude };
+
+					const auto rightAmplitude = _baseAmplitude * _rightStager.stageSign();
+					Oscillator rightOscillator{ _rightStager.stageLength(), _rightStager.stageOffset(), rightAmplitude, _modulation.currentOscillation() * rightAmplitude };
+
 					auto output = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
 					for (size_t i = 0; i < samplesToGenerate; ++i)
 					{
-						const auto value = static_cast<float>(oscillator() * _amplitudeModulator.advance());
-						*output++ += value * _leftAmplitude;
-						*output++ += value * _rightAmplitude;
+						const auto amplitudeModulation = _modulation.nextAmplitude();
+						*output++ += static_cast<float>(leftOscillator() * amplitudeModulation * _leftAmplitude);
+						*output++ += static_cast<float>(rightOscillator() * amplitudeModulation * _rightAmplitude);
 					}
 				}
-				advance(samplesToGenerate);
+				_modulation.advance(samplesToGenerate);
+				const auto frequency = _baseFrequency * _modulation.currentFrequency();
+				const auto asymmetry = _modulation.currentAsymmetry();
+				_leftStager.advance(samplesToGenerate, frequency, asymmetry);
+				_rightStager.advance(samplesToGenerate, frequency, asymmetry);
 				offset += samplesToGenerate * kBlockSize;
 			}
 			return offset;
 		}
+
+		void restart() noexcept override
+		{
+			_modulation.stop();
+			_modulation.start();
+			const auto frequency = _baseFrequency * _modulation.currentFrequency();
+			const auto asymmetry = _modulation.currentAsymmetry();
+			_leftStager.restart(frequency, asymmetry);
+			_rightStager.restart(frequency, asymmetry);
+		}
+
+		unsigned samplingRate() const noexcept override
+		{
+			return _leftStager.samplingRate();
+		}
+
+		void start(Note note, float amplitude) noexcept override
+		{
+			startImpl(note, amplitude);
+			const bool wasStopped = _modulation.stopped();
+			_modulation.start();
+			const auto frequency = _baseFrequency * _modulation.currentFrequency();
+			const auto asymmetry = _modulation.currentAsymmetry();
+			if (wasStopped)
+			{
+				_leftStager.restart(frequency, asymmetry);
+				_rightStager.restart(frequency, asymmetry);
+			}
+			else
+			{
+				_leftStager.adjustStage(frequency, asymmetry);
+				_rightStager.adjustStage(frequency, asymmetry);
+			}
+		}
+
+	private:
+		Stager _leftStager;
+		Stager _rightStager;
 	};
 }
