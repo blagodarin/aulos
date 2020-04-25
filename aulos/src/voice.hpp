@@ -108,7 +108,7 @@ namespace aulos
 		void adjustStage(double frequency, double asymmetry) noexcept;
 		void advance(size_t samples, double nextFrequency, double nextAsymmetry) noexcept;
 		auto maxAdvance() const noexcept { return static_cast<size_t>(std::ceil(_stageRemainder)); }
-		void restart(double frequency, double asymmetry) noexcept;
+		void restart(double frequency, double asymmetry, double shift) noexcept;
 		constexpr auto samplingRate() const noexcept { return _samplingRate; }
 		constexpr auto stageLength() const noexcept { return _stageLength; }
 		constexpr auto stageOffset() const noexcept { return _stageLength - _stageRemainder; }
@@ -193,7 +193,7 @@ namespace aulos
 		{
 			_modulator.stop();
 			_modulator.start();
-			_oscillator.restart(_baseFrequency * _modulator.currentFrequency(), _modulator.currentAsymmetry());
+			_oscillator.restart(_baseFrequency * _modulator.currentFrequency(), _modulator.currentAsymmetry(), 0);
 		}
 
 		unsigned samplingRate() const noexcept override
@@ -209,7 +209,7 @@ namespace aulos
 			const auto frequency = _baseFrequency * _modulator.currentFrequency();
 			const auto asymmetry = _modulator.currentAsymmetry();
 			if (wasStopped)
-				_oscillator.restart(frequency, asymmetry);
+				_oscillator.restart(frequency, asymmetry, 0);
 			else
 				_oscillator.adjustStage(frequency, asymmetry);
 		}
@@ -283,7 +283,7 @@ namespace aulos
 		{
 			_modulator.stop();
 			_modulator.start();
-			_oscillator.restart(_baseFrequency * _modulator.currentFrequency(), _modulator.currentAsymmetry());
+			_oscillator.restart(_baseFrequency * _modulator.currentFrequency(), _modulator.currentAsymmetry(), 0);
 		}
 
 		unsigned samplingRate() const noexcept override
@@ -299,7 +299,7 @@ namespace aulos
 			const auto frequency = _baseFrequency * _modulator.currentFrequency();
 			const auto asymmetry = _modulator.currentAsymmetry();
 			if (wasStopped)
-				_oscillator.restart(frequency, asymmetry);
+				_oscillator.restart(frequency, asymmetry, 0);
 			else
 				_oscillator.adjustStage(frequency, asymmetry);
 		}
@@ -316,6 +316,7 @@ namespace aulos
 			: BasicStereoVoice{ data, samplingRate }
 			, _leftOscillator{ samplingRate }
 			, _rightOscillator{ samplingRate }
+			, _phaseShift{ data._phaseShift }
 		{
 		}
 
@@ -360,8 +361,8 @@ namespace aulos
 			_modulator.start();
 			const auto frequency = _baseFrequency * _modulator.currentFrequency();
 			const auto asymmetry = _modulator.currentAsymmetry();
-			_leftOscillator.restart(frequency, asymmetry);
-			_rightOscillator.restart(frequency, asymmetry);
+			_leftOscillator.restart(frequency, asymmetry, 0);
+			_rightOscillator.restart(frequency, asymmetry, _phaseShift / _baseFrequency);
 		}
 
 		unsigned samplingRate() const noexcept override
@@ -378,8 +379,8 @@ namespace aulos
 			const auto asymmetry = _modulator.currentAsymmetry();
 			if (wasStopped)
 			{
-				_leftOscillator.restart(frequency, asymmetry);
-				_rightOscillator.restart(frequency, asymmetry);
+				_leftOscillator.restart(frequency, asymmetry, 0);
+				_rightOscillator.restart(frequency, asymmetry, _phaseShift / _baseFrequency);
 			}
 			else
 			{
@@ -391,5 +392,6 @@ namespace aulos
 	private:
 		Oscillator _leftOscillator;
 		Oscillator _rightOscillator;
+		const float _phaseShift;
 	};
 }

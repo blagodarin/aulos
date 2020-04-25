@@ -172,11 +172,19 @@ namespace aulos
 		_stageRemainder = remaining;
 	}
 
-	void Oscillator::restart(double frequency, double asymmetry) noexcept
+	void Oscillator::restart(double frequency, double asymmetry, double shift) noexcept
 	{
 		_amplitudeSign = 1.f;
 		resetStage(frequency, asymmetry);
-		_stageRemainder = _stageLength;
+		auto remainder = _stageLength;
+		assert(shift >= 0);
+		if (shift > 0)
+			for (remainder -= _samplingRate * shift; remainder <= 0; remainder += _stageLength)
+			{
+				_amplitudeSign = -_amplitudeSign;
+				resetStage(frequency, asymmetry);
+			}
+		_stageRemainder = remainder;
 	}
 
 	void Oscillator::resetStage(double frequency, double asymmetry) noexcept

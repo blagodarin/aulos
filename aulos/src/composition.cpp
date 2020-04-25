@@ -304,7 +304,7 @@ namespace aulos
 			{
 				if (currentSection != Section::Voice)
 					throw CompositionError{ location(), "Unexpected command" };
-				currentVoice->_phaseShift = readFloat(-1.f, 1.f);
+				currentVoice->_phaseShift = readFloat(0.f, 1.f);
 			}
 			else if (command == "wave")
 			{

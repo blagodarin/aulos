@@ -63,7 +63,7 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 	_phaseShiftSpin = new QDoubleSpinBox{ parent };
 	_phaseShiftSpin->setDecimals(2);
 	_phaseShiftSpin->setMaximum(1.0);
-	_phaseShiftSpin->setMinimum(-1.0);
+	_phaseShiftSpin->setMinimum(0.0);
 	_phaseShiftSpin->setSingleStep(0.01);
 	_phaseShiftSpin->setValue(0.0);
 	layout->addWidget(new QLabel{ tr("Phase shift:"), this }, row, 1);
