@@ -44,36 +44,19 @@ namespace aulos
 		std::array<Point, 5> _points{};
 	};
 
-	class AmplitudeModulator
-	{
-	public:
-		AmplitudeModulator(const SampledEnvelope&) noexcept;
-
-		void start(double value) noexcept;
-		double advance() noexcept;
-		size_t duration() const noexcept { return _envelope.duration(); }
-		size_t partSamplesRemaining() const noexcept;
-		void stop() noexcept { _nextPoint = _envelope.end(); }
-		bool stopped() const noexcept { return _nextPoint == _envelope.end(); }
-		void update() noexcept;
-		constexpr double value() const noexcept { return _currentValue; }
-
-	private:
-		const SampledEnvelope& _envelope;
-		double _baseValue = 0.f;
-		const SampledEnvelope::Point* _nextPoint = _envelope.end();
-		size_t _offset = 0;
-		double _currentValue = 0.f;
-	};
-
 	class LinearModulator
 	{
 	public:
 		LinearModulator(const SampledEnvelope&) noexcept;
 
-		void start(double value) noexcept;
 		void advance(size_t samples) noexcept;
+		size_t duration() const noexcept { return _envelope.duration(); }
+		size_t maxContinuousAdvance() const noexcept;
+		void start(double value, bool restart) noexcept;
+		void stop() noexcept { _nextPoint = _envelope.end(); }
+		bool stopped() const noexcept { return _nextPoint == _envelope.end(); }
 		constexpr double value() const noexcept { return _currentValue; }
+		double valueStep() const noexcept;
 
 	private:
 		const SampledEnvelope& _envelope;
@@ -89,11 +72,12 @@ namespace aulos
 		Modulator(const VoiceData&, unsigned samplingRate) noexcept;
 
 		void advance(size_t samples) noexcept;
+		constexpr auto currentAmplitude() const noexcept { return _amplitudeModulator.value(); }
+		auto currentAmplitudeStep() const noexcept { return _amplitudeModulator.valueStep(); }
 		constexpr auto currentAsymmetry() const noexcept { return _asymmetryModulator.value(); }
 		constexpr auto currentFrequency() const noexcept { return _frequencyModulator.value(); }
 		constexpr auto currentOscillation() const noexcept { return _oscillationModulator.value(); }
-		auto maxAdvance() const noexcept { return _amplitudeModulator.partSamplesRemaining(); }
-		auto nextAmplitude() noexcept { return _amplitudeModulator.advance(); }
+		auto maxAdvance() const noexcept { return _amplitudeModulator.maxContinuousAdvance(); }
 		void start() noexcept;
 		void stop() noexcept { _amplitudeModulator.stop(); }
 		auto stopped() const noexcept { return _amplitudeModulator.stopped(); }
@@ -101,7 +85,7 @@ namespace aulos
 
 	private:
 		const SampledEnvelope _amplitudeEnvelope;
-		AmplitudeModulator _amplitudeModulator{ _amplitudeEnvelope };
+		LinearModulator _amplitudeModulator{ _amplitudeEnvelope };
 		const SampledEnvelope _frequencyEnvelope;
 		LinearModulator _frequencyModulator{ _frequencyEnvelope };
 		const SampledEnvelope _asymmetryEnvelope;
@@ -189,8 +173,13 @@ namespace aulos
 					const auto amplitude = _baseAmplitude * _oscillator.stageSign();
 					Generator generator{ _oscillator.stageLength(), _oscillator.stageOffset(), amplitude, _modulator.currentOscillation() * amplitude };
 					const auto base = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
+					auto amplitudeModulation = _modulator.currentAmplitude();
+					const auto step = _modulator.currentAmplitudeStep();
 					for (size_t i = 0; i < blocksToGenerate; ++i)
-						base[i] += static_cast<float>(generator() * _modulator.nextAmplitude());
+					{
+						base[i] += static_cast<float>(generator() * amplitudeModulation);
+						amplitudeModulation += step;
+					}
 				}
 				_modulator.advance(blocksToGenerate);
 				_oscillator.advance(blocksToGenerate, _baseFrequency * _modulator.currentFrequency(), _modulator.currentAsymmetry());
@@ -272,11 +261,14 @@ namespace aulos
 					const auto amplitude = _baseAmplitude * _oscillator.stageSign();
 					Generator generator{ _oscillator.stageLength(), _oscillator.stageOffset(), amplitude, _modulator.currentOscillation() * amplitude };
 					auto output = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
+					auto amplitudeModulation = _modulator.currentAmplitude();
+					const auto step = _modulator.currentAmplitudeStep();
 					for (size_t i = 0; i < blocksToGenerate; ++i)
 					{
-						const auto value = static_cast<float>(generator() * _modulator.nextAmplitude());
+						const auto value = static_cast<float>(generator() * amplitudeModulation);
 						*output++ += value * _leftAmplitude;
 						*output++ += value * _rightAmplitude;
+						amplitudeModulation += step;
 					}
 				}
 				_modulator.advance(blocksToGenerate);
@@ -342,11 +334,13 @@ namespace aulos
 					Generator rightGenerator{ _rightOscillator.stageLength(), _rightOscillator.stageOffset(), rightAmplitude, _modulator.currentOscillation() * rightAmplitude };
 
 					auto output = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
+					auto amplitudeModulation = _modulator.currentAmplitude();
+					const auto step = _modulator.currentAmplitudeStep();
 					for (size_t i = 0; i < samplesToGenerate; ++i)
 					{
-						const auto amplitudeModulation = _modulator.nextAmplitude();
 						*output++ += static_cast<float>(leftGenerator() * amplitudeModulation);
 						*output++ += static_cast<float>(rightGenerator() * amplitudeModulation);
+						amplitudeModulation += step;
 					}
 				}
 				_modulator.advance(samplesToGenerate);

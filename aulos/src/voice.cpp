@@ -78,62 +78,9 @@ namespace aulos
 		});
 	}
 
-	AmplitudeModulator::AmplitudeModulator(const SampledEnvelope& envelope) noexcept
-		: _envelope{ envelope }
-	{
-	}
-
-	void AmplitudeModulator::start(double value) noexcept
-	{
-		_nextPoint = std::find_if(_envelope.begin(), _envelope.end(), [](const SampledEnvelope::Point& point) { return point._delay > 0; });
-		assert(_nextPoint == _envelope.end() || _nextPoint->_delay > 0);
-		_baseValue = value;
-		_offset = 0;
-		_currentValue = _baseValue;
-	}
-
-	double AmplitudeModulator::advance() noexcept
-	{
-		assert(_nextPoint != _envelope.end());
-		assert(_nextPoint->_delay > 0);
-		assert(_offset < _nextPoint->_delay);
-		const auto progress = static_cast<double>(_offset) / _nextPoint->_delay;
-		_currentValue = _baseValue * (1 - progress) + _nextPoint->_value * progress;
-		++_offset;
-		return _currentValue;
-	}
-
-	size_t AmplitudeModulator::partSamplesRemaining() const noexcept
-	{
-		assert(_nextPoint != _envelope.end());
-		return _nextPoint->_delay - _offset;
-	}
-
-	void AmplitudeModulator::update() noexcept
-	{
-		while (_nextPoint != _envelope.end())
-		{
-			assert(_offset <= _nextPoint->_delay);
-			if (_offset < _nextPoint->_delay)
-				break;
-			_baseValue = _nextPoint->_value;
-			++_nextPoint;
-			_offset = 0;
-			_currentValue = _baseValue;
-		}
-	}
-
 	LinearModulator::LinearModulator(const SampledEnvelope& envelope) noexcept
 		: _envelope{ envelope }
 	{
-	}
-
-	void LinearModulator::start(double value) noexcept
-	{
-		_nextPoint = std::find_if(_envelope.begin(), _envelope.end(), [](const SampledEnvelope::Point& point) { return point._delay > 0; });
-		_baseValue = _nextPoint != _envelope.begin() ? std::prev(_nextPoint)->_value : value;
-		_offset = 0;
-		_currentValue = _baseValue;
 	}
 
 	void LinearModulator::advance(size_t samples) noexcept
@@ -156,6 +103,28 @@ namespace aulos
 		}
 	}
 
+	size_t LinearModulator::maxContinuousAdvance() const noexcept
+	{
+		assert(_nextPoint != _envelope.end());
+		return _nextPoint->_delay - _offset;
+	}
+
+	void LinearModulator::start(double value, bool restart) noexcept
+	{
+		_nextPoint = std::find_if(_envelope.begin(), _envelope.end(), [](const SampledEnvelope::Point& point) { return point._delay > 0; });
+		_baseValue = restart || _nextPoint == _envelope.begin() ? value : std::prev(_nextPoint)->_value;
+		_offset = 0;
+		_currentValue = _baseValue;
+	}
+
+	double LinearModulator::valueStep() const noexcept
+	{
+		if (_nextPoint == _envelope.end())
+			return 0;
+		assert(_offset < _nextPoint->_delay);
+		return (_nextPoint->_value - _currentValue) / (_nextPoint->_delay - _offset);
+	}
+
 	Modulator::Modulator(const VoiceData& data, unsigned samplingRate) noexcept
 		: _amplitudeEnvelope{ data._amplitudeEnvelope, samplingRate }
 		, _frequencyEnvelope{ data._frequencyEnvelope, samplingRate }
@@ -166,7 +135,7 @@ namespace aulos
 
 	void Modulator::advance(size_t samples) noexcept
 	{
-		_amplitudeModulator.update();
+		_amplitudeModulator.advance(samples);
 		_frequencyModulator.advance(samples);
 		_asymmetryModulator.advance(samples);
 		_oscillationModulator.advance(samples);
@@ -177,13 +146,13 @@ namespace aulos
 		if (_amplitudeModulator.stopped())
 		{
 			assert(_amplitudeEnvelope.begin()->_delay == 0);
-			_amplitudeModulator.start(_amplitudeEnvelope.begin()->_value);
+			_amplitudeModulator.start(_amplitudeEnvelope.begin()->_value, true);
 		}
 		else
-			_amplitudeModulator.start(_amplitudeModulator.value());
-		_frequencyModulator.start(1.0);
-		_asymmetryModulator.start(0.0);
-		_oscillationModulator.start(1.0);
+			_amplitudeModulator.start(_amplitudeModulator.value(), true);
+		_frequencyModulator.start(1.0, false);
+		_asymmetryModulator.start(0.0, false);
+		_oscillationModulator.start(1.0, false);
 	}
 
 	void Oscillator::adjustStage(double frequency, double asymmetry) noexcept
