@@ -24,7 +24,7 @@ source_group("include" FILES ${_include})
 set(_src
 	src/composition.cpp
 	src/composition.hpp
-	src/oscillators.hpp
+	src/generators.hpp
 	src/renderer.cpp
 	src/voice.cpp
 	src/voice.hpp

@@ -16,7 +16,7 @@
 //
 
 #include "composition.hpp"
-#include "oscillators.hpp"
+#include "generators.hpp"
 #include "voice.hpp"
 
 #include <algorithm>
@@ -33,10 +33,10 @@ namespace
 		case 1:
 			switch (data._wave)
 			{
-			case aulos::Wave::Linear: return std::make_unique<aulos::MonoVoice<aulos::LinearOscillator>>(data, samplingRate);
-			case aulos::Wave::Quadratic: return std::make_unique<aulos::MonoVoice<aulos::QuadraticOscillator>>(data, samplingRate);
-			case aulos::Wave::Cubic: return std::make_unique<aulos::MonoVoice<aulos::CubicOscillator>>(data, samplingRate);
-			case aulos::Wave::Cosine: return std::make_unique<aulos::MonoVoice<aulos::CosineOscillator>>(data, samplingRate);
+			case aulos::Wave::Linear: return std::make_unique<aulos::MonoVoice<aulos::LinearGenerator>>(data, samplingRate);
+			case aulos::Wave::Quadratic: return std::make_unique<aulos::MonoVoice<aulos::QuadraticGenerator>>(data, samplingRate);
+			case aulos::Wave::Cubic: return std::make_unique<aulos::MonoVoice<aulos::CubicGenerator>>(data, samplingRate);
+			case aulos::Wave::Cosine: return std::make_unique<aulos::MonoVoice<aulos::CosineGenerator>>(data, samplingRate);
 			}
 			break;
 
@@ -45,20 +45,20 @@ namespace
 			{
 				switch (data._wave)
 				{
-				case aulos::Wave::Linear: return std::make_unique<aulos::StereoVoice<aulos::LinearOscillator>>(data, samplingRate);
-				case aulos::Wave::Quadratic: return std::make_unique<aulos::StereoVoice<aulos::QuadraticOscillator>>(data, samplingRate);
-				case aulos::Wave::Cubic: return std::make_unique<aulos::StereoVoice<aulos::CubicOscillator>>(data, samplingRate);
-				case aulos::Wave::Cosine: return std::make_unique<aulos::StereoVoice<aulos::CosineOscillator>>(data, samplingRate);
+				case aulos::Wave::Linear: return std::make_unique<aulos::StereoVoice<aulos::LinearGenerator>>(data, samplingRate);
+				case aulos::Wave::Quadratic: return std::make_unique<aulos::StereoVoice<aulos::QuadraticGenerator>>(data, samplingRate);
+				case aulos::Wave::Cubic: return std::make_unique<aulos::StereoVoice<aulos::CubicGenerator>>(data, samplingRate);
+				case aulos::Wave::Cosine: return std::make_unique<aulos::StereoVoice<aulos::CosineGenerator>>(data, samplingRate);
 				}
 			}
 			else
 			{
 				switch (data._wave)
 				{
-				case aulos::Wave::Linear: return std::make_unique<aulos::PhasedStereoVoice<aulos::LinearOscillator>>(data, samplingRate);
-				case aulos::Wave::Quadratic: return std::make_unique<aulos::PhasedStereoVoice<aulos::QuadraticOscillator>>(data, samplingRate);
-				case aulos::Wave::Cubic: return std::make_unique<aulos::PhasedStereoVoice<aulos::CubicOscillator>>(data, samplingRate);
-				case aulos::Wave::Cosine: return std::make_unique<aulos::PhasedStereoVoice<aulos::CosineOscillator>>(data, samplingRate);
+				case aulos::Wave::Linear: return std::make_unique<aulos::PhasedStereoVoice<aulos::LinearGenerator>>(data, samplingRate);
+				case aulos::Wave::Quadratic: return std::make_unique<aulos::PhasedStereoVoice<aulos::QuadraticGenerator>>(data, samplingRate);
+				case aulos::Wave::Cubic: return std::make_unique<aulos::PhasedStereoVoice<aulos::CubicGenerator>>(data, samplingRate);
+				case aulos::Wave::Cosine: return std::make_unique<aulos::PhasedStereoVoice<aulos::CosineGenerator>>(data, samplingRate);
 				}
 			}
 			break;

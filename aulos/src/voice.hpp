@@ -160,7 +160,7 @@ namespace aulos
 	// NOTE!
 	// Keeping intermediate calculations in 'double' produces a measurable performance hit (e.g. 104ms -> 114 ms).
 
-	template <typename Oscillator>
+	template <typename Generator>
 	class MonoVoice final : public VoiceImpl
 	{
 	public:
@@ -187,10 +187,10 @@ namespace aulos
 				if (buffer)
 				{
 					const auto amplitude = _baseAmplitude * _stager.stageSign();
-					Oscillator oscillator{ _stager.stageLength(), _stager.stageOffset(), amplitude, _modulation.currentOscillation() * amplitude };
+					Generator generator{ _stager.stageLength(), _stager.stageOffset(), amplitude, _modulation.currentOscillation() * amplitude };
 					const auto base = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
 					for (size_t i = 0; i < blocksToGenerate; ++i)
-						base[i] += static_cast<float>(oscillator() * _modulation.nextAmplitude());
+						base[i] += static_cast<float>(generator() * _modulation.nextAmplitude());
 				}
 				_modulation.advance(blocksToGenerate);
 				_stager.advance(blocksToGenerate, _baseFrequency * _modulation.currentFrequency(), _modulation.currentAsymmetry());
@@ -250,7 +250,7 @@ namespace aulos
 		const float _rightAmplitude;
 	};
 
-	template <typename Oscillator>
+	template <typename Generator>
 	class StereoVoice final : public BasicStereoVoice
 	{
 	public:
@@ -270,11 +270,11 @@ namespace aulos
 				if (buffer)
 				{
 					const auto amplitude = _baseAmplitude * _stager.stageSign();
-					Oscillator oscillator{ _stager.stageLength(), _stager.stageOffset(), amplitude, _modulation.currentOscillation() * amplitude };
+					Generator generator{ _stager.stageLength(), _stager.stageOffset(), amplitude, _modulation.currentOscillation() * amplitude };
 					auto output = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
 					for (size_t i = 0; i < blocksToGenerate; ++i)
 					{
-						const auto value = static_cast<float>(oscillator() * _modulation.nextAmplitude());
+						const auto value = static_cast<float>(generator() * _modulation.nextAmplitude());
 						*output++ += value * _leftAmplitude;
 						*output++ += value * _rightAmplitude;
 					}
@@ -315,7 +315,7 @@ namespace aulos
 		Stager _stager;
 	};
 
-	template <typename Oscillator>
+	template <typename Generator>
 	class PhasedStereoVoice final : public BasicStereoVoice
 	{
 	public:
@@ -335,18 +335,18 @@ namespace aulos
 				const auto samplesToGenerate = std::min({ (bufferBytes - offset) / kBlockSize, _modulation.maxAdvance(), _leftStager.maxAdvance(), _rightStager.maxAdvance() });
 				if (buffer)
 				{
-					const auto leftAmplitude = _baseAmplitude * _leftStager.stageSign();
-					Oscillator leftOscillator{ _leftStager.stageLength(), _leftStager.stageOffset(), leftAmplitude, _modulation.currentOscillation() * leftAmplitude };
+					const auto leftAmplitude = _baseAmplitude * _leftStager.stageSign() * _leftAmplitude;
+					Generator leftGenerator{ _leftStager.stageLength(), _leftStager.stageOffset(), leftAmplitude, _modulation.currentOscillation() * leftAmplitude };
 
-					const auto rightAmplitude = _baseAmplitude * _rightStager.stageSign();
-					Oscillator rightOscillator{ _rightStager.stageLength(), _rightStager.stageOffset(), rightAmplitude, _modulation.currentOscillation() * rightAmplitude };
+					const auto rightAmplitude = _baseAmplitude * _rightStager.stageSign() * _rightAmplitude;
+					Generator rightGenerator{ _rightStager.stageLength(), _rightStager.stageOffset(), rightAmplitude, _modulation.currentOscillation() * rightAmplitude };
 
 					auto output = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
 					for (size_t i = 0; i < samplesToGenerate; ++i)
 					{
 						const auto amplitudeModulation = _modulation.nextAmplitude();
-						*output++ += static_cast<float>(leftOscillator() * amplitudeModulation * _leftAmplitude);
-						*output++ += static_cast<float>(rightOscillator() * amplitudeModulation * _rightAmplitude);
+						*output++ += static_cast<float>(leftGenerator() * amplitudeModulation);
+						*output++ += static_cast<float>(rightGenerator() * amplitudeModulation);
 					}
 				}
 				_modulation.advance(samplesToGenerate);
