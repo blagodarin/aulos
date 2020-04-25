@@ -114,11 +114,11 @@ namespace aulos
 	// A wave period is represented by two stages.
 	// The first stage (+1) starts at maximum amplitude and advances towards the minimum,
 	// and the second stage (-1) starts at minimum amplitude and advances towards the maximum.
-	// A stager holds the state of a current stage and controls switching between stages.
-	class Stager
+	// Oscillator holds the state of a current stage and controls switching between stages.
+	class Oscillator
 	{
 	public:
-		constexpr explicit Stager(unsigned samplingRate) noexcept
+		constexpr explicit Oscillator(unsigned samplingRate) noexcept
 			: _samplingRate{ samplingRate } {}
 
 		void adjustStage(double frequency, double asymmetry) noexcept;
@@ -168,7 +168,7 @@ namespace aulos
 
 		MonoVoice(const VoiceData& data, unsigned samplingRate) noexcept
 			: VoiceImpl{ data, samplingRate }
-			, _stager{ samplingRate }
+			, _oscillator{ samplingRate }
 		{
 		}
 
@@ -183,17 +183,17 @@ namespace aulos
 			size_t offset = 0;
 			while (offset < bufferBytes && _modulation.update())
 			{
-				const auto blocksToGenerate = std::min({ (bufferBytes - offset) / kBlockSize, _modulation.maxAdvance(), _stager.maxAdvance() });
+				const auto blocksToGenerate = std::min({ (bufferBytes - offset) / kBlockSize, _modulation.maxAdvance(), _oscillator.maxAdvance() });
 				if (buffer)
 				{
-					const auto amplitude = _baseAmplitude * _stager.stageSign();
-					Generator generator{ _stager.stageLength(), _stager.stageOffset(), amplitude, _modulation.currentOscillation() * amplitude };
+					const auto amplitude = _baseAmplitude * _oscillator.stageSign();
+					Generator generator{ _oscillator.stageLength(), _oscillator.stageOffset(), amplitude, _modulation.currentOscillation() * amplitude };
 					const auto base = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
 					for (size_t i = 0; i < blocksToGenerate; ++i)
 						base[i] += static_cast<float>(generator() * _modulation.nextAmplitude());
 				}
 				_modulation.advance(blocksToGenerate);
-				_stager.advance(blocksToGenerate, _baseFrequency * _modulation.currentFrequency(), _modulation.currentAsymmetry());
+				_oscillator.advance(blocksToGenerate, _baseFrequency * _modulation.currentFrequency(), _modulation.currentAsymmetry());
 				offset += blocksToGenerate * kBlockSize;
 			}
 			return offset;
@@ -203,12 +203,12 @@ namespace aulos
 		{
 			_modulation.stop();
 			_modulation.start();
-			_stager.restart(_baseFrequency * _modulation.currentFrequency(), _modulation.currentAsymmetry());
+			_oscillator.restart(_baseFrequency * _modulation.currentFrequency(), _modulation.currentAsymmetry());
 		}
 
 		unsigned samplingRate() const noexcept override
 		{
-			return _stager.samplingRate();
+			return _oscillator.samplingRate();
 		}
 
 		void start(Note note, float amplitude) noexcept override
@@ -219,13 +219,13 @@ namespace aulos
 			const auto frequency = _baseFrequency * _modulation.currentFrequency();
 			const auto asymmetry = _modulation.currentAsymmetry();
 			if (wasStopped)
-				_stager.restart(frequency, asymmetry);
+				_oscillator.restart(frequency, asymmetry);
 			else
-				_stager.adjustStage(frequency, asymmetry);
+				_oscillator.adjustStage(frequency, asymmetry);
 		}
 
 	private:
-		Stager _stager;
+		Oscillator _oscillator;
 	};
 
 	class BasicStereoVoice : public VoiceImpl
@@ -256,7 +256,7 @@ namespace aulos
 	public:
 		StereoVoice(const VoiceData& data, unsigned samplingRate) noexcept
 			: BasicStereoVoice{ data, samplingRate }
-			, _stager{ samplingRate }
+			, _oscillator{ samplingRate }
 		{
 		}
 
@@ -266,11 +266,11 @@ namespace aulos
 			size_t offset = 0;
 			while (offset < bufferBytes && _modulation.update())
 			{
-				const auto blocksToGenerate = std::min({ (bufferBytes - offset) / kBlockSize, _modulation.maxAdvance(), _stager.maxAdvance() });
+				const auto blocksToGenerate = std::min({ (bufferBytes - offset) / kBlockSize, _modulation.maxAdvance(), _oscillator.maxAdvance() });
 				if (buffer)
 				{
-					const auto amplitude = _baseAmplitude * _stager.stageSign();
-					Generator generator{ _stager.stageLength(), _stager.stageOffset(), amplitude, _modulation.currentOscillation() * amplitude };
+					const auto amplitude = _baseAmplitude * _oscillator.stageSign();
+					Generator generator{ _oscillator.stageLength(), _oscillator.stageOffset(), amplitude, _modulation.currentOscillation() * amplitude };
 					auto output = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
 					for (size_t i = 0; i < blocksToGenerate; ++i)
 					{
@@ -280,7 +280,7 @@ namespace aulos
 					}
 				}
 				_modulation.advance(blocksToGenerate);
-				_stager.advance(blocksToGenerate, _baseFrequency * _modulation.currentFrequency(), _modulation.currentAsymmetry());
+				_oscillator.advance(blocksToGenerate, _baseFrequency * _modulation.currentFrequency(), _modulation.currentAsymmetry());
 				offset += blocksToGenerate * kBlockSize;
 			}
 			return offset;
@@ -290,12 +290,12 @@ namespace aulos
 		{
 			_modulation.stop();
 			_modulation.start();
-			_stager.restart(_baseFrequency * _modulation.currentFrequency(), _modulation.currentAsymmetry());
+			_oscillator.restart(_baseFrequency * _modulation.currentFrequency(), _modulation.currentAsymmetry());
 		}
 
 		unsigned samplingRate() const noexcept override
 		{
-			return _stager.samplingRate();
+			return _oscillator.samplingRate();
 		}
 
 		void start(Note note, float amplitude) noexcept override
@@ -306,13 +306,13 @@ namespace aulos
 			const auto frequency = _baseFrequency * _modulation.currentFrequency();
 			const auto asymmetry = _modulation.currentAsymmetry();
 			if (wasStopped)
-				_stager.restart(frequency, asymmetry);
+				_oscillator.restart(frequency, asymmetry);
 			else
-				_stager.adjustStage(frequency, asymmetry);
+				_oscillator.adjustStage(frequency, asymmetry);
 		}
 
 	private:
-		Stager _stager;
+		Oscillator _oscillator;
 	};
 
 	template <typename Generator>
@@ -321,8 +321,8 @@ namespace aulos
 	public:
 		PhasedStereoVoice(const VoiceData& data, unsigned samplingRate) noexcept
 			: BasicStereoVoice{ data, samplingRate }
-			, _leftStager{ samplingRate }
-			, _rightStager{ samplingRate }
+			, _leftOscillator{ samplingRate }
+			, _rightOscillator{ samplingRate }
 		{
 		}
 
@@ -332,14 +332,14 @@ namespace aulos
 			size_t offset = 0;
 			while (offset < bufferBytes && _modulation.update())
 			{
-				const auto samplesToGenerate = std::min({ (bufferBytes - offset) / kBlockSize, _modulation.maxAdvance(), _leftStager.maxAdvance(), _rightStager.maxAdvance() });
+				const auto samplesToGenerate = std::min({ (bufferBytes - offset) / kBlockSize, _modulation.maxAdvance(), _leftOscillator.maxAdvance(), _rightOscillator.maxAdvance() });
 				if (buffer)
 				{
-					const auto leftAmplitude = _baseAmplitude * _leftStager.stageSign() * _leftAmplitude;
-					Generator leftGenerator{ _leftStager.stageLength(), _leftStager.stageOffset(), leftAmplitude, _modulation.currentOscillation() * leftAmplitude };
+					const auto leftAmplitude = _baseAmplitude * _leftOscillator.stageSign() * _leftAmplitude;
+					Generator leftGenerator{ _leftOscillator.stageLength(), _leftOscillator.stageOffset(), leftAmplitude, _modulation.currentOscillation() * leftAmplitude };
 
-					const auto rightAmplitude = _baseAmplitude * _rightStager.stageSign() * _rightAmplitude;
-					Generator rightGenerator{ _rightStager.stageLength(), _rightStager.stageOffset(), rightAmplitude, _modulation.currentOscillation() * rightAmplitude };
+					const auto rightAmplitude = _baseAmplitude * _rightOscillator.stageSign() * _rightAmplitude;
+					Generator rightGenerator{ _rightOscillator.stageLength(), _rightOscillator.stageOffset(), rightAmplitude, _modulation.currentOscillation() * rightAmplitude };
 
 					auto output = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
 					for (size_t i = 0; i < samplesToGenerate; ++i)
@@ -352,8 +352,8 @@ namespace aulos
 				_modulation.advance(samplesToGenerate);
 				const auto frequency = _baseFrequency * _modulation.currentFrequency();
 				const auto asymmetry = _modulation.currentAsymmetry();
-				_leftStager.advance(samplesToGenerate, frequency, asymmetry);
-				_rightStager.advance(samplesToGenerate, frequency, asymmetry);
+				_leftOscillator.advance(samplesToGenerate, frequency, asymmetry);
+				_rightOscillator.advance(samplesToGenerate, frequency, asymmetry);
 				offset += samplesToGenerate * kBlockSize;
 			}
 			return offset;
@@ -365,13 +365,13 @@ namespace aulos
 			_modulation.start();
 			const auto frequency = _baseFrequency * _modulation.currentFrequency();
 			const auto asymmetry = _modulation.currentAsymmetry();
-			_leftStager.restart(frequency, asymmetry);
-			_rightStager.restart(frequency, asymmetry);
+			_leftOscillator.restart(frequency, asymmetry);
+			_rightOscillator.restart(frequency, asymmetry);
 		}
 
 		unsigned samplingRate() const noexcept override
 		{
-			return _leftStager.samplingRate();
+			return _leftOscillator.samplingRate();
 		}
 
 		void start(Note note, float amplitude) noexcept override
@@ -383,18 +383,18 @@ namespace aulos
 			const auto asymmetry = _modulation.currentAsymmetry();
 			if (wasStopped)
 			{
-				_leftStager.restart(frequency, asymmetry);
-				_rightStager.restart(frequency, asymmetry);
+				_leftOscillator.restart(frequency, asymmetry);
+				_rightOscillator.restart(frequency, asymmetry);
 			}
 			else
 			{
-				_leftStager.adjustStage(frequency, asymmetry);
-				_rightStager.adjustStage(frequency, asymmetry);
+				_leftOscillator.adjustStage(frequency, asymmetry);
+				_rightOscillator.adjustStage(frequency, asymmetry);
 			}
 		}
 
 	private:
-		Stager _leftStager;
-		Stager _rightStager;
+		Oscillator _leftOscillator;
+		Oscillator _rightOscillator;
 	};
 }

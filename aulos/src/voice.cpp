@@ -186,14 +186,14 @@ namespace aulos
 			_amplitudeModulator.start(_amplitudeModulator.value());
 	}
 
-	void Stager::adjustStage(double frequency, double asymmetry) noexcept
+	void Oscillator::adjustStage(double frequency, double asymmetry) noexcept
 	{
 		const auto partRatio = _stageRemainder / _stageLength;
 		resetStage(frequency, asymmetry);
 		_stageRemainder = _stageLength * partRatio;
 	}
 
-	void Stager::advance(size_t samples, double nextFrequency, double nextAsymmetry) noexcept
+	void Oscillator::advance(size_t samples, double nextFrequency, double nextAsymmetry) noexcept
 	{
 		auto remaining = _stageRemainder - samples;
 		assert(remaining > -1);
@@ -206,14 +206,14 @@ namespace aulos
 		_stageRemainder = remaining;
 	}
 
-	void Stager::restart(double frequency, double asymmetry) noexcept
+	void Oscillator::restart(double frequency, double asymmetry) noexcept
 	{
 		_amplitudeSign = 1.f;
 		resetStage(frequency, asymmetry);
 		_stageRemainder = _stageLength;
 	}
 
-	void Stager::resetStage(double frequency, double asymmetry) noexcept
+	void Oscillator::resetStage(double frequency, double asymmetry) noexcept
 	{
 		assert(frequency > 0);
 		assert(asymmetry >= -1 && asymmetry <= 1);
