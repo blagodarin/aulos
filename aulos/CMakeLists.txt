@@ -25,6 +25,8 @@ set(_src
 	src/composition.cpp
 	src/composition.hpp
 	src/generators.hpp
+	src/modulator.cpp
+	src/modulator.hpp
 	src/renderer.cpp
 	src/voice.cpp
 	src/voice.hpp

@@ -17,84 +17,12 @@
 
 #pragma once
 
-#include <aulos/data.hpp>
+#include "modulator.hpp"
 
-#include <array>
 #include <cmath>
 
 namespace aulos
 {
-	struct SampledEnvelope
-	{
-	public:
-		struct Point
-		{
-			size_t _delay;
-			double _value;
-		};
-
-		SampledEnvelope(const Envelope&, size_t samplingRate) noexcept;
-
-		const Point* begin() const noexcept { return _points.data(); }
-		size_t duration() const noexcept;
-		const Point* end() const noexcept { return _points.data() + _size; }
-		constexpr auto size() const noexcept { return _size; }
-
-	private:
-		size_t _size = 0;
-		std::array<Point, 5> _points{};
-	};
-
-	class LinearModulator
-	{
-	public:
-		LinearModulator(const SampledEnvelope&) noexcept;
-
-		void advance(size_t samples) noexcept;
-		size_t duration() const noexcept { return _envelope.duration(); }
-		size_t maxContinuousAdvance() const noexcept;
-		void start(bool fromCurrent) noexcept;
-		void stop() noexcept { _nextPoint = _envelope.end(); }
-		bool stopped() const noexcept { return _nextPoint == _envelope.end(); }
-		constexpr double value() const noexcept { return _currentValue; }
-		double valueStep() const noexcept;
-
-	private:
-		const SampledEnvelope& _envelope;
-		double _baseValue = 1.0;
-		const SampledEnvelope::Point* _nextPoint = _envelope.end();
-		size_t _offset = 0;
-		double _currentValue = 0.0;
-	};
-
-	class Modulator
-	{
-	public:
-		Modulator(const VoiceData&, unsigned samplingRate) noexcept;
-
-		void advance(size_t samples) noexcept;
-		constexpr auto currentAmplitude() const noexcept { return _amplitudeModulator.value(); }
-		auto currentAmplitudeStep() const noexcept { return _amplitudeModulator.valueStep(); }
-		constexpr auto currentAsymmetry() const noexcept { return _asymmetryModulator.value(); }
-		constexpr auto currentFrequency() const noexcept { return _frequencyModulator.value(); }
-		constexpr auto currentOscillation() const noexcept { return _oscillationModulator.value(); }
-		auto maxAdvance() const noexcept { return _amplitudeModulator.maxContinuousAdvance(); }
-		void start() noexcept;
-		void stop() noexcept { _amplitudeModulator.stop(); }
-		auto stopped() const noexcept { return _amplitudeModulator.stopped(); }
-		auto totalSamples() const noexcept { return _amplitudeModulator.duration(); }
-
-	private:
-		const SampledEnvelope _amplitudeEnvelope;
-		LinearModulator _amplitudeModulator{ _amplitudeEnvelope };
-		const SampledEnvelope _frequencyEnvelope;
-		LinearModulator _frequencyModulator{ _frequencyEnvelope };
-		const SampledEnvelope _asymmetryEnvelope;
-		LinearModulator _asymmetryModulator{ _asymmetryEnvelope };
-		const SampledEnvelope _oscillationEnvelope;
-		LinearModulator _oscillationModulator{ _oscillationEnvelope };
-	};
-
 	// A wave period is represented by two stages.
 	// The first stage (+1) starts at maximum amplitude and advances towards the minimum,
 	// and the second stage (-1) starts at minimum amplitude and advances towards the maximum.
