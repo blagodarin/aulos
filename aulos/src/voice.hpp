@@ -71,11 +71,9 @@ namespace aulos
 		double _baseFrequency = 0.0;
 	};
 
-	struct WaveState
+	class WaveState
 	{
-		Modulator _modulator;
-		Oscillator _oscillator;
-
+	public:
 		WaveState(const ModulationData& modulation, unsigned samplingRate) noexcept
 			: _modulator{ modulation }
 			, _oscillator{ samplingRate }
@@ -90,6 +88,18 @@ namespace aulos
 			_oscillator.advance(samples, frequency * _modulator.currentFrequency(), _modulator.currentAsymmetry());
 		}
 
+		template <typename Generator>
+		auto createGenerator(double amplitude) const noexcept
+		{
+			const auto orientedAmplitude = amplitude * _oscillator.stageSign();
+			return Generator{ _oscillator.stageLength(), _oscillator.stageOffset(), orientedAmplitude, _modulator.currentOscillation() * orientedAmplitude };
+		}
+
+		auto linearChange() const noexcept
+		{
+			return std::pair{ _modulator.currentAmplitude(), _modulator.currentAmplitudeStep() };
+		}
+
 		auto maxAdvance() const noexcept
 		{
 			return std::min(_modulator.maxAdvance(), _oscillator.maxAdvance());
@@ -102,6 +112,11 @@ namespace aulos
 			_modulator.stop();
 			_modulator.start();
 			_oscillator.restart(frequency * _modulator.currentFrequency(), _modulator.currentAsymmetry(), delay);
+		}
+
+		auto samplingRate() const noexcept
+		{
+			return _oscillator.samplingRate();
 		}
 
 		void start(double frequency, double delay) noexcept
@@ -127,6 +142,10 @@ namespace aulos
 		{
 			return _modulator.stopped();
 		}
+
+	private:
+		Modulator _modulator;
+		Oscillator _oscillator;
 	};
 
 	// NOTE!
@@ -158,15 +177,13 @@ namespace aulos
 				const auto blocksToGenerate = std::min((bufferBytes - offset) / kBlockSize, _wave.maxAdvance());
 				if (buffer)
 				{
-					const auto amplitude = _baseAmplitude * _wave._oscillator.stageSign();
-					Generator generator{ _wave._oscillator.stageLength(), _wave._oscillator.stageOffset(), amplitude, _wave._modulator.currentOscillation() * amplitude };
-					const auto base = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
-					auto amplitudeModulation = _wave._modulator.currentAmplitude();
-					const auto step = _wave._modulator.currentAmplitudeStep();
+					const auto output = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
+					auto generator = _wave.createGenerator<Generator>(_baseAmplitude);
+					auto [multiplier, step] = _wave.linearChange();
 					for (size_t i = 0; i < blocksToGenerate; ++i)
 					{
-						base[i] += static_cast<float>(generator() * amplitudeModulation);
-						amplitudeModulation += step;
+						output[i] += static_cast<float>(generator() * multiplier);
+						multiplier += step;
 					}
 				}
 				_wave.advance(blocksToGenerate, _baseFrequency);
@@ -182,7 +199,7 @@ namespace aulos
 
 		unsigned samplingRate() const noexcept override
 		{
-			return _wave._oscillator.samplingRate();
+			return _wave.samplingRate();
 		}
 
 		void start(Note note, float amplitude) noexcept override
@@ -241,17 +258,15 @@ namespace aulos
 				const auto blocksToGenerate = std::min((bufferBytes - offset) / kBlockSize, _wave.maxAdvance());
 				if (buffer)
 				{
-					const auto amplitude = _baseAmplitude * _wave._oscillator.stageSign();
-					Generator generator{ _wave._oscillator.stageLength(), _wave._oscillator.stageOffset(), amplitude, _wave._modulator.currentOscillation() * amplitude };
 					auto output = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
-					auto amplitudeModulation = _wave._modulator.currentAmplitude();
-					const auto step = _wave._modulator.currentAmplitudeStep();
+					auto generator = _wave.createGenerator<Generator>(_baseAmplitude);
+					auto [multiplier, step] = _wave.linearChange();
 					for (size_t i = 0; i < blocksToGenerate; ++i)
 					{
-						const auto value = static_cast<float>(generator() * amplitudeModulation);
+						const auto value = static_cast<float>(generator() * multiplier);
 						*output++ += value * _leftAmplitude;
 						*output++ += value * _rightAmplitude;
-						amplitudeModulation += step;
+						multiplier += step;
 					}
 				}
 				_wave.advance(blocksToGenerate, _baseFrequency);
@@ -267,7 +282,7 @@ namespace aulos
 
 		unsigned samplingRate() const noexcept override
 		{
-			return _wave._oscillator.samplingRate();
+			return _wave.samplingRate();
 		}
 
 		void start(Note note, float amplitude) noexcept override
@@ -306,23 +321,17 @@ namespace aulos
 				const auto samplesToGenerate = std::min({ (bufferBytes - offset) / kBlockSize, _leftWave.maxAdvance(), _rightWave.maxAdvance() });
 				if (buffer)
 				{
-					const auto leftAmplitude = _baseAmplitude * _leftWave._oscillator.stageSign() * _leftAmplitude;
-					Generator leftGenerator{ _leftWave._oscillator.stageLength(), _leftWave._oscillator.stageOffset(), leftAmplitude, _leftWave._modulator.currentOscillation() * leftAmplitude };
-
-					const auto rightAmplitude = _baseAmplitude * _rightWave._oscillator.stageSign() * _rightAmplitude;
-					Generator rightGenerator{ _rightWave._oscillator.stageLength(), _rightWave._oscillator.stageOffset(), rightAmplitude, _rightWave._modulator.currentOscillation() * rightAmplitude };
-
 					auto output = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
-					auto leftModulation = _leftWave._modulator.currentAmplitude();
-					const auto leftStep = _leftWave._modulator.currentAmplitudeStep();
-					auto rightModulation = _rightWave._modulator.currentAmplitude();
-					const auto rightStep = _rightWave._modulator.currentAmplitudeStep();
+					auto leftGenerator = _leftWave.createGenerator<Generator>(_baseAmplitude * _leftAmplitude);
+					auto rightGenerator = _rightWave.createGenerator<Generator>(_baseAmplitude * _rightAmplitude);
+					auto [leftMultiplier, leftStep] = _leftWave.linearChange();
+					auto [rightMultiplier, rightStep] = _rightWave.linearChange();
 					for (size_t i = 0; i < samplesToGenerate; ++i)
 					{
-						*output++ += static_cast<float>(leftGenerator() * leftModulation);
-						*output++ += static_cast<float>(rightGenerator() * rightModulation);
-						leftModulation += leftStep;
-						rightModulation += rightStep;
+						*output++ += static_cast<float>(leftGenerator() * leftMultiplier);
+						*output++ += static_cast<float>(rightGenerator() * rightMultiplier);
+						leftMultiplier += leftStep;
+						rightMultiplier += rightStep;
 					}
 				}
 				_leftWave.advance(samplesToGenerate, _baseFrequency);
@@ -340,7 +349,7 @@ namespace aulos
 
 		unsigned samplingRate() const noexcept override
 		{
-			return _leftWave._oscillator.samplingRate();
+			return _leftWave.samplingRate();
 		}
 
 		void start(Note note, float amplitude) noexcept override
