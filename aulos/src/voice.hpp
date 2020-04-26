@@ -290,7 +290,7 @@ namespace aulos
 			const auto frequency = _baseFrequency * _modulator.currentFrequency();
 			const auto asymmetry = _modulator.currentAsymmetry();
 			_leftOscillator.restart(frequency, asymmetry, 0);
-			_rightOscillator.restart(frequency, asymmetry, _phaseShift / _baseFrequency);
+			_rightOscillator.restart(frequency, asymmetry, _phaseShift);
 		}
 
 		unsigned samplingRate() const noexcept override
@@ -308,7 +308,7 @@ namespace aulos
 			if (wasStopped)
 			{
 				_leftOscillator.restart(frequency, asymmetry, 0);
-				_rightOscillator.restart(frequency, asymmetry, _phaseShift / _baseFrequency);
+				_rightOscillator.restart(frequency, asymmetry, _phaseShift);
 			}
 			else
 			{

@@ -24,6 +24,7 @@
 class QCheckBox;
 class QComboBox;
 class QDoubleSpinBox;
+class QSpinBox;
 
 namespace aulos
 {
@@ -51,7 +52,7 @@ private:
 	struct EnvelopePoint;
 
 	QComboBox* _typeCombo = nullptr;
-	QDoubleSpinBox* _phaseShiftSpin = nullptr;
+	QSpinBox* _phaseShiftSpin = nullptr;
 	QCheckBox* _antiphaseCheck = nullptr;
 	QDoubleSpinBox* _panSpin = nullptr;
 	std::vector<EnvelopePoint> _amplitudeEnvelope;
