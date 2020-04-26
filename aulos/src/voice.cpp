@@ -18,7 +18,6 @@
 #include "voice.hpp"
 
 #include <algorithm>
-#include <cassert>
 
 namespace
 {
