@@ -93,11 +93,19 @@ namespace aulos
 		return (_nextPoint->_value - _currentValue) / (_nextPoint->_delay - _offset);
 	}
 
-	Modulator::Modulator(const VoiceData& data, unsigned samplingRate) noexcept
-		: _amplitudeEnvelope{ data._amplitudeEnvelope, samplingRate }
-		, _frequencyEnvelope{ data._frequencyEnvelope, samplingRate }
-		, _asymmetryEnvelope{ data._asymmetryEnvelope, samplingRate }
-		, _oscillationEnvelope{ data._oscillationEnvelope, samplingRate }
+	ModulationData::ModulationData(const VoiceData& voice, unsigned samplingRate) noexcept
+		: _amplitudeEnvelope{ voice._amplitudeEnvelope, samplingRate }
+		, _frequencyEnvelope{ voice._frequencyEnvelope, samplingRate }
+		, _asymmetryEnvelope{ voice._asymmetryEnvelope, samplingRate }
+		, _oscillationEnvelope{ voice._oscillationEnvelope, samplingRate }
+	{
+	}
+
+	Modulator::Modulator(const ModulationData& data) noexcept
+		: _amplitudeModulator{ data._amplitudeEnvelope }
+		, _frequencyModulator{ data._frequencyEnvelope }
+		, _asymmetryModulator{ data._asymmetryEnvelope }
+		, _oscillationModulator{ data._oscillationEnvelope }
 	{
 	}
 

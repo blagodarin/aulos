@@ -56,18 +56,19 @@ namespace aulos
 	{
 	public:
 		VoiceImpl(const VoiceData& data, unsigned samplingRate) noexcept
-			: _modulator{ data, samplingRate } {}
+			: _modulationData{ data, samplingRate } {}
 
 		void stop() noexcept { _modulator.stop(); }
-		size_t totalSamples() const noexcept final { return _modulator.totalSamples(); }
+		size_t totalSamples() const noexcept final { return _modulationData._amplitudeEnvelope.duration(); }
 
 	protected:
 		void startImpl(Note note, float amplitude) noexcept;
 
 	protected:
+		const ModulationData _modulationData;
+		Modulator _modulator{ _modulationData };
 		float _baseAmplitude = 0.f;
 		double _baseFrequency = 0.0;
-		Modulator _modulator;
 	};
 
 	// NOTE!

@@ -50,7 +50,6 @@ namespace aulos
 		LinearModulator(const SampledEnvelope&) noexcept;
 
 		void advance(size_t samples) noexcept;
-		size_t duration() const noexcept { return _envelope.duration(); }
 		size_t maxContinuousAdvance() const noexcept;
 		void start(bool fromCurrent) noexcept;
 		void stop() noexcept { _nextPoint = _envelope.end(); }
@@ -66,10 +65,20 @@ namespace aulos
 		double _currentValue = 0.0;
 	};
 
+	struct ModulationData
+	{
+		SampledEnvelope _amplitudeEnvelope;
+		SampledEnvelope _frequencyEnvelope;
+		SampledEnvelope _asymmetryEnvelope;
+		SampledEnvelope _oscillationEnvelope;
+
+		ModulationData(const VoiceData&, unsigned samplingRate) noexcept;
+	};
+
 	class Modulator
 	{
 	public:
-		Modulator(const VoiceData&, unsigned samplingRate) noexcept;
+		Modulator(const ModulationData&) noexcept;
 
 		void advance(size_t samples) noexcept;
 		constexpr auto currentAmplitude() const noexcept { return _amplitudeModulator.value(); }
@@ -81,16 +90,11 @@ namespace aulos
 		void start() noexcept;
 		void stop() noexcept { _amplitudeModulator.stop(); }
 		auto stopped() const noexcept { return _amplitudeModulator.stopped(); }
-		auto totalSamples() const noexcept { return _amplitudeModulator.duration(); }
 
 	private:
-		const SampledEnvelope _amplitudeEnvelope;
-		LinearModulator _amplitudeModulator{ _amplitudeEnvelope };
-		const SampledEnvelope _frequencyEnvelope;
-		LinearModulator _frequencyModulator{ _frequencyEnvelope };
-		const SampledEnvelope _asymmetryEnvelope;
-		LinearModulator _asymmetryModulator{ _asymmetryEnvelope };
-		const SampledEnvelope _oscillationEnvelope;
-		LinearModulator _oscillationModulator{ _oscillationEnvelope };
+		LinearModulator _amplitudeModulator;
+		LinearModulator _frequencyModulator;
+		LinearModulator _asymmetryModulator;
+		LinearModulator _oscillationModulator;
 	};
 }
