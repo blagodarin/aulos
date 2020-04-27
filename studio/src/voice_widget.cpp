@@ -60,15 +60,16 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 
 	createHeader(tr("Stereo settings"));
 
-	_phaseShiftSpin = new QSpinBox{ parent };
-	_phaseShiftSpin->setMaximum(1'000);
-	_phaseShiftSpin->setMinimum(0);
-	_phaseShiftSpin->setSingleStep(1);
+	_phaseShiftSpin = new QDoubleSpinBox{ parent };
+	_phaseShiftSpin->setDecimals(2);
+	_phaseShiftSpin->setMaximum(1'000.0);
+	_phaseShiftSpin->setMinimum(-1'000.0);
+	_phaseShiftSpin->setSingleStep(0.01);
 	_phaseShiftSpin->setSuffix(tr("ms"));
-	_phaseShiftSpin->setValue(0);
+	_phaseShiftSpin->setValue(0.0);
 	layout->addWidget(new QLabel{ tr("Phase shift:"), this }, row, 1);
 	layout->addWidget(_phaseShiftSpin, row, 2, 1, 2);
-	connect(_phaseShiftSpin, QOverload<int>::of(&QSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
+	connect(_phaseShiftSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
 	++row;
 
 	_antiphaseCheck = new QCheckBox{ tr("Antiphase"), this };
@@ -198,7 +199,7 @@ void VoiceWidget::updateVoice()
 	if (!_voice)
 		return;
 	_voice->_wave = static_cast<aulos::Wave>(_typeCombo->currentData().toInt());
-	_voice->_phaseShift = _phaseShiftSpin->value();
+	_voice->_phaseShift = static_cast<float>(_phaseShiftSpin->value());
 	_voice->_antiphase = _antiphaseCheck->isChecked();
 	_voice->_pan = static_cast<float>(_panSpin->value());
 	if (auto i = _amplitudeEnvelope.begin(); i->_check->isChecked())

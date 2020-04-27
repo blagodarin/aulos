@@ -84,8 +84,26 @@ namespace aulos
 		{
 			assert(samples > 0);
 			assert(frequency > 0);
+			if (_startDelay > 0)
+			{
+				assert(_startDelay >= samples);
+				assert(!_restartDelay);
+				_startDelay -= samples;
+				return;
+			}
 			_modulator.advance(samples);
 			_oscillator.advance(samples, frequency * _modulator.currentFrequency(), _modulator.currentAsymmetry());
+			if (_restartDelay > 0)
+			{
+				assert(!_startDelay);
+				assert(_restartDelay >= samples);
+				_restartDelay -= samples;
+				if (!_restartDelay)
+				{
+					_modulator.start();
+					_oscillator.adjustStage(_restartFrequency * _modulator.currentFrequency(), _modulator.currentAsymmetry());
+				}
+			}
 		}
 
 		template <typename Generator>
@@ -97,11 +115,21 @@ namespace aulos
 
 		auto linearChange() const noexcept
 		{
-			return std::pair{ _modulator.currentAmplitude(), _modulator.currentAmplitudeStep() };
+			return _startDelay > 0 ? std::pair{ 0., 0. } : std::pair{ _modulator.currentAmplitude(), _modulator.currentAmplitudeStep() };
 		}
 
 		auto maxAdvance() const noexcept
 		{
+			if (_startDelay > 0)
+			{
+				assert(!_restartDelay);
+				return _startDelay;
+			}
+			if (_restartDelay > 0)
+			{
+				assert(!_startDelay);
+				return std::min({ _modulator.maxAdvance(), _oscillator.maxAdvance(), _restartDelay });
+			}
 			return std::min(_modulator.maxAdvance(), _oscillator.maxAdvance());
 		}
 
@@ -111,7 +139,10 @@ namespace aulos
 			assert(delay >= 0);
 			_modulator.stop();
 			_modulator.start();
-			_oscillator.restart(frequency * _modulator.currentFrequency(), _modulator.currentAsymmetry(), delay);
+			_oscillator.restart(frequency * _modulator.currentFrequency(), _modulator.currentAsymmetry(), 0);
+			_startDelay = static_cast<size_t>(std::lround(_oscillator.samplingRate() * delay / 1'000.));
+			_restartDelay = 0;
+			_restartFrequency = 0.;
 		}
 
 		auto samplingRate() const noexcept
@@ -123,14 +154,36 @@ namespace aulos
 		{
 			assert(frequency > 0);
 			assert(delay >= 0);
-			const bool wasStopped = _modulator.stopped();
-			_modulator.start();
-			const auto currentFrequency = frequency * _modulator.currentFrequency();
-			const auto currentAsymmetry = _modulator.currentAsymmetry();
-			if (wasStopped)
-				_oscillator.restart(currentFrequency, currentAsymmetry, delay);
+			const auto delaySamples = static_cast<size_t>(std::lround(_oscillator.samplingRate() * delay / 1'000.));
+			if (_modulator.stopped())
+			{
+				_modulator.start();
+				_oscillator.restart(frequency * _modulator.currentFrequency(), _modulator.currentAsymmetry(), 0);
+				_startDelay = delaySamples;
+			}
 			else
-				_oscillator.adjustStage(currentFrequency, currentAsymmetry);
+			{
+				assert(!_restartDelay);
+				if (delaySamples > 0)
+				{
+					if (_startDelay > 0)
+					{
+						_modulator.start();
+						_oscillator.restart(frequency * _modulator.currentFrequency(), _modulator.currentAsymmetry(), 0);
+						_startDelay = delaySamples;
+					}
+					else
+					{
+						_restartDelay = delaySamples;
+						_restartFrequency = frequency;
+					}
+				}
+				else
+				{
+					_modulator.start();
+					_oscillator.adjustStage(frequency * _modulator.currentFrequency(), _modulator.currentAsymmetry());
+				}
+			}
 		}
 
 		void stop() noexcept
@@ -146,6 +199,9 @@ namespace aulos
 	private:
 		Modulator _modulator;
 		Oscillator _oscillator;
+		size_t _startDelay = 0;
+		size_t _restartDelay = 0;
+		double _restartFrequency = 0.;
 	};
 
 	// NOTE!
@@ -308,7 +364,8 @@ namespace aulos
 			: BasicStereoVoice{ data, samplingRate }
 			, _leftWave{ _modulationData, samplingRate }
 			, _rightWave{ _modulationData, samplingRate }
-			, _phaseShift{ data._phaseShift }
+			, _leftDelay{ data._phaseShift < 0.f ? -data._phaseShift : 0.f }
+			, _rightDelay{ data._phaseShift > 0.f ? data._phaseShift : 0.f }
 		{
 		}
 
@@ -343,8 +400,8 @@ namespace aulos
 
 		void restart() noexcept override
 		{
-			_leftWave.restart(_baseFrequency, 0);
-			_rightWave.restart(_baseFrequency, _phaseShift);
+			_leftWave.restart(_baseFrequency, _leftDelay);
+			_rightWave.restart(_baseFrequency, _rightDelay);
 		}
 
 		unsigned samplingRate() const noexcept override
@@ -355,8 +412,8 @@ namespace aulos
 		void start(Note note, float amplitude) noexcept override
 		{
 			startImpl(note, amplitude);
-			_leftWave.start(_baseFrequency, 0);
-			_rightWave.start(_baseFrequency, _phaseShift);
+			_leftWave.start(_baseFrequency, _leftDelay);
+			_rightWave.start(_baseFrequency, _rightDelay);
 		}
 
 		void stop() noexcept override
@@ -368,6 +425,7 @@ namespace aulos
 	private:
 		WaveState _leftWave;
 		WaveState _rightWave;
-		const float _phaseShift;
+		const float _leftDelay;
+		const float _rightDelay;
 	};
 }

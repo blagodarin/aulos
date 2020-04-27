@@ -18,6 +18,7 @@
 #include "modulator.hpp"
 
 #include <cassert>
+#include <limits>
 #include <numeric>
 
 namespace aulos
@@ -70,8 +71,7 @@ namespace aulos
 
 	size_t LinearModulator::maxContinuousAdvance() const noexcept
 	{
-		assert(_nextPoint != _envelope.end());
-		return _nextPoint->_delay - _offset;
+		return _nextPoint != _envelope.end() ? _nextPoint->_delay - _offset : std::numeric_limits<size_t>::max();
 	}
 
 	void LinearModulator::start(bool fromCurrent) noexcept
