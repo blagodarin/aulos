@@ -55,7 +55,7 @@ namespace
 
 namespace aulos
 {
-	void Oscillator::adjustStage(double frequency, double asymmetry) noexcept
+	void Oscillator::adjust(double frequency, double asymmetry) noexcept
 	{
 		const auto partRatio = _stageRemainder / _stageLength;
 		resetStage(frequency, asymmetry);
@@ -75,19 +75,11 @@ namespace aulos
 		_stageRemainder = remaining;
 	}
 
-	void Oscillator::restart(double frequency, double asymmetry, double shift) noexcept
+	void Oscillator::restart(double frequency, double asymmetry) noexcept
 	{
 		_amplitudeSign = 1.f;
 		resetStage(frequency, asymmetry);
-		auto remainder = _stageLength;
-		assert(shift >= 0);
-		if (shift > 0)
-			for (remainder -= _samplingRate * shift; remainder <= 0; remainder += _stageLength)
-			{
-				_amplitudeSign = -_amplitudeSign;
-				resetStage(frequency, asymmetry);
-			}
-		_stageRemainder = remainder;
+		_stageRemainder = _stageLength;
 	}
 
 	void Oscillator::resetStage(double frequency, double asymmetry) noexcept
@@ -105,9 +97,8 @@ namespace aulos
 		_stageLength = partLength;
 	}
 
-	void VoiceImpl::startImpl(Note note, float amplitude) noexcept
+	double WaveState::noteFrequency(Note note) noexcept
 	{
-		_baseFrequency = kNoteTable[note];
-		_baseAmplitude = std::clamp(amplitude, -1.f, 1.f);
+		return kNoteTable[note];
 	}
 }

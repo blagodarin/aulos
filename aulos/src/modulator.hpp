@@ -54,6 +54,7 @@ namespace aulos
 		void start(bool fromCurrent) noexcept;
 		void stop() noexcept { _nextPoint = _envelope.end(); }
 		bool stopped() const noexcept { return _nextPoint == _envelope.end(); }
+		auto totalSamples() const noexcept { return _envelope.duration(); }
 		constexpr double value() const noexcept { return _currentValue; }
 		double valueStep() const noexcept;
 
@@ -90,6 +91,7 @@ namespace aulos
 		void start() noexcept;
 		void stop() noexcept { _amplitudeModulator.stop(); }
 		auto stopped() const noexcept { return _amplitudeModulator.stopped(); }
+		auto totalSamples() const noexcept { return _amplitudeModulator.totalSamples(); }
 
 	private:
 		LinearModulator _amplitudeModulator;
