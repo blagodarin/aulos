@@ -35,8 +35,8 @@ namespace aulos
 			: _samplingRate{ samplingRate } {}
 
 		void adjust(double frequency, double asymmetry) noexcept;
-		void advance(size_t samples, double nextFrequency, double nextAsymmetry) noexcept;
-		auto maxAdvance() const noexcept { return static_cast<size_t>(std::ceil(_stageRemainder)); }
+		void advance(unsigned samples, double nextFrequency, double nextAsymmetry) noexcept;
+		auto maxAdvance() const noexcept { return static_cast<unsigned>(std::ceil(_stageRemainder)); }
 		void restart(double frequency, double asymmetry) noexcept;
 		constexpr auto samplingRate() const noexcept { return _samplingRate; }
 		constexpr auto stageLength() const noexcept { return _stageLength; }
@@ -77,7 +77,7 @@ namespace aulos
 			assert(delay >= 0.f);
 		}
 
-		void advance(size_t samples) noexcept
+		void advance(unsigned samples) noexcept
 		{
 			assert(samples > 0);
 			if (_startDelay > 0)
@@ -105,7 +105,7 @@ namespace aulos
 		}
 
 		template <typename Generator>
-		auto createGenerator(double amplitude) const noexcept
+		auto createGenerator(float amplitude) const noexcept
 		{
 			const auto orientedAmplitude = amplitude * _oscillator.stageSign();
 			return Generator{ _oscillator.stageLength(), _oscillator.stageOffset(), orientedAmplitude, _modulator.currentOscillation() * orientedAmplitude };
@@ -113,7 +113,7 @@ namespace aulos
 
 		auto linearChange() const noexcept
 		{
-			return std::pair{ _modulator.currentAmplitude(), _startDelay ? 0. : _modulator.currentAmplitudeStep() };
+			return std::pair{ _modulator.currentAmplitude(), _startDelay ? 0.f : _modulator.currentAmplitudeStep() };
 		}
 
 		auto maxAdvance() const noexcept
@@ -194,10 +194,10 @@ namespace aulos
 	private:
 		Modulator _modulator;
 		Oscillator _oscillator;
-		const size_t _delay;
+		const unsigned _delay;
 		double _frequency = 0.;
-		size_t _startDelay = 0;
-		size_t _restartDelay = 0;
+		unsigned _startDelay = 0;
+		unsigned _restartDelay = 0;
 		double _restartFrequency = 0.;
 	};
 
@@ -227,7 +227,7 @@ namespace aulos
 			size_t offset = 0;
 			while (offset < bufferBytes && !_wave.stopped())
 			{
-				const auto blocksToGenerate = std::min((bufferBytes - offset) / kBlockSize, _wave.maxAdvance());
+				const auto blocksToGenerate = static_cast<unsigned>(std::min<size_t>((bufferBytes - offset) / kBlockSize, _wave.maxAdvance()));
 				if (buffer)
 				{
 					const auto output = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
@@ -313,7 +313,7 @@ namespace aulos
 			size_t offset = 0;
 			while (offset < bufferBytes && !_wave.stopped())
 			{
-				const auto blocksToGenerate = std::min((bufferBytes - offset) / kBlockSize, _wave.maxAdvance());
+				const auto blocksToGenerate = static_cast<unsigned>(std::min<size_t>((bufferBytes - offset) / kBlockSize, _wave.maxAdvance()));
 				if (buffer)
 				{
 					auto output = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
@@ -380,7 +380,7 @@ namespace aulos
 			size_t offset = 0;
 			while (offset < bufferBytes && !(_leftWave.stopped() && _rightWave.stopped()))
 			{
-				const auto samplesToGenerate = std::min({ (bufferBytes - offset) / kBlockSize, _leftWave.maxAdvance(), _rightWave.maxAdvance() });
+				const auto samplesToGenerate = static_cast<unsigned>(std::min<size_t>({ (bufferBytes - offset) / kBlockSize, _leftWave.maxAdvance(), _rightWave.maxAdvance() }));
 				if (buffer)
 				{
 					auto output = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);

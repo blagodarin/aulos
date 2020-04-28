@@ -62,7 +62,7 @@ namespace aulos
 		_stageRemainder = _stageLength * partRatio;
 	}
 
-	void Oscillator::advance(size_t samples, double nextFrequency, double nextAsymmetry) noexcept
+	void Oscillator::advance(unsigned samples, double nextFrequency, double nextAsymmetry) noexcept
 	{
 		auto remaining = _stageRemainder - samples;
 		assert(remaining > -1);

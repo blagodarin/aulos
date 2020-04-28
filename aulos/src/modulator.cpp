@@ -18,79 +18,54 @@
 #include "modulator.hpp"
 
 #include <cassert>
-#include <limits>
-#include <numeric>
 
 namespace aulos
 {
-	SampledEnvelope::SampledEnvelope(const Envelope& envelope, size_t samplingRate) noexcept
+	SampledEnvelope::SampledEnvelope(const Envelope& envelope, unsigned samplingRate) noexcept
 	{
 		assert(envelope._changes.size() < _points.size());
-		_points[_size++] = { 0, envelope._initial };
+		size_t i = 0;
+		_points[i] = { 0, envelope._initial };
 		for (const auto& point : envelope._changes)
 		{
 			assert(point._delay >= 0.f);
 			if (point._delay > 0.f)
-				_points[_size++] = { static_cast<size_t>(double{ point._delay } * samplingRate), point._value };
+				_points[++i] = { static_cast<unsigned>(point._delay * samplingRate), point._value };
 			else
-				_points[_size]._value = point._value;
+				_points[i]._value = point._value;
 		}
+		_end = &_points[i + 1];
 	}
 
-	size_t SampledEnvelope::duration() const noexcept
+	void LinearModulator::advance(unsigned samples) noexcept
 	{
-		return std::accumulate(_points.begin(), _points.end(), size_t{}, [](size_t duration, const Point& point) {
-			return duration + point._delay;
-		});
-	}
-
-	LinearModulator::LinearModulator(const SampledEnvelope& envelope) noexcept
-		: _envelope{ envelope }
-	{
-	}
-
-	void LinearModulator::advance(size_t samples) noexcept
-	{
-		while (_nextPoint != _envelope.end())
+		if (_nextPoint == _envelope.end())
+			return;
+		const auto remainingSamples = _nextPoint->_delay - _offset;
+		if (samples < remainingSamples)
 		{
-			const auto remainingSamples = _nextPoint->_delay - _offset;
-			if (remainingSamples > samples)
-			{
-				_offset += samples;
-				const auto progress = static_cast<double>(_offset) / _nextPoint->_delay;
-				_currentValue = (_baseValue * (1.0 - progress) + _nextPoint->_value * progress);
-				break;
-			}
-			samples -= remainingSamples;
-			_baseValue = _nextPoint->_value;
-			++_nextPoint;
-			_offset = 0;
-			_currentValue = _baseValue;
+			_offset += samples;
+			_currentValue = _baseValue + _offset * _step;
+			return;
 		}
-	}
-
-	size_t LinearModulator::maxContinuousAdvance() const noexcept
-	{
-		return _nextPoint != _envelope.end() ? _nextPoint->_delay - _offset : std::numeric_limits<size_t>::max();
-	}
-
-	void LinearModulator::start(bool fromCurrent) noexcept
-	{
-		assert(_envelope.size() > 0);
-		assert(_envelope.begin()->_delay == 0);
-		_nextPoint = std::next(_envelope.begin());
-		assert(_nextPoint == _envelope.end() || _nextPoint->_delay > 0);
-		_baseValue = fromCurrent ? _currentValue : _envelope.begin()->_value;
+		assert(samples == remainingSamples);
+		_baseValue = _nextPoint->_value;
+		++_nextPoint;
+		_step = _nextPoint != _envelope.end() ? (_nextPoint->_value - _baseValue) / _nextPoint->_delay : 0.f;
 		_offset = 0;
 		_currentValue = _baseValue;
 	}
 
-	double LinearModulator::valueStep() const noexcept
+	void LinearModulator::start(bool fromCurrent) noexcept
 	{
-		if (_nextPoint == _envelope.end())
-			return 0;
-		assert(_offset < _nextPoint->_delay);
-		return (_nextPoint->_value - _currentValue) / (_nextPoint->_delay - _offset);
+		assert(_envelope.begin() != _envelope.end());
+		assert(_envelope.begin()->_delay == 0);
+		_nextPoint = std::next(_envelope.begin());
+		assert(_nextPoint == _envelope.end() || _nextPoint->_delay > 0);
+		_baseValue = fromCurrent ? _currentValue : _envelope.begin()->_value;
+		_step = _nextPoint != _envelope.end() ? (_nextPoint->_value - _baseValue) / _nextPoint->_delay : 0.f;
+		_offset = 0;
+		_currentValue = _baseValue;
 	}
 
 	ModulationData::ModulationData(const VoiceData& voice, unsigned samplingRate) noexcept
@@ -109,7 +84,7 @@ namespace aulos
 	{
 	}
 
-	void Modulator::advance(size_t samples) noexcept
+	void Modulator::advance(unsigned samples) noexcept
 	{
 		_amplitudeModulator.advance(samples);
 		_frequencyModulator.advance(samples);

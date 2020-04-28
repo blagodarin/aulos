@@ -20,6 +20,8 @@
 #include <aulos/data.hpp>
 
 #include <array>
+#include <limits>
+#include <numeric>
 
 namespace aulos
 {
@@ -28,42 +30,43 @@ namespace aulos
 	public:
 		struct Point
 		{
-			size_t _delay;
-			double _value;
+			unsigned _delay;
+			float _value;
 		};
 
-		SampledEnvelope(const Envelope&, size_t samplingRate) noexcept;
+		SampledEnvelope(const Envelope&, unsigned samplingRate) noexcept;
 
-		const Point* begin() const noexcept { return _points.data(); }
-		size_t duration() const noexcept;
-		const Point* end() const noexcept { return _points.data() + _size; }
-		constexpr auto size() const noexcept { return _size; }
+		constexpr auto begin() const noexcept { return _points.data(); }
+		constexpr auto end() const noexcept { return _end; }
+		auto totalSamples() const noexcept { return std::accumulate(begin(), end(), size_t{}, [](size_t delay, const Point& point) { return delay + point._delay; }); }
 
 	private:
-		size_t _size = 0;
 		std::array<Point, 5> _points{};
+		const Point* _end = _points.data();
 	};
 
 	class LinearModulator
 	{
 	public:
-		LinearModulator(const SampledEnvelope&) noexcept;
+		constexpr LinearModulator(const SampledEnvelope& envelope) noexcept
+			: _envelope{ envelope } {}
 
-		void advance(size_t samples) noexcept;
-		size_t maxContinuousAdvance() const noexcept;
+		void advance(unsigned samples) noexcept;
+		constexpr auto maxContinuousAdvance() const noexcept { return _nextPoint != _envelope.end() ? _nextPoint->_delay - _offset : std::numeric_limits<unsigned>::max(); }
 		void start(bool fromCurrent) noexcept;
-		void stop() noexcept { _nextPoint = _envelope.end(); }
-		bool stopped() const noexcept { return _nextPoint == _envelope.end(); }
-		auto totalSamples() const noexcept { return _envelope.duration(); }
-		constexpr double value() const noexcept { return _currentValue; }
-		double valueStep() const noexcept;
+		constexpr void stop() noexcept { _nextPoint = _envelope.end(); }
+		constexpr bool stopped() const noexcept { return _nextPoint == _envelope.end(); }
+		auto totalSamples() const noexcept { return _envelope.totalSamples(); }
+		constexpr auto value() const noexcept { return _currentValue; }
+		constexpr auto valueStep() const noexcept { return _step; }
 
 	private:
 		const SampledEnvelope& _envelope;
-		double _baseValue = 1.0;
 		const SampledEnvelope::Point* _nextPoint = _envelope.end();
-		size_t _offset = 0;
-		double _currentValue = 0.0;
+		float _baseValue = 1.f;
+		float _step = 0.f;
+		unsigned _offset = 0;
+		float _currentValue = 0.f;
 	};
 
 	struct ModulationData
@@ -81,16 +84,16 @@ namespace aulos
 	public:
 		Modulator(const ModulationData&) noexcept;
 
-		void advance(size_t samples) noexcept;
+		void advance(unsigned samples) noexcept;
 		constexpr auto currentAmplitude() const noexcept { return _amplitudeModulator.value(); }
-		auto currentAmplitudeStep() const noexcept { return _amplitudeModulator.valueStep(); }
+		constexpr auto currentAmplitudeStep() const noexcept { return _amplitudeModulator.valueStep(); }
 		constexpr auto currentAsymmetry() const noexcept { return _asymmetryModulator.value(); }
 		constexpr auto currentFrequency() const noexcept { return _frequencyModulator.value(); }
 		constexpr auto currentOscillation() const noexcept { return _oscillationModulator.value(); }
-		auto maxAdvance() const noexcept { return _amplitudeModulator.maxContinuousAdvance(); }
+		constexpr auto maxAdvance() const noexcept { return _amplitudeModulator.maxContinuousAdvance(); }
 		void start() noexcept;
-		void stop() noexcept { _amplitudeModulator.stop(); }
-		auto stopped() const noexcept { return _amplitudeModulator.stopped(); }
+		constexpr void stop() noexcept { _amplitudeModulator.stop(); }
+		constexpr auto stopped() const noexcept { return _amplitudeModulator.stopped(); }
 		auto totalSamples() const noexcept { return _amplitudeModulator.totalSamples(); }
 
 	private:
