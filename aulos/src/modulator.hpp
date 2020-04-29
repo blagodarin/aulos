@@ -146,38 +146,4 @@ namespace aulos
 		unsigned _offset = 0;
 		float _currentValue = 0.f;
 	};
-
-	struct ModulationData
-	{
-		SampledEnvelope _amplitudeEnvelope;
-		SampledEnvelope _frequencyEnvelope;
-		SampledEnvelope _asymmetryEnvelope;
-		SampledEnvelope _oscillationEnvelope;
-
-		ModulationData(const VoiceData&, unsigned samplingRate) noexcept;
-	};
-
-	class Modulator
-	{
-	public:
-		Modulator(const ModulationData&) noexcept;
-
-		void advance(unsigned samples) noexcept;
-		constexpr auto currentAmplitude() const noexcept { return _amplitudeModulator.value(); }
-		constexpr auto currentAmplitudeStep() const noexcept { return _amplitudeModulator.valueStep(); }
-		constexpr auto currentAsymmetry() const noexcept { return _asymmetryModulator.value(); }
-		constexpr auto currentFrequency() const noexcept { return _frequencyModulator.value(); }
-		constexpr auto currentOscillation() const noexcept { return _oscillationModulator.value(); }
-		constexpr auto maxAdvance() const noexcept { return _amplitudeModulator.maxContinuousAdvance(); }
-		void start() noexcept;
-		constexpr void stop() noexcept { _amplitudeModulator.stop(); }
-		constexpr auto stopped() const noexcept { return _amplitudeModulator.stopped(); }
-		auto totalSamples() const noexcept { return _amplitudeModulator.totalSamples(); }
-
-	private:
-		LinearModulator _amplitudeModulator;
-		LinearModulator _frequencyModulator;
-		LinearModulator _asymmetryModulator;
-		LinearModulator _oscillationModulator;
-	};
 }

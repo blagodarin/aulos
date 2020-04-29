@@ -24,12 +24,13 @@ source_group("include" FILES ${_include})
 set(_src
 	src/composition.cpp
 	src/composition.hpp
-	src/generators.hpp
-	src/modulator.cpp
+	src/generator.hpp
 	src/modulator.hpp
+	src/note_table.hpp
+	src/oscillator.hpp
 	src/renderer.cpp
-	src/voice.cpp
 	src/voice.hpp
+	src/wave.hpp
 	)
 source_group("src" FILES ${_src})
 

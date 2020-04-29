@@ -16,13 +16,11 @@
 //
 
 #include "composition.hpp"
-#include "generators.hpp"
+#include "generator.hpp"
 #include "voice.hpp"
 
 #include <algorithm>
-#include <cassert>
 #include <cstring>
-#include <numeric>
 
 namespace
 {
