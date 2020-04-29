@@ -20,50 +20,128 @@
 #include <aulos/data.hpp>
 
 #include <array>
+#include <cassert>
 #include <limits>
 #include <numeric>
 
 namespace aulos
 {
+	struct SampledPoint
+	{
+		unsigned _delay;
+		float _value;
+	};
+
 	struct SampledEnvelope
 	{
 	public:
-		struct Point
+		SampledEnvelope(const Envelope& envelope, unsigned samplingRate) noexcept
 		{
-			unsigned _delay;
-			float _value;
-		};
+			_points[_size++] = { 0, envelope._initial };
+			for (const auto& point : envelope._changes)
+			{
+				assert(point._delay >= 0.f);
+				if (point._delay > 0.f)
+				{
+					assert(_size < _points.size());
+					_points[_size++] = { static_cast<unsigned>(point._delay * samplingRate), point._value };
+				}
+				else
+					_points[_size - 1]._value = point._value;
+			}
+		}
 
-		SampledEnvelope(const Envelope&, unsigned samplingRate) noexcept;
+		constexpr auto data() const noexcept
+		{
+			return _points.data();
+		}
 
-		constexpr auto begin() const noexcept { return _points.data(); }
-		constexpr auto end() const noexcept { return _end; }
-		auto totalSamples() const noexcept { return std::accumulate(begin(), end(), size_t{}, [](size_t delay, const Point& point) { return delay + point._delay; }); }
+		constexpr auto size() const noexcept
+		{
+			return _size;
+		}
 
 	private:
-		std::array<Point, 5> _points{};
-		const Point* _end = _points.data();
+		std::array<SampledPoint, 5> _points{};
+		unsigned _size = 0;
 	};
 
 	class LinearModulator
 	{
 	public:
-		constexpr LinearModulator(const SampledEnvelope& envelope) noexcept
-			: _envelope{ envelope } {}
+		LinearModulator(const SampledEnvelope& envelope) noexcept
+			: _points{ envelope.data() }
+			, _size{ envelope.size() }
+		{
+			assert(_size > 0);
+			assert(_points[0]._delay == 0);
+			_currentValue = _points[_size - 1]._value;
+		}
 
-		void advance(unsigned samples) noexcept;
-		constexpr auto maxContinuousAdvance() const noexcept { return _nextPoint != _envelope.end() ? _nextPoint->_delay - _offset : std::numeric_limits<unsigned>::max(); }
-		void start(bool fromCurrent) noexcept;
-		constexpr void stop() noexcept { _nextPoint = _envelope.end(); }
-		constexpr bool stopped() const noexcept { return _nextPoint == _envelope.end(); }
-		auto totalSamples() const noexcept { return _envelope.totalSamples(); }
-		constexpr auto value() const noexcept { return _currentValue; }
-		constexpr auto valueStep() const noexcept { return _step; }
+		void advance(unsigned samples) noexcept
+		{
+			while (_index < _size)
+			{
+				const auto remainingDelay = _points[_index]._delay - _offset;
+				if (remainingDelay > samples)
+				{
+					_offset += samples;
+					_currentValue += samples * _step;
+					break;
+				}
+				samples -= remainingDelay;
+				_currentValue = _points[_index]._value;
+				++_index;
+				_step = _index < _size ? (_points[_index]._value - _currentValue) / _points[_index]._delay : 0.f;
+				_offset = 0;
+			}
+		}
+
+		constexpr auto maxContinuousAdvance() const noexcept
+		{
+			return _index < _size ? _points[_index]._delay - _offset : std::numeric_limits<unsigned>::max();
+		}
+
+		void start(bool fromCurrent) noexcept
+		{
+			_index = 1;
+			assert(_index == _size || _points[_index]._delay > 0);
+			if (!fromCurrent)
+				_currentValue = _points[0]._value;
+			_step = _index < _size ? (_points[_index]._value - _currentValue) / _points[_index]._delay : 0.f;
+			_offset = 0;
+		}
+
+		constexpr void stop() noexcept
+		{
+			_index = _size;
+		}
+
+		constexpr bool stopped() const noexcept
+		{
+			return _index == _size;
+		}
+
+		auto totalSamples() const noexcept
+		{
+			// std::accumulate is not constexpr in MSVC 2019 (16.5.4).
+			return std::accumulate(_points, _points + _size, size_t{}, [](size_t result, const SampledPoint& point) { return result + point._delay; });
+		}
+
+		constexpr auto value() const noexcept
+		{
+			return _currentValue;
+		}
+
+		constexpr auto valueStep() const noexcept
+		{
+			return _step;
+		}
 
 	private:
-		const SampledEnvelope& _envelope;
-		const SampledEnvelope::Point* _nextPoint = _envelope.end();
-		float _baseValue = 1.f;
+		const SampledPoint* const _points;
+		const unsigned _size;
+		unsigned _index = _size;
 		float _step = 0.f;
 		unsigned _offset = 0;
 		float _currentValue = 0.f;

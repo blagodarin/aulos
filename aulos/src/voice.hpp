@@ -34,36 +34,23 @@ namespace aulos
 		constexpr explicit Oscillator(unsigned samplingRate) noexcept
 			: _samplingRate{ samplingRate } {}
 
-		void adjust(double frequency, double asymmetry) noexcept;
-		void advance(unsigned samples, double nextFrequency, double nextAsymmetry) noexcept;
+		void adjust(float frequency, float asymmetry) noexcept;
+		void advance(unsigned samples, float nextFrequency, float nextAsymmetry) noexcept;
 		auto maxAdvance() const noexcept { return static_cast<unsigned>(std::ceil(_stageRemainder)); }
-		void restart(double frequency, double asymmetry) noexcept;
+		void restart(float frequency, float asymmetry) noexcept;
 		constexpr auto samplingRate() const noexcept { return _samplingRate; }
 		constexpr auto stageLength() const noexcept { return _stageLength; }
 		constexpr auto stageOffset() const noexcept { return _stageLength - _stageRemainder; }
 		constexpr auto stageSign() const noexcept { return _amplitudeSign; }
 
 	private:
-		void resetStage(double frequency, double asymmetry) noexcept;
+		void resetStage(float frequency, float asymmetry) noexcept;
 
 	private:
 		const unsigned _samplingRate;
-		double _stageLength = 0.0;
-		double _stageRemainder = 0.0;
+		float _stageLength = 0.f;
+		float _stageRemainder = 0.f;
 		float _amplitudeSign = 1.f;
-	};
-
-	class VoiceImpl : public VoiceRenderer
-	{
-	public:
-		VoiceImpl(const VoiceData& data, unsigned samplingRate) noexcept
-			: _modulationData{ data, samplingRate } {}
-
-		virtual void stop() noexcept = 0;
-
-	protected:
-		const ModulationData _modulationData;
-		float _baseAmplitude = 0.f;
 	};
 
 	class WaveState
@@ -189,20 +176,30 @@ namespace aulos
 		}
 
 	private:
-		static double noteFrequency(Note) noexcept;
+		static float noteFrequency(Note) noexcept;
 
 	private:
 		Modulator _modulator;
 		Oscillator _oscillator;
 		const unsigned _delay;
-		double _frequency = 0.;
+		float _frequency = 0.;
 		unsigned _startDelay = 0;
 		unsigned _restartDelay = 0;
-		double _restartFrequency = 0.;
+		float _restartFrequency = 0.;
 	};
 
-	// NOTE!
-	// Keeping intermediate calculations in 'double' produces a measurable performance hit (e.g. 104ms -> 114 ms).
+	class VoiceImpl : public VoiceRenderer
+	{
+	public:
+		VoiceImpl(const VoiceData& data, unsigned samplingRate) noexcept
+			: _modulationData{ data, samplingRate } {}
+
+		virtual void stop() noexcept = 0;
+
+	protected:
+		const ModulationData _modulationData;
+		float _baseAmplitude = 0.f;
+	};
 
 	template <typename Generator>
 	class MonoVoice final : public VoiceImpl
@@ -235,7 +232,7 @@ namespace aulos
 					auto [multiplier, step] = _wave.linearChange();
 					for (size_t i = 0; i < blocksToGenerate; ++i)
 					{
-						output[i] += static_cast<float>(generator() * multiplier);
+						output[i] += generator() * multiplier;
 						multiplier += step;
 					}
 				}
@@ -321,7 +318,7 @@ namespace aulos
 					auto [multiplier, step] = _wave.linearChange();
 					for (size_t i = 0; i < blocksToGenerate; ++i)
 					{
-						const auto value = static_cast<float>(generator() * multiplier);
+						const auto value = generator() * multiplier;
 						*output++ += value * _leftAmplitude;
 						*output++ += value * _rightAmplitude;
 						multiplier += step;
@@ -390,8 +387,8 @@ namespace aulos
 					auto [rightMultiplier, rightStep] = _rightWave.linearChange();
 					for (size_t i = 0; i < samplesToGenerate; ++i)
 					{
-						*output++ += static_cast<float>(leftGenerator() * leftMultiplier);
-						*output++ += static_cast<float>(rightGenerator() * rightMultiplier);
+						*output++ += leftGenerator() * leftMultiplier;
+						*output++ += rightGenerator() * rightMultiplier;
 						leftMultiplier += leftStep;
 						rightMultiplier += rightStep;
 					}

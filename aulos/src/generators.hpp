@@ -47,20 +47,20 @@ namespace aulos
 	class LinearGenerator
 	{
 	public:
-		constexpr LinearGenerator(double length, double offset, double amplitude, double oscillation) noexcept
+		constexpr LinearGenerator(float length, float offset, float amplitude, float oscillation) noexcept
 			: _coefficient{ 2 * oscillation / length }
 			, _lastValue{ amplitude - _coefficient * (offset - 1) }
 		{
 		}
 
-		constexpr double operator()() noexcept
+		constexpr auto operator()() noexcept
 		{
 			return _lastValue -= _coefficient;
 		}
 
 	private:
-		const double _coefficient;
-		double _lastValue;
+		const float _coefficient;
+		float _lastValue;
 	};
 
 	// C = 2 * oscillation / length^2
@@ -69,23 +69,23 @@ namespace aulos
 	class QuadraticGenerator
 	{
 	public:
-		constexpr QuadraticGenerator(double length, double offset, double amplitude, double oscillation) noexcept
+		constexpr QuadraticGenerator(float length, float offset, float amplitude, float oscillation) noexcept
 			: _coefficient{ 2 * oscillation / (length * length) }
 			, _lastX{ offset - 1 }
 			, _lastValue{ amplitude - _coefficient * _lastX * _lastX }
 		{
 		}
 
-		constexpr double operator()() noexcept
+		constexpr auto operator()() noexcept
 		{
 			_lastX += 1;
 			return _lastValue -= _coefficient * (2 * _lastX - 1);
 		}
 
 	private:
-		const double _coefficient;
-		double _lastX;
-		double _lastValue;
+		const float _coefficient;
+		float _lastX;
+		float _lastValue;
 	};
 
 	// C2 = 6 * oscillation * length^2
@@ -95,7 +95,7 @@ namespace aulos
 	class CubicGenerator
 	{
 	public:
-		constexpr CubicGenerator(double length, double offset, double amplitude, double oscillation) noexcept
+		constexpr CubicGenerator(float length, float offset, float amplitude, float oscillation) noexcept
 			: _coefficient2{ 6 * oscillation / (length * length) }
 			, _coefficient3{ 4 * oscillation / (length * length * length) }
 			, _lastX{ offset - 1 }
@@ -103,17 +103,17 @@ namespace aulos
 		{
 		}
 
-		constexpr double operator()() noexcept
+		constexpr auto operator()() noexcept
 		{
 			_lastX += 1;
 			return _lastValue -= _coefficient2 * (2 * _lastX - 1) - _coefficient3 * (3 * _lastX * (_lastX - 1) + 1);
 		}
 
 	private:
-		const double _coefficient2;
-		const double _coefficient3;
-		double _lastX;
-		double _lastValue;
+		const float _coefficient2;
+		const float _coefficient3;
+		float _lastX;
+		float _lastValue;
 	};
 
 	// F(X) = G(X) + amplitude - oscillation
@@ -122,7 +122,7 @@ namespace aulos
 	class CosineGenerator
 	{
 	public:
-		CosineGenerator(double length, double offset, double amplitude, double oscillation) noexcept
+		CosineGenerator(float length, float offset, float amplitude, float oscillation) noexcept
 			: _delta{ std::numbers::pi / length }
 			, _cosDelta{ std::cos(_delta) }
 			, _scaledSinDelta{ oscillation * std::sin(_delta) }
@@ -132,11 +132,11 @@ namespace aulos
 		{
 		}
 
-		double operator()() noexcept
+		auto operator()() noexcept
 		{
 			_lastX += 1;
 			_lastValue = (_lastValue - _scaledSinDelta * std::sin(_delta * _lastX)) / _cosDelta;
-			return _lastValue + _valueOffset;
+			return static_cast<float>(_lastValue + _valueOffset);
 		}
 
 	private:

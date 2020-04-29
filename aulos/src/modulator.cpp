@@ -17,57 +17,8 @@
 
 #include "modulator.hpp"
 
-#include <cassert>
-
 namespace aulos
 {
-	SampledEnvelope::SampledEnvelope(const Envelope& envelope, unsigned samplingRate) noexcept
-	{
-		assert(envelope._changes.size() < _points.size());
-		size_t i = 0;
-		_points[i] = { 0, envelope._initial };
-		for (const auto& point : envelope._changes)
-		{
-			assert(point._delay >= 0.f);
-			if (point._delay > 0.f)
-				_points[++i] = { static_cast<unsigned>(point._delay * samplingRate), point._value };
-			else
-				_points[i]._value = point._value;
-		}
-		_end = &_points[i + 1];
-	}
-
-	void LinearModulator::advance(unsigned samples) noexcept
-	{
-		if (_nextPoint == _envelope.end())
-			return;
-		const auto remainingSamples = _nextPoint->_delay - _offset;
-		if (samples < remainingSamples)
-		{
-			_offset += samples;
-			_currentValue = _baseValue + _offset * _step;
-			return;
-		}
-		assert(samples == remainingSamples);
-		_baseValue = _nextPoint->_value;
-		++_nextPoint;
-		_step = _nextPoint != _envelope.end() ? (_nextPoint->_value - _baseValue) / _nextPoint->_delay : 0.f;
-		_offset = 0;
-		_currentValue = _baseValue;
-	}
-
-	void LinearModulator::start(bool fromCurrent) noexcept
-	{
-		assert(_envelope.begin() != _envelope.end());
-		assert(_envelope.begin()->_delay == 0);
-		_nextPoint = std::next(_envelope.begin());
-		assert(_nextPoint == _envelope.end() || _nextPoint->_delay > 0);
-		_baseValue = fromCurrent ? _currentValue : _envelope.begin()->_value;
-		_step = _nextPoint != _envelope.end() ? (_nextPoint->_value - _baseValue) / _nextPoint->_delay : 0.f;
-		_offset = 0;
-		_currentValue = _baseValue;
-	}
-
 	ModulationData::ModulationData(const VoiceData& voice, unsigned samplingRate) noexcept
 		: _amplitudeEnvelope{ voice._amplitudeEnvelope, samplingRate }
 		, _frequencyEnvelope{ voice._frequencyEnvelope, samplingRate }

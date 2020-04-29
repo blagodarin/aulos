@@ -55,14 +55,14 @@ namespace
 
 namespace aulos
 {
-	void Oscillator::adjust(double frequency, double asymmetry) noexcept
+	void Oscillator::adjust(float frequency, float asymmetry) noexcept
 	{
 		const auto partRatio = _stageRemainder / _stageLength;
 		resetStage(frequency, asymmetry);
 		_stageRemainder = _stageLength * partRatio;
 	}
 
-	void Oscillator::advance(unsigned samples, double nextFrequency, double nextAsymmetry) noexcept
+	void Oscillator::advance(unsigned samples, float nextFrequency, float nextAsymmetry) noexcept
 	{
 		auto remaining = _stageRemainder - samples;
 		assert(remaining > -1);
@@ -75,14 +75,14 @@ namespace aulos
 		_stageRemainder = remaining;
 	}
 
-	void Oscillator::restart(double frequency, double asymmetry) noexcept
+	void Oscillator::restart(float frequency, float asymmetry) noexcept
 	{
 		_amplitudeSign = 1.f;
 		resetStage(frequency, asymmetry);
 		_stageRemainder = _stageLength;
 	}
 
-	void Oscillator::resetStage(double frequency, double asymmetry) noexcept
+	void Oscillator::resetStage(float frequency, float asymmetry) noexcept
 	{
 		assert(frequency > 0);
 		assert(asymmetry >= -1 && asymmetry <= 1);
@@ -97,8 +97,8 @@ namespace aulos
 		_stageLength = partLength;
 	}
 
-	double WaveState::noteFrequency(Note note) noexcept
+	float WaveState::noteFrequency(Note note) noexcept
 	{
-		return kNoteTable[note];
+		return static_cast<float>(kNoteTable[note]);
 	}
 }

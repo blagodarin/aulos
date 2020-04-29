@@ -34,7 +34,7 @@ wave Cubic
 
 @voice 4 "Bass"
 amplitude 0.00 0.10 1.00 0.40 0.50 0.50 0.00
-antiphase 1
+antiphase 0
 asymmetry 0.10
 frequency 1.00
 oscillation 0.90
