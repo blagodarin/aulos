@@ -51,9 +51,9 @@ private:
 	struct EnvelopePoint;
 
 	QComboBox* _typeCombo = nullptr;
-	QDoubleSpinBox* _phaseShiftSpin = nullptr;
-	QCheckBox* _antiphaseCheck = nullptr;
-	QDoubleSpinBox* _panSpin = nullptr;
+	QDoubleSpinBox* _stereoDelaySpin = nullptr;
+	QDoubleSpinBox* _stereoPanSpin = nullptr;
+	QCheckBox* _stereoInversionCheck = nullptr;
 	std::vector<EnvelopePoint> _amplitudeEnvelope;
 	std::vector<EnvelopePoint> _frequencyEnvelope;
 	std::vector<EnvelopePoint> _asymmetryEnvelope;

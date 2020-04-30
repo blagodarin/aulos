@@ -114,8 +114,8 @@ namespace aulos
 
 		BasicStereoVoice(const VoiceData& data, unsigned samplingRate) noexcept
 			: VoiceImpl{ data, samplingRate }
-			, _leftAmplitude{ std::min(1.f - data._pan, 1.f) }
-			, _rightAmplitude{ std::copysign(std::min(1.f + data._pan, 1.f), data._antiphase ? -1.f : 1.f) }
+			, _leftAmplitude{ std::min(1.f - data._stereoPan, 1.f) }
+			, _rightAmplitude{ std::copysign(std::min(1.f + data._stereoPan, 1.f), data._stereoInversion ? -1.f : 1.f) }
 		{
 		}
 
@@ -201,8 +201,8 @@ namespace aulos
 	public:
 		PhasedStereoVoice(const VoiceData& data, unsigned samplingRate) noexcept
 			: BasicStereoVoice{ data, samplingRate }
-			, _leftWave{ _modulation, samplingRate, std::max(0.f, -data._phaseShift) }
-			, _rightWave{ _modulation, samplingRate, std::max(0.f, data._phaseShift) }
+			, _leftWave{ _modulation, samplingRate, std::max(0.f, -data._stereoDelay) }
+			, _rightWave{ _modulation, samplingRate, std::max(0.f, data._stereoDelay) }
 		{
 		}
 

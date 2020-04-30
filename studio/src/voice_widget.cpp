@@ -58,34 +58,34 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 	connect(_typeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &VoiceWidget::updateVoice);
 	++row;
 
-	createHeader(tr("Stereo settings"));
+	createHeader(tr("Stereo parameters"));
 
-	_phaseShiftSpin = new QDoubleSpinBox{ parent };
-	_phaseShiftSpin->setDecimals(2);
-	_phaseShiftSpin->setMaximum(1'000.0);
-	_phaseShiftSpin->setMinimum(-1'000.0);
-	_phaseShiftSpin->setSingleStep(0.01);
-	_phaseShiftSpin->setSuffix(tr("ms"));
-	_phaseShiftSpin->setValue(0.0);
-	layout->addWidget(new QLabel{ tr("Phase shift:"), this }, row, 1);
-	layout->addWidget(_phaseShiftSpin, row, 2, 1, 2);
-	connect(_phaseShiftSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
+	_stereoDelaySpin = new QDoubleSpinBox{ parent };
+	_stereoDelaySpin->setDecimals(2);
+	_stereoDelaySpin->setMaximum(1'000.0);
+	_stereoDelaySpin->setMinimum(-1'000.0);
+	_stereoDelaySpin->setSingleStep(0.01);
+	_stereoDelaySpin->setSuffix(tr("ms"));
+	_stereoDelaySpin->setValue(0.0);
+	layout->addWidget(new QLabel{ tr("Delay:"), this }, row, 1);
+	layout->addWidget(_stereoDelaySpin, row, 2, 1, 2);
+	connect(_stereoDelaySpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
 	++row;
 
-	_antiphaseCheck = new QCheckBox{ tr("Antiphase"), this };
-	layout->addWidget(_antiphaseCheck, row, 1, 1, 3);
-	connect(_antiphaseCheck, &QCheckBox::toggled, this, &VoiceWidget::updateVoice);
+	_stereoPanSpin = new QDoubleSpinBox{ parent };
+	_stereoPanSpin->setDecimals(2);
+	_stereoPanSpin->setMaximum(1.0);
+	_stereoPanSpin->setMinimum(-1.0);
+	_stereoPanSpin->setSingleStep(0.01);
+	_stereoPanSpin->setValue(0.0);
+	layout->addWidget(new QLabel{ tr("Pan:"), this }, row, 1);
+	layout->addWidget(_stereoPanSpin, row, 2, 1, 2);
+	connect(_stereoPanSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
 	++row;
 
-	_panSpin = new QDoubleSpinBox{ parent };
-	_panSpin->setDecimals(2);
-	_panSpin->setMaximum(1.0);
-	_panSpin->setMinimum(-1.0);
-	_panSpin->setSingleStep(0.01);
-	_panSpin->setValue(0.0);
-	layout->addWidget(new QLabel{ tr("Linear pan:"), this }, row, 1);
-	layout->addWidget(_panSpin, row, 2, 1, 2);
-	connect(_panSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
+	_stereoInversionCheck = new QCheckBox{ tr("Invert right channel"), this };
+	layout->addWidget(_stereoInversionCheck, row, 1, 1, 3);
+	connect(_stereoInversionCheck, &QCheckBox::toggled, this, &VoiceWidget::updateVoice);
 	++row;
 
 	const auto createEnvelopeWidgets = [this, layout, &row](std::vector<EnvelopePoint>& envelope, double minimum) {
@@ -184,9 +184,9 @@ void VoiceWidget::setVoice(const std::shared_ptr<aulos::VoiceData>& voice)
 	aulos::VoiceData defaultVoice;
 	const auto usedVoice = voice ? voice.get() : &defaultVoice;
 	_typeCombo->setCurrentIndex(_typeCombo->findData(static_cast<int>(usedVoice->_wave)));
-	_phaseShiftSpin->setValue(usedVoice->_phaseShift);
-	_antiphaseCheck->setChecked(usedVoice->_antiphase);
-	_panSpin->setValue(usedVoice->_pan);
+	_stereoDelaySpin->setValue(usedVoice->_stereoDelay);
+	_stereoPanSpin->setValue(usedVoice->_stereoPan);
+	_stereoInversionCheck->setChecked(usedVoice->_stereoInversion);
 	setEnvelope(_amplitudeEnvelope, usedVoice->_amplitudeEnvelope);
 	setEnvelope(_frequencyEnvelope, usedVoice->_frequencyEnvelope);
 	setEnvelope(_asymmetryEnvelope, usedVoice->_asymmetryEnvelope);
@@ -199,9 +199,9 @@ void VoiceWidget::updateVoice()
 	if (!_voice)
 		return;
 	_voice->_wave = static_cast<aulos::Wave>(_typeCombo->currentData().toInt());
-	_voice->_phaseShift = static_cast<float>(_phaseShiftSpin->value());
-	_voice->_antiphase = _antiphaseCheck->isChecked();
-	_voice->_pan = static_cast<float>(_panSpin->value());
+	_voice->_stereoDelay = static_cast<float>(_stereoDelaySpin->value());
+	_voice->_stereoPan = static_cast<float>(_stereoPanSpin->value());
+	_voice->_stereoInversion = _stereoInversionCheck->isChecked();
 	if (auto i = _amplitudeEnvelope.begin(); i->_check->isChecked())
 	{
 		_voice->_amplitudeEnvelope._initial = static_cast<float>(i->_value->value());

@@ -39,7 +39,7 @@ namespace
 			break;
 
 		case 2:
-			if (data._phaseShift == 0.f)
+			if (data._stereoDelay == 0.f)
 			{
 				switch (data._wave)
 				{

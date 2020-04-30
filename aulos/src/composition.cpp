@@ -91,12 +91,12 @@ namespace aulos
 		};
 
 		const auto readIdentifier = [&] {
-			if (!((*source >= 'a' && *source <= 'z') || (*source >= 'A' && *source <= 'Z')))
+			if (!((*source >= 'a' && *source <= 'z') || *source == '_'))
 				throw CompositionError{ location(), "Identifier expected" };
 			const auto begin = source;
 			do
 				++source;
-			while ((*source >= 'a' && *source <= 'z') || (*source >= 'A' && *source <= 'Z'));
+			while ((*source >= 'a' && *source <= 'z') || *source == '_');
 			const std::string_view result{ begin, static_cast<size_t>(source - begin) };
 			skipSpaces();
 			return result;
@@ -258,12 +258,6 @@ namespace aulos
 				while (const auto delay = tryReadFloat(0.f, kMaxEnvelopePartDuration))
 					envelope._changes.emplace_back(*delay, readFloat(0.f, 1.f));
 			}
-			else if (command == "antiphase")
-			{
-				if (currentSection != Section::Voice)
-					throw CompositionError{ location(), "Unexpected command" };
-				currentVoice->_antiphase = readUnsigned(0, 1) == 1;
-			}
 			else if (command == "asymmetry")
 			{
 				if (currentSection != Section::Voice)
@@ -294,29 +288,35 @@ namespace aulos
 				while (const auto delay = tryReadFloat(0.f, kMaxEnvelopePartDuration))
 					envelope._changes.emplace_back(*delay, readFloat(0.f, 1.f));
 			}
-			else if (command == "pan")
+			else if (command == "stereo_delay")
 			{
 				if (currentSection != Section::Voice)
 					throw CompositionError{ location(), "Unexpected command" };
-				currentVoice->_pan = readFloat(-1.f, 1.f);
+				currentVoice->_stereoDelay = readFloat(-1'000.f, 1'000.f);
 			}
-			else if (command == "phaseshift")
+			else if (command == "stereo_inversion")
 			{
 				if (currentSection != Section::Voice)
 					throw CompositionError{ location(), "Unexpected command" };
-				currentVoice->_phaseShift = readFloat(-1'000.f, 1'000.f);
+				currentVoice->_stereoInversion = readUnsigned(0, 1) == 1;
+			}
+			else if (command == "stereo_pan")
+			{
+				if (currentSection != Section::Voice)
+					throw CompositionError{ location(), "Unexpected command" };
+				currentVoice->_stereoPan = readFloat(-1.f, 1.f);
 			}
 			else if (command == "wave")
 			{
 				if (currentSection != Section::Voice)
 					throw CompositionError{ location(), "Unexpected command" };
-				if (const auto type = readIdentifier(); type == "Linear")
+				if (const auto type = readIdentifier(); type == "linear")
 					currentVoice->_wave = Wave::Linear;
-				else if (type == "Quadratic")
+				else if (type == "quadratic")
 					currentVoice->_wave = Wave::Quadratic;
-				else if (type == "Cubic")
+				else if (type == "cubic")
 					currentVoice->_wave = Wave::Cubic;
-				else if (type == "Cosine")
+				else if (type == "cosine")
 					currentVoice->_wave = Wave::Cosine;
 				else
 					throw CompositionError{ location(), "Bad voice wave type" };
@@ -465,8 +465,6 @@ namespace aulos
 			text += "\namplitude " + floatToString(part._voice._amplitudeEnvelope._initial);
 			for (const auto& change : part._voice._amplitudeEnvelope._changes)
 				text += ' ' + floatToString(change._delay) + ' ' + floatToString(change._value);
-			text += "\nantiphase ";
-			text += part._voice._antiphase ? "1" : "0";
 			text += "\nasymmetry " + floatToString(part._voice._asymmetryEnvelope._initial);
 			for (const auto& change : part._voice._asymmetryEnvelope._changes)
 				text += ' ' + floatToString(change._delay) + ' ' + floatToString(change._value);
@@ -476,15 +474,16 @@ namespace aulos
 			text += "\noscillation " + floatToString(part._voice._oscillationEnvelope._initial);
 			for (const auto& change : part._voice._oscillationEnvelope._changes)
 				text += ' ' + floatToString(change._delay) + ' ' + floatToString(change._value);
-			text += "\npan " + floatToString(part._voice._pan);
-			text += "\nphaseshift " + floatToString(part._voice._phaseShift);
+			text += "\nstereo_delay " + floatToString(part._voice._stereoDelay);
+			text += "\nstereo_inversion " + std::to_string(static_cast<int>(part._voice._stereoInversion));
+			text += "\nstereo_pan " + floatToString(part._voice._stereoPan);
 			text += "\nwave ";
 			switch (part._voice._wave)
 			{
-			case Wave::Linear: text += "Linear"; break;
-			case Wave::Quadratic: text += "Quadratic"; break;
-			case Wave::Cubic: text += "Cubic"; break;
-			case Wave::Cosine: text += "Cosine"; break;
+			case Wave::Linear: text += "linear"; break;
+			case Wave::Quadratic: text += "quadratic"; break;
+			case Wave::Cubic: text += "cubic"; break;
+			case Wave::Cosine: text += "cosine"; break;
 			}
 		}
 		text += "\n\n@tracks";
