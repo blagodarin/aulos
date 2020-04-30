@@ -65,7 +65,7 @@ namespace aulos
 					const auto output = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
 					auto generator = _wave.createGenerator<Generator>(_baseAmplitude);
 					auto [multiplier, step] = _wave.linearChange();
-					for (size_t i = 0; i < blocksToGenerate; ++i)
+					for (unsigned i = 0; i < blocksToGenerate; ++i)
 					{
 						output[i] += generator() * multiplier;
 						multiplier += step;
@@ -151,7 +151,7 @@ namespace aulos
 					auto output = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
 					auto generator = _wave.createGenerator<Generator>(_baseAmplitude);
 					auto [multiplier, step] = _wave.linearChange();
-					for (size_t i = 0; i < blocksToGenerate; ++i)
+					for (unsigned i = 0; i < blocksToGenerate; ++i)
 					{
 						const auto value = generator() * multiplier;
 						*output++ += value * _leftAmplitude;
@@ -220,7 +220,7 @@ namespace aulos
 					auto rightGenerator = _rightWave.createGenerator<Generator>(_baseAmplitude * _rightAmplitude);
 					auto [leftMultiplier, leftStep] = _leftWave.linearChange();
 					auto [rightMultiplier, rightStep] = _rightWave.linearChange();
-					for (size_t i = 0; i < samplesToGenerate; ++i)
+					for (unsigned i = 0; i < samplesToGenerate; ++i)
 					{
 						*output++ += leftGenerator() * leftMultiplier;
 						*output++ += rightGenerator() * rightMultiplier;

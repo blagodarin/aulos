@@ -34,13 +34,6 @@ namespace aulos
 		{
 		}
 
-		void adjust(float frequency, float asymmetry) noexcept
-		{
-			const auto partRatio = _stageRemainder / _stageLength;
-			resetStage(frequency, asymmetry);
-			_stageRemainder = _stageLength * partRatio;
-		}
-
 		void advance(unsigned samples, float nextFrequency, float nextAsymmetry) noexcept
 		{
 			auto remaining = _stageRemainder - samples;
@@ -57,13 +50,6 @@ namespace aulos
 		auto maxAdvance() const noexcept
 		{
 			return static_cast<unsigned>(std::ceil(_stageRemainder));
-		}
-
-		void restart(float frequency, float asymmetry) noexcept
-		{
-			_amplitudeSign = 1;
-			resetStage(frequency, asymmetry);
-			_stageRemainder = _stageLength;
 		}
 
 		constexpr auto samplingRate() const noexcept
@@ -84,6 +70,16 @@ namespace aulos
 		constexpr auto stageSign() const noexcept
 		{
 			return _amplitudeSign;
+		}
+
+		void start(float frequency, float asymmetry, bool fromCurrent) noexcept
+		{
+			assert(!fromCurrent || _stageRemainder > 0);
+			if (!fromCurrent)
+				_amplitudeSign = 1;
+			const auto ratio = fromCurrent ? _stageRemainder / _stageLength : 1;
+			resetStage(frequency, asymmetry);
+			_stageRemainder = _stageLength * ratio;
 		}
 
 	private:

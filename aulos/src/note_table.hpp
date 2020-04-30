@@ -26,30 +26,41 @@ namespace aulos
 	class NoteTable
 	{
 	public:
-		static constexpr auto kNoteRatio = 1.0594630943592952645618252949463;
+		static constexpr double kNoteRatio = 1.0594630943592952645618252949463;
+		static constexpr size_t kOctaveLength = 12;
 
 		constexpr NoteTable() noexcept
 		{
-			_frequencies[static_cast<size_t>(Note::A0)] = 27.5; // A0 for the standard A440 pitch (A4 = 440 Hz).
-			for (auto a = static_cast<size_t>(Note::A1); a <= static_cast<size_t>(Note::A9); a += 12)
-				_frequencies[a] = _frequencies[a - 12] * 2.0;
-			for (size_t base = static_cast<size_t>(Note::C0); base < _frequencies.size() - 1; base += 12)
+			_frequencies[static_cast<size_t>(Note::A4)] = 440; // Standard musical pitch (A440) as defined in ISO 16.
+			for (auto i = static_cast<size_t>(Note::A4); i > static_cast<size_t>(Note::A0); i -= kOctaveLength)
+				_frequencies[i - kOctaveLength] = _frequencies[i] / 2;
+			for (auto i = static_cast<size_t>(Note::A4); i < static_cast<size_t>(Note::A9); i += kOctaveLength)
+				_frequencies[i + kOctaveLength] = _frequencies[i] * 2;
+			for (size_t c = static_cast<size_t>(Note::C0); c <= static_cast<size_t>(Note::C9); c += kOctaveLength)
 			{
-				const auto a = base + static_cast<size_t>(Note::A0) - static_cast<size_t>(Note::C0);
-				for (auto note = a; note > base; --note)
-					_frequencies[note - 1] = _frequencies[note] / kNoteRatio;
-				for (auto note = a; note < base + static_cast<size_t>(Note::B0) - static_cast<size_t>(Note::C0); ++note)
-					_frequencies[note + 1] = _frequencies[note] * kNoteRatio;
+				const auto a = c + static_cast<size_t>(Note::A0) - static_cast<size_t>(Note::C0);
+				double frequency = _frequencies[a];
+				for (auto note = a; note > c; --note)
+				{
+					frequency /= kNoteRatio;
+					_frequencies[note - 1] = static_cast<float>(frequency);
+				}
+				frequency = _frequencies[a];
+				for (auto note = a + 1; note < c + kOctaveLength; ++note)
+				{
+					frequency *= kNoteRatio;
+					_frequencies[note] = static_cast<float>(frequency);
+				}
 			}
 		}
 
 		constexpr auto operator[](Note note) const noexcept
 		{
-			return static_cast<float>(_frequencies[static_cast<size_t>(note)]);
+			return _frequencies[static_cast<size_t>(note)];
 		}
 
 	private:
-		std::array<double, 120> _frequencies{};
+		std::array<float, 120> _frequencies{};
 	};
 
 	inline const NoteTable kNoteTable;

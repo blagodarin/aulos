@@ -48,9 +48,9 @@ namespace aulos
 			, _asymmetryModulator{ modulation._asymmetryEnvelope }
 			, _oscillationModulator{ modulation._oscillationEnvelope }
 			, _oscillator{ samplingRate }
-			, _delay{ static_cast<size_t>(std::lround(samplingRate * delay / 1'000.f)) }
+			, _delay{ static_cast<unsigned>(std::lround(samplingRate * delay / 1'000)) }
 		{
-			assert(delay >= 0.f);
+			assert(delay >= 0);
 		}
 
 		void advance(unsigned samples) noexcept
@@ -88,7 +88,7 @@ namespace aulos
 
 		auto linearChange() const noexcept
 		{
-			return std::pair{ _amplitudeModulator.value(), _startDelay ? 0.f : _amplitudeModulator.valueStep() };
+			return std::pair{ _amplitudeModulator.value(), _startDelay ? 0 : _amplitudeModulator.valueStep() };
 		}
 
 		auto maxAdvance() const noexcept
@@ -165,11 +165,7 @@ namespace aulos
 			_frequencyModulator.start(false);
 			_asymmetryModulator.start(false);
 			_oscillationModulator.start(false);
-			const auto modulatedFrequency = frequency * _frequencyModulator.value();
-			if (fromCurrent)
-				_oscillator.adjust(modulatedFrequency, _asymmetryModulator.value());
-			else
-				_oscillator.restart(modulatedFrequency, _asymmetryModulator.value());
+			_oscillator.start(frequency * _frequencyModulator.value(), _asymmetryModulator.value(), fromCurrent);
 			_frequency = frequency;
 		}
 
@@ -180,9 +176,9 @@ namespace aulos
 		LinearModulator _oscillationModulator;
 		Oscillator _oscillator;
 		const unsigned _delay;
-		float _frequency = 0.;
+		float _frequency = 0;
 		unsigned _startDelay = 0;
 		unsigned _restartDelay = 0;
-		float _restartFrequency = 0.;
+		float _restartFrequency = 0;
 	};
 }
