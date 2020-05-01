@@ -43,6 +43,12 @@ namespace aulos
 			return _lastValue += _coefficient;
 		}
 
+		static constexpr auto value(float firstY, float deltaY, float deltaX, float offsetX) noexcept
+		{
+			const auto normalizedX = offsetX / deltaX;
+			return firstY + deltaY * normalizedX;
+		}
+
 	private:
 		const float _coefficient;
 		float _lastValue;
@@ -66,6 +72,12 @@ namespace aulos
 		{
 			_lastX += 1;
 			return _lastValue += _coefficient * (2 * _lastX - 1);
+		}
+
+		static constexpr auto value(float firstY, float deltaY, float deltaX, float offsetX) noexcept
+		{
+			const auto normalizedX = offsetX / deltaX;
+			return firstY + deltaY * normalizedX * normalizedX;
 		}
 
 	private:
@@ -97,6 +109,12 @@ namespace aulos
 			return _lastValue += _coefficient2 * (2 * _lastX - 1) - _coefficient3 * (3 * _lastX * (_lastX - 1) + 1);
 		}
 
+		static constexpr auto value(float firstY, float deltaY, float deltaX, float offsetX) noexcept
+		{
+			const auto normalizedX = offsetX / deltaX;
+			return firstY + deltaY * normalizedX * normalizedX * (3 - 2 * normalizedX);
+		}
+
 	private:
 		const float _coefficient2;
 		const float _coefficient3;
@@ -125,6 +143,12 @@ namespace aulos
 			_lastX += 1;
 			_lastValue = (_lastValue - _scaledSinDelta * std::sin(_delta * _lastX)) / _cosDelta;
 			return static_cast<float>(_lastValue + _valueOffset);
+		}
+
+		static auto value(float firstY, float deltaY, float deltaX, float offsetX) noexcept
+		{
+			const auto normalizedX = offsetX / deltaX;
+			return firstY + deltaY * static_cast<float>(1 - std::cos(std::numbers::pi * normalizedX)) / 2;
 		}
 
 	private:

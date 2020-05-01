@@ -20,6 +20,7 @@
 #include "modulator.hpp"
 #include "note_table.hpp"
 #include "oscillator.hpp"
+#include "shaper.hpp"
 
 namespace aulos
 {
@@ -68,7 +69,7 @@ namespace aulos
 			_frequencyModulator.advance(samples);
 			_asymmetryModulator.advance(samples);
 			_oscillationModulator.advance(samples);
-			_oscillator.advance(samples, _frequency * _frequencyModulator.value(), _asymmetryModulator.value());
+			_oscillator.advance(samples, _frequency * _frequencyModulator.currentValue<LinearShaper>(), _asymmetryModulator.currentValue<LinearShaper>());
 			if (_restartDelay > 0)
 			{
 				assert(!_startDelay);
@@ -79,16 +80,18 @@ namespace aulos
 			}
 		}
 
-		template <typename Shaper>
-		auto createShaper(float amplitude) const noexcept
+		auto createAmplitudeShaper() const noexcept
 		{
-			const auto orientedAmplitude = amplitude * _oscillator.stageSign();
-			return Shaper{ orientedAmplitude, -2 * orientedAmplitude * _oscillationModulator.value(), _oscillator.stageLength(), _oscillator.stageOffset() };
+			return !_startDelay
+				? _amplitudeModulator.createShaper<LinearShaper>()
+				: LinearShaper{ _amplitudeModulator.currentValue<LinearShaper>(), 0, 1, 0 };
 		}
 
-		auto linearChange() const noexcept
+		template <typename Shaper>
+		auto createWaveShaper(float amplitude) const noexcept
 		{
-			return std::pair{ _amplitudeModulator.value(), _startDelay ? 0 : _amplitudeModulator.valueStep() };
+			const auto orientedAmplitude = amplitude * _oscillator.stageSign();
+			return Shaper{ orientedAmplitude, -2 * orientedAmplitude * _oscillationModulator.currentValue<LinearShaper>(), _oscillator.stageLength(), _oscillator.stageOffset() };
 		}
 
 		auto maxAdvance() const noexcept
@@ -161,19 +164,19 @@ namespace aulos
 	private:
 		void startWave(float frequency, bool fromCurrent) noexcept
 		{
-			_amplitudeModulator.start(fromCurrent);
-			_frequencyModulator.start(false);
-			_asymmetryModulator.start(false);
-			_oscillationModulator.start(false);
-			_oscillator.start(frequency * _frequencyModulator.value(), _asymmetryModulator.value(), fromCurrent);
+			_amplitudeModulator.start<LinearShaper>(fromCurrent);
+			_frequencyModulator.start<LinearShaper>(false);
+			_asymmetryModulator.start<LinearShaper>(false);
+			_oscillationModulator.start<LinearShaper>(false);
+			_oscillator.start(frequency * _frequencyModulator.currentValue<LinearShaper>(), _asymmetryModulator.currentValue<LinearShaper>(), fromCurrent);
 			_frequency = frequency;
 		}
 
 	private:
-		LinearModulator _amplitudeModulator;
-		LinearModulator _frequencyModulator;
-		LinearModulator _asymmetryModulator;
-		LinearModulator _oscillationModulator;
+		Modulator _amplitudeModulator;
+		Modulator _frequencyModulator;
+		Modulator _asymmetryModulator;
+		Modulator _oscillationModulator;
 		Oscillator _oscillator;
 		const unsigned _delay;
 		float _frequency = 0;

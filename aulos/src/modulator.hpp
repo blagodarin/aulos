@@ -66,16 +66,16 @@ namespace aulos
 		unsigned _size = 0;
 	};
 
-	class LinearModulator
+	class Modulator
 	{
 	public:
-		LinearModulator(const SampledEnvelope& envelope) noexcept
+		Modulator(const SampledEnvelope& envelope) noexcept
 			: _points{ envelope.data() }
 			, _size{ envelope.size() }
 		{
 			assert(_size > 0);
 			assert(_points[0]._delay == 0);
-			_currentValue = _points[_size - 1]._value;
+			_lastPointValue = _points[_size - 1]._value;
 		}
 
 		void advance(unsigned samples) noexcept
@@ -86,15 +86,29 @@ namespace aulos
 				if (remainingDelay > samples)
 				{
 					_offset += samples;
-					_currentValue += samples * _step;
 					break;
 				}
 				samples -= remainingDelay;
-				_currentValue = _points[_index]._value;
+				_lastPointValue = _points[_index]._value;
 				++_index;
-				_step = _index < _size ? (_points[_index]._value - _currentValue) / _points[_index]._delay : 0.f;
 				_offset = 0;
 			}
+		}
+
+		template <typename Shaper>
+		auto createShaper() const noexcept
+		{
+			return _index < _size
+				? Shaper{ _lastPointValue, _points[_index]._value - _lastPointValue, static_cast<float>(_points[_index]._delay), static_cast<float>(_offset) }
+				: Shaper{ _lastPointValue, 0, 1, 0 };
+		}
+
+		template <typename Shaper>
+		auto currentValue() const noexcept
+		{
+			return _index < _size
+				? Shaper::value(_lastPointValue, _points[_index]._value - _lastPointValue, static_cast<float>(_points[_index]._delay), static_cast<float>(_offset))
+				: _lastPointValue;
 		}
 
 		constexpr auto maxContinuousAdvance() const noexcept
@@ -102,13 +116,12 @@ namespace aulos
 			return _index < _size ? _points[_index]._delay - _offset : std::numeric_limits<unsigned>::max();
 		}
 
+		template <typename Shaper>
 		void start(bool fromCurrent) noexcept
 		{
+			_lastPointValue = fromCurrent ? currentValue<Shaper>() : _points[0]._value;
 			_index = 1;
 			assert(_index == _size || _points[_index]._delay > 0);
-			if (!fromCurrent)
-				_currentValue = _points[0]._value;
-			_step = _index < _size ? (_points[_index]._value - _currentValue) / _points[_index]._delay : 0.f;
 			_offset = 0;
 		}
 
@@ -128,22 +141,11 @@ namespace aulos
 			return std::accumulate(_points, _points + _size, size_t{}, [](size_t result, const SampledPoint& point) { return result + point._delay; });
 		}
 
-		constexpr auto value() const noexcept
-		{
-			return _currentValue;
-		}
-
-		constexpr auto valueStep() const noexcept
-		{
-			return _step;
-		}
-
 	private:
 		const SampledPoint* const _points;
 		const unsigned _size;
 		unsigned _index = _size;
-		float _step = 0.f;
 		unsigned _offset = 0;
-		float _currentValue = 0.f;
+		float _lastPointValue = 0;
 	};
 }

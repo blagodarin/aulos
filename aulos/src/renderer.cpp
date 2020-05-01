@@ -16,7 +16,6 @@
 //
 
 #include "composition.hpp"
-#include "shaper.hpp"
 #include "voice.hpp"
 
 #include <algorithm>

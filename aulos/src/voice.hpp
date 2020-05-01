@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include "shaper.hpp"
 #include "wave.hpp"
 
 namespace aulos
@@ -63,13 +64,10 @@ namespace aulos
 				if (buffer)
 				{
 					const auto output = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
-					auto waveShaper = _wave.createShaper<Shaper>(_baseAmplitude);
-					auto [multiplier, step] = _wave.linearChange();
+					auto waveShaper = _wave.createWaveShaper<Shaper>(_baseAmplitude);
+					auto amplitudeShaper = _wave.createAmplitudeShaper();
 					for (unsigned i = 0; i < blocksToGenerate; ++i)
-					{
-						output[i] += waveShaper.advance() * multiplier;
-						multiplier += step;
-					}
+						output[i] += waveShaper.advance() * amplitudeShaper.advance();
 				}
 				_wave.advance(blocksToGenerate);
 				offset += blocksToGenerate * kBlockSize;
@@ -149,14 +147,13 @@ namespace aulos
 				if (buffer)
 				{
 					auto output = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
-					auto waveShaper = _wave.createShaper<Shaper>(_baseAmplitude);
-					auto [multiplier, step] = _wave.linearChange();
+					auto waveShaper = _wave.createWaveShaper<Shaper>(_baseAmplitude);
+					auto amplitudeShaper = _wave.createAmplitudeShaper();
 					for (unsigned i = 0; i < blocksToGenerate; ++i)
 					{
-						const auto value = waveShaper.advance() * multiplier;
+						const auto value = waveShaper.advance() * amplitudeShaper.advance();
 						*output++ += value * _leftAmplitude;
 						*output++ += value * _rightAmplitude;
-						multiplier += step;
 					}
 				}
 				_wave.advance(blocksToGenerate);
@@ -216,16 +213,14 @@ namespace aulos
 				if (buffer)
 				{
 					auto output = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
-					auto leftWaveShaper = _leftWave.createShaper<Shaper>(_baseAmplitude * _leftAmplitude);
-					auto rightWaveShaper = _rightWave.createShaper<Shaper>(_baseAmplitude * _rightAmplitude);
-					auto [leftMultiplier, leftStep] = _leftWave.linearChange();
-					auto [rightMultiplier, rightStep] = _rightWave.linearChange();
+					auto leftWaveShaper = _leftWave.createWaveShaper<Shaper>(_baseAmplitude * _leftAmplitude);
+					auto rightWaveShaper = _rightWave.createWaveShaper<Shaper>(_baseAmplitude * _rightAmplitude);
+					auto leftAmplitudeShaper = _leftWave.createAmplitudeShaper();
+					auto rightAmplitudeShaper = _rightWave.createAmplitudeShaper();
 					for (unsigned i = 0; i < samplesToGenerate; ++i)
 					{
-						*output++ += leftWaveShaper.advance() * leftMultiplier;
-						*output++ += rightWaveShaper.advance() * rightMultiplier;
-						leftMultiplier += leftStep;
-						rightMultiplier += rightStep;
+						*output++ += leftWaveShaper.advance() * leftAmplitudeShaper.advance();
+						*output++ += rightWaveShaper.advance() * rightAmplitudeShaper.advance();
 					}
 				}
 				_leftWave.advance(samplesToGenerate);
