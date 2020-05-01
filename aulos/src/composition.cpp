@@ -311,13 +311,13 @@ namespace aulos
 				if (currentSection != Section::Voice)
 					throw CompositionError{ location(), "Unexpected command" };
 				if (const auto type = readIdentifier(); type == "linear")
-					currentVoice->_wave = Wave::Linear;
+					currentVoice->_waveShape = WaveShape::Linear;
 				else if (type == "quadratic")
-					currentVoice->_wave = Wave::Quadratic;
+					currentVoice->_waveShape = WaveShape::Quadratic;
 				else if (type == "cubic")
-					currentVoice->_wave = Wave::Cubic;
+					currentVoice->_waveShape = WaveShape::Cubic;
 				else if (type == "cosine")
-					currentVoice->_wave = Wave::Cosine;
+					currentVoice->_waveShape = WaveShape::Cosine;
 				else
 					throw CompositionError{ location(), "Bad voice wave type" };
 			}
@@ -478,12 +478,12 @@ namespace aulos
 			text += "\nstereo_inversion " + std::to_string(static_cast<int>(part._voice._stereoInversion));
 			text += "\nstereo_pan " + floatToString(part._voice._stereoPan);
 			text += "\nwave ";
-			switch (part._voice._wave)
+			switch (part._voice._waveShape)
 			{
-			case Wave::Linear: text += "linear"; break;
-			case Wave::Quadratic: text += "quadratic"; break;
-			case Wave::Cubic: text += "cubic"; break;
-			case Wave::Cosine: text += "cosine"; break;
+			case WaveShape::Linear: text += "linear"; break;
+			case WaveShape::Quadratic: text += "quadratic"; break;
+			case WaveShape::Cubic: text += "cubic"; break;
+			case WaveShape::Cosine: text += "cosine"; break;
 			}
 		}
 		text += "\n\n@tracks";

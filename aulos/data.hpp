@@ -50,10 +50,10 @@ namespace aulos
 			: _delay{ delay }, _note{ note } {}
 	};
 
-	// Wave types.
-	enum class Wave
+	// Wave shapes.
+	enum class WaveShape
 	{
-		Linear,    // Linear wave (includes square, rectangular, sawtooth and triangle waveforms).
+		Linear,    // Linear wave (includes square, rectangular, sawtooth and triangle waves).
 		Quadratic, // Quadratic wave with zero derivative on left end.
 		Cubic,     // Cubic wave with zero derivatives on both ends.
 		Cosine,    // Cosine wave.
@@ -83,14 +83,14 @@ namespace aulos
 	// Specifies how to generate a waveform for a sound.
 	struct VoiceData
 	{
-		Wave _wave = Wave::Linear;
-		float _stereoDelay = 0.f;
-		float _stereoPan = 0.f;
-		bool _stereoInversion = true;
+		WaveShape _waveShape = WaveShape::Linear;
 		Envelope _amplitudeEnvelope{ 0.f };
 		Envelope _frequencyEnvelope{ 1.f };
 		Envelope _asymmetryEnvelope{ 0.f };
 		Envelope _oscillationEnvelope{ 1.f };
+		float _stereoDelay = 0.f;
+		float _stereoPan = 0.f;
+		bool _stereoInversion = true;
 	};
 
 	struct SequenceData

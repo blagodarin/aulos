@@ -79,11 +79,11 @@ namespace aulos
 			}
 		}
 
-		template <typename Generator>
-		auto createGenerator(float amplitude) const noexcept
+		template <typename Shaper>
+		auto createShaper(float amplitude) const noexcept
 		{
 			const auto orientedAmplitude = amplitude * _oscillator.stageSign();
-			return Generator{ orientedAmplitude, -2 * orientedAmplitude * _oscillationModulator.value(), _oscillator.stageLength(), _oscillator.stageOffset() };
+			return Shaper{ orientedAmplitude, -2 * orientedAmplitude * _oscillationModulator.value(), _oscillator.stageLength(), _oscillator.stageOffset() };
 		}
 
 		auto linearChange() const noexcept

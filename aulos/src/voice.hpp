@@ -36,7 +36,7 @@ namespace aulos
 		float _baseAmplitude = 0.f;
 	};
 
-	template <typename Generator>
+	template <typename Shaper>
 	class MonoVoice final : public VoiceImpl
 	{
 	public:
@@ -63,11 +63,11 @@ namespace aulos
 				if (buffer)
 				{
 					const auto output = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
-					auto generator = _wave.createGenerator<Generator>(_baseAmplitude);
+					auto waveShaper = _wave.createShaper<Shaper>(_baseAmplitude);
 					auto [multiplier, step] = _wave.linearChange();
 					for (unsigned i = 0; i < blocksToGenerate; ++i)
 					{
-						output[i] += generator() * multiplier;
+						output[i] += waveShaper.advance() * multiplier;
 						multiplier += step;
 					}
 				}
@@ -129,7 +129,7 @@ namespace aulos
 		const float _rightAmplitude;
 	};
 
-	template <typename Generator>
+	template <typename Shaper>
 	class StereoVoice final : public BasicStereoVoice
 	{
 	public:
@@ -149,11 +149,11 @@ namespace aulos
 				if (buffer)
 				{
 					auto output = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
-					auto generator = _wave.createGenerator<Generator>(_baseAmplitude);
+					auto waveShaper = _wave.createShaper<Shaper>(_baseAmplitude);
 					auto [multiplier, step] = _wave.linearChange();
 					for (unsigned i = 0; i < blocksToGenerate; ++i)
 					{
-						const auto value = generator() * multiplier;
+						const auto value = waveShaper.advance() * multiplier;
 						*output++ += value * _leftAmplitude;
 						*output++ += value * _rightAmplitude;
 						multiplier += step;
@@ -195,7 +195,7 @@ namespace aulos
 		WaveState _wave;
 	};
 
-	template <typename Generator>
+	template <typename Shaper>
 	class PhasedStereoVoice final : public BasicStereoVoice
 	{
 	public:
@@ -216,14 +216,14 @@ namespace aulos
 				if (buffer)
 				{
 					auto output = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
-					auto leftGenerator = _leftWave.createGenerator<Generator>(_baseAmplitude * _leftAmplitude);
-					auto rightGenerator = _rightWave.createGenerator<Generator>(_baseAmplitude * _rightAmplitude);
+					auto leftWaveShaper = _leftWave.createShaper<Shaper>(_baseAmplitude * _leftAmplitude);
+					auto rightWaveShaper = _rightWave.createShaper<Shaper>(_baseAmplitude * _rightAmplitude);
 					auto [leftMultiplier, leftStep] = _leftWave.linearChange();
 					auto [rightMultiplier, rightStep] = _rightWave.linearChange();
 					for (unsigned i = 0; i < samplesToGenerate; ++i)
 					{
-						*output++ += leftGenerator() * leftMultiplier;
-						*output++ += rightGenerator() * rightMultiplier;
+						*output++ += leftWaveShaper.advance() * leftMultiplier;
+						*output++ += rightWaveShaper.advance() * rightMultiplier;
 						leftMultiplier += leftStep;
 						rightMultiplier += rightStep;
 					}

@@ -50,7 +50,7 @@ private:
 private:
 	struct EnvelopePoint;
 
-	QComboBox* _typeCombo = nullptr;
+	QComboBox* _waveShapeCombo = nullptr;
 	QDoubleSpinBox* _stereoDelaySpin = nullptr;
 	QDoubleSpinBox* _stereoPanSpin = nullptr;
 	QCheckBox* _stereoInversionCheck = nullptr;

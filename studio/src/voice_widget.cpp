@@ -48,14 +48,15 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 		++row;
 	};
 
-	_typeCombo = new QComboBox{ this };
-	_typeCombo->addItem(tr("Linear wave"), static_cast<int>(aulos::Wave::Linear));
-	_typeCombo->addItem(tr("Quadratic wave"), static_cast<int>(aulos::Wave::Quadratic));
-	_typeCombo->addItem(tr("Cubic wave"), static_cast<int>(aulos::Wave::Cubic));
-	_typeCombo->addItem(tr("Cosine wave"), static_cast<int>(aulos::Wave::Cosine));
+	_waveShapeCombo = new QComboBox{ this };
+	_waveShapeCombo->addItem(tr("Linear"), static_cast<int>(aulos::WaveShape::Linear));
+	_waveShapeCombo->addItem(tr("Quadratic"), static_cast<int>(aulos::WaveShape::Quadratic));
+	_waveShapeCombo->addItem(tr("Cubic"), static_cast<int>(aulos::WaveShape::Cubic));
+	_waveShapeCombo->addItem(tr("Cosine"), static_cast<int>(aulos::WaveShape::Cosine));
 	layout->addItem(new QSpacerItem{ 0, 0, QSizePolicy::Fixed, QSizePolicy::Fixed }, row, 0);
-	layout->addWidget(_typeCombo, row, 1, 1, 3);
-	connect(_typeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &VoiceWidget::updateVoice);
+	layout->addWidget(new QLabel{ tr("Wave shape:"), this }, row, 1);
+	layout->addWidget(_waveShapeCombo, row, 2, 1, 2);
+	connect(_waveShapeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &VoiceWidget::updateVoice);
 	++row;
 
 	createHeader(tr("Stereo parameters"));
@@ -183,7 +184,7 @@ void VoiceWidget::setVoice(const std::shared_ptr<aulos::VoiceData>& voice)
 	_voice.reset(); // Prevent handling voice changes.
 	aulos::VoiceData defaultVoice;
 	const auto usedVoice = voice ? voice.get() : &defaultVoice;
-	_typeCombo->setCurrentIndex(_typeCombo->findData(static_cast<int>(usedVoice->_wave)));
+	_waveShapeCombo->setCurrentIndex(_waveShapeCombo->findData(static_cast<int>(usedVoice->_waveShape)));
 	_stereoDelaySpin->setValue(usedVoice->_stereoDelay);
 	_stereoPanSpin->setValue(usedVoice->_stereoPan);
 	_stereoInversionCheck->setChecked(usedVoice->_stereoInversion);
@@ -198,10 +199,7 @@ void VoiceWidget::updateVoice()
 {
 	if (!_voice)
 		return;
-	_voice->_wave = static_cast<aulos::Wave>(_typeCombo->currentData().toInt());
-	_voice->_stereoDelay = static_cast<float>(_stereoDelaySpin->value());
-	_voice->_stereoPan = static_cast<float>(_stereoPanSpin->value());
-	_voice->_stereoInversion = _stereoInversionCheck->isChecked();
+	_voice->_waveShape = static_cast<aulos::WaveShape>(_waveShapeCombo->currentData().toInt());
 	if (auto i = _amplitudeEnvelope.begin(); i->_check->isChecked())
 	{
 		_voice->_amplitudeEnvelope._initial = static_cast<float>(i->_value->value());
@@ -230,5 +228,8 @@ void VoiceWidget::updateVoice()
 		for (++i; i != _oscillationEnvelope.end() && i->_check->isChecked(); ++i)
 			_voice->_oscillationEnvelope._changes.emplace_back(static_cast<float>(i->_delay->value()), static_cast<float>(i->_value->value()));
 	}
+	_voice->_stereoDelay = static_cast<float>(_stereoDelaySpin->value());
+	_voice->_stereoPan = static_cast<float>(_stereoPanSpin->value());
+	_voice->_stereoInversion = _stereoInversionCheck->isChecked();
 	emit voiceChanged();
 }
