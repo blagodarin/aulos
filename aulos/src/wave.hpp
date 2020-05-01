@@ -91,7 +91,7 @@ namespace aulos
 		auto createWaveShaper(float amplitude) const noexcept
 		{
 			const auto orientedAmplitude = amplitude * _oscillator.stageSign();
-			return Shaper{ orientedAmplitude, -2 * orientedAmplitude * _oscillationModulator.currentValue<LinearShaper>(), _oscillator.stageLength(), _oscillator.stageOffset() };
+			return Shaper{ orientedAmplitude, -2 * orientedAmplitude * (1 - _oscillationModulator.currentValue<LinearShaper>()), _oscillator.stageLength(), _oscillator.stageOffset() };
 		}
 
 		auto maxAdvance() const noexcept

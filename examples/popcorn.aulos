@@ -6,7 +6,7 @@ title "Popcorn"
 amplitude 0.00 0.01 1.00 0.04 1.00 0.05 0.50 0.90 0.00
 asymmetry 0.00 0.01 0.80 0.10 0.60
 frequency 0.80 0.01 1.00
-oscillation 1.00
+oscillation 0.00
 stereo_delay 10.00
 stereo_inversion 0
 stereo_pan 0.00
@@ -16,7 +16,7 @@ wave cubic
 amplitude 0.00 0.02 1.00 0.08 0.25 0.60 0.00
 asymmetry 0.00 0.02 0.80 0.08 0.75 0.60 0.00
 frequency 0.80 0.02 1.00 0.08 1.00 0.60 0.99
-oscillation 0.95 0.10 1.00
+oscillation 0.05 0.10 0.00
 stereo_delay -5.00
 stereo_inversion 0
 stereo_pan 0.00
@@ -26,7 +26,7 @@ wave cubic
 amplitude 0.00 0.01 1.00 0.09 0.20 0.40 0.00
 asymmetry 0.25
 frequency 1.00 0.01 1.00 0.09 0.75
-oscillation 0.97 0.10 1.00
+oscillation 0.03 0.10 0.00
 stereo_delay 20.00
 stereo_inversion 0
 stereo_pan -0.25
@@ -36,7 +36,7 @@ wave cubic
 amplitude 0.00 0.10 1.00 0.40 0.50 0.50 0.00
 asymmetry 0.10
 frequency 1.00
-oscillation 0.90
+oscillation 0.10
 stereo_delay 0.00
 stereo_inversion 0
 stereo_pan 0.00

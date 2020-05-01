@@ -87,10 +87,10 @@ namespace aulos
 		Envelope _amplitudeEnvelope{ 0.f };
 		Envelope _frequencyEnvelope{ 1.f };
 		Envelope _asymmetryEnvelope{ 0.f };
-		Envelope _oscillationEnvelope{ 1.f };
+		Envelope _oscillationEnvelope{ 0.f };
 		float _stereoDelay = 0.f;
 		float _stereoPan = 0.f;
-		bool _stereoInversion = true;
+		bool _stereoInversion = false;
 	};
 
 	struct SequenceData
