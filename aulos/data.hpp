@@ -75,19 +75,16 @@ namespace aulos
 	{
 		float _initial = 0.f;        // Initial value.
 		std::vector<Point> _changes; // List of consecutive value changes.
-
-		Envelope(float initial) noexcept
-			: _initial{ initial } {}
 	};
 
 	// Specifies how to generate a waveform for a sound.
 	struct VoiceData
 	{
 		WaveShape _waveShape = WaveShape::Linear;
-		Envelope _amplitudeEnvelope{ 0.f };
-		Envelope _frequencyEnvelope{ 1.f };
-		Envelope _asymmetryEnvelope{ 0.f };
-		Envelope _oscillationEnvelope{ 0.f };
+		Envelope _amplitudeEnvelope;
+		Envelope _frequencyEnvelope;
+		Envelope _asymmetryEnvelope;
+		Envelope _oscillationEnvelope;
 		float _stereoDelay = 0.f;
 		float _stereoPan = 0.f;
 		bool _stereoInversion = false;

@@ -69,7 +69,7 @@ namespace aulos
 			_frequencyModulator.advance(samples);
 			_asymmetryModulator.advance(samples);
 			_oscillationModulator.advance(samples);
-			_oscillator.advance(samples, _frequency * _frequencyModulator.currentValue<LinearShaper>(), _asymmetryModulator.currentValue<LinearShaper>());
+			_oscillator.advance(samples, _frequency * std::pow(2.f, _frequencyModulator.currentValue<LinearShaper>()), _asymmetryModulator.currentValue<LinearShaper>());
 			if (_restartDelay > 0)
 			{
 				assert(!_startDelay);
@@ -168,7 +168,7 @@ namespace aulos
 			_frequencyModulator.start<LinearShaper>(false);
 			_asymmetryModulator.start<LinearShaper>(false);
 			_oscillationModulator.start<LinearShaper>(false);
-			_oscillator.start(frequency * _frequencyModulator.currentValue<LinearShaper>(), _asymmetryModulator.currentValue<LinearShaper>(), fromCurrent);
+			_oscillator.start(frequency * std::pow(2.f, _frequencyModulator.currentValue<LinearShaper>()), _asymmetryModulator.currentValue<LinearShaper>(), fromCurrent);
 			_frequency = frequency;
 		}
 

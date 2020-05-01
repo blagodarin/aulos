@@ -116,7 +116,7 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 			point._value->setMaximum(1.0);
 			point._value->setMinimum(minimum);
 			point._value->setSingleStep(0.01);
-			point._value->setValue(1.0);
+			point._value->setValue(0.0);
 			layout->addWidget(point._value, row, 3);
 			connect(point._value, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
 
@@ -139,16 +139,16 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 	};
 
 	createHeader(tr("Amplitude modulation"));
-	createEnvelopeWidgets(_amplitudeEnvelope, 0.0);
+	createEnvelopeWidgets(_amplitudeEnvelope, 0);
 
 	createHeader(tr("Frequency modulation"));
-	createEnvelopeWidgets(_frequencyEnvelope, 0.5);
+	createEnvelopeWidgets(_frequencyEnvelope, -1);
 
 	createHeader(tr("Asymmetry modulation"));
-	createEnvelopeWidgets(_asymmetryEnvelope, 0.0);
+	createEnvelopeWidgets(_asymmetryEnvelope, 0);
 
 	createHeader(tr("Oscillation modulation"));
-	createEnvelopeWidgets(_oscillationEnvelope, 0.0);
+	createEnvelopeWidgets(_oscillationEnvelope, 0);
 
 	layout->addItem(new QSpacerItem{ 0, 0, QSizePolicy::Minimum, QSizePolicy::Expanding }, row, 0, 1, 4);
 	layout->setRowStretch(row, 1);

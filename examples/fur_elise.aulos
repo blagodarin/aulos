@@ -5,7 +5,7 @@ title "Fur Elise"
 @voice 1 "RightHand"
 amplitude 0.00 0.01 1.00 0.04 0.50 0.95 0.00
 asymmetry 0.50 0.05 0.90 0.95 0.00
-frequency 0.80 0.01 0.80 0.04 1.00 0.95 0.99
+frequency -0.30 0.01 -0.30 0.04 0.00 0.95 -0.01
 oscillation 0.20
 stereo_delay -0.50
 stereo_inversion 0
@@ -15,7 +15,7 @@ wave quadratic
 @voice 2 "LeftHand"
 amplitude 0.00 0.01 1.00 0.04 1.00 0.05 0.40 0.90 0.00
 asymmetry 0.30 0.10 0.00 0.90 0.90
-frequency 0.50 0.01 1.00 0.09 1.00 0.10 0.99 0.80 0.95
+frequency -1.00 0.01 0.00 0.09 0.00 0.10 -0.01 0.80 -0.10
 oscillation 1.00
 stereo_delay 0.50
 stereo_inversion 0

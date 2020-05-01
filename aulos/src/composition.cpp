@@ -272,11 +272,10 @@ namespace aulos
 			{
 				if (currentSection != Section::Voice)
 					throw CompositionError{ location(), "Unexpected command" };
-				constexpr auto minFrequency = std::numeric_limits<float>::min();
 				auto& envelope = currentVoice->_frequencyEnvelope;
-				envelope._initial = readFloat(minFrequency, 1.f);
+				envelope._initial = readFloat(-1.f, 1.f);
 				while (const auto delay = tryReadFloat(0.f, kMaxEnvelopePartDuration))
-					envelope._changes.emplace_back(*delay, readFloat(minFrequency, 1.f));
+					envelope._changes.emplace_back(*delay, readFloat(-1.f, 1.f));
 			}
 			else if (command == "oscillation")
 			{
