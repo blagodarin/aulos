@@ -22,40 +22,25 @@
 
 namespace aulos
 {
-	// Generators are stateful objects which produce half-period wave parts.
-	//
-	// A generator is parameterized with:
-	//   * length of the half-period;
-	//   * offset within the half-period to start generating wave at;
-	//   * amplitude of the generated wave, i. e. maximum value of the generator function in the half-period;
-	//   * oscillation parameter which defines the minimum value of the generator function in the half-period,
-	//     effectively blending the wave with rectangular wave of the same frequency.
-	//
-	// The parameters have the following properties:
-	//   * length > 0;
-	//   * 0 <= offset < length;
-	//   * 0 <= oscillation <= amplitude;
-	//   * minimum = amplitude - 2 * oscillation.
-	//
-	// The resulting generator function F(X) must have the following properties:
-	//   * F(0) = amplitude;
-	//   * minimum <= F(X) <= amplitude for 0 <= X < length.
+	// A generator advances from (0, firstY) to (deltaX, firstY + deltaY) according to the shape function Y(X) which
+	// stays in [firstY, firstY + deltaY] (or [firstY + deltaY, firstY] if deltaY is negative) for any X in [0, deltaX].
+	// Generators start at offsetX which must be in [0, deltaX).
 
-	// C = 2 * oscillation / length
-	// F(X) = amplitude - C * X
-	// F(X) = F(X - 1) - C
+	// C = deltaY / deltaX
+	// Y(X) = firstY + C * X
+	// Y(X) = Y(X - 1) + C
 	class LinearGenerator
 	{
 	public:
-		constexpr LinearGenerator(float length, float offset, float amplitude, float oscillation) noexcept
-			: _coefficient{ 2 * oscillation / length }
-			, _lastValue{ amplitude - _coefficient * (offset - 1) }
+		constexpr LinearGenerator(float firstY, float deltaY, float deltaX, float offsetX) noexcept
+			: _coefficient{ deltaY / deltaX }
+			, _lastValue{ firstY + _coefficient * (offsetX - 1) }
 		{
 		}
 
 		constexpr auto operator()() noexcept
 		{
-			return _lastValue -= _coefficient;
+			return _lastValue += _coefficient;
 		}
 
 	private:
@@ -63,23 +48,23 @@ namespace aulos
 		float _lastValue;
 	};
 
-	// C = 2 * oscillation / length^2
-	// F(X) = amplitude - C * X^2
-	// F(X) = F(X - 1) - C * (2 * X - 1)
+	// C = deltaY / deltaX^2
+	// Y(X) = firstY + C * X^2
+	// Y(X) = Y(X - 1) + C * (2 * X - 1)
 	class QuadraticGenerator
 	{
 	public:
-		constexpr QuadraticGenerator(float length, float offset, float amplitude, float oscillation) noexcept
-			: _coefficient{ 2 * oscillation / (length * length) }
-			, _lastX{ offset - 1 }
-			, _lastValue{ amplitude - _coefficient * _lastX * _lastX }
+		constexpr QuadraticGenerator(float firstY, float deltaY, float deltaX, float offsetX) noexcept
+			: _coefficient{ deltaY / (deltaX * deltaX) }
+			, _lastX{ offsetX - 1 }
+			, _lastValue{ firstY + _coefficient * _lastX * _lastX }
 		{
 		}
 
 		constexpr auto operator()() noexcept
 		{
 			_lastX += 1;
-			return _lastValue -= _coefficient * (2 * _lastX - 1);
+			return _lastValue += _coefficient * (2 * _lastX - 1);
 		}
 
 	private:
@@ -88,25 +73,25 @@ namespace aulos
 		float _lastValue;
 	};
 
-	// C2 = 6 * oscillation * length^2
-	// C3 = 4 * oscillation * length^3
-	// F(X) = amplitude - (C2 - C3 * X) * X^2
-	// F(X) = F(X - 1) - [C2 * (2 * X - 1) - C3 * (3 * X * (X - 1) + 1)]
+	// C2 = 3 * deltaY / deltaX^2
+	// C3 = 2 * deltaY / deltaX^3
+	// Y(X) = firstY + (C2 - C3 * X) * X^2
+	// Y(X) = Y(X - 1) + [C2 * (2 * X - 1) - C3 * (3 * X * (X - 1) + 1)]
 	class CubicGenerator
 	{
 	public:
-		constexpr CubicGenerator(float length, float offset, float amplitude, float oscillation) noexcept
-			: _coefficient2{ 6 * oscillation / (length * length) }
-			, _coefficient3{ 4 * oscillation / (length * length * length) }
-			, _lastX{ offset - 1 }
-			, _lastValue{ amplitude - (_coefficient2 - _coefficient3 * _lastX) * _lastX * _lastX }
+		constexpr CubicGenerator(float firstY, float deltaY, float deltaX, float offsetX) noexcept
+			: _coefficient2{ 3 * deltaY / (deltaX * deltaX) }
+			, _coefficient3{ 2 * deltaY / (deltaX * deltaX * deltaX) }
+			, _lastX{ offsetX - 1 }
+			, _lastValue{ firstY + (_coefficient2 - _coefficient3 * _lastX) * _lastX * _lastX }
 		{
 		}
 
 		constexpr auto operator()() noexcept
 		{
 			_lastX += 1;
-			return _lastValue -= _coefficient2 * (2 * _lastX - 1) - _coefficient3 * (3 * _lastX * (_lastX - 1) + 1);
+			return _lastValue += _coefficient2 * (2 * _lastX - 1) - _coefficient3 * (3 * _lastX * (_lastX - 1) + 1);
 		}
 
 	private:
@@ -116,19 +101,19 @@ namespace aulos
 		float _lastValue;
 	};
 
-	// F(X) = G(X) + amplitude - oscillation
-	// G(X) = oscillation * cos(X * pi / length)
-	// G(X) = [G(X - 1) - oscillation * sin(pi / length) * sin(X * pi / length)] / cos(pi / length)
+	// Y(X) = G(X) + firstY + 0.5 * deltaY
+	// G(X) = -0.5 * deltaY * cos(X * pi / deltaX)
+	// G(X) = [G(X - 1) + 0.5 * deltaY * sin(pi / deltaX) * sin(X * pi / deltaX)] / cos(pi / deltaX)
 	class CosineGenerator
 	{
 	public:
-		CosineGenerator(float length, float offset, float amplitude, float oscillation) noexcept
-			: _delta{ std::numbers::pi / length }
+		CosineGenerator(float firstY, float deltaY, float deltaX, float offsetX) noexcept
+			: _delta{ std::numbers::pi / deltaX }
 			, _cosDelta{ std::cos(_delta) }
-			, _scaledSinDelta{ oscillation * std::sin(_delta) }
-			, _valueOffset{ amplitude - oscillation }
-			, _lastX{ offset - 1 }
-			, _lastValue{ oscillation * std::cos(_delta * _lastX) }
+			, _scaledSinDelta{ -.5 * deltaY * std::sin(_delta) }
+			, _valueOffset{ firstY + .5 * deltaY }
+			, _lastX{ offsetX - 1 }
+			, _lastValue{ -.5 * deltaY * std::cos(_delta * _lastX) }
 		{
 		}
 
@@ -144,7 +129,7 @@ namespace aulos
 		const double _cosDelta;
 		const double _scaledSinDelta;
 		const double _valueOffset;
-		double _lastX;
+		float _lastX;
 		double _lastValue;
 	};
 }

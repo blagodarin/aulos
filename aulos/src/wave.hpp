@@ -83,7 +83,7 @@ namespace aulos
 		auto createGenerator(float amplitude) const noexcept
 		{
 			const auto orientedAmplitude = amplitude * _oscillator.stageSign();
-			return Generator{ _oscillator.stageLength(), _oscillator.stageOffset(), orientedAmplitude, _oscillationModulator.value() * orientedAmplitude };
+			return Generator{ orientedAmplitude, -2 * orientedAmplitude * _oscillationModulator.value(), _oscillator.stageLength(), _oscillator.stageOffset() };
 		}
 
 		auto linearChange() const noexcept
