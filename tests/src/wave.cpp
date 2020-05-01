@@ -82,12 +82,13 @@ TEST_CASE("wave_sawtooth_mono")
 	CHECK(voice.renderSample() == amplitude);
 }
 
-TEST_CASE("wave_sawtooth_stereo_antiphase")
+TEST_CASE("wave_sawtooth_stereo_inversion")
 {
 	aulos::VoiceData data;
 	data._amplitudeEnvelope._initial = 1.f;
 	data._amplitudeEnvelope._changes.emplace_back(.5f, 1.f);
 	data._asymmetryEnvelope._initial = 1.f;
+	data._stereoInversion = true;
 
 	constexpr auto amplitude = .1f;
 	TestVoice voice{ data, amplitude, 2 };
@@ -126,7 +127,7 @@ TEST_CASE("wave_square_mono")
 	aulos::VoiceData data;
 	data._amplitudeEnvelope._initial = 1.f;
 	data._amplitudeEnvelope._changes.emplace_back(.5f, 1.f);
-	data._oscillationEnvelope._initial = 0.f;
+	data._oscillationEnvelope._initial = 1.f;
 
 	constexpr auto amplitude = .2f;
 	TestVoice voice{ data, amplitude };
