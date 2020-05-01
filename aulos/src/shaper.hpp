@@ -40,7 +40,7 @@ namespace aulos
 
 		constexpr auto advance() noexcept
 		{
-			return _lastValue += _coefficient;
+			return static_cast<float>(_lastValue += _coefficient);
 		}
 
 		static constexpr auto value(float firstY, float deltaY, float deltaX, float offsetX) noexcept
@@ -51,7 +51,7 @@ namespace aulos
 
 	private:
 		const float _coefficient;
-		float _lastValue;
+		double _lastValue; // Linear shaper tests fail if this value is stored as float.
 	};
 
 	// C = deltaY / deltaX^2
