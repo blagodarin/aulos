@@ -57,6 +57,7 @@ namespace aulos
 		Quadratic1, // Quadratic curve with zero derivative on the left.
 		Quadratic2, // Quadratic curve with zero derivative on the right.
 		Cubic,      // Cubic curve.
+		Quintic,    // Quintic curve with zero value and derivative in the middle.
 		Cosine,     // Cosine curve.
 	};
 

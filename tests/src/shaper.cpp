@@ -27,39 +27,44 @@ namespace
 	constexpr double kPrecision = 0.00'0001; // Allow 0.0001% error.
 
 	template <typename Shaper>
-	void checkShaper()
+	void checkShaper(double epsilon)
 	{
 		Shaper shaper{ kFirstY, kDeltaY, kDeltaX, 0 };
 		for (float i = 0; i < kDeltaX; ++i)
 		{
 			const auto nextValue = shaper.advance();
-			CHECK(nextValue == doctest::Approx{ Shaper::value(kFirstY, kDeltaY, kDeltaX, i) }.epsilon(kPrecision));
-			CHECK(nextValue == doctest::Approx{ Shaper{ kFirstY, kDeltaY, kDeltaX, i }.advance() }.epsilon(kPrecision));
+			CHECK(nextValue == doctest::Approx{ Shaper::value(kFirstY, kDeltaY, kDeltaX, i) }.epsilon(epsilon));
+			CHECK(nextValue == doctest::Approx{ Shaper{ kFirstY, kDeltaY, kDeltaX, i }.advance() }.epsilon(epsilon));
 		}
 	}
 }
 
 TEST_CASE("shaper_cosine")
 {
-	::checkShaper<aulos::CosineShaper>();
+	::checkShaper<aulos::CosineShaper>(kPrecision);
 }
 
 TEST_CASE("shaper_cubic")
 {
-	::checkShaper<aulos::CubicShaper>();
+	::checkShaper<aulos::CubicShaper>(kPrecision);
 }
 
 TEST_CASE("shaper_linear")
 {
-	::checkShaper<aulos::LinearShaper>();
+	::checkShaper<aulos::LinearShaper>(kPrecision);
 }
 
 TEST_CASE("shaper_quadratic1")
 {
-	::checkShaper<aulos::Quadratic1Shaper>();
+	::checkShaper<aulos::Quadratic1Shaper>(kPrecision);
 }
 
 TEST_CASE("shaper_quadratic2")
 {
-	::checkShaper<aulos::Quadratic2Shaper>();
+	::checkShaper<aulos::Quadratic2Shaper>(kPrecision);
+}
+
+TEST_CASE("shaper_quintic")
+{
+	::checkShaper<aulos::QuinticShaper>(0.00'001);
 }

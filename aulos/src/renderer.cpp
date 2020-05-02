@@ -34,6 +34,7 @@ namespace
 			case aulos::WaveShape::Quadratic1: return std::make_unique<aulos::MonoVoice<aulos::Quadratic1Shaper>>(data, samplingRate);
 			case aulos::WaveShape::Quadratic2: return std::make_unique<aulos::MonoVoice<aulos::Quadratic2Shaper>>(data, samplingRate);
 			case aulos::WaveShape::Cubic: return std::make_unique<aulos::MonoVoice<aulos::CubicShaper>>(data, samplingRate);
+			case aulos::WaveShape::Quintic: return std::make_unique<aulos::MonoVoice<aulos::QuinticShaper>>(data, samplingRate);
 			case aulos::WaveShape::Cosine: return std::make_unique<aulos::MonoVoice<aulos::CosineShaper>>(data, samplingRate);
 			}
 			break;
@@ -47,6 +48,7 @@ namespace
 				case aulos::WaveShape::Quadratic1: return std::make_unique<aulos::StereoVoice<aulos::Quadratic1Shaper>>(data, samplingRate);
 				case aulos::WaveShape::Quadratic2: return std::make_unique<aulos::StereoVoice<aulos::Quadratic2Shaper>>(data, samplingRate);
 				case aulos::WaveShape::Cubic: return std::make_unique<aulos::StereoVoice<aulos::CubicShaper>>(data, samplingRate);
+				case aulos::WaveShape::Quintic: return std::make_unique<aulos::StereoVoice<aulos::QuinticShaper>>(data, samplingRate);
 				case aulos::WaveShape::Cosine: return std::make_unique<aulos::StereoVoice<aulos::CosineShaper>>(data, samplingRate);
 				}
 			}
@@ -58,6 +60,7 @@ namespace
 				case aulos::WaveShape::Quadratic1: return std::make_unique<aulos::PhasedStereoVoice<aulos::Quadratic1Shaper>>(data, samplingRate);
 				case aulos::WaveShape::Quadratic2: return std::make_unique<aulos::PhasedStereoVoice<aulos::Quadratic2Shaper>>(data, samplingRate);
 				case aulos::WaveShape::Cubic: return std::make_unique<aulos::PhasedStereoVoice<aulos::CubicShaper>>(data, samplingRate);
+				case aulos::WaveShape::Quintic: return std::make_unique<aulos::PhasedStereoVoice<aulos::QuinticShaper>>(data, samplingRate);
 				case aulos::WaveShape::Cosine: return std::make_unique<aulos::PhasedStereoVoice<aulos::CosineShaper>>(data, samplingRate);
 				}
 			}

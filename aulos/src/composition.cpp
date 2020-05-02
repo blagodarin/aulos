@@ -96,7 +96,7 @@ namespace aulos
 			const auto begin = source;
 			do
 				++source;
-			while ((*source >= 'a' && *source <= 'z') || *source == '_');
+			while ((*source >= 'a' && *source <= 'z') || (*source >= '0' && *source <= '9') || *source == '_');
 			const std::string_view result{ begin, static_cast<size_t>(source - begin) };
 			skipSpaces();
 			return result;
@@ -317,6 +317,8 @@ namespace aulos
 					currentVoice->_waveShape = WaveShape::Quadratic2;
 				else if (type == "cubic")
 					currentVoice->_waveShape = WaveShape::Cubic;
+				else if (type == "quintic")
+					currentVoice->_waveShape = WaveShape::Quintic;
 				else if (type == "cosine")
 					currentVoice->_waveShape = WaveShape::Cosine;
 				else
@@ -485,6 +487,7 @@ namespace aulos
 			case WaveShape::Quadratic1: text += "quadratic1"; break;
 			case WaveShape::Quadratic2: text += "quadratic2"; break;
 			case WaveShape::Cubic: text += "cubic"; break;
+			case WaveShape::Quintic: text += "quintic"; break;
 			case WaveShape::Cosine: text += "cosine"; break;
 			}
 		}
