@@ -26,22 +26,22 @@ namespace aulos
 	// which stays in [firstY, firstY + deltaY] (or [firstY + deltaY, firstY] if deltaY is negative) for any X in [0, deltaX].
 	// Shapers start at offsetX which must be in [0, deltaX).
 
-	// C = deltaY / deltaX
-	// Y(X) = firstY + C * X
-	// Y(X + 1) = Y(X) + C
+	// C1 = deltaY / deltaX
+	// Y(X) = firstY + C1 * X
+	// Y(X + 1) = Y(X) + C1
 	class LinearShaper
 	{
 	public:
 		constexpr LinearShaper(float firstY, float deltaY, float deltaX, float offsetX) noexcept
-			: _coefficient{ deltaY / deltaX }
-			, _nextY{ firstY + _coefficient * offsetX }
+			: _c1{ deltaY / deltaX }
+			, _nextY{ firstY + _c1 * offsetX }
 		{
 		}
 
 		constexpr auto advance() noexcept
 		{
 			const auto nextY = _nextY;
-			_nextY += _coefficient;
+			_nextY += _c1;
 			return static_cast<float>(nextY);
 		}
 
@@ -54,29 +54,29 @@ namespace aulos
 	private:
 		// Linear shaper tests fail if intermediate value is stored as float.
 		// Storing the coefficient as double prevents padding and gives up to 5% composition generation speedup.
-		const double _coefficient;
+		const double _c1;
 		double _nextY;
 	};
 
-	// C = deltaY / deltaX^2
-	// Y(X) = firstY + C * X^2
-	// Y(X + 1) = Y(X) + C * (1 + 2 * X)
+	// C2 = deltaY / deltaX^2
+	// Y(X) = firstY + C2 * X^2
 	// Y'(0) = 0
 	class Quadratic1Shaper
 	{
 	public:
 		constexpr Quadratic1Shaper(float firstY, float deltaY, float deltaX, float offsetX) noexcept
-			: _coefficient{ deltaY / (deltaX * deltaX) }
-			, _nextY{ firstY + _coefficient * offsetX * offsetX }
+			: _c0{ firstY }
+			, _c2{ deltaY / (deltaX * deltaX) }
 			, _nextX{ offsetX }
+			, _nextY{ firstY + _c2 * offsetX * offsetX }
 		{
 		}
 
 		constexpr auto advance() noexcept
 		{
 			const auto nextY = _nextY;
-			_nextY += _coefficient * (1 + 2 * _nextX);
 			_nextX += 1;
+			_nextY = _c0 + _c2 * _nextX * _nextX;
 			return nextY;
 		}
 
@@ -87,32 +87,33 @@ namespace aulos
 		}
 
 	private:
-		const float _coefficient;
-		float _nextY;
+		const float _c0;
+		const float _c2;
 		float _nextX;
+		float _nextY;
 	};
 
 	// C1 = 2 * deltaY / deltaX
 	// C2 = deltaY / deltaX^2
 	// Y(X) = firstY + (C1 - C2 * X) * X
-	// Y(X + 1) = Y(X) + C1 - C2 * (1 + 2 * X)
 	// Y'(deltaX) = 0
 	class Quadratic2Shaper
 	{
 	public:
 		constexpr Quadratic2Shaper(float firstY, float deltaY, float deltaX, float offsetX) noexcept
-			: _coefficient1{ 2 * deltaY / deltaX }
-			, _coefficient2{ deltaY / (deltaX * deltaX) }
-			, _nextY{ firstY + (_coefficient1 - _coefficient2 * offsetX) * offsetX }
+			: _c0{ firstY }
+			, _c1{ 2 * deltaY / deltaX }
+			, _c2{ deltaY / (deltaX * deltaX) }
 			, _nextX{ offsetX }
+			, _nextY{ firstY + (_c1 - _c2 * offsetX) * offsetX }
 		{
 		}
 
 		constexpr auto advance() noexcept
 		{
 			const auto nextY = _nextY;
-			_nextY += _coefficient1 - _coefficient2 * (1 + 2 * _nextX);
 			_nextX += 1;
+			_nextY = _c0 + (_c1 - _c2 * _nextX) * _nextX;
 			return nextY;
 		}
 
@@ -123,34 +124,35 @@ namespace aulos
 		}
 
 	private:
-		const float _coefficient1;
-		const float _coefficient2;
-		float _nextY;
+		const float _c0;
+		const float _c1;
+		const float _c2;
 		float _nextX;
+		float _nextY;
 	};
 
 	// C2 = 3 * deltaY / deltaX^2
 	// C3 = 2 * deltaY / deltaX^3
 	// Y(X) = firstY + (C2 - C3 * X) * X^2
-	// Y(X + 1) = Y(X) + C2 * (1 + 2 * X) - C3 * (1 + 3 * (1 + X) * X)
 	// Y'(0) = 0
 	// Y'(deltaX) = 0
 	class CubicShaper
 	{
 	public:
 		constexpr CubicShaper(float firstY, float deltaY, float deltaX, float offsetX) noexcept
-			: _coefficient2{ 3 * deltaY / (deltaX * deltaX) }
-			, _coefficient3{ 2 * deltaY / (deltaX * deltaX * deltaX) }
-			, _nextY{ firstY + (_coefficient2 - _coefficient3 * offsetX) * offsetX * offsetX }
+			: _c0{ firstY }
+			, _c2{ 3 * deltaY / (deltaX * deltaX) }
+			, _c3{ 2 * deltaY / (deltaX * deltaX * deltaX) }
 			, _nextX{ offsetX }
+			, _nextY{ firstY + (_c2 - _c3 * offsetX) * offsetX * offsetX }
 		{
 		}
 
 		constexpr auto advance() noexcept
 		{
 			const auto nextY = _nextY;
-			_nextY += _coefficient2 * (2 * _nextX + 1) - _coefficient3 * (3 * _nextX * (_nextX + 1) + 1);
 			_nextX += 1;
+			_nextY = _c0 + (_c2 - _c3 * _nextX) * _nextX * _nextX;
 			return nextY;
 		}
 
@@ -161,10 +163,11 @@ namespace aulos
 		}
 
 	private:
-		const float _coefficient2;
-		const float _coefficient3;
-		float _nextY;
+		const float _c0;
+		const float _c2;
+		const float _c3;
 		float _nextX;
+		float _nextY;
 	};
 
 	// C2 = 15 * deltaY / deltaX^2
