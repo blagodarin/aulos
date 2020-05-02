@@ -28,19 +28,21 @@ namespace aulos
 
 	// C = deltaY / deltaX
 	// Y(X) = firstY + C * X
-	// Y(X) = Y(X - 1) + C
+	// Y(X + 1) = Y(X) + C
 	class LinearShaper
 	{
 	public:
 		constexpr LinearShaper(float firstY, float deltaY, float deltaX, float offsetX) noexcept
 			: _coefficient{ deltaY / deltaX }
-			, _lastValue{ firstY + _coefficient * (offsetX - 1) }
+			, _nextY{ firstY + _coefficient * offsetX }
 		{
 		}
 
 		constexpr auto advance() noexcept
 		{
-			return static_cast<float>(_lastValue += _coefficient);
+			const auto nextY = _nextY;
+			_nextY += _coefficient;
+			return static_cast<float>(nextY);
 		}
 
 		static constexpr auto value(float firstY, float deltaY, float deltaX, float offsetX) noexcept
@@ -50,28 +52,32 @@ namespace aulos
 		}
 
 	private:
-		const float _coefficient;
-		double _lastValue; // Linear shaper tests fail if this value is stored as float.
+		// Linear shaper tests fail if intermediate value is stored as float.
+		// Storing the coefficient as double prevents padding and gives up to 5% composition generation speedup.
+		const double _coefficient;
+		double _nextY;
 	};
 
 	// C = deltaY / deltaX^2
 	// Y(X) = firstY + C * X^2
-	// Y(X) = Y(X - 1) + C * (2 * X - 1)
+	// Y(X + 1) = Y(X) + C * (2 * X + 1)
 	// Y'(0) = 0
 	class QuadraticShaper
 	{
 	public:
 		constexpr QuadraticShaper(float firstY, float deltaY, float deltaX, float offsetX) noexcept
 			: _coefficient{ deltaY / (deltaX * deltaX) }
-			, _lastX{ offsetX - 1 }
-			, _lastValue{ firstY + _coefficient * _lastX * _lastX }
+			, _nextY{ firstY + _coefficient * offsetX * offsetX }
+			, _nextX{ offsetX }
 		{
 		}
 
 		constexpr auto advance() noexcept
 		{
-			_lastX += 1;
-			return _lastValue += _coefficient * (2 * _lastX - 1);
+			const auto nextY = _nextY;
+			_nextY += _coefficient * (2 * _nextX + 1);
+			_nextX += 1;
+			return nextY;
 		}
 
 		static constexpr auto value(float firstY, float deltaY, float deltaX, float offsetX) noexcept
@@ -82,14 +88,14 @@ namespace aulos
 
 	private:
 		const float _coefficient;
-		float _lastX;
-		float _lastValue;
+		float _nextY;
+		float _nextX;
 	};
 
 	// C2 = 3 * deltaY / deltaX^2
 	// C3 = 2 * deltaY / deltaX^3
 	// Y(X) = firstY + (C2 - C3 * X) * X^2
-	// Y(X) = Y(X - 1) + [C2 * (2 * X - 1) - C3 * (3 * X * (X - 1) + 1)]
+	// Y(X + 1) = Y(X) + [C2 * (2 * X + 1) - C3 * (3 * X * (X + 1) + 1)]
 	// Y'(0) = 0
 	// Y'(deltaX) = 0
 	class CubicShaper
@@ -98,15 +104,17 @@ namespace aulos
 		constexpr CubicShaper(float firstY, float deltaY, float deltaX, float offsetX) noexcept
 			: _coefficient2{ 3 * deltaY / (deltaX * deltaX) }
 			, _coefficient3{ 2 * deltaY / (deltaX * deltaX * deltaX) }
-			, _lastX{ offsetX - 1 }
-			, _lastValue{ firstY + (_coefficient2 - _coefficient3 * _lastX) * _lastX * _lastX }
+			, _nextY{ firstY + (_coefficient2 - _coefficient3 * offsetX) * offsetX * offsetX }
+			, _nextX{ offsetX }
 		{
 		}
 
 		constexpr auto advance() noexcept
 		{
-			_lastX += 1;
-			return _lastValue += _coefficient2 * (2 * _lastX - 1) - _coefficient3 * (3 * _lastX * (_lastX - 1) + 1);
+			const auto nextY = _nextY;
+			_nextY += _coefficient2 * (2 * _nextX + 1) - _coefficient3 * (3 * _nextX * (_nextX + 1) + 1);
+			_nextX += 1;
+			return nextY;
 		}
 
 		static constexpr auto value(float firstY, float deltaY, float deltaX, float offsetX) noexcept
@@ -118,31 +126,32 @@ namespace aulos
 	private:
 		const float _coefficient2;
 		const float _coefficient3;
-		float _lastX;
-		float _lastValue;
+		float _nextY;
+		float _nextX;
 	};
 
 	// Y(X) = G(X) + firstY + 0.5 * deltaY
 	// G(X) = -0.5 * deltaY * cos(X * pi / deltaX)
-	// G(X) = [G(X - 1) + 0.5 * deltaY * sin(pi / deltaX) * sin(X * pi / deltaX)] / cos(pi / deltaX)
+	// G(X + 1) = G(X) * cos(pi / deltaX) + 0.5 * deltaY * sin(pi / deltaX) * sin(X * pi / deltaX)
 	class CosineShaper
 	{
 	public:
 		CosineShaper(float firstY, float deltaY, float deltaX, float offsetX) noexcept
-			: _delta{ std::numbers::pi / deltaX }
-			, _cosDelta{ std::cos(_delta) }
-			, _scaledSinDelta{ -.5 * deltaY * std::sin(_delta) }
-			, _valueOffset{ firstY + .5 * deltaY }
-			, _lastX{ offsetX - 1 }
-			, _lastValue{ -.5 * deltaY * std::cos(_delta * _lastX) }
+			: _phi{ std::numbers::pi / deltaX }
+			, _cosPhi{ std::cos(_phi) }
+			, _scaledSinPhi{ .5 * deltaY * std::sin(_phi) }
+			, _baseG{ firstY + .5 * deltaY }
+			, _nextG{ -.5 * deltaY * std::cos(_phi * offsetX) }
+			, _nextX{ offsetX }
 		{
 		}
 
 		auto advance() noexcept
 		{
-			_lastX += 1;
-			_lastValue = (_lastValue - _scaledSinDelta * std::sin(_delta * _lastX)) / _cosDelta;
-			return static_cast<float>(_lastValue + _valueOffset);
+			const auto nextG = _nextG;
+			_nextG = _nextG * _cosPhi + _scaledSinPhi * std::sin(_phi * _nextX);
+			_nextX += 1;
+			return static_cast<float>(_baseG + nextG);
 		}
 
 		static auto value(float firstY, float deltaY, float deltaX, float offsetX) noexcept
@@ -152,11 +161,11 @@ namespace aulos
 		}
 
 	private:
-		const double _delta;
-		const double _cosDelta;
-		const double _scaledSinDelta;
-		const double _valueOffset;
-		float _lastX;
-		double _lastValue;
+		const double _phi;
+		const double _cosPhi;
+		const double _scaledSinPhi;
+		const double _baseG;
+		double _nextG;
+		float _nextX;
 	};
 }
