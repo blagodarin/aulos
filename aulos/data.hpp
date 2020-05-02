@@ -50,13 +50,14 @@ namespace aulos
 			: _delay{ delay }, _note{ note } {}
 	};
 
-	// Wave shapes.
+	// Shape types.
 	enum class WaveShape
 	{
-		Linear,    // Linear wave (includes square, rectangular, sawtooth and triangle waves).
-		Quadratic, // Quadratic wave with zero derivative on left end.
-		Cubic,     // Cubic wave with zero derivatives on both ends.
-		Cosine,    // Cosine wave.
+		Linear,     // Straight line (used for synthesizing square, rectangular, sawtooth and triangle waves).
+		Quadratic1, // Quadratic curve with zero derivative on the left.
+		Quadratic2, // Quadratic curve with zero derivative on the right.
+		Cubic,      // Cubic curve.
+		Cosine,     // Cosine curve.
 	};
 
 	struct Point

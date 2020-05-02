@@ -62,10 +62,10 @@ namespace aulos
 	// Y(X) = firstY + C * X^2
 	// Y(X + 1) = Y(X) + C * (2 * X + 1)
 	// Y'(0) = 0
-	class QuadraticShaper
+	class Quadratic1Shaper
 	{
 	public:
-		constexpr QuadraticShaper(float firstY, float deltaY, float deltaX, float offsetX) noexcept
+		constexpr Quadratic1Shaper(float firstY, float deltaY, float deltaX, float offsetX) noexcept
 			: _coefficient{ deltaY / (deltaX * deltaX) }
 			, _nextY{ firstY + _coefficient * offsetX * offsetX }
 			, _nextX{ offsetX }
@@ -88,6 +88,43 @@ namespace aulos
 
 	private:
 		const float _coefficient;
+		float _nextY;
+		float _nextX;
+	};
+
+	// C1 = 2 * deltaY / deltaX
+	// C2 = deltaY / deltaX^2
+	// Y(X) = firstY + (C1 - C2 * X) * X
+	// Y(X + 1) = Y(X) + C1 - C2 * (2 * X + 1)
+	// Y'(deltaX) = 0
+	class Quadratic2Shaper
+	{
+	public:
+		constexpr Quadratic2Shaper(float firstY, float deltaY, float deltaX, float offsetX) noexcept
+			: _coefficient1{ 2 * deltaY / deltaX }
+			, _coefficient2{ deltaY / (deltaX * deltaX) }
+			, _nextY{ firstY + (_coefficient1 - _coefficient2 * offsetX) * offsetX }
+			, _nextX{ offsetX }
+		{
+		}
+
+		constexpr auto advance() noexcept
+		{
+			const auto nextY = _nextY;
+			_nextY += _coefficient1 - _coefficient2 * (2 * _nextX + 1);
+			_nextX += 1;
+			return nextY;
+		}
+
+		static constexpr auto value(float firstY, float deltaY, float deltaX, float offsetX) noexcept
+		{
+			const auto normalizedX = offsetX / deltaX;
+			return firstY + deltaY * normalizedX * (2 - normalizedX);
+		}
+
+	private:
+		const float _coefficient1;
+		const float _coefficient2;
 		float _nextY;
 		float _nextX;
 	};

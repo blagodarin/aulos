@@ -54,7 +54,12 @@ TEST_CASE("shaper_linear")
 	::checkShaper<aulos::LinearShaper>();
 }
 
-TEST_CASE("shaper_quadratic")
+TEST_CASE("shaper_quadratic1")
 {
-	::checkShaper<aulos::QuadraticShaper>();
+	::checkShaper<aulos::Quadratic1Shaper>();
+}
+
+TEST_CASE("shaper_quadratic2")
+{
+	::checkShaper<aulos::Quadratic2Shaper>();
 }
