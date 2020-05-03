@@ -215,42 +215,38 @@ namespace aulos
 		float _nextY;
 	};
 
-	// Y(X) = G(X) + firstY + 0.5 * deltaY
-	// G(X) = -0.5 * deltaY * cos(X * pi / deltaX)
-	// G(X + 1) = G(X) * cos(pi / deltaX) + 0.5 * deltaY * sin(pi / deltaX) * sin(X * pi / deltaX)
+	// Y(X) = firstY + deltaY * (1 - cos(pi * X / deltaX)) / 2
 	class CosineShaper
 	{
 	public:
 		CosineShaper(float firstY, float deltaY, float deltaX, float offsetX) noexcept
-			: _phi{ std::numbers::pi / deltaX }
-			, _cosPhi{ std::cos(_phi) }
-			, _scaledSinPhi{ .5 * deltaY * std::sin(_phi) }
-			, _baseG{ firstY + .5 * deltaY }
-			, _nextG{ -.5 * deltaY * std::cos(_phi * offsetX) }
+			: _c1{ deltaY / 2 }
+			, _c0{ firstY + _c1 }
+			, _phi{ std::numbers::pi_v<float> / deltaX }
 			, _nextX{ offsetX }
+			, _nextY{ _c0 - _c1 * std::cos(_phi * offsetX) }
 		{
 		}
 
 		auto advance() noexcept
 		{
-			const auto nextG = _nextG;
-			_nextG = _nextG * _cosPhi + _scaledSinPhi * std::sin(_phi * _nextX);
+			const auto nextY = _nextY;
 			_nextX += 1;
-			return static_cast<float>(_baseG + nextG);
+			_nextY = _c0 - _c1 * std::cos(_phi * _nextX);
+			return nextY;
 		}
 
 		static auto value(float firstY, float deltaY, float deltaX, float offsetX) noexcept
 		{
 			const auto normalizedX = offsetX / deltaX;
-			return firstY + deltaY * static_cast<float>(1 - std::cos(std::numbers::pi * normalizedX)) / 2;
+			return firstY + deltaY * (1 - std::cos(std::numbers::pi_v<float> * normalizedX)) / 2;
 		}
 
 	private:
-		const double _phi;
-		const double _cosPhi;
-		const double _scaledSinPhi;
-		const double _baseG;
-		double _nextG;
+		const float _c1;
+		const float _c0;
+		const float _phi;
 		float _nextX;
+		float _nextY;
 	};
 }
