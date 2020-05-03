@@ -54,9 +54,9 @@ namespace
 TEST_CASE("wave_sawtooth_mono")
 {
 	aulos::VoiceData data;
-	data._amplitudeEnvelope._initial = 1.f;
-	data._amplitudeEnvelope._changes.emplace_back(.5f, 1.f);
-	data._asymmetryEnvelope._initial = 1.f;
+	data._amplitudeEnvelope._points.emplace_back(0.f, 1.f);
+	data._amplitudeEnvelope._points.emplace_back(.5f, 1.f);
+	data._asymmetryEnvelope._points.emplace_back(0.f, 1.f);
 
 	constexpr auto amplitude = .1f;
 	TestVoice voice{ data, amplitude };
@@ -85,9 +85,9 @@ TEST_CASE("wave_sawtooth_mono")
 TEST_CASE("wave_sawtooth_stereo_inversion")
 {
 	aulos::VoiceData data;
-	data._amplitudeEnvelope._initial = 1.f;
-	data._amplitudeEnvelope._changes.emplace_back(.5f, 1.f);
-	data._asymmetryEnvelope._initial = 1.f;
+	data._amplitudeEnvelope._points.emplace_back(0.f, 1.f);
+	data._amplitudeEnvelope._points.emplace_back(.5f, 1.f);
+	data._asymmetryEnvelope._points.emplace_back(0.f, 1.f);
 	data._stereoInversion = true;
 
 	constexpr auto amplitude = .1f;
@@ -125,9 +125,9 @@ TEST_CASE("wave_sawtooth_stereo_inversion")
 TEST_CASE("wave_square_mono")
 {
 	aulos::VoiceData data;
-	data._amplitudeEnvelope._initial = 1.f;
-	data._amplitudeEnvelope._changes.emplace_back(.5f, 1.f);
-	data._oscillationEnvelope._initial = 1.f;
+	data._amplitudeEnvelope._points.emplace_back(0.f, 1.f);
+	data._amplitudeEnvelope._points.emplace_back(.5f, 1.f);
+	data._oscillationEnvelope._points.emplace_back(0.f, 1.f);
 
 	constexpr auto amplitude = .2f;
 	TestVoice voice{ data, amplitude };
@@ -141,8 +141,8 @@ TEST_CASE("wave_square_mono")
 TEST_CASE("wave_triangle_mono")
 {
 	aulos::VoiceData data;
-	data._amplitudeEnvelope._initial = 1.f;
-	data._amplitudeEnvelope._changes.emplace_back(.5f, 1.f);
+	data._amplitudeEnvelope._points.emplace_back(0.f, 1.f);
+	data._amplitudeEnvelope._points.emplace_back(.5f, 1.f);
 
 	constexpr auto amplitude = .3f;
 	TestVoice voice{ data, amplitude };
@@ -180,9 +180,9 @@ TEST_CASE("wave_triangle_mono")
 TEST_CASE("wave_triangle_asymmetric_mono")
 {
 	aulos::VoiceData data;
-	data._amplitudeEnvelope._initial = 1.f;
-	data._amplitudeEnvelope._changes.emplace_back(.5f, 1.f);
-	data._asymmetryEnvelope._initial = .5f;
+	data._amplitudeEnvelope._points.emplace_back(0.f, 1.f);
+	data._amplitudeEnvelope._points.emplace_back(.5f, 1.f);
+	data._asymmetryEnvelope._points.emplace_back(0.f, .5f);
 
 	constexpr auto amplitude = .4f;
 	TestVoice voice{ data, amplitude };

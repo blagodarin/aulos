@@ -45,7 +45,7 @@ namespace
 	std::shared_ptr<aulos::VoiceData> makeDefaultVoice()
 	{
 		auto voice = std::make_shared<aulos::VoiceData>();
-		voice->_amplitudeEnvelope._changes = { { .1f, 1.f }, { .4f, .5f }, { .5f, 0.f } };
+		voice->_amplitudeEnvelope._points = { { .1f, 1.f }, { .4f, .5f }, { .5f, 0.f } };
 		return voice;
 	}
 

@@ -63,6 +63,8 @@ namespace aulos
 
 	struct Point
 	{
+		static constexpr auto kMaxDelay = 60.f; // Maximum delay between consecutive envelope points (in seconds).
+
 		float _delay = 0.f;
 		float _value = 0.f;
 
@@ -70,13 +72,10 @@ namespace aulos
 			: _delay{ delay }, _value{ value } {}
 	};
 
-	constexpr auto kMaxEnvelopePartDuration = 60.f; // Maximum delay between consecutive envelope points (in seconds).
-
 	// Specifies how a value changes over time.
 	struct Envelope
 	{
-		float _initial = 0.f;        // Initial value.
-		std::vector<Point> _changes; // List of consecutive value changes.
+		std::vector<Point> _points; // List of consecutive value changes.
 	};
 
 	// Specifies how to generate a waveform for a sound.

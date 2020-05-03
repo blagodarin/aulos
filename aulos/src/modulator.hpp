@@ -28,7 +28,7 @@ namespace aulos
 {
 	struct SampledPoint
 	{
-		unsigned _delay;
+		unsigned _delaySamples;
 		float _value;
 	};
 
@@ -37,17 +37,11 @@ namespace aulos
 	public:
 		SampledEnvelope(const Envelope& envelope, unsigned samplingRate) noexcept
 		{
-			_points[_size++] = { 0, envelope._initial };
-			for (const auto& point : envelope._changes)
+			for (const auto& point : envelope._points)
 			{
-				assert(point._delay >= 0.f);
-				if (point._delay > 0.f)
-				{
-					assert(_size < _points.size());
-					_points[_size++] = { static_cast<unsigned>(point._delay * samplingRate), point._value };
-				}
-				else
-					_points[_size - 1]._value = point._value;
+				assert(point._delay >= 0);
+				assert(_size < _points.size());
+				_points[_size++] = { static_cast<unsigned>(point._delay * samplingRate), point._value };
 			}
 		}
 
@@ -73,79 +67,78 @@ namespace aulos
 			: _points{ envelope.data() }
 			, _size{ envelope.size() }
 		{
-			assert(_size > 0);
-			assert(_points[0]._delay == 0);
-			_lastPointValue = _points[_size - 1]._value;
 		}
 
 		void advance(unsigned samples) noexcept
 		{
-			while (_index < _size)
+			while (_nextIndex < _size)
 			{
-				const auto remainingDelay = _points[_index]._delay - _offset;
+				const auto remainingDelay = _points[_nextIndex]._delaySamples - _offsetSamples;
 				if (remainingDelay > samples)
 				{
-					_offset += samples;
+					_offsetSamples += samples;
 					break;
 				}
 				samples -= remainingDelay;
-				_lastPointValue = _points[_index]._value;
-				++_index;
-				_offset = 0;
+				_lastPointValue = _points[_nextIndex++]._value;
+				_offsetSamples = 0;
 			}
 		}
 
 		template <typename Shaper>
 		auto createShaper() const noexcept
 		{
-			return _index < _size
-				? Shaper{ _lastPointValue, _points[_index]._value - _lastPointValue, static_cast<float>(_points[_index]._delay), static_cast<float>(_offset) }
+			return _nextIndex < _size
+				? Shaper{ _lastPointValue, _points[_nextIndex]._value - _lastPointValue, static_cast<float>(_points[_nextIndex]._delaySamples), static_cast<float>(_offsetSamples) }
 				: Shaper{ _lastPointValue, 0, 1, 0 };
 		}
 
 		template <typename Shaper>
 		auto currentValue() const noexcept
 		{
-			return _index < _size
-				? Shaper::value(_lastPointValue, _points[_index]._value - _lastPointValue, static_cast<float>(_points[_index]._delay), static_cast<float>(_offset))
+			return _nextIndex < _size
+				? Shaper::value(_lastPointValue, _points[_nextIndex]._value - _lastPointValue, static_cast<float>(_points[_nextIndex]._delaySamples), static_cast<float>(_offsetSamples))
 				: _lastPointValue;
 		}
 
 		constexpr auto maxContinuousAdvance() const noexcept
 		{
-			return _index < _size ? _points[_index]._delay - _offset : std::numeric_limits<unsigned>::max();
+			return _nextIndex < _size ? _points[_nextIndex]._delaySamples - _offsetSamples : std::numeric_limits<unsigned>::max();
 		}
 
 		template <typename Shaper>
 		void start(bool fromCurrent) noexcept
 		{
-			_lastPointValue = fromCurrent ? currentValue<Shaper>() : _points[0]._value;
-			_index = 1;
-			assert(_index == _size || _points[_index]._delay > 0);
-			_offset = 0;
+			_lastPointValue = fromCurrent ? currentValue<Shaper>() : 0;
+			_nextIndex = 0;
+			while (_nextIndex < _size && !_points[_nextIndex]._delaySamples)
+				_lastPointValue = _points[_nextIndex++]._value;
+			_offsetSamples = 0;
 		}
 
 		constexpr void stop() noexcept
 		{
-			_index = _size;
+			_nextIndex = _size;
+			_lastPointValue = _size > 0 ? _points[_size - 1]._value : 0;
+			_offsetSamples = 0;
 		}
 
 		constexpr bool stopped() const noexcept
 		{
-			return _index == _size;
+			return _nextIndex == _size;
 		}
 
 		auto totalSamples() const noexcept
 		{
 			// std::accumulate is not constexpr in MSVC 2019 (16.5.4).
-			return std::accumulate(_points, _points + _size, size_t{}, [](size_t result, const SampledPoint& point) { return result + point._delay; });
+			return std::accumulate(_points, _points + _size, size_t{}, [](size_t result, const SampledPoint& point) { return result + point._delaySamples; });
 		}
 
 	private:
 		const SampledPoint* const _points;
 		const unsigned _size;
-		unsigned _index = _size;
-		unsigned _offset = 0;
-		float _lastPointValue = 0;
+		float _lastPointValue{ _size > 0 ? _points[_size - 1]._value : 0 };
+		unsigned _nextIndex = _size;
+		unsigned _offsetSamples = 0;
 	};
 }
