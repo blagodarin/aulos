@@ -37,7 +37,7 @@ build_script:
   - set INSTALL_DIR=%APPVEYOR_BUILD_FOLDER%\_install
   - if not exist %BUILD_DIR% mkdir %BUILD_DIR%
   - cd %BUILD_DIR%
-  - set COMMON_CMAKE_OPTIONS=-DCMAKE_INSTALL_PREFIX=%INSTALL_DIR% -DCMAKE_PREFIX_PATH=%QTDIR% -DPUBLIC_BUILD=%APPVEYOR_REPO_TAG% -DWITH_STUDIO=ON -DWITH_STUDIO_INSTALLER=ON -DWITH_TESTS=ON -DWITH_TOOLS=ON
+  - set COMMON_CMAKE_OPTIONS=-DCMAKE_INSTALL_PREFIX=%INSTALL_DIR% -DCMAKE_PREFIX_PATH=%QTDIR% -DPUBLIC_BUILD=%APPVEYOR_REPO_TAG% -DWITH_BENCHMARK=ON -DWITH_STUDIO=ON -DWITH_STUDIO_INSTALLER=ON -DWITH_TESTS=ON
   - if "%GENERATOR%"=="Ninja" cmake -G Ninja %APPVEYOR_BUILD_FOLDER% -DCMAKE_BUILD_TYPE=%CONFIG% %COMMON_CMAKE_OPTIONS%
   - if "%GENERATOR%"=="VisualStudio" cmake -G "Visual Studio 16 2019" -A %VS_ARCH% %APPVEYOR_BUILD_FOLDER% %COMMON_CMAKE_OPTIONS%
   - if "%GENERATOR%"=="Ninja" cmake --build .
@@ -51,8 +51,8 @@ build_script:
 test_script:
   - if "%GENERATOR%"=="Ninja" ctest --output-on-failure
   - if "%GENERATOR%"=="VisualStudio" ctest --build-config %CONFIG% --output-on-failure
-  - cd %APPVEYOR_BUILD_FOLDER%
-  - _install\bin\aulosmark.exe %APPVEYOR_BUILD_FOLDER%\examples\popcorn.aulos
+  - if "%GENERATOR%"=="Ninja" %BUILD_DIR%\bin\benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\popcorn.aulos
+  - if "%GENERATOR%"=="VisualStudio" %BUILD_DIR%\bin\%CONFIG%\benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\popcorn.aulos
 
 artifacts:
   - path: AulosStudio-*.exe

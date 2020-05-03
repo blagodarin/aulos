@@ -33,10 +33,10 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 option(PUBLIC_BUILD "Build for public distribution" OFF)
 option(USE_SANITIZERS "Use sanitizers" OFF)
+option(WITH_BENCHMARK "Build benchmark" OFF)
 option(WITH_STUDIO "Build Aulos Studio (requires Qt)" OFF)
 option(WITH_STUDIO_INSTALLER "Build Aulos Studio installer (requires NSIS)" OFF)
 option(WITH_TESTS "Build tests" OFF)
-option(WITH_TOOLS "Build tools" OFF)
 
 # Qt headers don't compile with high warning levels,
 # so a separate set of warning settings is needed.
@@ -103,19 +103,19 @@ endfunction()
 
 add_subdirectory(aulos)
 
-if(WITH_STUDIO)
-	find_package(Qt5 COMPONENTS Multimedia Widgets REQUIRED)
-	add_subdirectory(studio)
-endif()
-
-if(WITH_TOOLS)
-	add_subdirectory(tools/aulosmark)
-endif()
-
 if(WITH_TESTS)
 	enable_testing()
 	download_file("https://raw.githubusercontent.com/onqtam/doctest/2.3.7/doctest/doctest.h" SHA1 "7b361ca6edac7cb1b9b894dcaaf925b2c9674fef")
 	add_subdirectory(tests)
+endif()
+
+if(WITH_BENCHMARK)
+	add_subdirectory(benchmark)
+endif()
+
+if(WITH_STUDIO)
+	find_package(Qt5 COMPONENTS Multimedia Widgets REQUIRED)
+	add_subdirectory(studio)
 endif()
 
 if(WIN32)

@@ -57,15 +57,15 @@ install:
   - popd
 
 script:
-  - cmake -H. -B"${HOME}/aulos.build" -G"Ninja" -DCMAKE_BUILD_TYPE=${CONFIG} -DCMAKE_INSTALL_PREFIX="${HOME}/aulos.install" -DUSE_SANITIZERS=ON -DWITH_STUDIO=ON -DWITH_TESTS=ON -DWITH_TOOLS=ON
+  - cmake -H. -B"${HOME}/aulos.build" -G"Ninja" -DCMAKE_BUILD_TYPE=${CONFIG} -DCMAKE_INSTALL_PREFIX="${HOME}/aulos.install" -DUSE_SANITIZERS=ON -DWITH_BENCHMARK=ON -DWITH_STUDIO=ON -DWITH_TESTS=ON
   - pushd "${HOME}/aulos.build"
   - TERM=dumb cmake --build .
   - ctest --output-on-failure
-  - cmake --build . --target install
+  - TERM=dumb cmake --build . --target install
   - popd
 
 after_success:
-  - ${HOME}/aulos.install/bin/aulosmark ${TRAVIS_BUILD_DIR}/examples/popcorn.aulos
+  - ${HOME}/aulos.build/bin/benchmark ${TRAVIS_BUILD_DIR}/examples/popcorn.aulos
 
 notifications:
   email: false

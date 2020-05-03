@@ -20,8 +20,6 @@ set(_src
 	)
 source_group("src" FILES ${_src})
 
-add_executable(aulosmark ${_src})
-target_compile_options(aulosmark PRIVATE ${MAX_WARNINGS})
-target_link_libraries(aulosmark PRIVATE aulos)
-
-install(TARGETS aulosmark RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+add_executable(benchmark ${_src})
+target_compile_options(benchmark PRIVATE ${MAX_WARNINGS})
+target_link_libraries(benchmark PRIVATE aulos)
