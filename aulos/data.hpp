@@ -63,13 +63,13 @@ namespace aulos
 
 	struct Point
 	{
-		static constexpr auto kMaxDelay = 60.f; // Maximum delay between consecutive envelope points (in seconds).
+		static constexpr auto kMaxDelayMs = 60'000u; // Maximum delay between consecutive envelope points.
 
-		float _delay = 0.f;
+		unsigned _delayMs = 0;
 		float _value = 0.f;
 
-		constexpr Point(float delay, float value) noexcept
-			: _delay{ delay }, _value{ value } {}
+		constexpr Point(unsigned delay, float value) noexcept
+			: _delayMs{ delay }, _value{ value } {}
 	};
 
 	// Specifies how a value changes over time.

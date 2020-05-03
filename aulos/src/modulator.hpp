@@ -39,9 +39,8 @@ namespace aulos
 		{
 			for (const auto& point : envelope._points)
 			{
-				assert(point._delay >= 0);
 				assert(_size < _points.size());
-				_points[_size++] = { static_cast<unsigned>(point._delay * samplingRate), point._value };
+				_points[_size++] = { point._delayMs * samplingRate / 1000, point._value };
 			}
 		}
 

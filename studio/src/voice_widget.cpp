@@ -31,7 +31,7 @@
 struct VoiceWidget::EnvelopePoint
 {
 	QCheckBox* _check = nullptr;
-	QDoubleSpinBox* _delay = nullptr;
+	QSpinBox* _delay = nullptr;
 	QDoubleSpinBox* _value = nullptr;
 };
 
@@ -102,15 +102,15 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 			layout->addWidget(point._check, row, 1);
 			connect(point._check, &QCheckBox::toggled, this, &VoiceWidget::updateVoice);
 
-			point._delay = new QDoubleSpinBox{ this };
-			point._delay->setDecimals(2);
+			point._delay = new QSpinBox{ this };
 			point._delay->setEnabled(false);
-			point._delay->setMaximum(60.0);
-			point._delay->setMinimum(0.0);
-			point._delay->setSingleStep(0.01);
-			point._delay->setValue(0.0);
+			point._delay->setMaximum(aulos::Point::kMaxDelayMs);
+			point._delay->setMinimum(0);
+			point._delay->setSingleStep(1);
+			point._delay->setSuffix(tr("ms"));
+			point._delay->setValue(0);
 			layout->addWidget(point._delay, row, 2);
-			connect(point._delay, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
+			connect(point._delay, QOverload<int>::of(&QSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
 
 			point._value = new QDoubleSpinBox{ this };
 			point._value->setDecimals(2);
@@ -163,7 +163,7 @@ void VoiceWidget::setVoice(const std::shared_ptr<aulos::VoiceData>& voice)
 		for (size_t i = 0; i < std::min(dst.size(), src._points.size()); ++i)
 		{
 			dst[i]._check->setChecked(true);
-			dst[i]._delay->setValue(src._points[i]._delay);
+			dst[i]._delay->setValue(src._points[i]._delayMs);
 			dst[i]._value->setValue(src._points[i]._value);
 		}
 	};
@@ -187,7 +187,7 @@ void VoiceWidget::updateVoice()
 	const auto storeEnvelope = [](aulos::Envelope& dst, const std::vector<EnvelopePoint>& src) {
 		dst._points.clear();
 		for (auto i = src.begin(); i != src.end() && i->_check->isChecked(); ++i)
-			dst._points.emplace_back(static_cast<float>(i->_delay->value()), static_cast<float>(i->_value->value()));
+			dst._points.emplace_back(i->_delay->value(), static_cast<float>(i->_value->value()));
 	};
 
 	if (!_voice)

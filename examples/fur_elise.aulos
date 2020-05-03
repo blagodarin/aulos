@@ -3,20 +3,20 @@ speed 6
 title "Fur Elise"
 
 @voice 1 "RightHand"
-amplitude 0.01 1.00 0.04 0.50 0.95 0.00
-asymmetry 0.00 0.50 0.05 0.90 0.95 0.00
-frequency 0.00 -0.30 0.01 -0.30 0.04 0.00 0.95 -0.01
-oscillation 0.00 0.20
+amplitude 10 1.00 40 0.50 950 0.00
+asymmetry 0 0.50 50 0.90 950 0.00
+frequency 0 -0.30 10 -0.30 40 0.00 950 -0.01
+oscillation 0 0.20
 stereo_delay -0.50
 stereo_inversion 0
 stereo_pan 0.00
 wave quadratic1
 
 @voice 2 "LeftHand"
-amplitude 0.01 1.00 0.04 1.00 0.05 0.40 0.90 0.00
-asymmetry 0.00 0.30 0.10 0.00 0.90 0.90
-frequency 0.00 -1.00 0.01 0.00 0.09 0.00 0.10 -0.01 0.80 -0.10
-oscillation 0.00 1.00
+amplitude 10 1.00 40 1.00 50 0.40 900 0.00
+asymmetry 0 0.30 100 0.00 900 0.90
+frequency 0 -1.00 10 0.00 90 0.00 100 -0.01 800 -0.10
+oscillation 0 1.00
 stereo_delay 0.50
 stereo_inversion 0
 stereo_pan 0.00

@@ -254,7 +254,7 @@ namespace aulos
 					throw CompositionError{ location(), "Unexpected command" };
 				auto& envelope = currentVoice->_amplitudeEnvelope;
 				envelope._points.clear();
-				while (const auto delay = tryReadFloat(0.f, Point::kMaxDelay))
+				while (const auto delay = tryReadUnsigned(0, Point::kMaxDelayMs))
 					envelope._points.emplace_back(*delay, readFloat(0.f, 1.f));
 			}
 			else if (command == "asymmetry")
@@ -263,7 +263,7 @@ namespace aulos
 					throw CompositionError{ location(), "Unexpected command" };
 				auto& envelope = currentVoice->_asymmetryEnvelope;
 				envelope._points.clear();
-				while (const auto delay = tryReadFloat(0.f, Point::kMaxDelay))
+				while (const auto delay = tryReadUnsigned(0, Point::kMaxDelayMs))
 					envelope._points.emplace_back(*delay, readFloat(0.f, 1.f));
 			}
 			else if (command == "frequency")
@@ -272,7 +272,7 @@ namespace aulos
 					throw CompositionError{ location(), "Unexpected command" };
 				auto& envelope = currentVoice->_frequencyEnvelope;
 				envelope._points.clear();
-				while (const auto delay = tryReadFloat(0.f, Point::kMaxDelay))
+				while (const auto delay = tryReadUnsigned(0, Point::kMaxDelayMs))
 					envelope._points.emplace_back(*delay, readFloat(-1.f, 1.f));
 			}
 			else if (command == "oscillation")
@@ -281,7 +281,7 @@ namespace aulos
 					throw CompositionError{ location(), "Unexpected command" };
 				auto& envelope = currentVoice->_oscillationEnvelope;
 				envelope._points.clear();
-				while (const auto delay = tryReadFloat(0.f, Point::kMaxDelay))
+				while (const auto delay = tryReadUnsigned(0, Point::kMaxDelayMs))
 					envelope._points.emplace_back(*delay, readFloat(0.f, 1.f));
 			}
 			else if (command == "stereo_delay")
@@ -466,25 +466,25 @@ namespace aulos
 			{
 				text += "\namplitude";
 				for (const auto& change : part._voice._amplitudeEnvelope._points)
-					text += ' ' + floatToString(change._delay) + ' ' + floatToString(change._value);
+					text += ' ' + std::to_string(change._delayMs) + ' ' + floatToString(change._value);
 			}
 			if (!part._voice._asymmetryEnvelope._points.empty())
 			{
 				text += "\nasymmetry";
 				for (const auto& change : part._voice._asymmetryEnvelope._points)
-					text += ' ' + floatToString(change._delay) + ' ' + floatToString(change._value);
+					text += ' ' + std::to_string(change._delayMs) + ' ' + floatToString(change._value);
 			}
 			if (!part._voice._frequencyEnvelope._points.empty())
 			{
 				text += "\nfrequency";
 				for (const auto& change : part._voice._frequencyEnvelope._points)
-					text += ' ' + floatToString(change._delay) + ' ' + floatToString(change._value);
+					text += ' ' + std::to_string(change._delayMs) + ' ' + floatToString(change._value);
 			}
 			if (!part._voice._oscillationEnvelope._points.empty())
 			{
 				text += "\noscillation";
 				for (const auto& change : part._voice._oscillationEnvelope._points)
-					text += ' ' + floatToString(change._delay) + ' ' + floatToString(change._value);
+					text += ' ' + std::to_string(change._delayMs) + ' ' + floatToString(change._value);
 			}
 			text += "\nstereo_delay " + floatToString(part._voice._stereoDelay);
 			text += "\nstereo_inversion " + std::to_string(static_cast<int>(part._voice._stereoInversion));
