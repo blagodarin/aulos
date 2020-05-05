@@ -40,29 +40,14 @@ namespace
 			break;
 
 		case 2:
-			if (data._stereoDelay == 0.f)
+			switch (data._waveShape)
 			{
-				switch (data._waveShape)
-				{
-				case aulos::WaveShape::Linear: return std::make_unique<aulos::StereoVoice<aulos::LinearShaper>>(data, samplingRate);
-				case aulos::WaveShape::Quadratic1: return std::make_unique<aulos::StereoVoice<aulos::Quadratic1Shaper>>(data, samplingRate);
-				case aulos::WaveShape::Quadratic2: return std::make_unique<aulos::StereoVoice<aulos::Quadratic2Shaper>>(data, samplingRate);
-				case aulos::WaveShape::Cubic: return std::make_unique<aulos::StereoVoice<aulos::CubicShaper>>(data, samplingRate);
-				case aulos::WaveShape::Quintic: return std::make_unique<aulos::StereoVoice<aulos::QuinticShaper>>(data, samplingRate);
-				case aulos::WaveShape::Cosine: return std::make_unique<aulos::StereoVoice<aulos::CosineShaper>>(data, samplingRate);
-				}
-			}
-			else
-			{
-				switch (data._waveShape)
-				{
-				case aulos::WaveShape::Linear: return std::make_unique<aulos::PhasedStereoVoice<aulos::LinearShaper>>(data, samplingRate);
-				case aulos::WaveShape::Quadratic1: return std::make_unique<aulos::PhasedStereoVoice<aulos::Quadratic1Shaper>>(data, samplingRate);
-				case aulos::WaveShape::Quadratic2: return std::make_unique<aulos::PhasedStereoVoice<aulos::Quadratic2Shaper>>(data, samplingRate);
-				case aulos::WaveShape::Cubic: return std::make_unique<aulos::PhasedStereoVoice<aulos::CubicShaper>>(data, samplingRate);
-				case aulos::WaveShape::Quintic: return std::make_unique<aulos::PhasedStereoVoice<aulos::QuinticShaper>>(data, samplingRate);
-				case aulos::WaveShape::Cosine: return std::make_unique<aulos::PhasedStereoVoice<aulos::CosineShaper>>(data, samplingRate);
-				}
+			case aulos::WaveShape::Linear: return std::make_unique<aulos::StereoVoice<aulos::LinearShaper>>(data, samplingRate);
+			case aulos::WaveShape::Quadratic1: return std::make_unique<aulos::StereoVoice<aulos::Quadratic1Shaper>>(data, samplingRate);
+			case aulos::WaveShape::Quadratic2: return std::make_unique<aulos::StereoVoice<aulos::Quadratic2Shaper>>(data, samplingRate);
+			case aulos::WaveShape::Cubic: return std::make_unique<aulos::StereoVoice<aulos::CubicShaper>>(data, samplingRate);
+			case aulos::WaveShape::Quintic: return std::make_unique<aulos::StereoVoice<aulos::QuinticShaper>>(data, samplingRate);
+			case aulos::WaveShape::Cosine: return std::make_unique<aulos::StereoVoice<aulos::CosineShaper>>(data, samplingRate);
 			}
 			break;
 		}

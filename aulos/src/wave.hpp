@@ -83,11 +83,12 @@ namespace aulos
 			}
 		}
 
+		template <typename Shaper>
 		auto createAmplitudeShaper() const noexcept
 		{
 			return !_startDelay
-				? _amplitudeModulator.createShaper<LinearShaper>()
-				: LinearShaper{ _amplitudeModulator.currentValue<LinearShaper>(), 0, 1, 0, 0 };
+				? _amplitudeModulator.createShaper<Shaper>()
+				: Shaper{ _amplitudeModulator.currentValue<Shaper>(), 0, 1, 0, 0 };
 		}
 
 		template <typename Shaper>
