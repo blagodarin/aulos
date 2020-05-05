@@ -32,7 +32,7 @@ namespace aulos
 	class LinearShaper
 	{
 	public:
-		constexpr LinearShaper(float firstY, float deltaY, float deltaX, float offsetX) noexcept
+		constexpr LinearShaper(float firstY, float deltaY, float deltaX, float, float offsetX) noexcept
 			: _c1{ deltaY / deltaX }
 			, _nextY{ firstY + _c1 * offsetX }
 		{
@@ -45,7 +45,7 @@ namespace aulos
 			return static_cast<float>(nextY);
 		}
 
-		static constexpr auto value(float firstY, float deltaY, float deltaX, float offsetX) noexcept
+		static constexpr auto value(float firstY, float deltaY, float deltaX, float, float offsetX) noexcept
 		{
 			const auto normalizedX = offsetX / deltaX;
 			return firstY + deltaY * normalizedX;
@@ -64,7 +64,7 @@ namespace aulos
 	class Quadratic1Shaper
 	{
 	public:
-		constexpr Quadratic1Shaper(float firstY, float deltaY, float deltaX, float offsetX) noexcept
+		constexpr Quadratic1Shaper(float firstY, float deltaY, float deltaX, float, float offsetX) noexcept
 			: _c0{ firstY }
 			, _c2{ deltaY / (deltaX * deltaX) }
 			, _nextX{ offsetX }
@@ -80,7 +80,7 @@ namespace aulos
 			return nextY;
 		}
 
-		static constexpr auto value(float firstY, float deltaY, float deltaX, float offsetX) noexcept
+		static constexpr auto value(float firstY, float deltaY, float deltaX, float, float offsetX) noexcept
 		{
 			const auto normalizedX = offsetX / deltaX;
 			return firstY + deltaY * normalizedX * normalizedX;
@@ -100,7 +100,7 @@ namespace aulos
 	class Quadratic2Shaper
 	{
 	public:
-		constexpr Quadratic2Shaper(float firstY, float deltaY, float deltaX, float offsetX) noexcept
+		constexpr Quadratic2Shaper(float firstY, float deltaY, float deltaX, float, float offsetX) noexcept
 			: _c0{ firstY }
 			, _c1{ 2 * deltaY / deltaX }
 			, _c2{ deltaY / (deltaX * deltaX) }
@@ -117,7 +117,7 @@ namespace aulos
 			return nextY;
 		}
 
-		static constexpr auto value(float firstY, float deltaY, float deltaX, float offsetX) noexcept
+		static constexpr auto value(float firstY, float deltaY, float deltaX, float, float offsetX) noexcept
 		{
 			const auto normalizedX = offsetX / deltaX;
 			return firstY + deltaY * (2 - normalizedX) * normalizedX;
@@ -139,7 +139,7 @@ namespace aulos
 	class CubicShaper
 	{
 	public:
-		constexpr CubicShaper(float firstY, float deltaY, float deltaX, float offsetX) noexcept
+		constexpr CubicShaper(float firstY, float deltaY, float deltaX, float, float offsetX) noexcept
 			: _c0{ firstY }
 			, _c2{ 3 * deltaY / (deltaX * deltaX) }
 			, _c3{ 2 * deltaY / (deltaX * deltaX * deltaX) }
@@ -156,7 +156,7 @@ namespace aulos
 			return nextY;
 		}
 
-		static constexpr auto value(float firstY, float deltaY, float deltaX, float offsetX) noexcept
+		static constexpr auto value(float firstY, float deltaY, float deltaX, float, float offsetX) noexcept
 		{
 			const auto normalizedX = offsetX / deltaX;
 			return firstY + deltaY * (3 - 2 * normalizedX) * normalizedX * normalizedX;
@@ -170,39 +170,43 @@ namespace aulos
 		float _nextY;
 	};
 
-	// C2 = 15 * deltaY / deltaX^2
-	// C3 = 50 * deltaY / deltaX^3
-	// C4 = 60 * deltaY / deltaX^4
-	// C5 = 24 * deltaY / deltaX^5
+	// C2 = (15 - 8 * shape) * deltaY / deltaX^2
+	// C3 = (50 - 32 * shape) * deltaY / deltaX^3
+	// C4 = (60 - 40 * shape) * deltaY / deltaX^4
+	// C5 = (24 - 16 * shape) * deltaY / deltaX^5
 	// Y(X) = firstY + (C2 - (C3 - (C4 - C5 * X) * X) * X) * X^2
 	// Y(deltaX / 2) = firstY + deltaY / 2
-	// Y'(deltaX / 2) = 0
+	// Y'(deltaX / 2) = shape * deltaY / deltaX
 	class QuinticShaper
 	{
 	public:
-		constexpr QuinticShaper(float firstY, float deltaY, float deltaX, float offsetX) noexcept
+		constexpr QuinticShaper(float firstY, float deltaY, float deltaX, float shape, float offsetX) noexcept
 			: _c0{ firstY }
-			, _c2{ 15 * deltaY / (deltaX * deltaX) }
-			, _c3{ 50 * deltaY / (deltaX * deltaX * deltaX) }
-			, _c4{ 60 * deltaY / (deltaX * deltaX * deltaX * deltaX) }
-			, _c5{ 24 * deltaY / (deltaX * deltaX * deltaX * deltaX * deltaX) }
-			, _nextX{ offsetX }
-			, _nextY{ firstY + (_c2 - (_c3 - (_c4 - _c5 * offsetX) * offsetX) * offsetX) * offsetX * offsetX }
+			, _c2{ (15 - 8 * shape) * deltaY }
+			, _c3{ (50 - 32 * shape) * deltaY }
+			, _c4{ (60 - 40 * shape) * deltaY }
+			, _c5{ (24 - 16 * shape) * deltaY }
+			, _deltaX{ deltaX }
+			, _nextX{ offsetX - 1 }
 		{
+			advance();
 		}
 
-		constexpr auto advance() noexcept
+		constexpr float advance() noexcept
 		{
 			const auto nextY = _nextY;
 			_nextX += 1;
-			_nextY = _c0 + (_c2 - (_c3 - (_c4 - _c5 * _nextX) * _nextX) * _nextX) * _nextX * _nextX;
+			// The division is slow, but we can't store inverse deltaX because float doesn't have enough precision,
+			// and storing it as double, while fixing the precision problem, makes it even more slower.
+			const auto normalizedX = _nextX / _deltaX;
+			_nextY = _c0 + (_c2 - (_c3 - (_c4 - _c5 * normalizedX) * normalizedX) * normalizedX) * normalizedX * normalizedX;
 			return nextY;
 		}
 
-		static constexpr auto value(float firstY, float deltaY, float deltaX, float offsetX) noexcept
+		static constexpr auto value(float firstY, float deltaY, float deltaX, float shape, float offsetX) noexcept
 		{
 			const auto normalizedX = offsetX / deltaX;
-			return firstY + deltaY * (15 - (50 - (60 - 24 * normalizedX) * normalizedX) * normalizedX) * normalizedX * normalizedX;
+			return firstY + deltaY * (15 - 8 * shape - (50 - 32 * shape - (60 - 40 * shape - (24 - 16 * shape) * normalizedX) * normalizedX) * normalizedX) * normalizedX * normalizedX;
 		}
 
 	private:
@@ -211,15 +215,16 @@ namespace aulos
 		const float _c3;
 		const float _c4;
 		const float _c5;
+		const float _deltaX;
 		float _nextX;
-		float _nextY;
+		float _nextY = 0;
 	};
 
 	// Y(X) = firstY + deltaY * (1 - cos(pi * X / deltaX)) / 2
 	class CosineShaper
 	{
 	public:
-		CosineShaper(float firstY, float deltaY, float deltaX, float offsetX) noexcept
+		CosineShaper(float firstY, float deltaY, float deltaX, float, float offsetX) noexcept
 			: _c1{ deltaY / 2 }
 			, _c0{ firstY + _c1 }
 			, _phi{ std::numbers::pi_v<float> / deltaX }
@@ -236,7 +241,7 @@ namespace aulos
 			return nextY;
 		}
 
-		static auto value(float firstY, float deltaY, float deltaX, float offsetX) noexcept
+		static auto value(float firstY, float deltaY, float deltaX, float, float offsetX) noexcept
 		{
 			const auto normalizedX = offsetX / deltaX;
 			return firstY + deltaY * (1 - std::cos(std::numbers::pi_v<float> * normalizedX)) / 2;

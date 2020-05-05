@@ -24,15 +24,17 @@
 
 namespace aulos
 {
-	struct WaveModulation
+	struct WaveParameters
 	{
+		const float _shapeParameter;
 		SampledEnvelope _amplitudeEnvelope;
 		SampledEnvelope _frequencyEnvelope;
 		SampledEnvelope _asymmetryEnvelope;
 		SampledEnvelope _oscillationEnvelope;
 
-		WaveModulation(const VoiceData& data, unsigned samplingRate) noexcept
-			: _amplitudeEnvelope{ data._amplitudeEnvelope, samplingRate }
+		WaveParameters(const VoiceData& data, unsigned samplingRate) noexcept
+			: _shapeParameter{ data._waveShapeParameter }
+			, _amplitudeEnvelope{ data._amplitudeEnvelope, samplingRate }
 			, _frequencyEnvelope{ data._frequencyEnvelope, samplingRate }
 			, _asymmetryEnvelope{ data._asymmetryEnvelope, samplingRate }
 			, _oscillationEnvelope{ data._oscillationEnvelope, samplingRate }
@@ -43,11 +45,12 @@ namespace aulos
 	class WaveState
 	{
 	public:
-		WaveState(const WaveModulation& modulation, unsigned samplingRate, float delay) noexcept
-			: _amplitudeModulator{ modulation._amplitudeEnvelope }
-			, _frequencyModulator{ modulation._frequencyEnvelope }
-			, _asymmetryModulator{ modulation._asymmetryEnvelope }
-			, _oscillationModulator{ modulation._oscillationEnvelope }
+		WaveState(const WaveParameters& parameters, unsigned samplingRate, float delay) noexcept
+			: _shapeParameter{ parameters._shapeParameter }
+			, _amplitudeModulator{ parameters._amplitudeEnvelope }
+			, _frequencyModulator{ parameters._frequencyEnvelope }
+			, _asymmetryModulator{ parameters._asymmetryEnvelope }
+			, _oscillationModulator{ parameters._oscillationEnvelope }
 			, _oscillator{ samplingRate }
 			, _delay{ static_cast<unsigned>(std::lround(samplingRate * delay / 1'000)) }
 		{
@@ -84,14 +87,14 @@ namespace aulos
 		{
 			return !_startDelay
 				? _amplitudeModulator.createShaper<LinearShaper>()
-				: LinearShaper{ _amplitudeModulator.currentValue<LinearShaper>(), 0, 1, 0 };
+				: LinearShaper{ _amplitudeModulator.currentValue<LinearShaper>(), 0, 1, 0, 0 };
 		}
 
 		template <typename Shaper>
 		auto createWaveShaper(float amplitude) const noexcept
 		{
 			const auto orientedAmplitude = amplitude * _oscillator.stageSign();
-			return Shaper{ orientedAmplitude, -2 * orientedAmplitude * (1 - _oscillationModulator.currentValue<LinearShaper>()), _oscillator.stageLength(), _oscillator.stageOffset() };
+			return Shaper{ orientedAmplitude, -2 * orientedAmplitude * (1 - _oscillationModulator.currentValue<LinearShaper>()), _oscillator.stageLength(), _shapeParameter, _oscillator.stageOffset() };
 		}
 
 		auto maxAdvance() const noexcept
@@ -173,6 +176,7 @@ namespace aulos
 		}
 
 	private:
+		const float _shapeParameter;
 		Modulator _amplitudeModulator;
 		Modulator _frequencyModulator;
 		Modulator _asymmetryModulator;

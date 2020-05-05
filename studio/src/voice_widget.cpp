@@ -58,7 +58,25 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 	layout->addItem(new QSpacerItem{ 0, 0, QSizePolicy::Fixed, QSizePolicy::Fixed }, row, 0);
 	layout->addWidget(new QLabel{ tr("Wave shape:"), this }, row, 1);
 	layout->addWidget(_waveShapeCombo, row, 2, 1, 2);
-	connect(_waveShapeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &VoiceWidget::updateVoice);
+	connect(_waveShapeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), [this] {
+		const bool enableParameter = static_cast<aulos::WaveShape>(_waveShapeCombo->currentData().toInt()) == aulos::WaveShape::Quintic;
+		_waveShapeParameterLabel->setEnabled(enableParameter);
+		_waveShapeParameterSpin->setEnabled(enableParameter);
+		updateVoice();
+	});
+	++row;
+
+	_waveShapeParameterLabel = new QLabel{ tr("Shape parameter:"), this };
+	layout->addWidget(_waveShapeParameterLabel, row, 1);
+
+	_waveShapeParameterSpin = new QDoubleSpinBox{ parent };
+	_waveShapeParameterSpin->setDecimals(2);
+	_waveShapeParameterSpin->setMaximum(1.0);
+	_waveShapeParameterSpin->setMinimum(-1.0);
+	_waveShapeParameterSpin->setSingleStep(0.01);
+	_waveShapeParameterSpin->setValue(0.0);
+	layout->addWidget(_waveShapeParameterSpin, row, 2, 1, 2);
+	connect(_waveShapeParameterSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
 	++row;
 
 	createHeader(tr("Stereo parameters"));
@@ -172,6 +190,7 @@ void VoiceWidget::setVoice(const std::shared_ptr<aulos::VoiceData>& voice)
 	aulos::VoiceData defaultVoice;
 	const auto usedVoice = voice ? voice.get() : &defaultVoice;
 	_waveShapeCombo->setCurrentIndex(_waveShapeCombo->findData(static_cast<int>(usedVoice->_waveShape)));
+	_waveShapeParameterSpin->setValue(usedVoice->_waveShapeParameter);
 	_stereoDelaySpin->setValue(usedVoice->_stereoDelay);
 	_stereoPanSpin->setValue(usedVoice->_stereoPan);
 	_stereoInversionCheck->setChecked(usedVoice->_stereoInversion);
@@ -193,6 +212,7 @@ void VoiceWidget::updateVoice()
 	if (!_voice)
 		return;
 	_voice->_waveShape = static_cast<aulos::WaveShape>(_waveShapeCombo->currentData().toInt());
+	_voice->_waveShapeParameter = static_cast<float>(_waveShapeParameterSpin->value());
 	storeEnvelope(_voice->_amplitudeEnvelope, _amplitudeEnvelope);
 	storeEnvelope(_voice->_frequencyEnvelope, _frequencyEnvelope);
 	storeEnvelope(_voice->_asymmetryEnvelope, _asymmetryEnvelope);

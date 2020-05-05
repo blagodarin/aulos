@@ -320,6 +320,10 @@ namespace aulos
 					currentVoice->_waveShape = WaveShape::Cosine;
 				else
 					throw CompositionError{ location(), "Bad voice wave type" };
+				if (const auto parameter = tryReadFloat(-1.f, 1.f); parameter)
+					currentVoice->_waveShapeParameter = *parameter;
+				else
+					currentVoice->_waveShapeParameter = 0;
 			}
 			else if (command == "speed")
 			{
@@ -496,7 +500,7 @@ namespace aulos
 			case WaveShape::Quadratic1: text += "quadratic1"; break;
 			case WaveShape::Quadratic2: text += "quadratic2"; break;
 			case WaveShape::Cubic: text += "cubic"; break;
-			case WaveShape::Quintic: text += "quintic"; break;
+			case WaveShape::Quintic: text += "quintic " + floatToString(part._voice._waveShapeParameter); break;
 			case WaveShape::Cosine: text += "cosine"; break;
 			}
 		}

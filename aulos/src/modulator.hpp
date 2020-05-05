@@ -88,15 +88,15 @@ namespace aulos
 		auto createShaper() const noexcept
 		{
 			return _nextIndex < _size
-				? Shaper{ _lastPointValue, _points[_nextIndex]._value - _lastPointValue, static_cast<float>(_points[_nextIndex]._delaySamples), static_cast<float>(_offsetSamples) }
-				: Shaper{ _lastPointValue, 0, 1, 0 };
+				? Shaper{ _lastPointValue, _points[_nextIndex]._value - _lastPointValue, static_cast<float>(_points[_nextIndex]._delaySamples), 0, static_cast<float>(_offsetSamples) }
+				: Shaper{ _lastPointValue, 0, 1, 0, 0 };
 		}
 
 		template <typename Shaper>
 		auto currentValue() const noexcept
 		{
 			return _nextIndex < _size
-				? Shaper::value(_lastPointValue, _points[_nextIndex]._value - _lastPointValue, static_cast<float>(_points[_nextIndex]._delaySamples), static_cast<float>(_offsetSamples))
+				? Shaper::value(_lastPointValue, _points[_nextIndex]._value - _lastPointValue, static_cast<float>(_points[_nextIndex]._delaySamples), 0, static_cast<float>(_offsetSamples))
 				: _lastPointValue;
 		}
 

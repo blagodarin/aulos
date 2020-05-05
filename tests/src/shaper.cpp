@@ -15,56 +15,64 @@
 // limitations under the License.
 //
 
-#include <aulos/src/shaper.hpp>
+#include <aulos/src/shaper.hpp> // Included first to check header consistency.
+
+#include <aulos/src/note_table.hpp>
 
 #include <doctest.h>
 
 namespace
 {
-	constexpr float kFirstY = 1;
-	constexpr float kDeltaY = -2;            // Y spans from 1 to -1.
-	constexpr float kDeltaX = 48'000;        // Enough for 1 Hz sawtooth wave at 48 kHz sampling rate.
 	constexpr double kPrecision = 0.00'0001; // Allow 0.0001% error.
 
 	template <typename Shaper>
-	void checkShaper(double epsilon)
+	void checkShaper(float shapeParameter, double epsilon)
 	{
-		Shaper shaper{ kFirstY, kDeltaY, kDeltaX, 0 };
+		constexpr float kAmplitude = 1;
+		constexpr float kDeltaY = -2 * kAmplitude;
+		const auto kDeltaX = 48'000 / aulos::kNoteTable[aulos::Note::C0]; // Sawtooth wave with lowest frequency at highest supported sampling rate.
+		Shaper shaper{ kAmplitude, kDeltaY, kDeltaX, shapeParameter, 0 };
 		for (float i = 0; i < kDeltaX; ++i)
 		{
+			INFO("X = " << i << " / " << kDeltaX);
 			const auto nextValue = shaper.advance();
-			CHECK(nextValue == doctest::Approx{ Shaper::value(kFirstY, kDeltaY, kDeltaX, i) }.epsilon(epsilon));
-			CHECK(nextValue == doctest::Approx{ Shaper{ kFirstY, kDeltaY, kDeltaX, i }.advance() }.epsilon(epsilon));
+			CHECK(std::abs(nextValue) <= kAmplitude);
+			CHECK(nextValue == doctest::Approx{ Shaper::value(kAmplitude, kDeltaY, kDeltaX, shapeParameter, i) }.epsilon(epsilon));
+			CHECK(nextValue == doctest::Approx{ Shaper{ kAmplitude, kDeltaY, kDeltaX, shapeParameter, i }.advance() }.epsilon(epsilon));
 		}
 	}
 }
 
 TEST_CASE("shaper_cosine")
 {
-	::checkShaper<aulos::CosineShaper>(kPrecision);
+	::checkShaper<aulos::CosineShaper>({}, kPrecision);
 }
 
 TEST_CASE("shaper_cubic")
 {
-	::checkShaper<aulos::CubicShaper>(kPrecision);
+	::checkShaper<aulos::CubicShaper>({}, kPrecision);
 }
 
 TEST_CASE("shaper_linear")
 {
-	::checkShaper<aulos::LinearShaper>(kPrecision);
+	::checkShaper<aulos::LinearShaper>({}, kPrecision);
 }
 
 TEST_CASE("shaper_quadratic1")
 {
-	::checkShaper<aulos::Quadratic1Shaper>(kPrecision);
+	::checkShaper<aulos::Quadratic1Shaper>({}, kPrecision);
 }
 
 TEST_CASE("shaper_quadratic2")
 {
-	::checkShaper<aulos::Quadratic2Shaper>(kPrecision);
+	::checkShaper<aulos::Quadratic2Shaper>({}, kPrecision);
 }
 
 TEST_CASE("shaper_quintic")
 {
-	::checkShaper<aulos::QuinticShaper>(0.00'001);
+	for (const auto shape : { -1.f, 0.f, 1.f })
+	{
+		INFO("S = " << shape);
+		::checkShaper<aulos::QuinticShaper>(shape, 0.00'001);
+	}
 }

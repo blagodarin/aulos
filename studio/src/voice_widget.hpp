@@ -24,6 +24,7 @@
 class QCheckBox;
 class QComboBox;
 class QDoubleSpinBox;
+class QLabel;
 
 namespace aulos
 {
@@ -51,6 +52,8 @@ private:
 	struct EnvelopePoint;
 
 	QComboBox* _waveShapeCombo = nullptr;
+	QLabel* _waveShapeParameterLabel = nullptr;
+	QDoubleSpinBox* _waveShapeParameterSpin = nullptr;
 	QDoubleSpinBox* _stereoDelaySpin = nullptr;
 	QDoubleSpinBox* _stereoPanSpin = nullptr;
 	QCheckBox* _stereoInversionCheck = nullptr;

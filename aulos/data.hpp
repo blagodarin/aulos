@@ -57,7 +57,7 @@ namespace aulos
 		Quadratic1, // Quadratic curve with zero derivative on the left.
 		Quadratic2, // Quadratic curve with zero derivative on the right.
 		Cubic,      // Cubic curve.
-		Quintic,    // Quintic curve with zero value and derivative in the middle.
+		Quintic,    // Quintic curve with zero value in the middle.
 		Cosine,     // Cosine curve.
 	};
 
@@ -86,6 +86,7 @@ namespace aulos
 		Envelope _frequencyEnvelope;
 		Envelope _asymmetryEnvelope;
 		Envelope _oscillationEnvelope;
+		float _waveShapeParameter = 0.f;
 		float _stereoDelay = 0.f;
 		float _stereoPan = 0.f;
 		bool _stereoInversion = false;
