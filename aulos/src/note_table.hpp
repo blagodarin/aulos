@@ -63,5 +63,5 @@ namespace aulos
 		std::array<float, 120> _frequencies{};
 	};
 
-	inline const NoteTable kNoteTable;
+	constexpr NoteTable kNoteTable;
 }

@@ -19,6 +19,7 @@
 
 #include <cmath>
 #include <numbers>
+#include <type_traits>
 
 namespace aulos
 {
@@ -45,7 +46,8 @@ namespace aulos
 			return static_cast<float>(nextY);
 		}
 
-		static constexpr auto value(float firstY, float deltaY, float deltaX, float, float offsetX) noexcept
+		template <typename Float, typename = std::enable_if_t<std::is_floating_point_v<Float>>>
+		static constexpr auto value(Float firstY, Float deltaY, Float deltaX, Float, Float offsetX) noexcept
 		{
 			const auto normalizedX = offsetX / deltaX;
 			return firstY + deltaY * normalizedX;
@@ -80,7 +82,8 @@ namespace aulos
 			return nextY;
 		}
 
-		static constexpr auto value(float firstY, float deltaY, float deltaX, float, float offsetX) noexcept
+		template <typename Float, typename = std::enable_if_t<std::is_floating_point_v<Float>>>
+		static constexpr auto value(Float firstY, Float deltaY, Float deltaX, Float, Float offsetX) noexcept
 		{
 			const auto normalizedX = offsetX / deltaX;
 			return firstY + deltaY * normalizedX * normalizedX;
@@ -117,7 +120,8 @@ namespace aulos
 			return nextY;
 		}
 
-		static constexpr auto value(float firstY, float deltaY, float deltaX, float, float offsetX) noexcept
+		template <typename Float, typename = std::enable_if_t<std::is_floating_point_v<Float>>>
+		static constexpr auto value(Float firstY, Float deltaY, Float deltaX, Float, Float offsetX) noexcept
 		{
 			const auto normalizedX = offsetX / deltaX;
 			return firstY + deltaY * (2 - normalizedX) * normalizedX;
@@ -156,7 +160,8 @@ namespace aulos
 			return nextY;
 		}
 
-		static constexpr auto value(float firstY, float deltaY, float deltaX, float, float offsetX) noexcept
+		template <typename Float, typename = std::enable_if_t<std::is_floating_point_v<Float>>>
+		static constexpr auto value(Float firstY, Float deltaY, Float deltaX, Float, Float offsetX) noexcept
 		{
 			const auto normalizedX = offsetX / deltaX;
 			return firstY + deltaY * (3 - 2 * normalizedX) * normalizedX * normalizedX;
@@ -203,7 +208,8 @@ namespace aulos
 			return nextY;
 		}
 
-		static constexpr auto value(float firstY, float deltaY, float deltaX, float shape, float offsetX) noexcept
+		template <typename Float, typename = std::enable_if_t<std::is_floating_point_v<Float>>>
+		static constexpr auto value(Float firstY, Float deltaY, Float deltaX, Float shape, Float offsetX) noexcept
 		{
 			const auto normalizedX = offsetX / deltaX;
 			return firstY + deltaY * (15 - 8 * shape - (50 - 32 * shape - (60 - 40 * shape - (24 - 16 * shape) * normalizedX) * normalizedX) * normalizedX) * normalizedX * normalizedX;
@@ -241,10 +247,11 @@ namespace aulos
 			return nextY;
 		}
 
-		static auto value(float firstY, float deltaY, float deltaX, float, float offsetX) noexcept
+		template <typename Float, typename = std::enable_if_t<std::is_floating_point_v<Float>>>
+		static auto value(Float firstY, Float deltaY, Float deltaX, Float, Float offsetX) noexcept
 		{
 			const auto normalizedX = offsetX / deltaX;
-			return firstY + deltaY * (1 - std::cos(std::numbers::pi_v<float> * normalizedX)) / 2;
+			return firstY + deltaY * (1 - std::cos(std::numbers::pi_v<Float> * normalizedX)) / 2;
 		}
 
 	private:

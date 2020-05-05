@@ -23,49 +23,52 @@
 
 namespace
 {
-	constexpr double kPrecision = 0.00'0001; // Allow 0.0001% error.
-
 	template <typename Shaper>
-	void checkShaper(float shapeParameter, double epsilon)
+	void checkShaper(float shapeParameter, int precisionBits)
 	{
-		constexpr float kAmplitude = 1;
-		constexpr float kDeltaY = -2 * kAmplitude;
-		const auto kDeltaX = 48'000 / aulos::kNoteTable[aulos::Note::C0]; // Sawtooth wave with lowest frequency at highest supported sampling rate.
-		Shaper shaper{ kAmplitude, kDeltaY, kDeltaX, shapeParameter, 0 };
-		for (float i = 0; i < kDeltaX; ++i)
+		constexpr auto amplitude = 1.f;
+		constexpr auto range = 2 * amplitude;
+		const auto precision = std::ldexp(range, -precisionBits);
+		constexpr auto minFrequency = aulos::kNoteTable[aulos::Note::C0] / 2; // Lowest note at lowest frequency modulation.
+		constexpr auto deltaX = 48'000 / minFrequency;                        // Asymmetric wave of minimum frequency at highest supported sampling rate.
+		Shaper shaper{ amplitude, -range, deltaX, shapeParameter, 0 };
+		for (float i = 0; i < deltaX; ++i)
 		{
-			INFO("X = " << i << " / " << kDeltaX);
-			const auto nextValue = shaper.advance();
-			CHECK(std::abs(nextValue) <= kAmplitude);
-			CHECK(nextValue == doctest::Approx{ Shaper::value(kAmplitude, kDeltaY, kDeltaX, shapeParameter, i) }.epsilon(epsilon));
-			CHECK(nextValue == doctest::Approx{ Shaper{ kAmplitude, kDeltaY, kDeltaX, shapeParameter, i }.advance() }.epsilon(epsilon));
+			INFO("X = " << i << " / " << deltaX);
+			const auto expected = Shaper::template value<double>(amplitude, -range, deltaX, shapeParameter, i);
+			const auto initialValue = Shaper{ amplitude, -range, deltaX, shapeParameter, i }.advance();
+			CHECK(std::abs(initialValue) <= amplitude);
+			CHECK(initialValue == doctest::Approx{ expected }.epsilon(precision));
+			const auto advancedValue = shaper.advance();
+			CHECK(std::abs(advancedValue) <= amplitude);
+			CHECK(advancedValue == doctest::Approx{ expected }.epsilon(precision));
 		}
 	}
 }
 
 TEST_CASE("shaper_cosine")
 {
-	::checkShaper<aulos::CosineShaper>({}, kPrecision);
+	::checkShaper<aulos::CosineShaper>({}, 23);
 }
 
 TEST_CASE("shaper_cubic")
 {
-	::checkShaper<aulos::CubicShaper>({}, kPrecision);
+	::checkShaper<aulos::CubicShaper>({}, 23);
 }
 
 TEST_CASE("shaper_linear")
 {
-	::checkShaper<aulos::LinearShaper>({}, kPrecision);
+	::checkShaper<aulos::LinearShaper>({}, 23);
 }
 
 TEST_CASE("shaper_quadratic1")
 {
-	::checkShaper<aulos::Quadratic1Shaper>({}, kPrecision);
+	::checkShaper<aulos::Quadratic1Shaper>({}, 23);
 }
 
 TEST_CASE("shaper_quadratic2")
 {
-	::checkShaper<aulos::Quadratic2Shaper>({}, kPrecision);
+	::checkShaper<aulos::Quadratic2Shaper>({}, 23);
 }
 
 TEST_CASE("shaper_quintic")
@@ -73,6 +76,6 @@ TEST_CASE("shaper_quintic")
 	for (const auto shape : { -1.f, 0.f, 1.f })
 	{
 		INFO("S = " << shape);
-		::checkShaper<aulos::QuinticShaper>(shape, 0.00'001);
+		::checkShaper<aulos::QuinticShaper>(shape, 18);
 	}
 }
