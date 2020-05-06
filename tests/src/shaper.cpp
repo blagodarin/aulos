@@ -31,12 +31,12 @@ namespace
 		const auto precision = std::ldexp(range, -precisionBits);
 		constexpr auto minFrequency = aulos::kNoteTable[aulos::Note::C0] / 2; // Lowest note at lowest frequency modulation.
 		constexpr auto deltaX = 48'000 / minFrequency;                        // Asymmetric wave of minimum frequency at highest supported sampling rate.
-		Shaper shaper{ amplitude, -range, deltaX, shapeParameter, 0 };
+		Shaper shaper{ { amplitude, -range, deltaX, shapeParameter } };
 		for (float i = 0; i < deltaX; ++i)
 		{
 			INFO("X = " << i << " / " << deltaX);
 			const auto expected = Shaper::template value<double>(amplitude, -range, deltaX, shapeParameter, i);
-			const auto initialValue = Shaper{ amplitude, -range, deltaX, shapeParameter, i }.advance();
+			const auto initialValue = Shaper{ { amplitude, -range, deltaX, shapeParameter, i } }.advance();
 			CHECK(std::abs(initialValue) <= amplitude);
 			CHECK(initialValue == doctest::Approx{ expected }.epsilon(precision));
 			const auto advancedValue = shaper.advance();

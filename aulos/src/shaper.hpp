@@ -27,15 +27,24 @@ namespace aulos
 	// which stays in [firstY, firstY + deltaY] (or [firstY + deltaY, firstY] if deltaY is negative) for any X in [0, deltaX].
 	// Shapers start at offsetX which must be in [0, deltaX).
 
+	struct ShaperData
+	{
+		float _firstY = 0;
+		float _deltaY = 0;
+		float _deltaX = 1;
+		float _shape = 0;
+		float _offsetX = 0;
+	};
+
 	// C1 = deltaY / deltaX
 	// Y(X) = firstY + C1 * X
 	// Y(X + 1) = Y(X) + C1
 	class LinearShaper
 	{
 	public:
-		constexpr LinearShaper(float firstY, float deltaY, float deltaX, float, float offsetX) noexcept
-			: _c1{ deltaY / deltaX }
-			, _nextY{ firstY + _c1 * offsetX }
+		constexpr LinearShaper(const ShaperData& data) noexcept
+			: _c1{ data._deltaY / data._deltaX }
+			, _nextY{ data._firstY + _c1 * data._offsetX }
 		{
 		}
 
@@ -66,11 +75,11 @@ namespace aulos
 	class Quadratic1Shaper
 	{
 	public:
-		constexpr Quadratic1Shaper(float firstY, float deltaY, float deltaX, float, float offsetX) noexcept
-			: _c0{ firstY }
-			, _c2{ deltaY / (deltaX * deltaX) }
-			, _nextX{ offsetX }
-			, _nextY{ firstY + _c2 * offsetX * offsetX }
+		constexpr Quadratic1Shaper(const ShaperData& data) noexcept
+			: _c0{ data._firstY }
+			, _c2{ data._deltaY / (data._deltaX * data._deltaX) }
+			, _nextX{ data._offsetX }
+			, _nextY{ data._firstY + _c2 * data._offsetX * data._offsetX }
 		{
 		}
 
@@ -103,12 +112,12 @@ namespace aulos
 	class Quadratic2Shaper
 	{
 	public:
-		constexpr Quadratic2Shaper(float firstY, float deltaY, float deltaX, float, float offsetX) noexcept
-			: _c0{ firstY }
-			, _c1{ 2 * deltaY / deltaX }
-			, _c2{ deltaY / (deltaX * deltaX) }
-			, _nextX{ offsetX }
-			, _nextY{ firstY + (_c1 - _c2 * offsetX) * offsetX }
+		constexpr Quadratic2Shaper(const ShaperData& data) noexcept
+			: _c0{ data._firstY }
+			, _c1{ 2 * data._deltaY / data._deltaX }
+			, _c2{ data._deltaY / (data._deltaX * data._deltaX) }
+			, _nextX{ data._offsetX }
+			, _nextY{ data._firstY + (_c1 - _c2 * data._offsetX) * data._offsetX }
 		{
 		}
 
@@ -143,12 +152,12 @@ namespace aulos
 	class CubicShaper
 	{
 	public:
-		constexpr CubicShaper(float firstY, float deltaY, float deltaX, float, float offsetX) noexcept
-			: _c0{ firstY }
-			, _c2{ 3 * deltaY / (deltaX * deltaX) }
-			, _c3{ 2 * deltaY / (deltaX * deltaX * deltaX) }
-			, _nextX{ offsetX }
-			, _nextY{ firstY + (_c2 - _c3 * offsetX) * offsetX * offsetX }
+		constexpr CubicShaper(const ShaperData& data) noexcept
+			: _c0{ data._firstY }
+			, _c2{ 3 * data._deltaY / (data._deltaX * data._deltaX) }
+			, _c3{ 2 * data._deltaY / (data._deltaX * data._deltaX * data._deltaX) }
+			, _nextX{ data._offsetX }
+			, _nextY{ data._firstY + (_c2 - _c3 * data._offsetX) * data._offsetX * data._offsetX }
 		{
 		}
 
@@ -185,14 +194,14 @@ namespace aulos
 	class QuinticShaper
 	{
 	public:
-		constexpr QuinticShaper(float firstY, float deltaY, float deltaX, float shape, float offsetX) noexcept
-			: _c0{ firstY }
-			, _c2{ (15 - 8 * shape) * deltaY }
-			, _c3{ (50 - 32 * shape) * deltaY }
-			, _c4{ (60 - 40 * shape) * deltaY }
-			, _c5{ (24 - 16 * shape) * deltaY }
-			, _deltaX{ deltaX }
-			, _nextX{ offsetX - 1 }
+		constexpr QuinticShaper(const ShaperData& data) noexcept
+			: _c0{ data._firstY }
+			, _c2{ (15 - 8 * data._shape) * data._deltaY }
+			, _c3{ (50 - 32 * data._shape) * data._deltaY }
+			, _c4{ (60 - 40 * data._shape) * data._deltaY }
+			, _c5{ (24 - 16 * data._shape) * data._deltaY }
+			, _deltaX{ data._deltaX }
+			, _nextX{ data._offsetX - 1 }
 		{
 			advance();
 		}
@@ -230,12 +239,12 @@ namespace aulos
 	class CosineShaper
 	{
 	public:
-		CosineShaper(float firstY, float deltaY, float deltaX, float, float offsetX) noexcept
-			: _c1{ deltaY / 2 }
-			, _c0{ firstY + _c1 }
-			, _phi{ std::numbers::pi_v<float> / deltaX }
-			, _nextX{ offsetX }
-			, _nextY{ _c0 - _c1 * std::cos(_phi * offsetX) }
+		CosineShaper(const ShaperData& data) noexcept
+			: _c1{ data._deltaY / 2 }
+			, _c0{ data._firstY + _c1 }
+			, _phi{ std::numbers::pi_v<float> / data._deltaX }
+			, _nextX{ data._offsetX }
+			, _nextY{ _c0 - _c1 * std::cos(_phi * data._offsetX) }
 		{
 		}
 

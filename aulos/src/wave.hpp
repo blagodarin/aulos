@@ -86,16 +86,16 @@ namespace aulos
 		template <typename Shaper>
 		auto createAmplitudeShaper() const noexcept
 		{
-			return !_startDelay
-				? _amplitudeModulator.createShaper<Shaper>()
-				: Shaper{ _amplitudeModulator.currentValue<Shaper>(), 0, 1, 0, 0 };
+			if (!_startDelay)
+				return _amplitudeModulator.createShaper<Shaper>();
+			assert(!_amplitudeModulator.currentOffset());
+			return Shaper{ { _amplitudeModulator.currentBaseValue() } };
 		}
 
-		template <typename Shaper>
-		auto createWaveShaper(float amplitude) const noexcept
+		ShaperData waveShaperData(float amplitude) const noexcept
 		{
 			const auto orientedAmplitude = amplitude * _oscillator.stageSign();
-			return Shaper{ orientedAmplitude, -2 * orientedAmplitude * (1 - _oscillationModulator.currentValue<LinearShaper>()), _oscillator.stageLength(), _shapeParameter, _oscillator.stageOffset() };
+			return { orientedAmplitude, -2 * orientedAmplitude * (1 - _oscillationModulator.currentValue<LinearShaper>()), _oscillator.stageLength(), _shapeParameter, _oscillator.stageOffset() };
 		}
 
 		auto maxAdvance() const noexcept

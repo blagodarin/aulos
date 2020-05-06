@@ -63,7 +63,7 @@ namespace aulos
 				if (buffer)
 				{
 					const auto output = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
-					auto waveShaper = _wave.createWaveShaper<Shaper>(_baseAmplitude);
+					Shaper waveShaper{ _wave.waveShaperData(_baseAmplitude) };
 					auto amplitudeShaper = _wave.createAmplitudeShaper<LinearShaper>();
 					for (unsigned i = 0; i < blocksToGenerate; ++i)
 						output[i] += waveShaper.advance() * amplitudeShaper.advance();
@@ -134,8 +134,8 @@ namespace aulos
 				if (buffer)
 				{
 					auto output = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
-					auto leftWaveShaper = _leftWave.createWaveShaper<Shaper>(_baseAmplitude * _leftAmplitude);
-					auto rightWaveShaper = _rightWave.createWaveShaper<Shaper>(_baseAmplitude * _rightAmplitude);
+					Shaper leftWaveShaper{ _leftWave.waveShaperData(_baseAmplitude * _leftAmplitude) };
+					Shaper rightWaveShaper{ _rightWave.waveShaperData(_baseAmplitude * _rightAmplitude) };
 					auto leftAmplitudeShaper = _leftWave.createAmplitudeShaper<LinearShaper>();
 					auto rightAmplitudeShaper = _rightWave.createAmplitudeShaper<LinearShaper>();
 					for (unsigned i = 0; i < samplesToGenerate; ++i)
