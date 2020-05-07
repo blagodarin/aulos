@@ -20,7 +20,6 @@
 #include "modulator.hpp"
 #include "note_table.hpp"
 #include "oscillator.hpp"
-#include "shaper.hpp"
 
 namespace aulos
 {
@@ -83,13 +82,12 @@ namespace aulos
 			}
 		}
 
-		template <typename Shaper>
-		auto createAmplitudeShaper() const noexcept
+		constexpr ShaperData amplitudeShaperData() const noexcept
 		{
 			if (!_startDelay)
-				return _amplitudeModulator.createShaper<Shaper>();
+				return _amplitudeModulator.shaperData();
 			assert(!_amplitudeModulator.currentOffset());
-			return Shaper{ { _amplitudeModulator.currentBaseValue() } };
+			return { _amplitudeModulator.currentBaseValue() };
 		}
 
 		ShaperData waveShaperData(float amplitude) const noexcept
@@ -123,7 +121,7 @@ namespace aulos
 			_restartFrequency = 0.;
 		}
 
-		auto samplingRate() const noexcept
+		constexpr auto samplingRate() const noexcept
 		{
 			return _oscillator.samplingRate();
 		}
@@ -150,12 +148,12 @@ namespace aulos
 			}
 		}
 
-		void stop() noexcept
+		constexpr void stop() noexcept
 		{
 			_amplitudeModulator.stop();
 		}
 
-		bool stopped() const noexcept
+		constexpr bool stopped() const noexcept
 		{
 			return _amplitudeModulator.stopped();
 		}

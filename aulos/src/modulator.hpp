@@ -19,6 +19,8 @@
 
 #include <aulos/data.hpp>
 
+#include "shaper.hpp"
+
 #include <array>
 #include <cassert>
 #include <limits>
@@ -39,9 +41,10 @@ namespace aulos
 		{
 			for (const auto& point : envelope._points)
 			{
-				assert(_size < _points.size());
+				assert(_size < _points.size() - 1);
 				_points[_size++] = { point._delayMs * samplingRate / 1000, point._value };
 			}
+			_points[_size] = { std::numeric_limits<unsigned>::max(), _size > 0 ? _points[_size - 1]._value : 0 };
 		}
 
 		constexpr auto data() const noexcept
@@ -55,20 +58,20 @@ namespace aulos
 		}
 
 	private:
-		std::array<SampledPoint, 5> _points{};
 		unsigned _size = 0;
+		std::array<SampledPoint, 6> _points;
 	};
 
 	class Modulator
 	{
 	public:
-		Modulator(const SampledEnvelope& envelope) noexcept
+		constexpr Modulator(const SampledEnvelope& envelope) noexcept
 			: _points{ envelope.data() }
 			, _size{ envelope.size() }
 		{
 		}
 
-		void advance(unsigned samples) noexcept
+		constexpr void advance(unsigned samples) noexcept
 		{
 			while (_nextIndex < _size)
 			{
@@ -84,12 +87,9 @@ namespace aulos
 			}
 		}
 
-		template <typename Shaper>
-		auto createShaper() const noexcept
+		constexpr ShaperData shaperData() const noexcept
 		{
-			return _nextIndex < _size
-				? Shaper{ { _lastPointValue, _points[_nextIndex]._value - _lastPointValue, static_cast<float>(_points[_nextIndex]._delaySamples), 0, static_cast<float>(_offsetSamples) } }
-				: Shaper{ { _lastPointValue } };
+			return { _lastPointValue, _points[_nextIndex]._value - _lastPointValue, static_cast<float>(_points[_nextIndex]._delaySamples), 0, static_cast<float>(_offsetSamples) };
 		}
 
 		constexpr auto currentBaseValue() const noexcept
@@ -112,7 +112,7 @@ namespace aulos
 
 		constexpr auto maxContinuousAdvance() const noexcept
 		{
-			return _nextIndex < _size ? _points[_nextIndex]._delaySamples - _offsetSamples : std::numeric_limits<unsigned>::max();
+			return _points[_nextIndex]._delaySamples - _offsetSamples;
 		}
 
 		template <typename Shaper>

@@ -34,7 +34,7 @@ namespace aulos
 		{
 		}
 
-		void advance(unsigned samples, float nextFrequency, float nextAsymmetry) noexcept
+		constexpr void advance(unsigned samples, float nextFrequency, float nextAsymmetry) noexcept
 		{
 			auto remaining = _stageRemainder - samples;
 			assert(remaining > -1);
@@ -72,7 +72,7 @@ namespace aulos
 			return _amplitudeSign;
 		}
 
-		void start(float frequency, float asymmetry, bool fromCurrent) noexcept
+		constexpr void start(float frequency, float asymmetry, bool fromCurrent) noexcept
 		{
 			assert(!fromCurrent || _stageRemainder > 0);
 			if (!fromCurrent)
@@ -83,7 +83,7 @@ namespace aulos
 		}
 
 	private:
-		void resetStage(float frequency, float asymmetry) noexcept
+		constexpr void resetStage(float frequency, float asymmetry) noexcept
 		{
 			assert(frequency > 0);
 			assert(asymmetry >= -1 && asymmetry <= 1);
