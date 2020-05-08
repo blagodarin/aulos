@@ -84,6 +84,8 @@ namespace aulos
 
 		constexpr ShaperData amplitudeShaperData() const noexcept
 		{
+			// Moving the condition inside the modulator is a bit slower,
+			// and, surprisingly, using ternary operator is slower A LOT.
 			if (!_startDelay)
 				return _amplitudeModulator.shaperData();
 			assert(!_amplitudeModulator.currentOffset());
@@ -166,11 +168,11 @@ namespace aulos
 	private:
 		void startWave(float frequency, bool fromCurrent) noexcept
 		{
-			_amplitudeModulator.start<LinearShaper>(fromCurrent);
-			_frequencyModulator.start<LinearShaper>(false);
-			_asymmetryModulator.start<LinearShaper>(false);
-			_oscillationModulator.start<LinearShaper>(false);
-			_oscillator.start(frequency * std::pow(2.f, _frequencyModulator.currentValue<LinearShaper>()), _asymmetryModulator.currentValue<LinearShaper>(), fromCurrent);
+			_amplitudeModulator.start(fromCurrent ? _amplitudeModulator.currentValue<LinearShaper>() : 0);
+			_frequencyModulator.start(0);
+			_asymmetryModulator.start(0);
+			_oscillationModulator.start(0);
+			_oscillator.start(frequency * std::pow(2.f, _frequencyModulator.currentBaseValue()), _asymmetryModulator.currentBaseValue(), fromCurrent);
 			_frequency = frequency;
 		}
 

@@ -105,9 +105,7 @@ namespace aulos
 		template <typename Shaper>
 		auto currentValue() const noexcept
 		{
-			return _nextIndex < _size
-				? Shaper::value(_lastPointValue, _points[_nextIndex]._value - _lastPointValue, static_cast<float>(_points[_nextIndex]._delaySamples), 0.f, static_cast<float>(_offsetSamples))
-				: _lastPointValue;
+			return Shaper::value(_lastPointValue, _points[_nextIndex]._value - _lastPointValue, static_cast<float>(_points[_nextIndex]._delaySamples), 0.f, static_cast<float>(_offsetSamples));
 		}
 
 		constexpr auto maxContinuousAdvance() const noexcept
@@ -115,10 +113,9 @@ namespace aulos
 			return _points[_nextIndex]._delaySamples - _offsetSamples;
 		}
 
-		template <typename Shaper>
-		void start(bool fromCurrent) noexcept
+		void start(float initialValue) noexcept
 		{
-			_lastPointValue = fromCurrent ? currentValue<Shaper>() : 0;
+			_lastPointValue = initialValue;
 			_nextIndex = 0;
 			while (_nextIndex < _size && !_points[_nextIndex]._delaySamples)
 				_lastPointValue = _points[_nextIndex++]._value;
@@ -128,7 +125,7 @@ namespace aulos
 		constexpr void stop() noexcept
 		{
 			_nextIndex = _size;
-			_lastPointValue = _size > 0 ? _points[_size - 1]._value : 0;
+			_lastPointValue = _points[_size]._value;
 			_offsetSamples = 0;
 		}
 
@@ -146,7 +143,7 @@ namespace aulos
 	private:
 		const SampledPoint* const _points;
 		const unsigned _size;
-		float _lastPointValue{ _size > 0 ? _points[_size - 1]._value : 0 };
+		float _lastPointValue{ _points[_size]._value };
 		unsigned _nextIndex = _size;
 		unsigned _offsetSamples = 0;
 	};
