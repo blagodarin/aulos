@@ -306,6 +306,8 @@ namespace aulos
 			{
 				if (currentSection != Section::Voice)
 					throw CompositionError{ location(), "Unexpected command" };
+				float minShape = 0;
+				float maxShape = 0;
 				if (const auto type = readIdentifier(); type == "linear")
 					currentVoice->_waveShape = WaveShape::Linear;
 				else if (type == "smooth_quadratic")
@@ -313,14 +315,22 @@ namespace aulos
 				else if (type == "sharp_quadratic")
 					currentVoice->_waveShape = WaveShape::SharpQuadratic;
 				else if (type == "cubic")
-					currentVoice->_waveShape = WaveShape::Cubic;
+				{
+					currentVoice->_waveShape = WaveShape::SmoothCubic;
+					minShape = kMinSmoothCubicShape;
+					maxShape = kMaxSmoothCubicShape;
+				}
 				else if (type == "quintic")
+				{
 					currentVoice->_waveShape = WaveShape::Quintic;
+					minShape = kMinQuinticShape;
+					maxShape = kMaxQuinticShape;
+				}
 				else if (type == "cosine")
 					currentVoice->_waveShape = WaveShape::Cosine;
 				else
 					throw CompositionError{ location(), "Bad voice wave type" };
-				if (const auto parameter = tryReadFloat(-1.f, 1.f); parameter)
+				if (const auto parameter = tryReadFloat(minShape, maxShape); parameter)
 					currentVoice->_waveShapeParameter = *parameter;
 				else
 					currentVoice->_waveShapeParameter = 0;
@@ -499,7 +509,7 @@ namespace aulos
 			case WaveShape::Linear: text += "linear"; break;
 			case WaveShape::SmoothQuadratic: text += "smooth_quadratic"; break;
 			case WaveShape::SharpQuadratic: text += "sharp_quadratic"; break;
-			case WaveShape::Cubic: text += "cubic"; break;
+			case WaveShape::SmoothCubic: text += "cubic " + floatToString(part._voice._waveShapeParameter); break;
 			case WaveShape::Quintic: text += "quintic " + floatToString(part._voice._waveShapeParameter); break;
 			case WaveShape::Cosine: text += "cosine"; break;
 			}

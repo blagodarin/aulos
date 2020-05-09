@@ -52,16 +52,31 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 	_waveShapeCombo->addItem(tr("Linear"), static_cast<int>(aulos::WaveShape::Linear));
 	_waveShapeCombo->addItem(tr("Quadratic (smooth)"), static_cast<int>(aulos::WaveShape::SmoothQuadratic));
 	_waveShapeCombo->addItem(tr("Quadratic (sharp)"), static_cast<int>(aulos::WaveShape::SharpQuadratic));
-	_waveShapeCombo->addItem(tr("Cubic"), static_cast<int>(aulos::WaveShape::Cubic));
+	_waveShapeCombo->addItem(tr("Cubic"), static_cast<int>(aulos::WaveShape::SmoothCubic));
 	_waveShapeCombo->addItem(tr("Quintic"), static_cast<int>(aulos::WaveShape::Quintic));
 	_waveShapeCombo->addItem(tr("Cosine"), static_cast<int>(aulos::WaveShape::Cosine));
 	layout->addItem(new QSpacerItem{ 0, 0, QSizePolicy::Fixed, QSizePolicy::Fixed }, row, 0);
 	layout->addWidget(new QLabel{ tr("Wave shape:"), this }, row, 1);
 	layout->addWidget(_waveShapeCombo, row, 2, 1, 2);
 	connect(_waveShapeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), [this] {
-		const bool enableParameter = static_cast<aulos::WaveShape>(_waveShapeCombo->currentData().toInt()) == aulos::WaveShape::Quintic;
-		_waveShapeParameterLabel->setEnabled(enableParameter);
-		_waveShapeParameterSpin->setEnabled(enableParameter);
+		if (const auto waveShape = static_cast<aulos::WaveShape>(_waveShapeCombo->currentData().toInt()); waveShape == aulos::WaveShape::SmoothCubic)
+		{
+			_waveShapeParameterLabel->setEnabled(true);
+			_waveShapeParameterSpin->setEnabled(true);
+			_waveShapeParameterSpin->setRange(aulos::kMinSmoothCubicShape, aulos::kMaxSmoothCubicShape);
+		}
+		else if (waveShape == aulos::WaveShape::Quintic)
+		{
+			_waveShapeParameterLabel->setEnabled(true);
+			_waveShapeParameterSpin->setEnabled(true);
+			_waveShapeParameterSpin->setRange(aulos::kMinQuinticShape, aulos::kMaxQuinticShape);
+		}
+		else
+		{
+			_waveShapeParameterLabel->setEnabled(false);
+			_waveShapeParameterSpin->setEnabled(false);
+			_waveShapeParameterSpin->setRange(0.0, 0.0);
+		}
 		updateVoice();
 	});
 	++row;
@@ -71,8 +86,7 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 
 	_waveShapeParameterSpin = new QDoubleSpinBox{ parent };
 	_waveShapeParameterSpin->setDecimals(2);
-	_waveShapeParameterSpin->setMaximum(1.0);
-	_waveShapeParameterSpin->setMinimum(-1.0);
+	_waveShapeParameterSpin->setRange(0.0, 0.0);
 	_waveShapeParameterSpin->setSingleStep(0.01);
 	_waveShapeParameterSpin->setValue(0.0);
 	layout->addWidget(_waveShapeParameterSpin, row, 2, 1, 2);
@@ -83,8 +97,7 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 
 	_stereoDelaySpin = new QDoubleSpinBox{ parent };
 	_stereoDelaySpin->setDecimals(2);
-	_stereoDelaySpin->setMaximum(1'000.0);
-	_stereoDelaySpin->setMinimum(-1'000.0);
+	_stereoDelaySpin->setRange(-1'000.0, 1'000.0);
 	_stereoDelaySpin->setSingleStep(0.01);
 	_stereoDelaySpin->setSuffix(tr("ms"));
 	_stereoDelaySpin->setValue(0.0);
@@ -95,8 +108,7 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 
 	_stereoPanSpin = new QDoubleSpinBox{ parent };
 	_stereoPanSpin->setDecimals(2);
-	_stereoPanSpin->setMaximum(1.0);
-	_stereoPanSpin->setMinimum(-1.0);
+	_stereoPanSpin->setRange(-1.0, 1.0);
 	_stereoPanSpin->setSingleStep(0.01);
 	_stereoPanSpin->setValue(0.0);
 	layout->addWidget(new QLabel{ tr("Pan:"), this }, row, 1);
@@ -122,8 +134,7 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 
 			point._delay = new QSpinBox{ this };
 			point._delay->setEnabled(false);
-			point._delay->setMaximum(aulos::Point::kMaxDelayMs);
-			point._delay->setMinimum(0);
+			point._delay->setRange(0, aulos::Point::kMaxDelayMs);
 			point._delay->setSingleStep(1);
 			point._delay->setSuffix(tr("ms"));
 			point._delay->setValue(0);
@@ -133,8 +144,7 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 			point._value = new QDoubleSpinBox{ this };
 			point._value->setDecimals(2);
 			point._value->setEnabled(false);
-			point._value->setMaximum(1.0);
-			point._value->setMinimum(minimum);
+			point._value->setRange(minimum, 1.0);
 			point._value->setSingleStep(0.01);
 			point._value->setValue(0.0);
 			layout->addWidget(point._value, row, 3);

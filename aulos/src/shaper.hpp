@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cassert>
 #include <cmath>
 #include <numbers>
 #include <type_traits>
@@ -144,21 +145,26 @@ namespace aulos
 		float _nextY;
 	};
 
-	// C2 = 3 * deltaY / deltaX^2
-	// C3 = 2 * deltaY / deltaX^3
+	// C2 = (3 - shape) * deltaY / deltaX^2
+	// C3 = (2 - shape) * deltaY / deltaX^3
 	// Y(X) = firstY + (C2 - C3 * X) * X^2
 	// Y'(0) = 0
-	// Y'(deltaX) = 0
-	class CubicShaper
+	// Y'(deltaX) = shape * deltaY / deltaX
+	// 0 <= shape <= 3 : 0 <= |Y - firstY| <= |deltaY|
+	class SmoothCubicShaper
 	{
 	public:
-		constexpr CubicShaper(const ShaperData& data) noexcept
+		static constexpr float kMinShape = 0;
+		static constexpr float kMaxShape = 3;
+
+		constexpr SmoothCubicShaper(const ShaperData& data) noexcept
 			: _c0{ data._firstY }
-			, _c2{ 3 * data._deltaY / (data._deltaX * data._deltaX) }
-			, _c3{ 2 * data._deltaY / (data._deltaX * data._deltaX * data._deltaX) }
+			, _c2{ (3 - data._shape) * data._deltaY / (data._deltaX * data._deltaX) }
+			, _c3{ (2 - data._shape) * data._deltaY / (data._deltaX * data._deltaX * data._deltaX) }
 			, _nextX{ data._offsetX }
 			, _nextY{ data._firstY + (_c2 - _c3 * data._offsetX) * data._offsetX * data._offsetX }
 		{
+			assert(data._shape >= kMinShape && data._shape <= kMaxShape);
 		}
 
 		constexpr auto advance() noexcept
@@ -170,10 +176,11 @@ namespace aulos
 		}
 
 		template <typename Float, typename = std::enable_if_t<std::is_floating_point_v<Float>>>
-		static constexpr auto value(Float firstY, Float deltaY, Float deltaX, Float, Float offsetX) noexcept
+		static constexpr auto value(Float firstY, Float deltaY, Float deltaX, Float shape, Float offsetX) noexcept
 		{
+			assert(shape >= kMinShape && shape <= kMaxShape);
 			const auto normalizedX = offsetX / deltaX;
-			return firstY + deltaY * (3 - 2 * normalizedX) * normalizedX * normalizedX;
+			return firstY + deltaY * (3 - shape - (2 - shape) * normalizedX) * normalizedX * normalizedX;
 		}
 
 	private:
@@ -194,6 +201,10 @@ namespace aulos
 	class QuinticShaper
 	{
 	public:
+		// TODO: Find out actual shape limits.
+		static constexpr float kMinShape = -1;
+		static constexpr float kMaxShape = 1;
+
 		constexpr QuinticShaper(const ShaperData& data) noexcept
 			: _c0{ data._firstY }
 			, _c2{ (15 - 8 * data._shape) * data._deltaY }
@@ -203,6 +214,7 @@ namespace aulos
 			, _deltaX{ data._deltaX }
 			, _nextX{ data._offsetX - 1 }
 		{
+			assert(data._shape >= kMinShape && data._shape <= kMaxShape);
 			advance();
 		}
 
@@ -220,6 +232,7 @@ namespace aulos
 		template <typename Float, typename = std::enable_if_t<std::is_floating_point_v<Float>>>
 		static constexpr auto value(Float firstY, Float deltaY, Float deltaX, Float shape, Float offsetX) noexcept
 		{
+			assert(shape >= kMinShape && shape <= kMaxShape);
 			const auto normalizedX = offsetX / deltaX;
 			return firstY + deltaY * (15 - 8 * shape - (50 - 32 * shape - (60 - 40 * shape - (24 - 16 * shape) * normalizedX) * normalizedX) * normalizedX) * normalizedX * normalizedX;
 		}

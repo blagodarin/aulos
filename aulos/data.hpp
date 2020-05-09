@@ -56,10 +56,16 @@ namespace aulos
 		Linear,          // Straight line (used for synthesizing square, rectangular, sawtooth and triangle waves).
 		SmoothQuadratic, // Quadratic curve with zero derivative on the left.
 		SharpQuadratic,  // Quadratic curve with zero derivative on the right.
-		Cubic,           // Cubic curve.
-		Quintic,         // Quintic curve with zero value in the middle.
+		SmoothCubic,     // Cubic curve with parameterized derivative on the right.
+		Quintic,         // Quintic curve with zero value and parameterized derivative in the middle.
 		Cosine,          // Cosine curve.
 	};
+
+	constexpr float kMinSmoothCubicShape = 0;
+	constexpr float kMaxSmoothCubicShape = 3;
+
+	constexpr float kMinQuinticShape = -1;
+	constexpr float kMaxQuinticShape = 1;
 
 	struct Point
 	{

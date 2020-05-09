@@ -51,14 +51,28 @@ TEST_CASE("shaper_cosine")
 	::checkShaper<aulos::CosineShaper>({}, 23);
 }
 
-TEST_CASE("shaper_cubic")
-{
-	::checkShaper<aulos::CubicShaper>({}, 23);
-}
-
 TEST_CASE("shaper_linear")
 {
 	::checkShaper<aulos::LinearShaper>({}, 23);
+}
+
+TEST_CASE("shaper_sharp_quadratic")
+{
+	::checkShaper<aulos::SharpQuadraticShaper>({}, 23);
+}
+
+TEST_CASE("shaper_smooth_cubic")
+{
+	for (const auto shape : { 0.f, 1.f, 2.f, 3.f })
+	{
+		INFO("S = " << shape);
+		::checkShaper<aulos::SmoothCubicShaper>(shape, 23);
+	}
+}
+
+TEST_CASE("shaper_smooth_quadratic")
+{
+	::checkShaper<aulos::SmoothQuadraticShaper>({}, 23);
 }
 
 TEST_CASE("shaper_quintic")
@@ -68,14 +82,4 @@ TEST_CASE("shaper_quintic")
 		INFO("S = " << shape);
 		::checkShaper<aulos::QuinticShaper>(shape, 18);
 	}
-}
-
-TEST_CASE("shaper_sharp_quadratic")
-{
-	::checkShaper<aulos::SharpQuadraticShaper>({}, 23);
-}
-
-TEST_CASE("shaper_smooth_quadratic")
-{
-	::checkShaper<aulos::SmoothQuadraticShaper>({}, 23);
 }
