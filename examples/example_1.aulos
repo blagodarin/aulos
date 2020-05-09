@@ -9,7 +9,7 @@ frequency 0 -0.30 10 -0.30 40 0.00 950 -0.01
 stereo_delay 0.00
 stereo_inversion 0
 stereo_pan 0.00
-wave linear
+wave cubic 1.00
 
 @voice 2 "Bass"
 amplitude 20 1.00 80 0.25 900 0.00
