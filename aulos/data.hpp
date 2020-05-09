@@ -53,12 +53,12 @@ namespace aulos
 	// Shape types.
 	enum class WaveShape
 	{
-		Linear,     // Straight line (used for synthesizing square, rectangular, sawtooth and triangle waves).
-		Quadratic1, // Quadratic curve with zero derivative on the left.
-		Quadratic2, // Quadratic curve with zero derivative on the right.
-		Cubic,      // Cubic curve.
-		Quintic,    // Quintic curve with zero value in the middle.
-		Cosine,     // Cosine curve.
+		Linear,          // Straight line (used for synthesizing square, rectangular, sawtooth and triangle waves).
+		SmoothQuadratic, // Quadratic curve with zero derivative on the left.
+		SharpQuadratic,  // Quadratic curve with zero derivative on the right.
+		Cubic,           // Cubic curve.
+		Quintic,         // Quintic curve with zero value in the middle.
+		Cosine,          // Cosine curve.
 	};
 
 	struct Point

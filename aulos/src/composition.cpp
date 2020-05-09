@@ -308,10 +308,10 @@ namespace aulos
 					throw CompositionError{ location(), "Unexpected command" };
 				if (const auto type = readIdentifier(); type == "linear")
 					currentVoice->_waveShape = WaveShape::Linear;
-				else if (type == "quadratic1")
-					currentVoice->_waveShape = WaveShape::Quadratic1;
-				else if (type == "quadratic2")
-					currentVoice->_waveShape = WaveShape::Quadratic2;
+				else if (type == "smooth_quadratic")
+					currentVoice->_waveShape = WaveShape::SmoothQuadratic;
+				else if (type == "sharp_quadratic")
+					currentVoice->_waveShape = WaveShape::SharpQuadratic;
 				else if (type == "cubic")
 					currentVoice->_waveShape = WaveShape::Cubic;
 				else if (type == "quintic")
@@ -497,8 +497,8 @@ namespace aulos
 			switch (part._voice._waveShape)
 			{
 			case WaveShape::Linear: text += "linear"; break;
-			case WaveShape::Quadratic1: text += "quadratic1"; break;
-			case WaveShape::Quadratic2: text += "quadratic2"; break;
+			case WaveShape::SmoothQuadratic: text += "smooth_quadratic"; break;
+			case WaveShape::SharpQuadratic: text += "sharp_quadratic"; break;
 			case WaveShape::Cubic: text += "cubic"; break;
 			case WaveShape::Quintic: text += "quintic " + floatToString(part._voice._waveShapeParameter); break;
 			case WaveShape::Cosine: text += "cosine"; break;

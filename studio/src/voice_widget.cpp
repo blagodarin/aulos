@@ -50,8 +50,8 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 
 	_waveShapeCombo = new QComboBox{ this };
 	_waveShapeCombo->addItem(tr("Linear"), static_cast<int>(aulos::WaveShape::Linear));
-	_waveShapeCombo->addItem(tr("Quadratic 1"), static_cast<int>(aulos::WaveShape::Quadratic1));
-	_waveShapeCombo->addItem(tr("Quadratic 2"), static_cast<int>(aulos::WaveShape::Quadratic2));
+	_waveShapeCombo->addItem(tr("Quadratic (smooth)"), static_cast<int>(aulos::WaveShape::SmoothQuadratic));
+	_waveShapeCombo->addItem(tr("Quadratic (sharp)"), static_cast<int>(aulos::WaveShape::SharpQuadratic));
 	_waveShapeCombo->addItem(tr("Cubic"), static_cast<int>(aulos::WaveShape::Cubic));
 	_waveShapeCombo->addItem(tr("Quintic"), static_cast<int>(aulos::WaveShape::Quintic));
 	_waveShapeCombo->addItem(tr("Cosine"), static_cast<int>(aulos::WaveShape::Cosine));

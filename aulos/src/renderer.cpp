@@ -31,8 +31,8 @@ namespace
 			switch (data._waveShape)
 			{
 			case aulos::WaveShape::Linear: return std::make_unique<aulos::MonoVoice<aulos::LinearShaper>>(data, samplingRate);
-			case aulos::WaveShape::Quadratic1: return std::make_unique<aulos::MonoVoice<aulos::Quadratic1Shaper>>(data, samplingRate);
-			case aulos::WaveShape::Quadratic2: return std::make_unique<aulos::MonoVoice<aulos::Quadratic2Shaper>>(data, samplingRate);
+			case aulos::WaveShape::SmoothQuadratic: return std::make_unique<aulos::MonoVoice<aulos::SmoothQuadraticShaper>>(data, samplingRate);
+			case aulos::WaveShape::SharpQuadratic: return std::make_unique<aulos::MonoVoice<aulos::SharpQuadraticShaper>>(data, samplingRate);
 			case aulos::WaveShape::Cubic: return std::make_unique<aulos::MonoVoice<aulos::CubicShaper>>(data, samplingRate);
 			case aulos::WaveShape::Quintic: return std::make_unique<aulos::MonoVoice<aulos::QuinticShaper>>(data, samplingRate);
 			case aulos::WaveShape::Cosine: return std::make_unique<aulos::MonoVoice<aulos::CosineShaper>>(data, samplingRate);
@@ -43,8 +43,8 @@ namespace
 			switch (data._waveShape)
 			{
 			case aulos::WaveShape::Linear: return std::make_unique<aulos::StereoVoice<aulos::LinearShaper>>(data, samplingRate);
-			case aulos::WaveShape::Quadratic1: return std::make_unique<aulos::StereoVoice<aulos::Quadratic1Shaper>>(data, samplingRate);
-			case aulos::WaveShape::Quadratic2: return std::make_unique<aulos::StereoVoice<aulos::Quadratic2Shaper>>(data, samplingRate);
+			case aulos::WaveShape::SmoothQuadratic: return std::make_unique<aulos::StereoVoice<aulos::SmoothQuadraticShaper>>(data, samplingRate);
+			case aulos::WaveShape::SharpQuadratic: return std::make_unique<aulos::StereoVoice<aulos::SharpQuadraticShaper>>(data, samplingRate);
 			case aulos::WaveShape::Cubic: return std::make_unique<aulos::StereoVoice<aulos::CubicShaper>>(data, samplingRate);
 			case aulos::WaveShape::Quintic: return std::make_unique<aulos::StereoVoice<aulos::QuinticShaper>>(data, samplingRate);
 			case aulos::WaveShape::Cosine: return std::make_unique<aulos::StereoVoice<aulos::CosineShaper>>(data, samplingRate);

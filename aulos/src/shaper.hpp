@@ -72,10 +72,10 @@ namespace aulos
 	// C2 = deltaY / deltaX^2
 	// Y(X) = firstY + C2 * X^2
 	// Y'(0) = 0
-	class Quadratic1Shaper
+	class SmoothQuadraticShaper
 	{
 	public:
-		constexpr Quadratic1Shaper(const ShaperData& data) noexcept
+		constexpr SmoothQuadraticShaper(const ShaperData& data) noexcept
 			: _c0{ data._firstY }
 			, _c2{ data._deltaY / (data._deltaX * data._deltaX) }
 			, _nextX{ data._offsetX }
@@ -109,10 +109,10 @@ namespace aulos
 	// C2 = deltaY / deltaX^2
 	// Y(X) = firstY + (C1 - C2 * X) * X
 	// Y'(deltaX) = 0
-	class Quadratic2Shaper
+	class SharpQuadraticShaper
 	{
 	public:
-		constexpr Quadratic2Shaper(const ShaperData& data) noexcept
+		constexpr SharpQuadraticShaper(const ShaperData& data) noexcept
 			: _c0{ data._firstY }
 			, _c1{ 2 * data._deltaY / data._deltaX }
 			, _c2{ data._deltaY / (data._deltaX * data._deltaX) }
