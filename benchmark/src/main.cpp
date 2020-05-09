@@ -19,6 +19,7 @@
 
 #include <array>
 #include <cassert>
+#include <cstring>
 #include <chrono>
 #include <filesystem>
 #include <functional>
@@ -46,7 +47,7 @@ namespace
 		return { std::move(result), size };
 	}
 
-	std::string print(const std::chrono::nanoseconds& duration)
+	std::string printTime(const std::chrono::nanoseconds& duration)
 	{
 		struct Bound
 		{
@@ -111,14 +112,11 @@ namespace
 		}
 		return measurement;
 	}
-
-	std::array<std::byte, 65'536> buffer;
 }
 
 int main(int argc, char** argv)
 {
 	std::filesystem::path path;
-	unsigned samplingRate = 48'000;
 	if (int i = 1; i < argc)
 		path = argv[i];
 	else
@@ -136,21 +134,28 @@ int main(int argc, char** argv)
 		[&composition, source = data.get()] { composition = aulos::Composition::create(source); }, // Clang 9 is unable to capture 'data' by reference.
 		[&composition] { composition.reset(); });
 
+	constexpr unsigned samplingRate = 48'000;
 	std::unique_ptr<aulos::Renderer> renderer;
 	const auto preparation = ::measure<10'000>(
-		[&renderer, &composition, samplingRate] { renderer = aulos::Renderer::create(*composition, samplingRate, 2); },
+		[&renderer, &composition] { renderer = aulos::Renderer::create(*composition, samplingRate, 2); },
 		[&renderer] { renderer.reset(); });
 
+	constexpr size_t bufferSize = 65'536;
+	const auto buffer = std::make_unique<std::byte[]>(bufferSize);
+	std::memset(buffer.get(), -1, bufferSize); // Touch all memory before measurement starts.
 	const auto rendering = ::measure(
-		[&renderer] { while (renderer->render(buffer.data(), buffer.size()) > 0) ; },
+		[&renderer, bufferData = buffer.get()] { while (renderer->render(bufferData, bufferSize) > 0) ; },
 		[&renderer] { renderer->restart(); },
 		std::chrono::seconds{ 5 });
 
+	const auto compositionSize = renderer->totalSamples() * sizeof(float) * 2;
 	const auto compositionDuration = renderer->totalSamples() * double{ Measurement::Duration::period::den } / samplingRate;
 
-	std::cout << "ParseTime: " << ::print(parsing.average()) << " [N=" << parsing._iterations << ", min=" << ::print(parsing._minDuration) << ", max=" << ::print(parsing._maxDuration) << "]\n";
-	std::cout << "PrepareTime: " << ::print(preparation.average()) << " [N=" << preparation._iterations << ", min=" << ::print(preparation._minDuration) << ", max=" << ::print(preparation._maxDuration) << "]\n";
-	std::cout << "RenderTime: " << ::print(rendering.average()) << " [N=" << rendering._iterations << ", min=" << ::print(rendering._minDuration) << ", max=" << ::print(rendering._maxDuration) << "]\n";
-	std::cout << "RenderSpeed: " << compositionDuration / rendering.average().count() << "x\n";
+	std::cout << "ParseTime: " << ::printTime(parsing.average()) << " [N=" << parsing._iterations << ", min=" << ::printTime(parsing._minDuration) << ", max=" << ::printTime(parsing._maxDuration) << "]\n";
+	std::cout << "PrepareTime: " << ::printTime(preparation.average()) << " [N=" << preparation._iterations << ", min=" << ::printTime(preparation._minDuration) << ", max=" << ::printTime(preparation._maxDuration) << "]\n";
+	std::cout << "RenderTime: " << ::printTime(rendering.average()) << " [N=" << rendering._iterations << ", min=" << ::printTime(rendering._minDuration) << ", max=" << ::printTime(rendering._maxDuration) << "]\n";
+	std::cout << "RenderSpeed: " << compositionDuration / rendering.average().count() << "x ("
+			  << std::to_string(compositionSize * std::ldexp(1'000'000'000, -20) / rendering.average().count()) << " MiB/s, "
+			  << std::to_string(compositionSize * 8. / rendering.average().count()) << " Gbit/s)\n";
 	return 0;
 }
