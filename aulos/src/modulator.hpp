@@ -32,42 +32,24 @@ namespace aulos
 	{
 		unsigned _delaySamples;
 		float _value;
+
+		constexpr SampledPoint(unsigned delaySamples, float value) noexcept
+			: _delaySamples{ delaySamples }, _value{ value } {}
 	};
 
-	struct SampledEnvelope
+	// MSVC 16.5.4 doesn't have std::span.
+	struct SampledPoints
 	{
-	public:
-		SampledEnvelope(const Envelope& envelope, unsigned samplingRate) noexcept
-		{
-			for (const auto& point : envelope._points)
-			{
-				assert(_size < _points.size() - 1);
-				_points[_size++] = { point._delayMs * samplingRate / 1000, point._value };
-			}
-			_points[_size] = { std::numeric_limits<unsigned>::max(), _size > 0 ? _points[_size - 1]._value : 0 };
-		}
-
-		constexpr auto data() const noexcept
-		{
-			return _points.data();
-		}
-
-		constexpr auto size() const noexcept
-		{
-			return _size;
-		}
-
-	private:
-		unsigned _size = 0;
-		std::array<SampledPoint, 6> _points;
+		const SampledPoint* _data;
+		unsigned _size;
 	};
 
 	class Modulator
 	{
 	public:
-		constexpr Modulator(const SampledEnvelope& envelope) noexcept
-			: _points{ envelope.data() }
-			, _size{ envelope.size() }
+		constexpr Modulator(const SampledPoints& points) noexcept
+			: _points{ points._data }
+			, _size{ points._size }
 		{
 		}
 
@@ -124,8 +106,8 @@ namespace aulos
 
 		constexpr void stop() noexcept
 		{
-			_nextIndex = _size;
 			_lastPointValue = _points[_size]._value;
+			_nextIndex = _size;
 			_offsetSamples = 0;
 		}
 
@@ -136,7 +118,7 @@ namespace aulos
 
 		auto totalSamples() const noexcept
 		{
-			// std::accumulate is not constexpr in MSVC 2019 (16.5.4).
+			// MSVC 16.5.4 doesn't have constexpr std::accumulate.
 			return std::accumulate(_points, _points + _size, size_t{}, [](size_t result, const SampledPoint& point) { return result + point._delaySamples; });
 		}
 

@@ -25,14 +25,14 @@ namespace aulos
 	{
 	public:
 		VoiceImpl(const VoiceData& data, unsigned samplingRate) noexcept
-			: _waveParameters{ data, samplingRate }
+			: _waveData{ data, samplingRate }
 		{
 		}
 
 		virtual void stop() noexcept = 0;
 
 	protected:
-		const WaveParameters _waveParameters;
+		const WaveData _waveData;
 		float _baseAmplitude = 0.f;
 	};
 
@@ -44,7 +44,7 @@ namespace aulos
 
 		MonoVoice(const VoiceData& data, unsigned samplingRate) noexcept
 			: VoiceImpl{ data, samplingRate }
-			, _wave{ _waveParameters, samplingRate, 0.f }
+			, _wave{ _waveData, samplingRate, 0.f }
 		{
 		}
 
@@ -112,8 +112,8 @@ namespace aulos
 
 		StereoVoice(const VoiceData& data, unsigned samplingRate) noexcept
 			: VoiceImpl{ data, samplingRate }
-			, _leftWave{ _waveParameters, samplingRate, std::max(0.f, -data._stereoDelay) }
-			, _rightWave{ _waveParameters, samplingRate, std::max(0.f, data._stereoDelay) }
+			, _leftWave{ _waveData, samplingRate, std::max(0.f, -data._stereoDelay) }
+			, _rightWave{ _waveData, samplingRate, std::max(0.f, data._stereoDelay) }
 			, _leftAmplitude{ std::min(1.f - data._stereoPan, 1.f) }
 			, _rightAmplitude{ std::copysign(std::min(1.f + data._stereoPan, 1.f), data._stereoInversion ? -1.f : 1.f) }
 		{

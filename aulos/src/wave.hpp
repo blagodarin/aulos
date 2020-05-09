@@ -23,33 +23,76 @@
 
 namespace aulos
 {
-	struct WaveParameters
+	class WaveData
 	{
-		const float _shapeParameter;
-		SampledEnvelope _amplitudeEnvelope;
-		SampledEnvelope _frequencyEnvelope;
-		SampledEnvelope _asymmetryEnvelope;
-		SampledEnvelope _oscillationEnvelope;
-
-		WaveParameters(const VoiceData& data, unsigned samplingRate) noexcept
+	public:
+		WaveData(const VoiceData& data, unsigned samplingRate)
 			: _shapeParameter{ data._waveShapeParameter }
-			, _amplitudeEnvelope{ data._amplitudeEnvelope, samplingRate }
-			, _frequencyEnvelope{ data._frequencyEnvelope, samplingRate }
-			, _asymmetryEnvelope{ data._asymmetryEnvelope, samplingRate }
-			, _oscillationEnvelope{ data._oscillationEnvelope, samplingRate }
 		{
+			std::tie(_amplitudeOffset, _amplitudeSize) = addPoints(data._amplitudeEnvelope, samplingRate);
+			std::tie(_frequencyOffset, _frequencySize) = addPoints(data._frequencyEnvelope, samplingRate);
+			std::tie(_asymmetryOffset, _asymmetrySize) = addPoints(data._asymmetryEnvelope, samplingRate);
+			std::tie(_oscillationOffset, _oscillationSize) = addPoints(data._oscillationEnvelope, samplingRate);
 		}
+
+		SampledPoints amplitudePoints() const noexcept
+		{
+			return { _pointBuffer.data() + _amplitudeOffset, _amplitudeSize };
+		}
+
+		SampledPoints asymmetryPoints() const noexcept
+		{
+			return { _pointBuffer.data() + _asymmetryOffset, _asymmetrySize };
+		}
+
+		SampledPoints frequencyPoints() const noexcept
+		{
+			return { _pointBuffer.data() + _frequencyOffset, _frequencySize };
+		}
+
+		SampledPoints oscillationPoints() const noexcept
+		{
+			return { _pointBuffer.data() + _oscillationOffset, _oscillationSize };
+		}
+
+		constexpr auto shapeParameter() const noexcept
+		{
+			return _shapeParameter;
+		}
+
+	private:
+		std::pair<unsigned, unsigned> addPoints(const aulos::Envelope& envelope, unsigned samplingRate)
+		{
+			const auto offset = _pointBuffer.size();
+			for (const auto& point : envelope._points)
+				_pointBuffer.emplace_back(point._delayMs * samplingRate / 1000, point._value);
+			const auto size = _pointBuffer.size() - offset;
+			_pointBuffer.emplace_back(std::numeric_limits<unsigned>::max(), envelope._points.empty() ? 0 : _pointBuffer.back()._value);
+			return { static_cast<unsigned>(offset), static_cast<unsigned>(size) };
+		}
+
+	private:
+		const float _shapeParameter;
+		std::vector<SampledPoint> _pointBuffer;
+		unsigned _amplitudeOffset;
+		unsigned _amplitudeSize;
+		unsigned _frequencyOffset;
+		unsigned _frequencySize;
+		unsigned _asymmetryOffset;
+		unsigned _asymmetrySize;
+		unsigned _oscillationOffset;
+		unsigned _oscillationSize;
 	};
 
 	class WaveState
 	{
 	public:
-		WaveState(const WaveParameters& parameters, unsigned samplingRate, float delay) noexcept
-			: _shapeParameter{ parameters._shapeParameter }
-			, _amplitudeModulator{ parameters._amplitudeEnvelope }
-			, _frequencyModulator{ parameters._frequencyEnvelope }
-			, _asymmetryModulator{ parameters._asymmetryEnvelope }
-			, _oscillationModulator{ parameters._oscillationEnvelope }
+		WaveState(const WaveData& data, unsigned samplingRate, float delay) noexcept
+			: _shapeParameter{ data.shapeParameter() }
+			, _amplitudeModulator{ data.amplitudePoints() }
+			, _frequencyModulator{ data.frequencyPoints() }
+			, _asymmetryModulator{ data.asymmetryPoints() }
+			, _oscillationModulator{ data.oscillationPoints() }
 			, _oscillator{ samplingRate }
 			, _delay{ static_cast<unsigned>(std::lround(samplingRate * delay / 1'000)) }
 		{
@@ -84,8 +127,8 @@ namespace aulos
 
 		constexpr ShaperData amplitudeShaperData() const noexcept
 		{
-			// Moving the condition inside the modulator is a bit slower,
-			// and, surprisingly, using ternary operator is slower A LOT.
+			// Moving the condition inside the modulator is a bit slower.
+			// Also MSVC 16.5.4 fails to optimize ternary operators in return statements, so they're slower A LOT.
 			if (!_startDelay)
 				return _amplitudeModulator.shaperData();
 			assert(!_amplitudeModulator.currentOffset());
