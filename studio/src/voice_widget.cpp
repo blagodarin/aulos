@@ -31,7 +31,8 @@
 struct VoiceWidget::EnvelopePoint
 {
 	QCheckBox* _check = nullptr;
-	QSpinBox* _delay = nullptr;
+	QComboBox* _shape = nullptr;
+	QSpinBox* _duration = nullptr;
 	QDoubleSpinBox* _value = nullptr;
 };
 
@@ -44,9 +45,11 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 	const auto createHeader = [this, layout, &row](const QString& title) {
 		const auto header = new QLabel{ title, this };
 		header->setStyleSheet("font-weight: bold");
-		layout->addWidget(header, row, 0, 1, 4);
+		layout->addWidget(header, row, 0, 1, 5);
 		++row;
 	};
+
+	layout->addItem(new QSpacerItem{ 0, 0, QSizePolicy::Fixed, QSizePolicy::Fixed }, row, 0);
 
 	_waveShapeCombo = new QComboBox{ this };
 	_waveShapeCombo->addItem(tr("Linear"), static_cast<int>(aulos::WaveShape::Linear));
@@ -55,41 +58,23 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 	_waveShapeCombo->addItem(tr("Cubic"), static_cast<int>(aulos::WaveShape::SmoothCubic));
 	_waveShapeCombo->addItem(tr("Quintic"), static_cast<int>(aulos::WaveShape::Quintic));
 	_waveShapeCombo->addItem(tr("Cosine"), static_cast<int>(aulos::WaveShape::Cosine));
-	layout->addItem(new QSpacerItem{ 0, 0, QSizePolicy::Fixed, QSizePolicy::Fixed }, row, 0);
-	layout->addWidget(new QLabel{ tr("Wave shape:"), this }, row, 1);
-	layout->addWidget(_waveShapeCombo, row, 2, 1, 2);
+	layout->addWidget(new QLabel{ tr("Wave shape:"), this }, row, 1, 1, 2);
+	layout->addWidget(_waveShapeCombo, row, 3, 1, 2);
 	connect(_waveShapeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), [this] {
-		if (const auto waveShape = static_cast<aulos::WaveShape>(_waveShapeCombo->currentData().toInt()); waveShape == aulos::WaveShape::SmoothCubic)
-		{
-			_waveShapeParameterLabel->setEnabled(true);
-			_waveShapeParameterSpin->setEnabled(true);
-			_waveShapeParameterSpin->setRange(aulos::kMinSmoothCubicShape, aulos::kMaxSmoothCubicShape);
-		}
-		else if (waveShape == aulos::WaveShape::Quintic)
-		{
-			_waveShapeParameterLabel->setEnabled(true);
-			_waveShapeParameterSpin->setEnabled(true);
-			_waveShapeParameterSpin->setRange(aulos::kMinQuinticShape, aulos::kMaxQuinticShape);
-		}
-		else
-		{
-			_waveShapeParameterLabel->setEnabled(false);
-			_waveShapeParameterSpin->setEnabled(false);
-			_waveShapeParameterSpin->setRange(0.0, 0.0);
-		}
+		updateShapeParameter();
 		updateVoice();
 	});
 	++row;
 
 	_waveShapeParameterLabel = new QLabel{ tr("Shape parameter:"), this };
-	layout->addWidget(_waveShapeParameterLabel, row, 1);
+	layout->addWidget(_waveShapeParameterLabel, row, 1, 1, 2);
 
 	_waveShapeParameterSpin = new QDoubleSpinBox{ parent };
 	_waveShapeParameterSpin->setDecimals(2);
 	_waveShapeParameterSpin->setRange(0.0, 0.0);
 	_waveShapeParameterSpin->setSingleStep(0.01);
 	_waveShapeParameterSpin->setValue(0.0);
-	layout->addWidget(_waveShapeParameterSpin, row, 2, 1, 2);
+	layout->addWidget(_waveShapeParameterSpin, row, 3, 1, 2);
 	connect(_waveShapeParameterSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
 	++row;
 
@@ -101,8 +86,8 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 	_stereoDelaySpin->setSingleStep(0.01);
 	_stereoDelaySpin->setSuffix(tr("ms"));
 	_stereoDelaySpin->setValue(0.0);
-	layout->addWidget(new QLabel{ tr("Delay:"), this }, row, 1);
-	layout->addWidget(_stereoDelaySpin, row, 2, 1, 2);
+	layout->addWidget(new QLabel{ tr("Delay:"), this }, row, 1, 1, 2);
+	layout->addWidget(_stereoDelaySpin, row, 3, 1, 2);
 	connect(_stereoDelaySpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
 	++row;
 
@@ -111,13 +96,13 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 	_stereoPanSpin->setRange(-1.0, 1.0);
 	_stereoPanSpin->setSingleStep(0.01);
 	_stereoPanSpin->setValue(0.0);
-	layout->addWidget(new QLabel{ tr("Pan:"), this }, row, 1);
-	layout->addWidget(_stereoPanSpin, row, 2, 1, 2);
+	layout->addWidget(new QLabel{ tr("Pan:"), this }, row, 1, 1, 2);
+	layout->addWidget(_stereoPanSpin, row, 3, 1, 2);
 	connect(_stereoPanSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
 	++row;
 
 	_stereoInversionCheck = new QCheckBox{ tr("Invert right channel"), this };
-	layout->addWidget(_stereoInversionCheck, row, 1, 1, 3);
+	layout->addWidget(_stereoInversionCheck, row, 1, 1, 4);
 	connect(_stereoInversionCheck, &QCheckBox::toggled, this, &VoiceWidget::updateVoice);
 	++row;
 
@@ -126,20 +111,26 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 		{
 			auto& point = envelope.emplace_back();
 
-			point._check = new QCheckBox{ tr("Point %1").arg(i), this };
+			point._check = new QCheckBox{ this };
 			point._check->setChecked(false);
 			point._check->setEnabled(i == 0);
 			layout->addWidget(point._check, row, 1);
 			connect(point._check, &QCheckBox::toggled, this, &VoiceWidget::updateVoice);
 
-			point._delay = new QSpinBox{ this };
-			point._delay->setEnabled(false);
-			point._delay->setRange(0, aulos::Point::kMaxDelayMs);
-			point._delay->setSingleStep(1);
-			point._delay->setSuffix(tr("ms"));
-			point._delay->setValue(0);
-			layout->addWidget(point._delay, row, 2);
-			connect(point._delay, QOverload<int>::of(&QSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
+			point._shape = new QComboBox{ this };
+			point._shape->addItem(tr("Linear"), static_cast<int>(aulos::EnvelopeShape::Linear));
+			point._shape->setEnabled(false);
+			layout->addWidget(point._shape, row, 2);
+			connect(_waveShapeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &VoiceWidget::updateVoice);
+
+			point._duration = new QSpinBox{ this };
+			point._duration->setEnabled(false);
+			point._duration->setRange(0, aulos::EnvelopeChange::kMaxDuration.count());
+			point._duration->setSingleStep(1);
+			point._duration->setSuffix(tr("ms"));
+			point._duration->setValue(0);
+			layout->addWidget(point._duration, row, 3);
+			connect(point._duration, QOverload<int>::of(&QSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
 
 			point._value = new QDoubleSpinBox{ this };
 			point._value->setDecimals(2);
@@ -147,10 +138,11 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 			point._value->setRange(minimum, 1.0);
 			point._value->setSingleStep(0.01);
 			point._value->setValue(0.0);
-			layout->addWidget(point._value, row, 3);
+			layout->addWidget(point._value, row, 4);
 			connect(point._value, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
 
-			connect(point._check, &QCheckBox::toggled, point._delay, &QWidget::setEnabled);
+			connect(point._check, &QCheckBox::toggled, point._shape, &QWidget::setEnabled);
+			connect(point._check, &QCheckBox::toggled, point._duration, &QWidget::setEnabled);
 			connect(point._check, &QCheckBox::toggled, point._value, &QWidget::setEnabled);
 			if (i > 0)
 			{
@@ -161,19 +153,19 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 		}
 	};
 
-	createHeader(tr("Amplitude modulation"));
+	createHeader(tr("Amplitude changes"));
 	createEnvelopeWidgets(_amplitudeEnvelope, 0);
 
-	createHeader(tr("Frequency modulation"));
+	createHeader(tr("Frequency changes"));
 	createEnvelopeWidgets(_frequencyEnvelope, -1);
 
-	createHeader(tr("Asymmetry modulation"));
+	createHeader(tr("Asymmetry changes"));
 	createEnvelopeWidgets(_asymmetryEnvelope, 0);
 
-	createHeader(tr("Oscillation modulation"));
+	createHeader(tr("Oscillation changes"));
 	createEnvelopeWidgets(_oscillationEnvelope, 0);
 
-	layout->addItem(new QSpacerItem{ 0, 0, QSizePolicy::Minimum, QSizePolicy::Expanding }, row, 0, 1, 4);
+	layout->addItem(new QSpacerItem{ 0, 0, QSizePolicy::Minimum, QSizePolicy::Expanding }, row, 0, 1, 5);
 	layout->setRowStretch(row, 1);
 }
 
@@ -185,14 +177,14 @@ void VoiceWidget::setVoice(const std::shared_ptr<aulos::VoiceData>& voice)
 		for (auto i = dst.rbegin(); i != dst.rend(); ++i)
 		{
 			i->_check->setChecked(false);
-			i->_delay->setValue(0);
+			i->_duration->setValue(0);
 			i->_value->setValue(0);
 		}
-		for (size_t i = 0; i < std::min(dst.size(), src._points.size()); ++i)
+		for (size_t i = 0; i < std::min(dst.size(), src._changes.size()); ++i)
 		{
 			dst[i]._check->setChecked(true);
-			dst[i]._delay->setValue(src._points[i]._delayMs);
-			dst[i]._value->setValue(src._points[i]._value);
+			dst[i]._duration->setValue(src._changes[i]._duration.count());
+			dst[i]._value->setValue(src._changes[i]._value);
 		}
 	};
 
@@ -200,7 +192,7 @@ void VoiceWidget::setVoice(const std::shared_ptr<aulos::VoiceData>& voice)
 	aulos::VoiceData defaultVoice;
 	const auto usedVoice = voice ? voice.get() : &defaultVoice;
 	_waveShapeCombo->setCurrentIndex(_waveShapeCombo->findData(static_cast<int>(usedVoice->_waveShape)));
-	_waveShapeParameterSpin->setValue(usedVoice->_waveShapeParameter);
+	updateShapeParameter();
 	_stereoDelaySpin->setValue(usedVoice->_stereoDelay);
 	_stereoPanSpin->setValue(usedVoice->_stereoPan);
 	_stereoInversionCheck->setChecked(usedVoice->_stereoInversion);
@@ -211,12 +203,34 @@ void VoiceWidget::setVoice(const std::shared_ptr<aulos::VoiceData>& voice)
 	_voice = voice;
 }
 
+void VoiceWidget::updateShapeParameter()
+{
+	if (const auto waveShape = static_cast<aulos::WaveShape>(_waveShapeCombo->currentData().toInt()); waveShape == aulos::WaveShape::SmoothCubic)
+	{
+		_waveShapeParameterLabel->setEnabled(true);
+		_waveShapeParameterSpin->setEnabled(true);
+		_waveShapeParameterSpin->setRange(aulos::kMinSmoothCubicShape, aulos::kMaxSmoothCubicShape);
+	}
+	else if (waveShape == aulos::WaveShape::Quintic)
+	{
+		_waveShapeParameterLabel->setEnabled(true);
+		_waveShapeParameterSpin->setEnabled(true);
+		_waveShapeParameterSpin->setRange(aulos::kMinQuinticShape, aulos::kMaxQuinticShape);
+	}
+	else
+	{
+		_waveShapeParameterLabel->setEnabled(false);
+		_waveShapeParameterSpin->setEnabled(false);
+		_waveShapeParameterSpin->setRange(0.0, 0.0);
+	}
+}
+
 void VoiceWidget::updateVoice()
 {
 	const auto storeEnvelope = [](aulos::Envelope& dst, const std::vector<EnvelopePoint>& src) {
-		dst._points.clear();
+		dst._changes.clear();
 		for (auto i = src.begin(); i != src.end() && i->_check->isChecked(); ++i)
-			dst._points.emplace_back(i->_delay->value(), static_cast<float>(i->_value->value()));
+			dst._changes.emplace_back(std::chrono::milliseconds{ i->_duration->value() }, static_cast<float>(i->_value->value()));
 	};
 
 	if (!_voice)

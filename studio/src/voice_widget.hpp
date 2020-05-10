@@ -46,6 +46,7 @@ signals:
 	void voiceChanged();
 
 private:
+	void updateShapeParameter();
 	void updateVoice();
 
 private:

@@ -19,6 +19,7 @@
 
 #include <aulos/playback.hpp>
 
+#include <chrono>
 #include <map>
 #include <string>
 #include <vector>
@@ -72,21 +73,27 @@ namespace aulos
 	constexpr float kMinQuinticShape = -1;
 	constexpr float kMaxQuinticShape = 1;
 
-	struct Point
+	enum class EnvelopeShape
 	{
-		static constexpr auto kMaxDelayMs = 60'000u; // Maximum delay between consecutive envelope points.
+		Linear,
+	};
 
-		unsigned _delayMs = 0;
+	struct EnvelopeChange
+	{
+		static constexpr auto kMaxDuration = std::chrono::milliseconds{ 60'000 };
+
+		std::chrono::milliseconds _duration{ 0 };
 		float _value = 0.f;
+		EnvelopeShape _shape = EnvelopeShape::Linear;
 
-		constexpr Point(unsigned delay, float value) noexcept
-			: _delayMs{ delay }, _value{ value } {}
+		constexpr EnvelopeChange(const std::chrono::milliseconds& duration, float value) noexcept
+			: _duration{ duration }, _value{ value } {}
 	};
 
 	// Specifies how a value changes over time.
 	struct Envelope
 	{
-		std::vector<Point> _points; // List of consecutive value changes.
+		std::vector<EnvelopeChange> _changes; // List of consecutive value changes.
 	};
 
 	// Specifies how to generate a waveform for a sound.

@@ -64,10 +64,10 @@ namespace aulos
 		std::pair<unsigned, unsigned> addPoints(const aulos::Envelope& envelope, unsigned samplingRate)
 		{
 			const auto offset = _pointBuffer.size();
-			for (const auto& point : envelope._points)
-				_pointBuffer.emplace_back(point._delayMs * samplingRate / 1000, point._value);
+			for (const auto& change : envelope._changes)
+				_pointBuffer.emplace_back(static_cast<unsigned>(change._duration.count() * samplingRate / 1000), change._value);
 			const auto size = _pointBuffer.size() - offset;
-			_pointBuffer.emplace_back(std::numeric_limits<unsigned>::max(), envelope._points.empty() ? 0 : _pointBuffer.back()._value);
+			_pointBuffer.emplace_back(std::numeric_limits<unsigned>::max(), envelope._changes.empty() ? 0 : _pointBuffer.back()._value);
 			return { static_cast<unsigned>(offset), static_cast<unsigned>(size) };
 		}
 
