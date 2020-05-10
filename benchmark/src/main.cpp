@@ -19,6 +19,7 @@
 
 #include <array>
 #include <cassert>
+#include <cmath>
 #include <cstring>
 #include <chrono>
 #include <filesystem>
