@@ -248,25 +248,29 @@ namespace aulos
 		float _nextY = 0;
 	};
 
-	// Y(X) = firstY + deltaY * (1 - cos(pi * X / deltaX)) / 2
+	// C(X) = deltaY * cos(pi * X / deltaX) / 2
+	// Y(X) = firstY + deltaY / 2 - C(X)
+	// C(X + 1) = 2 * cos(pi / deltaX) * C(X) - C(X - 1)
 	class CosineShaper
 	{
 	public:
 		CosineShaper(const ShaperData& data) noexcept
-			: _c1{ data._deltaY / 2 }
-			, _c0{ data._firstY + _c1 }
-			, _phi{ std::numbers::pi_v<float> / data._deltaX }
-			, _nextX{ data._offsetX }
-			, _nextY{ _c0 - _c1 * std::cos(_phi * data._offsetX) }
 		{
+			const auto amplitude = data._deltaY / 2.;
+			_base = data._firstY + amplitude;
+			const auto theta = std::numbers::pi / data._deltaX;
+			_multiplier = 2 * std::cos(theta);
+			_lastCos = amplitude * std::cos(theta * data._offsetX - theta);
+			_nextCos = amplitude * std::cos(theta * data._offsetX);
 		}
 
-		auto advance() noexcept
+		constexpr auto advance() noexcept
 		{
-			const auto nextY = _nextY;
-			_nextX += 1;
-			_nextY = _c0 - _c1 * std::cos(_phi * _nextX);
-			return nextY;
+			const auto result = _base - _nextCos;
+			const auto nextCos = _multiplier * _nextCos - _lastCos;
+			_lastCos = _nextCos;
+			_nextCos = nextCos;
+			return static_cast<float>(result);
 		}
 
 		template <typename Float, typename = std::enable_if_t<std::is_floating_point_v<Float>>>
@@ -277,10 +281,9 @@ namespace aulos
 		}
 
 	private:
-		const float _c1;
-		const float _c0;
-		const float _phi;
-		float _nextX;
-		float _nextY;
+		double _base;
+		double _multiplier;
+		double _lastCos;
+		double _nextCos;
 	};
 }

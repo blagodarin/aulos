@@ -9,7 +9,7 @@ frequency 0 -0.30 10 0.00
 stereo_delay 10.00
 stereo_inversion 0
 stereo_pan 0.00
-wave cubic 0.00
+wave cosine
 
 @voice 2 "Melody"
 amplitude 20 1.00 80 0.25 600 0.00
@@ -19,7 +19,7 @@ oscillation 0 0.05 100 0.00
 stereo_delay -5.00
 stereo_inversion 0
 stereo_pan 0.00
-wave cubic 0.00
+wave cosine
 
 @voice 3 "Drum"
 amplitude 10 1.00 90 0.20 400 0.00
@@ -29,7 +29,7 @@ oscillation 0 0.03 100 0.00
 stereo_delay 20.00
 stereo_inversion 0
 stereo_pan -0.25
-wave cubic 0.00
+wave cosine
 
 @voice 4 "Bass"
 amplitude 100 1.00 400 0.50 500 0.00
