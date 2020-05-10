@@ -50,7 +50,7 @@ private:
 	void updateVoice();
 
 private:
-	struct EnvelopePoint;
+	struct EnvelopeChange;
 
 	QComboBox* _waveShapeCombo = nullptr;
 	QLabel* _waveShapeParameterLabel = nullptr;
@@ -58,9 +58,9 @@ private:
 	QDoubleSpinBox* _stereoDelaySpin = nullptr;
 	QDoubleSpinBox* _stereoPanSpin = nullptr;
 	QCheckBox* _stereoInversionCheck = nullptr;
-	std::vector<EnvelopePoint> _amplitudeEnvelope;
-	std::vector<EnvelopePoint> _frequencyEnvelope;
-	std::vector<EnvelopePoint> _asymmetryEnvelope;
-	std::vector<EnvelopePoint> _oscillationEnvelope;
+	std::vector<EnvelopeChange> _amplitudeEnvelope;
+	std::vector<EnvelopeChange> _frequencyEnvelope;
+	std::vector<EnvelopeChange> _asymmetryEnvelope;
+	std::vector<EnvelopeChange> _oscillationEnvelope;
 	std::shared_ptr<aulos::VoiceData> _voice;
 };

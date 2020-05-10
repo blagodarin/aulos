@@ -76,6 +76,10 @@ namespace aulos
 	enum class EnvelopeShape
 	{
 		Linear,
+		SmoothQuadratic2,
+		SmoothQuadratic4,
+		SharpQuadratic2,
+		SharpQuadratic4,
 	};
 
 	struct EnvelopeChange
@@ -86,8 +90,8 @@ namespace aulos
 		float _value = 0.f;
 		EnvelopeShape _shape = EnvelopeShape::Linear;
 
-		constexpr EnvelopeChange(const std::chrono::milliseconds& duration, float value) noexcept
-			: _duration{ duration }, _value{ value } {}
+		constexpr EnvelopeChange(const std::chrono::milliseconds& duration, float value, EnvelopeShape shape) noexcept
+			: _duration{ duration }, _value{ value }, _shape{ shape } {}
 	};
 
 	// Specifies how a value changes over time.

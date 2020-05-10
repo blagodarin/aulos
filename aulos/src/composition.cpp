@@ -255,7 +255,7 @@ namespace aulos
 				auto& envelope = currentVoice->_amplitudeEnvelope;
 				envelope._changes.clear();
 				while (const auto duration = tryReadUnsigned(0, static_cast<unsigned>(EnvelopeChange::kMaxDuration.count())))
-					envelope._changes.emplace_back(std::chrono::milliseconds{ *duration }, readFloat(0.f, 1.f));
+					envelope._changes.emplace_back(std::chrono::milliseconds{ *duration }, readFloat(0.f, 1.f), EnvelopeShape::Linear);
 			}
 			else if (command == "asymmetry")
 			{
@@ -264,7 +264,7 @@ namespace aulos
 				auto& envelope = currentVoice->_asymmetryEnvelope;
 				envelope._changes.clear();
 				while (const auto duration = tryReadUnsigned(0, static_cast<unsigned>(EnvelopeChange::kMaxDuration.count())))
-					envelope._changes.emplace_back(std::chrono::milliseconds{ *duration }, readFloat(0.f, 1.f));
+					envelope._changes.emplace_back(std::chrono::milliseconds{ *duration }, readFloat(0.f, 1.f), EnvelopeShape::Linear);
 			}
 			else if (command == "frequency")
 			{
@@ -273,7 +273,7 @@ namespace aulos
 				auto& envelope = currentVoice->_frequencyEnvelope;
 				envelope._changes.clear();
 				while (const auto duration = tryReadUnsigned(0, static_cast<unsigned>(EnvelopeChange::kMaxDuration.count())))
-					envelope._changes.emplace_back(std::chrono::milliseconds{ *duration }, readFloat(-1.f, 1.f));
+					envelope._changes.emplace_back(std::chrono::milliseconds{ *duration }, readFloat(-1.f, 1.f), EnvelopeShape::Linear);
 			}
 			else if (command == "oscillation")
 			{
@@ -282,7 +282,7 @@ namespace aulos
 				auto& envelope = currentVoice->_oscillationEnvelope;
 				envelope._changes.clear();
 				while (const auto duration = tryReadUnsigned(0, static_cast<unsigned>(EnvelopeChange::kMaxDuration.count())))
-					envelope._changes.emplace_back(std::chrono::milliseconds{ *duration }, readFloat(0.f, 1.f));
+					envelope._changes.emplace_back(std::chrono::milliseconds{ *duration }, readFloat(0.f, 1.f), EnvelopeShape::Linear);
 			}
 			else if (command == "stereo_delay")
 			{

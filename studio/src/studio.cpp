@@ -71,7 +71,11 @@ namespace
 	{
 		using namespace std::chrono_literals;
 		auto voice = std::make_shared<aulos::VoiceData>();
-		voice->_amplitudeEnvelope._changes = { { 100ms, 1.f }, { 400ms, .5f }, { 500ms, 0.f } };
+		voice->_amplitudeEnvelope._changes = {
+			{ 100ms, 1.f, aulos::EnvelopeShape::Linear },
+			{ 400ms, .5f, aulos::EnvelopeShape::Linear },
+			{ 500ms, 0.f, aulos::EnvelopeShape::Linear },
+		};
 		return voice;
 	}
 

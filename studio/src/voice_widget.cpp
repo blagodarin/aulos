@@ -28,7 +28,7 @@
 #include <QLabel>
 #include <QSpinBox>
 
-struct VoiceWidget::EnvelopePoint
+struct VoiceWidget::EnvelopeChange
 {
 	QCheckBox* _check = nullptr;
 	QComboBox* _shape = nullptr;
@@ -53,8 +53,8 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 
 	_waveShapeCombo = new QComboBox{ this };
 	_waveShapeCombo->addItem(tr("Linear"), static_cast<int>(aulos::WaveShape::Linear));
-	_waveShapeCombo->addItem(tr("Quadratic (smooth)"), static_cast<int>(aulos::WaveShape::SmoothQuadratic));
-	_waveShapeCombo->addItem(tr("Quadratic (sharp)"), static_cast<int>(aulos::WaveShape::SharpQuadratic));
+	_waveShapeCombo->addItem(tr("Smooth Quadratic"), static_cast<int>(aulos::WaveShape::SmoothQuadratic));
+	_waveShapeCombo->addItem(tr("Sharp Quadratic"), static_cast<int>(aulos::WaveShape::SharpQuadratic));
 	_waveShapeCombo->addItem(tr("Cubic"), static_cast<int>(aulos::WaveShape::SmoothCubic));
 	_waveShapeCombo->addItem(tr("Quintic"), static_cast<int>(aulos::WaveShape::Quintic));
 	_waveShapeCombo->addItem(tr("Cosine"), static_cast<int>(aulos::WaveShape::Cosine));
@@ -106,49 +106,53 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 	connect(_stereoInversionCheck, &QCheckBox::toggled, this, &VoiceWidget::updateVoice);
 	++row;
 
-	const auto createEnvelopeWidgets = [this, layout, &row](std::vector<EnvelopePoint>& envelope, double minimum) {
+	const auto createEnvelopeWidgets = [this, layout, &row](std::vector<EnvelopeChange>& envelope, double minimum) {
 		for (int i = 0; i < 5; ++i, ++row)
 		{
-			auto& point = envelope.emplace_back();
+			auto& change = envelope.emplace_back();
 
-			point._check = new QCheckBox{ this };
-			point._check->setChecked(false);
-			point._check->setEnabled(i == 0);
-			layout->addWidget(point._check, row, 1);
-			connect(point._check, &QCheckBox::toggled, this, &VoiceWidget::updateVoice);
+			change._check = new QCheckBox{ this };
+			change._check->setChecked(false);
+			change._check->setEnabled(i == 0);
+			layout->addWidget(change._check, row, 1);
+			connect(change._check, &QCheckBox::toggled, this, &VoiceWidget::updateVoice);
 
-			point._shape = new QComboBox{ this };
-			point._shape->addItem(tr("Linear"), static_cast<int>(aulos::EnvelopeShape::Linear));
-			point._shape->setEnabled(false);
-			layout->addWidget(point._shape, row, 2);
-			connect(_waveShapeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &VoiceWidget::updateVoice);
+			change._shape = new QComboBox{ this };
+			change._shape->addItem(tr("Linear"), static_cast<int>(aulos::EnvelopeShape::Linear));
+			change._shape->addItem(tr("Smooth Quadratic (2 steps)"), static_cast<int>(aulos::EnvelopeShape::SmoothQuadratic2));
+			change._shape->addItem(tr("Smooth Quadratic (4 steps)"), static_cast<int>(aulos::EnvelopeShape::SmoothQuadratic4));
+			change._shape->addItem(tr("Sharp Quadratic (2 steps)"), static_cast<int>(aulos::EnvelopeShape::SharpQuadratic2));
+			change._shape->addItem(tr("Sharp Quadratic (4 steps)"), static_cast<int>(aulos::EnvelopeShape::SharpQuadratic4));
+			change._shape->setEnabled(false);
+			layout->addWidget(change._shape, row, 2);
+			connect(change._shape, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &VoiceWidget::updateVoice);
 
-			point._duration = new QSpinBox{ this };
-			point._duration->setEnabled(false);
-			point._duration->setRange(0, aulos::EnvelopeChange::kMaxDuration.count());
-			point._duration->setSingleStep(1);
-			point._duration->setSuffix(tr("ms"));
-			point._duration->setValue(0);
-			layout->addWidget(point._duration, row, 3);
-			connect(point._duration, QOverload<int>::of(&QSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
+			change._duration = new QSpinBox{ this };
+			change._duration->setEnabled(false);
+			change._duration->setRange(0, aulos::EnvelopeChange::kMaxDuration.count());
+			change._duration->setSingleStep(1);
+			change._duration->setSuffix(tr("ms"));
+			change._duration->setValue(0);
+			layout->addWidget(change._duration, row, 3);
+			connect(change._duration, QOverload<int>::of(&QSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
 
-			point._value = new QDoubleSpinBox{ this };
-			point._value->setDecimals(2);
-			point._value->setEnabled(false);
-			point._value->setRange(minimum, 1.0);
-			point._value->setSingleStep(0.01);
-			point._value->setValue(0.0);
-			layout->addWidget(point._value, row, 4);
-			connect(point._value, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
+			change._value = new QDoubleSpinBox{ this };
+			change._value->setDecimals(2);
+			change._value->setEnabled(false);
+			change._value->setRange(minimum, 1.0);
+			change._value->setSingleStep(0.01);
+			change._value->setValue(0.0);
+			layout->addWidget(change._value, row, 4);
+			connect(change._value, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
 
-			connect(point._check, &QCheckBox::toggled, point._shape, &QWidget::setEnabled);
-			connect(point._check, &QCheckBox::toggled, point._duration, &QWidget::setEnabled);
-			connect(point._check, &QCheckBox::toggled, point._value, &QWidget::setEnabled);
+			connect(change._check, &QCheckBox::toggled, change._shape, &QWidget::setEnabled);
+			connect(change._check, &QCheckBox::toggled, change._duration, &QWidget::setEnabled);
+			connect(change._check, &QCheckBox::toggled, change._value, &QWidget::setEnabled);
 			if (i > 0)
 			{
 				const auto previousCheck = envelope[i - 1]._check;
-				connect(previousCheck, &QCheckBox::toggled, point._check, &QWidget::setEnabled);
-				connect(point._check, &QCheckBox::toggled, previousCheck, &QWidget::setDisabled);
+				connect(previousCheck, &QCheckBox::toggled, change._check, &QWidget::setEnabled);
+				connect(change._check, &QCheckBox::toggled, previousCheck, &QWidget::setDisabled);
 			}
 		}
 	};
@@ -173,16 +177,18 @@ VoiceWidget::~VoiceWidget() = default;
 
 void VoiceWidget::setVoice(const std::shared_ptr<aulos::VoiceData>& voice)
 {
-	const auto loadEnvelope = [](std::vector<EnvelopePoint>& dst, const aulos::Envelope& src) {
+	const auto loadEnvelope = [](std::vector<EnvelopeChange>& dst, const aulos::Envelope& src) {
 		for (auto i = dst.rbegin(); i != dst.rend(); ++i)
 		{
 			i->_check->setChecked(false);
+			i->_shape->setCurrentIndex(i->_shape->findData(static_cast<int>(aulos::EnvelopeShape::Linear)));
 			i->_duration->setValue(0);
 			i->_value->setValue(0);
 		}
 		for (size_t i = 0; i < std::min(dst.size(), src._changes.size()); ++i)
 		{
 			dst[i]._check->setChecked(true);
+			dst[i]._shape->setCurrentIndex(dst[i]._shape->findData(static_cast<int>(src._changes[i]._shape)));
 			dst[i]._duration->setValue(src._changes[i]._duration.count());
 			dst[i]._value->setValue(src._changes[i]._value);
 		}
@@ -227,10 +233,10 @@ void VoiceWidget::updateShapeParameter()
 
 void VoiceWidget::updateVoice()
 {
-	const auto storeEnvelope = [](aulos::Envelope& dst, const std::vector<EnvelopePoint>& src) {
+	const auto storeEnvelope = [](aulos::Envelope& dst, const std::vector<EnvelopeChange>& src) {
 		dst._changes.clear();
 		for (auto i = src.begin(); i != src.end() && i->_check->isChecked(); ++i)
-			dst._changes.emplace_back(std::chrono::milliseconds{ i->_duration->value() }, static_cast<float>(i->_value->value()));
+			dst._changes.emplace_back(std::chrono::milliseconds{ i->_duration->value() }, static_cast<float>(i->_value->value()), static_cast<aulos::EnvelopeShape>(i->_shape->currentData().toInt()));
 	};
 
 	if (!_voice)

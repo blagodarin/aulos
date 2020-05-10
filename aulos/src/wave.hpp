@@ -63,9 +63,66 @@ namespace aulos
 	private:
 		std::pair<unsigned, unsigned> addPoints(const aulos::Envelope& envelope, unsigned samplingRate)
 		{
+			constexpr auto split2 = [](unsigned value) {
+				const auto quotient = value / 2;
+				const auto remainder = value % 2;
+				return std::pair{ quotient, quotient + remainder };
+			};
+
+			constexpr auto split4 = [](unsigned value) {
+				const auto quotient = value / 4;
+				const auto remainder = value % 4;
+				return std::tuple{
+					quotient,
+					quotient + static_cast<unsigned>(remainder > 2),
+					quotient + static_cast<unsigned>(remainder > 1),
+					quotient + static_cast<unsigned>(remainder > 0),
+				};
+			};
+
 			const auto offset = _pointBuffer.size();
+			auto lastValue = 0.f;
 			for (const auto& change : envelope._changes)
-				_pointBuffer.emplace_back(static_cast<unsigned>(change._duration.count() * samplingRate / 1000), change._value);
+			{
+				const auto duration = static_cast<unsigned>(change._duration.count() * samplingRate / 1000);
+				switch (change._shape)
+				{
+				case EnvelopeShape::Linear:
+					_pointBuffer.emplace_back(duration, change._value);
+					break;
+				case EnvelopeShape::SmoothQuadratic2: {
+					const auto [t0, t1] = split2(duration);
+					_pointBuffer.emplace_back(t0, lastValue + (change._value - lastValue) / 4);
+					_pointBuffer.emplace_back(t1, change._value);
+					break;
+				}
+				case EnvelopeShape::SmoothQuadratic4: {
+					const auto [t0, t1, t2, t3] = split4(duration);
+					const auto delta = (change._value - lastValue) / 16;
+					_pointBuffer.emplace_back(t0, lastValue + delta);
+					_pointBuffer.emplace_back(t1, lastValue + delta * 4);
+					_pointBuffer.emplace_back(t2, lastValue + delta * 9);
+					_pointBuffer.emplace_back(t3, change._value);
+					break;
+				}
+				case EnvelopeShape::SharpQuadratic2: {
+					const auto [t0, t1] = split2(duration);
+					_pointBuffer.emplace_back(t0, lastValue + (change._value - lastValue) * .75f);
+					_pointBuffer.emplace_back(t1, change._value);
+					break;
+				}
+				case EnvelopeShape::SharpQuadratic4: {
+					const auto [t0, t1, t2, t3] = split4(duration);
+					const auto delta = (change._value - lastValue) / 16;
+					_pointBuffer.emplace_back(t0, lastValue + delta * 5);
+					_pointBuffer.emplace_back(t1, lastValue + delta * 12);
+					_pointBuffer.emplace_back(t2, lastValue + delta * 15);
+					_pointBuffer.emplace_back(t3, change._value);
+					break;
+				}
+				}
+				lastValue = change._value;
+			}
 			const auto size = _pointBuffer.size() - offset;
 			_pointBuffer.emplace_back(std::numeric_limits<unsigned>::max(), envelope._changes.empty() ? 0 : _pointBuffer.back()._value);
 			return { static_cast<unsigned>(offset), static_cast<unsigned>(size) };
