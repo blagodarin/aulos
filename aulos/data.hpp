@@ -61,6 +61,11 @@ namespace aulos
 		Cosine,          // Cosine curve.
 	};
 
+	// The left derivative of a smooth cubic shape is always zero (which means that one of the critial points
+	// always coincides with the left end of the curve), and the right one is defined by the shape parameter:
+	//  * [0, 1] - the derivative on the right starts at zero and increases until it becomes equal to the derivative of a linear shape;
+	//  * [1, 2] - the second critical point moves right until it reaches positive infinity and the curve becomes quadratic;
+	//  * [2, 3] - the second critical point moves from negative infinity to zero (i. e. to the left end of the curve).
 	constexpr float kMinSmoothCubicShape = 0;
 	constexpr float kMaxSmoothCubicShape = 3;
 
