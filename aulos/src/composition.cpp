@@ -261,6 +261,7 @@ namespace aulos
 				{
 					auto shape = EnvelopeShape::Linear;
 					if (const auto shapeName = tryReadIdentifier(); !shapeName.empty())
+					{
 						if (shapeName == "smooth_quadratic_2")
 							shape = EnvelopeShape::SmoothQuadratic2;
 						else if (shapeName == "smooth_quadratic_4")
@@ -271,6 +272,7 @@ namespace aulos
 							shape = EnvelopeShape::SharpQuadratic4;
 						else
 							throw CompositionError{ location(), "Unknown envelope shape" };
+					}
 					envelope._changes.emplace_back(std::chrono::milliseconds{ *duration }, readFloat(minValue, maxValue), shape);
 				}
 			};
