@@ -199,6 +199,7 @@ void VoiceWidget::setVoice(const std::shared_ptr<aulos::VoiceData>& voice)
 	const auto usedVoice = voice ? voice.get() : &defaultVoice;
 	_waveShapeCombo->setCurrentIndex(_waveShapeCombo->findData(static_cast<int>(usedVoice->_waveShape)));
 	updateShapeParameter();
+	_waveShapeParameterSpin->setValue(usedVoice->_waveShapeParameter);
 	_stereoDelaySpin->setValue(usedVoice->_stereoDelay);
 	_stereoPanSpin->setValue(usedVoice->_stereoPan);
 	_stereoInversionCheck->setChecked(usedVoice->_stereoInversion);
