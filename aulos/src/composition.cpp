@@ -90,15 +90,22 @@ namespace aulos
 			lineBase = source;
 		};
 
-		const auto readIdentifier = [&] {
+		const auto tryReadIdentifier = [&] {
 			if (!((*source >= 'a' && *source <= 'z') || *source == '_'))
-				throw CompositionError{ location(), "Identifier expected" };
+				return std::string_view{};
 			const auto begin = source;
 			do
 				++source;
 			while ((*source >= 'a' && *source <= 'z') || (*source >= '0' && *source <= '9') || *source == '_');
 			const std::string_view result{ begin, static_cast<size_t>(source - begin) };
 			skipSpaces();
+			return result;
+		};
+
+		const auto readIdentifier = [&] {
+			const auto result = tryReadIdentifier();
+			if (result.empty())
+				throw CompositionError{ location(), "Identifier expected" };
 			return result;
 		};
 
@@ -248,41 +255,49 @@ namespace aulos
 		};
 
 		const auto parseCommand = [&](std::string_view command) {
+			const auto readEnvelope = [&](Envelope& envelope, float minValue, float maxValue) {
+				envelope._changes.clear();
+				while (const auto duration = tryReadUnsigned(0, static_cast<unsigned>(EnvelopeChange::kMaxDuration.count())))
+				{
+					auto shape = EnvelopeShape::Linear;
+					if (const auto shapeName = tryReadIdentifier(); !shapeName.empty())
+						if (shapeName == "smooth_quadratic_2")
+							shape = EnvelopeShape::SmoothQuadratic2;
+						else if (shapeName == "smooth_quadratic_4")
+							shape = EnvelopeShape::SmoothQuadratic4;
+						else if (shapeName == "sharp_quadratic_2")
+							shape = EnvelopeShape::SharpQuadratic2;
+						else if (shapeName == "sharp_quadratic_4")
+							shape = EnvelopeShape::SharpQuadratic4;
+						else
+							throw CompositionError{ location(), "Unknown envelope shape" };
+					envelope._changes.emplace_back(std::chrono::milliseconds{ *duration }, readFloat(minValue, maxValue), shape);
+				}
+			};
+
 			if (command == "amplitude")
 			{
 				if (currentSection != Section::Voice)
 					throw CompositionError{ location(), "Unexpected command" };
-				auto& envelope = currentVoice->_amplitudeEnvelope;
-				envelope._changes.clear();
-				while (const auto duration = tryReadUnsigned(0, static_cast<unsigned>(EnvelopeChange::kMaxDuration.count())))
-					envelope._changes.emplace_back(std::chrono::milliseconds{ *duration }, readFloat(0.f, 1.f), EnvelopeShape::Linear);
+				readEnvelope(currentVoice->_amplitudeEnvelope, 0.f, 1.f);
 			}
 			else if (command == "asymmetry")
 			{
 				if (currentSection != Section::Voice)
 					throw CompositionError{ location(), "Unexpected command" };
-				auto& envelope = currentVoice->_asymmetryEnvelope;
-				envelope._changes.clear();
-				while (const auto duration = tryReadUnsigned(0, static_cast<unsigned>(EnvelopeChange::kMaxDuration.count())))
-					envelope._changes.emplace_back(std::chrono::milliseconds{ *duration }, readFloat(0.f, 1.f), EnvelopeShape::Linear);
+				readEnvelope(currentVoice->_asymmetryEnvelope, 0.f, 1.f);
 			}
 			else if (command == "frequency")
 			{
 				if (currentSection != Section::Voice)
 					throw CompositionError{ location(), "Unexpected command" };
-				auto& envelope = currentVoice->_frequencyEnvelope;
-				envelope._changes.clear();
-				while (const auto duration = tryReadUnsigned(0, static_cast<unsigned>(EnvelopeChange::kMaxDuration.count())))
-					envelope._changes.emplace_back(std::chrono::milliseconds{ *duration }, readFloat(-1.f, 1.f), EnvelopeShape::Linear);
+				readEnvelope(currentVoice->_frequencyEnvelope, -1.f, 1.f);
 			}
 			else if (command == "oscillation")
 			{
 				if (currentSection != Section::Voice)
 					throw CompositionError{ location(), "Unexpected command" };
-				auto& envelope = currentVoice->_oscillationEnvelope;
-				envelope._changes.clear();
-				while (const auto duration = tryReadUnsigned(0, static_cast<unsigned>(EnvelopeChange::kMaxDuration.count())))
-					envelope._changes.emplace_back(std::chrono::milliseconds{ *duration }, readFloat(0.f, 1.f), EnvelopeShape::Linear);
+				readEnvelope(currentVoice->_oscillationEnvelope, 0.f, 1.f);
 			}
 			else if (command == "stereo_delay")
 			{
@@ -472,34 +487,34 @@ namespace aulos
 			text += "\ntitle \"" + _title + '"';
 		for (const auto& part : _parts)
 		{
+			const auto saveEnvelope = [&text, &floatToString](std::string_view name, const Envelope& envelope) {
+				if (envelope._changes.empty())
+					return;
+				text += '\n';
+				text += name;
+				for (const auto& change : envelope._changes)
+				{
+					text += ' ' + std::to_string(change._duration.count());
+					switch (change._shape)
+					{
+					case EnvelopeShape::Linear: break;
+					case EnvelopeShape::SmoothQuadratic2: text += " smooth_quadratic_2"; break;
+					case EnvelopeShape::SmoothQuadratic4: text += " smooth_quadratic_4"; break;
+					case EnvelopeShape::SharpQuadratic2: text += " sharp_quadratic_2"; break;
+					case EnvelopeShape::SharpQuadratic4: text += " sharp_quadratic_4"; break;
+					}
+					text += ' ' + floatToString(change._value);
+				}
+			};
+
 			const auto partIndex = static_cast<size_t>(&part - _parts.data() + 1);
 			text += "\n\n@voice " + std::to_string(partIndex);
 			if (!part._voiceName.empty())
 				text += " \"" + part._voiceName + '"';
-			if (!part._voice._amplitudeEnvelope._changes.empty())
-			{
-				text += "\namplitude";
-				for (const auto& change : part._voice._amplitudeEnvelope._changes)
-					text += ' ' + std::to_string(change._duration.count()) + ' ' + floatToString(change._value);
-			}
-			if (!part._voice._asymmetryEnvelope._changes.empty())
-			{
-				text += "\nasymmetry";
-				for (const auto& change : part._voice._asymmetryEnvelope._changes)
-					text += ' ' + std::to_string(change._duration.count()) + ' ' + floatToString(change._value);
-			}
-			if (!part._voice._frequencyEnvelope._changes.empty())
-			{
-				text += "\nfrequency";
-				for (const auto& change : part._voice._frequencyEnvelope._changes)
-					text += ' ' + std::to_string(change._duration.count()) + ' ' + floatToString(change._value);
-			}
-			if (!part._voice._oscillationEnvelope._changes.empty())
-			{
-				text += "\noscillation";
-				for (const auto& change : part._voice._oscillationEnvelope._changes)
-					text += ' ' + std::to_string(change._duration.count()) + ' ' + floatToString(change._value);
-			}
+			saveEnvelope("amplitude", part._voice._amplitudeEnvelope);
+			saveEnvelope("asymmetry", part._voice._asymmetryEnvelope);
+			saveEnvelope("frequency", part._voice._frequencyEnvelope);
+			saveEnvelope("oscillation", part._voice._oscillationEnvelope);
 			text += "\nstereo_delay " + floatToString(part._voice._stereoDelay);
 			text += "\nstereo_inversion " + std::to_string(static_cast<int>(part._voice._stereoInversion));
 			text += "\nstereo_pan " + floatToString(part._voice._stereoPan);
