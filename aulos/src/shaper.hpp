@@ -160,17 +160,15 @@ namespace aulos
 			, _c2{ (3 - data._shape) * data._deltaY / (data._deltaX * data._deltaX) }
 			, _c3{ (2 - data._shape) * data._deltaY / (data._deltaX * data._deltaX * data._deltaX) }
 			, _nextX{ data._offsetX }
-			, _nextY{ data._firstY + (_c2 - _c3 * data._offsetX) * data._offsetX * data._offsetX }
 		{
 			assert(data._shape >= kMinShape && data._shape <= kMaxShape);
 		}
 
 		constexpr auto advance() noexcept
 		{
-			const auto nextY = _nextY;
+			const auto result = _c0 + (_c2 - _c3 * _nextX) * _nextX * _nextX;
 			_nextX += 1;
-			_nextY = _c0 + (_c2 - _c3 * _nextX) * _nextX * _nextX;
-			return nextY;
+			return result;
 		}
 
 		template <typename Float, typename = std::enable_if_t<std::is_floating_point_v<Float>>>
@@ -186,7 +184,6 @@ namespace aulos
 		const float _c2;
 		const float _c3;
 		float _nextX;
-		float _nextY;
 	};
 
 	// C2 = (15 - 8 * shape) * deltaY / deltaX^2
@@ -210,21 +207,19 @@ namespace aulos
 			, _c4{ (60 - 40 * data._shape) * data._deltaY }
 			, _c5{ (24 - 16 * data._shape) * data._deltaY }
 			, _deltaX{ data._deltaX }
-			, _nextX{ data._offsetX - 1 }
+			, _nextX{ data._offsetX }
 		{
 			assert(data._shape >= kMinShape && data._shape <= kMaxShape);
-			advance();
 		}
 
 		constexpr float advance() noexcept
 		{
-			const auto nextY = _nextY;
-			_nextX += 1;
 			// The division is slow, but we can't store inverse deltaX because float doesn't have enough precision,
 			// and storing it as double, while fixing the precision problem, makes it even more slower.
 			const auto normalizedX = _nextX / _deltaX;
-			_nextY = _c0 + (_c2 - (_c3 - (_c4 - _c5 * normalizedX) * normalizedX) * normalizedX) * normalizedX * normalizedX;
-			return nextY;
+			const auto result = _c0 + (_c2 - (_c3 - (_c4 - _c5 * normalizedX) * normalizedX) * normalizedX) * normalizedX * normalizedX;
+			_nextX += 1;
+			return result;
 		}
 
 		template <typename Float, typename = std::enable_if_t<std::is_floating_point_v<Float>>>
@@ -243,7 +238,6 @@ namespace aulos
 		const float _c5;
 		const float _deltaX;
 		float _nextX;
-		float _nextY = 0;
 	};
 
 	// C(X) = deltaY * cos(pi * X / deltaX) / 2
