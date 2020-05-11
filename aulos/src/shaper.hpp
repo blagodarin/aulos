@@ -117,16 +117,16 @@ namespace aulos
 			, _c1{ 2 * data._deltaY / data._deltaX }
 			, _c2{ data._deltaY / (data._deltaX * data._deltaX) }
 			, _nextX{ data._offsetX }
-			, _nextY{ data._firstY + (_c1 - _c2 * data._offsetX) * data._offsetX }
 		{
 		}
 
 		constexpr auto advance() noexcept
 		{
-			const auto nextY = _nextY;
+			// Values can also be computed incrementally: Y(X + 1) = 2 * (Y(X) - C2) - Y(X - 1)
+			// Unfortunately, float doesn't have enough precision, and double is much slower.
+			const auto result = _c0 + (_c1 - _c2 * _nextX) * _nextX;
 			_nextX += 1;
-			_nextY = _c0 + (_c1 - _c2 * _nextX) * _nextX;
-			return nextY;
+			return result;
 		}
 
 		template <typename Float, typename = std::enable_if_t<std::is_floating_point_v<Float>>>
@@ -141,7 +141,6 @@ namespace aulos
 		const float _c1;
 		const float _c2;
 		float _nextX;
-		float _nextY;
 	};
 
 	// C2 = (3 - shape) * deltaY / deltaX^2
