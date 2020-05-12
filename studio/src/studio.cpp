@@ -507,8 +507,9 @@ void Studio::saveRecentFiles() const
 
 void Studio::updateStatus()
 {
+	const auto applicationName = QCoreApplication::applicationName() + ' ' + QCoreApplication::applicationVersion();
 	const auto compositionName = _hasComposition && !_composition->_title.empty() ? QString::fromStdString(_composition->_title) : _compositionFileName;
-	setWindowTitle(_hasComposition ? QStringLiteral("%1 - %2").arg(_changed ? '*' + compositionName : compositionName, QCoreApplication::applicationName()) : QCoreApplication::applicationName());
+	setWindowTitle(_hasComposition ? QStringLiteral("%1 - %2").arg(_changed ? '*' + compositionName : compositionName, applicationName) : applicationName);
 	_fileSaveAction->setEnabled(_changed);
 	_fileSaveAsAction->setEnabled(_hasComposition);
 	_fileExportAction->setEnabled(_hasComposition);

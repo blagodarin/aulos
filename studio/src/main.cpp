@@ -17,6 +17,8 @@
 
 #include "studio.hpp"
 
+#include <aulos_config.h>
+
 #include <cassert>
 
 #include <QApplication>
@@ -36,6 +38,7 @@ int main(int argc, char** argv)
 	});
 	QApplication app{ argc, argv };
 	QCoreApplication::setApplicationName("Aulos Studio");
+	QCoreApplication::setApplicationVersion(AULOS_VERSION);
 	QCoreApplication::setOrganizationDomain("blagodarin.me");
 	QCoreApplication::setOrganizationName("blagodarin.me");
 	QApplication::setWindowIcon(QIcon{ ":/aulos.png" });
