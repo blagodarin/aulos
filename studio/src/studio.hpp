@@ -15,18 +15,17 @@
 // limitations under the License.
 //
 
+#include <aulos/data.hpp>
+
 #include <memory>
+#include <optional>
 
 #include <QMainWindow>
 
+class QCheckBox;
 class QComboBox;
 class QLabel;
 class QSpinBox;
-
-namespace aulos
-{
-	struct CompositionData;
-}
 
 class CompositionWidget;
 class InfoEditor;
@@ -49,6 +48,7 @@ private:
 	void exportComposition();
 	bool maybeSaveComposition();
 	bool openComposition(const QString& path);
+	void playNote(aulos::Note);
 	bool saveComposition(const QString& path) const;
 	bool saveCompositionAs();
 	void saveRecentFiles() const;
@@ -75,6 +75,7 @@ private:
 	QString _compositionFileName;
 
 	Mode _mode = Mode::Editing;
+	std::optional<aulos::Note> _autoRepeatNote;
 	bool _hasComposition = false;
 	bool _changed = false;
 
@@ -95,5 +96,6 @@ private:
 	CompositionWidget* _compositionWidget;
 	VoiceWidget* _voiceWidget;
 	SequenceWidget* _sequenceWidget;
+	QCheckBox* _autoRepeatCheck;
 	QLabel* _statusPath;
 };

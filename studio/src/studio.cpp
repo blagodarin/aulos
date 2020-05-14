@@ -29,6 +29,7 @@
 #include <cassert>
 
 #include <QApplication>
+#include <QCheckBox>
 #include <QCloseEvent>
 #include <QComboBox>
 #include <QFileDialog>
@@ -196,6 +197,7 @@ Studio::Studio()
 		if (!composition)
 			return;
 		assert(_mode == Mode::Editing);
+		_autoRepeatCheck->setChecked(false);
 		const auto renderer = aulos::Renderer::create(*composition, _samplingRateCombo->currentData().toUInt(), _channelsCombo->currentData().toUInt());
 		[[maybe_unused]] const auto skippedBytes = renderer->render(nullptr, _compositionWidget->startOffset() * renderer->samplingRate() * renderer->channels() * sizeof(float) / _composition->_speed);
 		_player->reset(*renderer);
@@ -261,8 +263,21 @@ Studio::Studio()
 	_compositionWidget = new CompositionWidget{ splitter };
 	splitter->addWidget(_compositionWidget);
 
-	_sequenceWidget = new SequenceWidget{ splitter };
-	splitter->addWidget(_sequenceWidget);
+	const auto sequenceWrapper = new QWidget{ splitter };
+	splitter->addWidget(sequenceWrapper);
+
+	const auto sequenceLayout = new QVBoxLayout{ sequenceWrapper };
+	sequenceLayout->setContentsMargins({});
+
+	_sequenceWidget = new SequenceWidget{ sequenceWrapper };
+	sequenceLayout->addWidget(_sequenceWidget);
+
+	_autoRepeatCheck = new QCheckBox{ tr("Auto-repeat"), this };
+	sequenceLayout->addWidget(_autoRepeatCheck);
+	connect(_autoRepeatCheck, &QCheckBox::toggled, [this](bool checked) {
+		if (!checked)
+			_autoRepeatNote.reset();
+	});
 
 	splitter->setSizes({ 1, 1 });
 
@@ -279,8 +294,18 @@ Studio::Studio()
 		updateStatus();
 	});
 	connect(_player.get(), &Player::stateChanged, [this] {
-		if (_mode != Mode::Playing)
+		if (_mode == Mode::Editing)
+		{
+			if (!_player->isPlaying() && _autoRepeatNote)
+			{
+				QTimer::singleShot(1000, this, [this] {
+					if (_autoRepeatNote)
+						playNote(*_autoRepeatNote);
+				});
+			}
 			return;
+		}
+		assert(_mode == Mode::Playing);
 		_compositionWidget->showCursor(_player->isPlaying());
 		if (!_player->isPlaying())
 			_mode = Mode::Editing;
@@ -294,23 +319,27 @@ Studio::Studio()
 	connect(_compositionWidget, &CompositionWidget::selectionChanged, [this](const std::shared_ptr<aulos::VoiceData>& voice, const std::shared_ptr<aulos::SequenceData>& sequence) {
 		_voiceWidget->setVoice(voice);
 		_sequenceWidget->setSequence(sequence);
+		_autoRepeatCheck->setChecked(false);
 		updateStatus();
 	});
 	connect(_compositionWidget, &CompositionWidget::compositionChanged, [this] {
+		_autoRepeatCheck->setChecked(false);
 		_changed = true;
 		updateStatus();
 	});
 	connect(_sequenceWidget, &SequenceWidget::noteActivated, [this](aulos::Note note) {
-		const auto voice = _voiceWidget->voice();
-		assert(voice);
-		const auto renderer = aulos::VoiceRenderer::create(*voice, _samplingRateCombo->currentData().toUInt(), _channelsCombo->currentData().toUInt());
-		assert(renderer);
-		renderer->start(note, _compositionWidget->selectedTrackWeight());
-		_player->reset(*renderer);
-		_player->start();
+		bool play = true;
+		if (_autoRepeatCheck->isChecked())
+		{
+			play = !_autoRepeatNote.has_value();
+			_autoRepeatNote = note;
+		}
+		if (play)
+			playNote(note);
 	});
 	connect(_sequenceWidget, &SequenceWidget::sequenceChanged, [this] {
 		_compositionWidget->updateSelectedSequence(_sequenceWidget->sequence());
+		_autoRepeatCheck->setChecked(false);
 		_changed = true;
 		updateStatus();
 	});
@@ -437,6 +466,17 @@ bool Studio::openComposition(const QString& path)
 	return true;
 }
 
+void Studio::playNote(aulos::Note note)
+{
+	const auto voice = _voiceWidget->voice();
+	assert(voice);
+	const auto renderer = aulos::VoiceRenderer::create(*voice, _samplingRateCombo->currentData().toUInt(), _channelsCombo->currentData().toUInt());
+	assert(renderer);
+	renderer->start(note, _compositionWidget->selectedTrackWeight());
+	_player->reset(*renderer);
+	_player->start();
+}
+
 bool Studio::saveComposition(const QString& path) const
 {
 	assert(_hasComposition);
@@ -523,6 +563,9 @@ void Studio::updateStatus()
 	_compositionWidget->setInteractive(_hasComposition && _mode == Mode::Editing);
 	_voiceWidget->setEnabled(_hasComposition && _mode == Mode::Editing && _voiceWidget->voice());
 	_sequenceWidget->setInteractive(_hasComposition && _mode == Mode::Editing && _voiceWidget->voice());
+	_autoRepeatCheck->setEnabled(_hasComposition && _mode == Mode::Editing && _voiceWidget->voice());
+	if (!_autoRepeatCheck->isEnabled())
+		_autoRepeatCheck->setChecked(false);
 	_statusPath->setText(_compositionPath.isEmpty() ? QStringLiteral("<i>%1</i>").arg(tr("No file")) : _compositionPath);
 }
 
