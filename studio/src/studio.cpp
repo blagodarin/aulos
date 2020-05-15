@@ -302,7 +302,10 @@ Studio::Studio()
 		if (_mode == Mode::Editing)
 		{
 			if (!_player->isPlaying() && _autoRepeatNote)
+			{
+				assert(_autoRepeatButton->isChecked());
 				playNote(*_autoRepeatNote);
+			}
 			return;
 		}
 		assert(_mode == Mode::Playing);

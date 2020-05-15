@@ -82,6 +82,5 @@ void Player::renderData(QByteArray& data, aulos::Renderer& renderer)
 	const auto totalBytes = renderer.totalBytes();
 	data.resize(static_cast<int>(totalBytes));
 	data.fill(0);
-	[[maybe_unused]] const auto renderedBytes = renderer.render(data.data(), totalBytes);
-	assert(totalBytes == renderedBytes);
+	data.resize(static_cast<int>(renderer.render(data.data(), totalBytes)));
 }
