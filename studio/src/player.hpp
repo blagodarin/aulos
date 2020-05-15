@@ -38,7 +38,7 @@ public:
 	Player(QObject* parent = nullptr);
 	~Player() override;
 
-	constexpr bool isPlaying() const noexcept { return _state == State::Starting || _state == State::Started; }
+	constexpr bool isPlaying() const noexcept { return _state == State::Started; }
 	void reset(aulos::Renderer&);
 	void start();
 	void stop();
@@ -53,7 +53,6 @@ private:
 	enum class State
 	{
 		Stopped,
-		Starting,
 		Started,
 	};
 

@@ -19,9 +19,11 @@
 
 #include <aulos/playback.hpp>
 
+#include <cassert>
 #include <cstring>
 
 #include <QAudioOutput>
+#include <QDebug>
 
 Player::Player(QObject* parent)
 	: QObject{ parent }
@@ -51,8 +53,11 @@ void Player::reset(aulos::Renderer& renderer)
 		emit timeAdvanced(_output->processedUSecs());
 	});
 	connect(_output.get(), &QAudioOutput::stateChanged, this, [this](QAudio::State state) {
-		_state = state == QAudio::ActiveState ? State::Started : State::Stopped;
-		emit stateChanged();
+		if (const auto newState = state == QAudio::ActiveState ? State::Started : State::Stopped; newState != _state)
+		{
+			_state = newState;
+			emit stateChanged();
+		}
 	});
 }
 
@@ -74,20 +79,9 @@ void Player::stop()
 
 void Player::renderData(QByteArray& data, aulos::Renderer& renderer)
 {
-	data.clear();
-	data.resize(65'536);
-	for (int totalRendered = 0;;)
-	{
-		std::memset(data.data() + totalRendered, 0, data.size() - totalRendered);
-		if (const auto rendered = renderer.render(data.data() + totalRendered, data.size() - totalRendered); rendered > 0)
-		{
-			totalRendered += static_cast<int>(rendered);
-			data.resize(totalRendered + 65'536);
-		}
-		else
-		{
-			data.resize(totalRendered);
-			break;
-		}
-	}
+	const auto totalBytes = renderer.totalBytes();
+	data.resize(static_cast<int>(totalBytes));
+	data.fill(0);
+	[[maybe_unused]] const auto renderedBytes = renderer.render(data.data(), totalBytes);
+	assert(totalBytes == renderedBytes);
 }

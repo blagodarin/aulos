@@ -302,12 +302,7 @@ Studio::Studio()
 		if (_mode == Mode::Editing)
 		{
 			if (!_player->isPlaying() && _autoRepeatNote)
-			{
-				QTimer::singleShot(1000, this, [this] {
-					if (_autoRepeatNote)
-						playNote(*_autoRepeatNote);
-				});
-			}
+				playNote(*_autoRepeatNote);
 			return;
 		}
 		assert(_mode == Mode::Playing);
