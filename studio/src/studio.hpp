@@ -25,6 +25,7 @@
 class QCheckBox;
 class QComboBox;
 class QLabel;
+class QPushButton;
 class QSpinBox;
 
 class CompositionWidget;
@@ -96,6 +97,6 @@ private:
 	CompositionWidget* _compositionWidget;
 	VoiceWidget* _voiceWidget;
 	SequenceWidget* _sequenceWidget;
-	QCheckBox* _autoRepeatCheck;
+	QPushButton* _autoRepeatButton;
 	QLabel* _statusPath;
 };

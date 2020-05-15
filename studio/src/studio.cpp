@@ -29,7 +29,6 @@
 #include <cassert>
 
 #include <QApplication>
-#include <QCheckBox>
 #include <QCloseEvent>
 #include <QComboBox>
 #include <QFileDialog>
@@ -37,6 +36,7 @@
 #include <QLabel>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QPushButton>
 #include <QSaveFile>
 #include <QSettings>
 #include <QSpinBox>
@@ -197,7 +197,7 @@ Studio::Studio()
 		if (!composition)
 			return;
 		assert(_mode == Mode::Editing);
-		_autoRepeatCheck->setChecked(false);
+		_autoRepeatButton->setChecked(false);
 		const auto renderer = aulos::Renderer::create(*composition, _samplingRateCombo->currentData().toUInt(), _channelsCombo->currentData().toUInt());
 		[[maybe_unused]] const auto skippedBytes = renderer->render(nullptr, _compositionWidget->startOffset() * renderer->samplingRate() * renderer->channels() * sizeof(float) / _composition->_speed);
 		_player->reset(*renderer);
@@ -266,18 +266,23 @@ Studio::Studio()
 	const auto sequenceWrapper = new QWidget{ splitter };
 	splitter->addWidget(sequenceWrapper);
 
-	const auto sequenceLayout = new QVBoxLayout{ sequenceWrapper };
+	const auto sequenceLayout = new QGridLayout{ sequenceWrapper };
 	sequenceLayout->setContentsMargins({});
 
 	_sequenceWidget = new SequenceWidget{ sequenceWrapper };
-	sequenceLayout->addWidget(_sequenceWidget);
+	sequenceLayout->addWidget(_sequenceWidget, 0, 0, 1, 2);
 
-	_autoRepeatCheck = new QCheckBox{ tr("Auto-repeat"), this };
-	sequenceLayout->addWidget(_autoRepeatCheck);
-	connect(_autoRepeatCheck, &QCheckBox::toggled, [this](bool checked) {
+	_autoRepeatButton = new QPushButton{ this };
+	_autoRepeatButton->setCheckable(true);
+	_autoRepeatButton->setIcon(qApp->style()->standardIcon(QStyle::SP_BrowserReload));
+	_autoRepeatButton->setText(tr("Auto-repeat"));
+	sequenceLayout->addWidget(_autoRepeatButton, 1, 0);
+	connect(_autoRepeatButton, &QPushButton::toggled, [this](bool checked) {
 		if (!checked)
 			_autoRepeatNote.reset();
 	});
+
+	sequenceLayout->addItem(new QSpacerItem{ 0, 0, QSizePolicy::Expanding, QSizePolicy::Minimum }, 1, 1);
 
 	splitter->setSizes({ 1, 1 });
 
@@ -319,17 +324,17 @@ Studio::Studio()
 	connect(_compositionWidget, &CompositionWidget::selectionChanged, [this](const std::shared_ptr<aulos::VoiceData>& voice, const std::shared_ptr<aulos::SequenceData>& sequence) {
 		_voiceWidget->setVoice(voice);
 		_sequenceWidget->setSequence(sequence);
-		_autoRepeatCheck->setChecked(false);
+		_autoRepeatButton->setChecked(false);
 		updateStatus();
 	});
 	connect(_compositionWidget, &CompositionWidget::compositionChanged, [this] {
-		_autoRepeatCheck->setChecked(false);
+		_autoRepeatButton->setChecked(false);
 		_changed = true;
 		updateStatus();
 	});
 	connect(_sequenceWidget, &SequenceWidget::noteActivated, [this](aulos::Note note) {
 		bool play = true;
-		if (_autoRepeatCheck->isChecked())
+		if (_autoRepeatButton->isChecked())
 		{
 			play = !_autoRepeatNote.has_value();
 			_autoRepeatNote = note;
@@ -339,7 +344,7 @@ Studio::Studio()
 	});
 	connect(_sequenceWidget, &SequenceWidget::sequenceChanged, [this] {
 		_compositionWidget->updateSelectedSequence(_sequenceWidget->sequence());
-		_autoRepeatCheck->setChecked(false);
+		_autoRepeatButton->setChecked(false);
 		_changed = true;
 		updateStatus();
 	});
@@ -563,9 +568,9 @@ void Studio::updateStatus()
 	_compositionWidget->setInteractive(_hasComposition && _mode == Mode::Editing);
 	_voiceWidget->setEnabled(_hasComposition && _mode == Mode::Editing && _voiceWidget->voice());
 	_sequenceWidget->setInteractive(_hasComposition && _mode == Mode::Editing && _voiceWidget->voice());
-	_autoRepeatCheck->setEnabled(_hasComposition && _mode == Mode::Editing && _voiceWidget->voice());
-	if (!_autoRepeatCheck->isEnabled())
-		_autoRepeatCheck->setChecked(false);
+	_autoRepeatButton->setEnabled(_hasComposition && _mode == Mode::Editing && _voiceWidget->voice());
+	if (!_autoRepeatButton->isEnabled())
+		_autoRepeatButton->setChecked(false);
 	_statusPath->setText(_compositionPath.isEmpty() ? QStringLiteral("<i>%1</i>").arg(tr("No file")) : _compositionPath);
 }
 
