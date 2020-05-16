@@ -17,7 +17,7 @@
 
 cmake_minimum_required(VERSION 3.15)
 
-project(aulos VERSION 0.0.2.0 HOMEPAGE_URL https://github.com/blagodarin/aulos LANGUAGES CXX)
+project(aulos VERSION 0.0.3.0 HOMEPAGE_URL https://github.com/blagodarin/aulos LANGUAGES CXX)
 
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
