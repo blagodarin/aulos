@@ -34,8 +34,22 @@ The primary features of Aulos are:
 ![Screenshot of Aulos Studio](studio/screenshot.png)
 
 
-## Disclaimer
+## What to expect
 
-Aulos is in its early stages of development. *Any* commit may change *anything*
-(API, ABI, file format) in an incompatible way until Aulos reaches version 0.1,
-which will be the first production-ready release.
+First of all, Aulos is in its early stages of development. *Any* commit may change *anything*
+(API, ABI, file format) in an incompatible way until Aulos reaches at least version 0.1,
+which will be the first more-or-less production-ready release.
+
+This bumpy journey may also bring:
+* **Binary file format.** Binary data is more compact and should be faster to load,
+  so this is definitely coming, but not before the composition structure gets stabilized.
+  At this stage of development, some format changes require manual file manipulations,
+  which are easier to do with text than with binary data.
+* **Ergonomic voice editor.** The current editor is both limited and complicated.
+  It clearly lacks visualization of what's going on.
+* **Voice libraries.** It's inconvenient to start every composition from scratch,
+  reinventing all voices or copying them value-by-value from another composition.
+  It's also more user-friendly to provide newcomers with a set of pre-designed
+  voices than to force them to make their own.
+
+P. S. No estimates, sorry.
