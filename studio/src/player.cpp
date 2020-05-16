@@ -33,12 +33,17 @@ Player::Player(QObject* parent)
 
 Player::~Player() = default;
 
-void Player::reset(aulos::Renderer& renderer)
+void Player::reset(aulos::Renderer& renderer, int minBufferBytes)
 {
 	stop();
 	_output.reset();
 	_buffer.close();
 	renderData(_data, renderer);
+	if (const auto size = _data.size(); size < minBufferBytes)
+	{
+		_data.resize(minBufferBytes);
+		std::memset(_data.data() + size, 0, _data.size() - size);
+	}
 	_buffer.open(QIODevice::ReadOnly);
 	QAudioFormat format;
 	format.setByteOrder(QAudioFormat::LittleEndian);

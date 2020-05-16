@@ -39,7 +39,7 @@ public:
 	~Player() override;
 
 	constexpr bool isPlaying() const noexcept { return _state == State::Started; }
-	void reset(aulos::Renderer&);
+	void reset(aulos::Renderer&, int minBufferBytes);
 	void start();
 	void stop();
 

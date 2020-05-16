@@ -200,7 +200,7 @@ Studio::Studio()
 		_autoRepeatButton->setChecked(false);
 		const auto renderer = aulos::Renderer::create(*composition, _samplingRateCombo->currentData().toUInt(), _channelsCombo->currentData().toUInt());
 		[[maybe_unused]] const auto skippedBytes = renderer->render(nullptr, _compositionWidget->startOffset() * renderer->samplingRate() * renderer->channels() * sizeof(float) / _composition->_speed);
-		_player->reset(*renderer);
+		_player->reset(*renderer, 0);
 		_mode = Mode::Playing;
 		_player->start();
 		updateStatus();
@@ -473,10 +473,12 @@ void Studio::playNote(aulos::Note note)
 {
 	const auto voice = _voiceWidget->voice();
 	assert(voice);
-	const auto renderer = aulos::VoiceRenderer::create(*voice, _samplingRateCombo->currentData().toUInt(), _channelsCombo->currentData().toUInt());
+	const auto samplingRate = _samplingRateCombo->currentData().toUInt();
+	const auto channels = _channelsCombo->currentData().toUInt();
+	const auto renderer = aulos::VoiceRenderer::create(*voice, samplingRate, channels);
 	assert(renderer);
 	renderer->start(note, _compositionWidget->selectedTrackWeight());
-	_player->reset(*renderer);
+	_player->reset(*renderer, samplingRate * channels * sizeof(float));
 	_player->start();
 }
 
