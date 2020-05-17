@@ -28,7 +28,7 @@ class KeyItem final : public ButtonItem
 	Q_OBJECT
 
 public:
-	KeyItem(aulos::Note, QGraphicsItem* parent = nullptr);
+	explicit KeyItem(aulos::Note, QGraphicsItem* parent = nullptr);
 
 	QRectF boundingRect() const override;
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;

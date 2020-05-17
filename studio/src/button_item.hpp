@@ -30,7 +30,7 @@ public:
 		Press,
 	};
 
-	ButtonItem(Mode mode = Mode::Click, QGraphicsItem* parent = nullptr);
+	explicit ButtonItem(Mode mode = Mode::Click, QGraphicsItem* parent = nullptr);
 
 signals:
 	void activated();

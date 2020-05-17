@@ -43,7 +43,7 @@ namespace aulos
 	class LinearShaper
 	{
 	public:
-		constexpr LinearShaper(const ShaperData& data) noexcept
+		explicit constexpr LinearShaper(const ShaperData& data) noexcept
 			: _c1{ data._deltaY / data._deltaX }
 			, _nextY{ data._firstY + _c1 * data._offsetX }
 		{
@@ -76,7 +76,7 @@ namespace aulos
 	class SmoothQuadraticShaper
 	{
 	public:
-		constexpr SmoothQuadraticShaper(const ShaperData& data) noexcept
+		explicit constexpr SmoothQuadraticShaper(const ShaperData& data) noexcept
 			: _c0{ data._firstY }
 			, _c2{ data._deltaY / (data._deltaX * data._deltaX) }
 			, _nextX{ data._offsetX }
@@ -112,7 +112,7 @@ namespace aulos
 	class SharpQuadraticShaper
 	{
 	public:
-		constexpr SharpQuadraticShaper(const ShaperData& data) noexcept
+		explicit constexpr SharpQuadraticShaper(const ShaperData& data) noexcept
 			: _c0{ data._firstY }
 			, _c1{ 2 * data._deltaY / data._deltaX }
 			, _c2{ data._deltaY / (data._deltaX * data._deltaX) }
@@ -155,7 +155,7 @@ namespace aulos
 		static constexpr float kMinShape = 0;
 		static constexpr float kMaxShape = 3;
 
-		constexpr SmoothCubicShaper(const ShaperData& data) noexcept
+		explicit constexpr SmoothCubicShaper(const ShaperData& data) noexcept
 			: _c0{ data._firstY }
 			, _c2{ (3 - data._shape) * data._deltaY / (data._deltaX * data._deltaX) }
 			, _c3{ (2 - data._shape) * data._deltaY / (data._deltaX * data._deltaX * data._deltaX) }
@@ -200,7 +200,7 @@ namespace aulos
 		static constexpr float kMinShape = -1;
 		static constexpr float kMaxShape = 1;
 
-		constexpr QuinticShaper(const ShaperData& data) noexcept
+		explicit constexpr QuinticShaper(const ShaperData& data) noexcept
 			: _c0{ data._firstY }
 			, _c2{ (15 - 8 * data._shape) * data._deltaY }
 			, _c3{ (50 - 32 * data._shape) * data._deltaY }
@@ -246,7 +246,7 @@ namespace aulos
 	class CosineShaper
 	{
 	public:
-		CosineShaper(const ShaperData& data) noexcept
+		explicit CosineShaper(const ShaperData& data) noexcept
 		{
 			const auto amplitude = data._deltaY / 2.;
 			_base = data._firstY + amplitude;

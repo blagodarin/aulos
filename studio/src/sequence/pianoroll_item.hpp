@@ -26,7 +26,7 @@ class PianorollItem final : public QGraphicsObject
 	Q_OBJECT
 
 public:
-	PianorollItem(QGraphicsItem* parent = nullptr);
+	explicit PianorollItem(QGraphicsItem* parent = nullptr);
 
 	QRectF boundingRect() const override;
 	size_t stepCount() const noexcept { return _stepCount; }

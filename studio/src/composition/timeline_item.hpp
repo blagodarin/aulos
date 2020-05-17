@@ -22,7 +22,7 @@
 class TimelineItem final : public QGraphicsItem
 {
 public:
-	TimelineItem(QGraphicsItem* parent = nullptr);
+	explicit TimelineItem(QGraphicsItem* parent = nullptr);
 
 	QRectF boundingRect() const override;
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;

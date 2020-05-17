@@ -97,7 +97,7 @@ struct CompositionScene::Track
 	TrackItem* _background = nullptr;
 	std::map<size_t, FragmentItem*> _fragments;
 
-	Track(QGraphicsScene& scene)
+	explicit Track(QGraphicsScene& scene)
 		: _scene{ scene } {}
 
 	~Track()
@@ -385,8 +385,7 @@ float CompositionScene::selectedTrackWeight() const
 	assert(trackIt != (*partIt)->_tracks.cend());
 	unsigned totalWeight = 0;
 	for (const auto& part : _composition->_parts)
-		for (const auto& track : part->_tracks)
-			totalWeight += track->_weight;
+		totalWeight = std::reduce(part->_tracks.begin(), part->_tracks.end(), totalWeight, [](unsigned weight, const std::shared_ptr<aulos::TrackData>& track) { return weight + track->_weight; });
 	return static_cast<float>((*trackIt)->_weight) / totalWeight;
 }
 

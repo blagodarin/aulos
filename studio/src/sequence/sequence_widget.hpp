@@ -35,7 +35,7 @@ class SequenceWidget final : public QWidget
 	Q_OBJECT
 
 public:
-	SequenceWidget(QWidget* parent);
+	explicit SequenceWidget(QWidget* parent);
 
 	void setInteractive(bool);
 	void setSequence(const std::shared_ptr<aulos::SequenceData>&);

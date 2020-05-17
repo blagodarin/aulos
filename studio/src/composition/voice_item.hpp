@@ -25,7 +25,7 @@ class VoiceItem final : public QGraphicsObject
 	Q_OBJECT
 
 public:
-	VoiceItem(const void* id, QGraphicsItem* parent = nullptr);
+	explicit VoiceItem(const void* id, QGraphicsItem* parent = nullptr);
 
 	QRectF boundingRect() const override;
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;

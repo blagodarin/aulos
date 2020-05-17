@@ -47,7 +47,7 @@ namespace aulos
 	class Modulator
 	{
 	public:
-		constexpr Modulator(const SampledPoints& points) noexcept
+		explicit constexpr Modulator(const SampledPoints& points) noexcept
 			: _points{ points._data }
 			, _size{ points._size }
 		{

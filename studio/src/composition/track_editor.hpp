@@ -26,7 +26,7 @@ class TrackEditor : public QDialog
 	Q_OBJECT
 
 public:
-	TrackEditor(QWidget*);
+	explicit TrackEditor(QWidget*);
 	~TrackEditor() override;
 
 	void setTrackWeight(unsigned);

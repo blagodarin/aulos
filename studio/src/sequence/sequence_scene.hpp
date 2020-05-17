@@ -32,7 +32,7 @@ class SequenceScene final : public QGraphicsScene
 	Q_OBJECT
 
 public:
-	SequenceScene(QObject* parent = nullptr);
+	explicit SequenceScene(QObject* parent = nullptr);
 	~SequenceScene() override;
 
 	void insertSound(size_t offset, aulos::Note);

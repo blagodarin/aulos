@@ -125,7 +125,7 @@ namespace aulos
 		std::vector<std::shared_ptr<SequenceData>> _sequences;
 		std::map<size_t, std::shared_ptr<SequenceData>> _fragments;
 
-		TrackData(unsigned weight) noexcept
+		explicit TrackData(unsigned weight) noexcept
 			: _weight{ weight } {}
 	};
 
@@ -135,7 +135,7 @@ namespace aulos
 		std::string _voiceName;
 		std::vector<std::shared_ptr<TrackData>> _tracks;
 
-		PartData(const std::shared_ptr<VoiceData>& voice) noexcept
+		explicit PartData(const std::shared_ptr<VoiceData>& voice) noexcept
 			: _voice{ voice } {}
 	};
 

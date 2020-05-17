@@ -24,7 +24,7 @@ class TrackItem final : public QGraphicsObject
 	Q_OBJECT
 
 public:
-	TrackItem(const void* id, QGraphicsItem* parent = nullptr);
+	explicit TrackItem(const void* id, QGraphicsItem* parent = nullptr);
 
 	QRectF boundingRect() const override;
 	bool isFirstTrack() const noexcept { return _first; }

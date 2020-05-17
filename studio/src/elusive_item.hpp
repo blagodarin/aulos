@@ -24,7 +24,7 @@ class ElusiveItem final : public QGraphicsObject
 	Q_OBJECT
 
 public:
-	ElusiveItem(QGraphicsItem* parent = nullptr);
+	explicit ElusiveItem(QGraphicsItem* parent = nullptr);
 
 	void setHeight(qreal);
 

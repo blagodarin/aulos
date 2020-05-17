@@ -41,7 +41,7 @@ class CompositionWidget final : public QWidget
 	Q_OBJECT
 
 public:
-	CompositionWidget(QWidget* parent);
+	explicit CompositionWidget(QWidget* parent);
 
 	float selectedTrackWeight() const;
 	void setComposition(const std::shared_ptr<aulos::CompositionData>&);

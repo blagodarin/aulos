@@ -26,7 +26,7 @@ class InfoEditor : public QDialog
 	Q_OBJECT
 
 public:
-	InfoEditor(QWidget*);
+	explicit InfoEditor(QWidget*);
 	~InfoEditor() override;
 
 	void setCompositionAuthor(const QString&);

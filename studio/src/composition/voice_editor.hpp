@@ -28,7 +28,7 @@ class VoiceEditor final : public QDialog
 	Q_OBJECT
 
 public:
-	VoiceEditor(QWidget*);
+	explicit VoiceEditor(QWidget*);
 
 	void setVoiceName(const std::string&);
 	std::string voiceName() const;

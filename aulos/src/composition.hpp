@@ -36,7 +36,7 @@ namespace aulos
 		std::vector<std::vector<Sound>> _sequences;
 		std::vector<Fragment> _fragments;
 
-		Track(unsigned weight) noexcept
+		explicit Track(unsigned weight) noexcept
 			: _weight{ weight } {}
 	};
 

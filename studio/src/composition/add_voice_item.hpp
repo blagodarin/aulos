@@ -24,7 +24,7 @@ class AddVoiceItem final : public ButtonItem
 	Q_OBJECT
 
 public:
-	AddVoiceItem(QGraphicsItem* parent = nullptr);
+	explicit AddVoiceItem(QGraphicsItem* parent = nullptr);
 
 	QRectF boundingRect() const override;
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;

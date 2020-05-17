@@ -46,7 +46,7 @@ class CompositionScene final : public QGraphicsScene
 	Q_OBJECT
 
 public:
-	CompositionScene(QObject* parent);
+	explicit CompositionScene(QObject* parent = nullptr);
 	~CompositionScene() override;
 
 	void addTrack(const void* voiceId, const void* trackId);

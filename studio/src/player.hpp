@@ -35,7 +35,7 @@ class Player final : public QObject
 	Q_OBJECT
 
 public:
-	Player(QObject* parent = nullptr);
+	explicit Player(QObject* parent = nullptr);
 	~Player() override;
 
 	constexpr bool isPlaying() const noexcept { return _state == State::Started; }

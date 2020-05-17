@@ -22,7 +22,7 @@
 class CursorItem final : public QGraphicsItem
 {
 public:
-	CursorItem(QGraphicsItem* parent = nullptr);
+	explicit CursorItem(QGraphicsItem* parent = nullptr);
 
 	QRectF boundingRect() const override;
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;

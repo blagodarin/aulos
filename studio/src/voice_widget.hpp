@@ -36,7 +36,7 @@ class VoiceWidget final : public QWidget
 	Q_OBJECT
 
 public:
-	VoiceWidget(QWidget* parent);
+	explicit VoiceWidget(QWidget* parent);
 	~VoiceWidget() override;
 
 	void setVoice(const std::shared_ptr<aulos::VoiceData>&);
