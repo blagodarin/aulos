@@ -552,6 +552,8 @@ namespace aulos
 				{
 					const auto sequenceIndex = static_cast<size_t>(&sequence - track._sequences.data() + 1);
 					text += '\n' + std::to_string(partIndex) + ' ' + std::to_string(trackIndex) + ' ' + std::to_string(sequenceIndex);
+					if (!sequence.empty() && sequence.front()._delay > 0)
+						text += " .";
 					for (const auto& sound : sequence)
 					{
 						for (auto i = sound._delay; i > 1; --i)
