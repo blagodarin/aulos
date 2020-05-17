@@ -186,6 +186,8 @@ namespace aulos
 		const auto parseNote = [&](std::vector<Sound>& sequence, size_t& delay, size_t baseOffset) {
 			assert(*source >= 'A' && *source <= 'G');
 			assert(baseOffset < 12);
+			if (!delay && !sequence.empty())
+				throw CompositionError{ location(), "Bad note" };
 			++source;
 			if (*source == '#')
 			{
@@ -204,7 +206,7 @@ namespace aulos
 			if (*source < '0' || *source > '9')
 				throw CompositionError{ location(), "Bad note" };
 			sequence.emplace_back(delay, static_cast<Note>((*source - '0') * 12 + baseOffset));
-			delay = 1;
+			delay = 0;
 			++source;
 		};
 
@@ -214,15 +216,12 @@ namespace aulos
 				switch (*source)
 				{
 				case '\0':
-					return false;
+					return;
 				case '\r':
 				case '\n':
 					consumeEndOfLine();
-					return true;
-				case '\t':
-				case ' ':
-					break;
-				case '.':
+					return;
+				case ',':
 					++delay;
 					++source;
 					break;
@@ -250,7 +249,6 @@ namespace aulos
 				default:
 					throw CompositionError{ location(), "Bad note" };
 				}
-				skipSpaces();
 			}
 		};
 
@@ -551,14 +549,10 @@ namespace aulos
 				for (const auto& sequence : track._sequences)
 				{
 					const auto sequenceIndex = static_cast<size_t>(&sequence - track._sequences.data() + 1);
-					text += '\n' + std::to_string(partIndex) + ' ' + std::to_string(trackIndex) + ' ' + std::to_string(sequenceIndex);
-					if (!sequence.empty() && sequence.front()._delay > 0)
-						text += " .";
+					text += '\n' + std::to_string(partIndex) + ' ' + std::to_string(trackIndex) + ' ' + std::to_string(sequenceIndex) + ' ';
 					for (const auto& sound : sequence)
 					{
-						for (auto i = sound._delay; i > 1; --i)
-							text += " .";
-						text += ' ';
+						text.append(sound._delay, ',');
 						const auto note = static_cast<unsigned>(sound._note);
 						switch (note % 12)
 						{
