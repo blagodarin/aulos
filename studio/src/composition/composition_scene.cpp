@@ -385,7 +385,7 @@ float CompositionScene::selectedTrackWeight() const
 	assert(trackIt != (*partIt)->_tracks.cend());
 	unsigned totalWeight = 0;
 	for (const auto& part : _composition->_parts)
-		totalWeight = std::reduce(part->_tracks.begin(), part->_tracks.end(), totalWeight, [](unsigned weight, const std::shared_ptr<aulos::TrackData>& track) { return weight + track->_weight; });
+		totalWeight = std::accumulate(part->_tracks.begin(), part->_tracks.end(), totalWeight, [](unsigned weight, const auto& trackData) { return weight + trackData->_weight; });
 	return static_cast<float>((*trackIt)->_weight) / totalWeight;
 }
 
