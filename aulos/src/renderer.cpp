@@ -96,7 +96,8 @@ namespace
 							trackState._sounds.reserve(trackState._sounds.size() + sequence.size());
 							trackState._sounds.emplace_back(fragmentOffset - lastSoundOffset + sequence.front()._delay, sequence.front()._note);
 							std::for_each(std::next(sequence.begin()), sequence.end(), [&trackState](const aulos::Sound& sound) {
-								trackState._sounds.emplace_back(sound._delay, sound._note);
+								if (sound._delay > 0)
+									trackState._sounds.emplace_back(sound._delay, sound._note);
 							});
 						}
 					}

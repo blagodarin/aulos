@@ -23,6 +23,7 @@
 #include "pianoroll_item.hpp"
 #include "sound_item.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 
@@ -54,20 +55,19 @@ SequenceScene::~SequenceScene()
 
 void SequenceScene::insertSound(size_t offset, aulos::Note note)
 {
-	if (const auto i = _soundItems.find(offset); i != _soundItems.end())
-		i->second->setNote(note);
-	else
-		insertNewSound(offset, note);
+	insertNewSound(offset, note);
 	emit noteActivated(note);
 }
 
-void SequenceScene::removeSound(size_t offset)
+void SequenceScene::removeSound(size_t offset, aulos::Note note)
 {
-	const auto i = _soundItems.find(offset);
-	assert(i != _soundItems.end());
-	removeItem(i->second.get());
-	i->second.release()->deleteLater();
-	_soundItems.erase(i);
+	const auto range = _soundItems.equal_range(offset);
+	assert(range.first != range.second);
+	const auto item = std::find_if(range.first, range.second, [note](const auto& sound) { return sound.second->note() == note; });
+	assert(item != range.second);
+	removeItem(item->second.get());
+	item->second.release()->deleteLater();
+	_soundItems.erase(item);
 }
 
 qreal SequenceScene::setSequence(const aulos::SequenceData& sequence, const QSize& viewSize)
@@ -90,11 +90,9 @@ qreal SequenceScene::setSequence(const aulos::SequenceData& sequence, const QSiz
 
 void SequenceScene::insertNewSound(size_t offset, aulos::Note note)
 {
-	const auto [i, inserted] = _soundItems.emplace(offset, std::make_unique<SoundItem>(offset, note, _pianorollItem.get()));
-	assert(inserted);
-	const auto soundItem = i->second.get();
+	const auto soundItem = _soundItems.emplace(offset, std::make_unique<SoundItem>(offset, note, _pianorollItem.get()))->second.get();
 	connect(soundItem, &SoundItem::playRequested, [this, soundItem] { emit noteActivated(soundItem->note()); });
-	connect(soundItem, &SoundItem::removeRequested, [this, offset] { emit removingSound(offset); });
+	connect(soundItem, &SoundItem::removeRequested, [this, offset, note] { emit removingSound(offset, note); });
 }
 
 void SequenceScene::removeSoundItems()

@@ -183,11 +183,9 @@ namespace aulos
 			return *result;
 		};
 
-		const auto parseNote = [&](std::vector<Sound>& sequence, size_t& delay, size_t baseOffset) {
+		const auto parseNote = [&](std::vector<Sound>& sequence, size_t delay, size_t baseOffset) {
 			assert(*source >= 'A' && *source <= 'G');
 			assert(baseOffset < 12);
-			if (!delay && !sequence.empty())
-				throw CompositionError{ location(), "Bad note" };
 			++source;
 			if (*source == '#')
 			{
@@ -206,13 +204,26 @@ namespace aulos
 			if (*source < '0' || *source > '9')
 				throw CompositionError{ location(), "Bad note" };
 			sequence.emplace_back(delay, static_cast<Note>((*source - '0') * 12 + baseOffset));
-			delay = 0;
 			++source;
 		};
 
 		const auto parseSequence = [&](std::vector<Sound>& sequence) {
 			for (size_t delay = 0;;)
 			{
+				const auto mapNote = [&](char note) -> std::underlying_type_t<aulos::Note> {
+					switch (note)
+					{
+					case 'A': return 9;
+					case 'B': return 11;
+					case 'C': return 0;
+					case 'D': return 2;
+					case 'E': return 4;
+					case 'F': return 5;
+					case 'G': return 7;
+					default: throw CompositionError{ location(), "Bad note" };
+					}
+				};
+
 				switch (*source)
 				{
 				case '\0':
@@ -225,29 +236,10 @@ namespace aulos
 					++delay;
 					++source;
 					break;
-				case 'A':
-					parseNote(sequence, delay, 9);
-					break;
-				case 'B':
-					parseNote(sequence, delay, 11);
-					break;
-				case 'C':
-					parseNote(sequence, delay, 0);
-					break;
-				case 'D':
-					parseNote(sequence, delay, 2);
-					break;
-				case 'E':
-					parseNote(sequence, delay, 4);
-					break;
-				case 'F':
-					parseNote(sequence, delay, 5);
-					break;
-				case 'G':
-					parseNote(sequence, delay, 7);
-					break;
 				default:
-					throw CompositionError{ location(), "Bad note" };
+					parseNote(sequence, delay, mapNote(*source));
+					delay = 0;
+					break;
 				}
 			}
 		};

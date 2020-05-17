@@ -41,11 +41,11 @@ SequenceWidget::SequenceWidget(QWidget* parent)
 		if (!_sequenceData)
 			return;
 		size_t position = 0;
-		const auto sound = std::find_if(_sequenceData->_sounds.begin(), _sequenceData->_sounds.end(), [offset, &position](const aulos::Sound& sound) mutable {
+		const auto first = std::find_if(_sequenceData->_sounds.begin(), _sequenceData->_sounds.end(), [offset, &position](const aulos::Sound& sound) {
 			position += sound._delay;
 			return position >= offset;
 		});
-		if (sound == _sequenceData->_sounds.end())
+		if (first == _sequenceData->_sounds.end())
 		{
 			assert(position < offset || (position == offset && _sequenceData->_sounds.empty()));
 			_sequenceData->_sounds.emplace_back(offset - position, note);
@@ -54,33 +54,37 @@ SequenceWidget::SequenceWidget(QWidget* parent)
 		{
 			assert(position > offset);
 			const auto nextDelay = position - offset;
-			assert(sound->_delay > nextDelay || (sound->_delay == nextDelay && sound == _sequenceData->_sounds.begin()));
-			const auto delay = sound->_delay - nextDelay;
-			sound->_delay = nextDelay;
-			_sequenceData->_sounds.emplace(sound, delay, note);
+			assert(first->_delay > nextDelay || (first->_delay == nextDelay && first == _sequenceData->_sounds.begin()));
+			const auto delay = first->_delay - nextDelay;
+			first->_delay = nextDelay;
+			_sequenceData->_sounds.emplace(first, delay, note);
 		}
 		else
 		{
 			assert(position == offset);
-			sound->_note = note;
+			const auto end = std::find_if(std::next(first), _sequenceData->_sounds.end(), [](const aulos::Sound& sound) { return sound._delay > 0; });
+			const auto before = std::find_if(first, end, [note](const aulos::Sound& sound) { return sound._note <= note; });
+			assert(before == end || before->_note != note);
+			const auto delay = before == first ? std::exchange(first->_delay, 0) : 0;
+			_sequenceData->_sounds.emplace(before, delay, note);
 		}
 		_scene->insertSound(offset, note);
 		emit sequenceChanged();
 	});
 	connect(_scene, &SequenceScene::noteActivated, this, &SequenceWidget::noteActivated);
-	connect(_scene, &SequenceScene::removingSound, [this](size_t offset) {
+	connect(_scene, &SequenceScene::removingSound, [this](size_t offset, aulos::Note note) {
 		if (!_sequenceData)
 			return;
-		const auto sound = std::find_if(_sequenceData->_sounds.begin(), _sequenceData->_sounds.end(), [offset, position = size_t{}](const aulos::Sound& sound) mutable {
+		const auto sound = std::find_if(_sequenceData->_sounds.begin(), _sequenceData->_sounds.end(), [offset, note, position = size_t{}](const aulos::Sound& sound) mutable {
 			position += sound._delay;
 			assert(position <= offset);
-			return position == offset;
+			return position == offset && sound._note == note;
 		});
 		assert(sound != _sequenceData->_sounds.end());
 		if (const auto nextSound = std::next(sound); nextSound != _sequenceData->_sounds.end())
 			nextSound->_delay += sound->_delay;
 		_sequenceData->_sounds.erase(sound);
-		_scene->removeSound(offset);
+		_scene->removeSound(offset, note);
 		emit sequenceChanged();
 	});
 }

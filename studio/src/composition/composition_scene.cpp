@@ -533,6 +533,8 @@ std::vector<FragmentSound> CompositionScene::makeSequenceTexts(const aulos::Sequ
 	result.reserve(sequence._sounds.size()); // A reasonable guess.
 	for (const auto& sound : sequence._sounds)
 	{
+		if (!sound._delay && !result.empty())
+			continue; // Show only the first (the highest) note at one position.
 		const auto& info = kNoteInfo[static_cast<size_t>(sound._note) % 12];
 		const auto octave = static_cast<size_t>(sound._note) / 12;
 		result.emplace_back(sound._delay, _baseNoteNames[7 * octave + info._base]);

@@ -36,13 +36,13 @@ public:
 	~SequenceScene() override;
 
 	void insertSound(size_t offset, aulos::Note);
-	void removeSound(size_t offset);
+	void removeSound(size_t offset, aulos::Note);
 	qreal setSequence(const aulos::SequenceData&, const QSize& viewSize);
 
 signals:
 	void insertingSound(size_t offset, aulos::Note);
 	void noteActivated(aulos::Note);
-	void removingSound(size_t offset);
+	void removingSound(size_t offset, aulos::Note);
 
 private:
 	void insertNewSound(size_t offset, aulos::Note);
@@ -52,5 +52,5 @@ private:
 private:
 	std::unique_ptr<PianorollItem> _pianorollItem;
 	ElusiveItem* _rightBoundItem = nullptr;
-	std::map<size_t, std::unique_ptr<SoundItem>> _soundItems;
+	std::multimap<size_t, std::unique_ptr<SoundItem>> _soundItems;
 };

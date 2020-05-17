@@ -60,7 +60,7 @@ namespace
 		for (const auto& sound : sequence._sounds)
 		{
 			if (!result.isEmpty())
-				result += ' ';
+				result += sound._delay > 0 ? ' ' : '|';
 			for (size_t i = 1; i < sound._delay; ++i)
 				result += ". ";
 			const auto octave = QString::number(static_cast<uint8_t>(sound._note) / 12);
