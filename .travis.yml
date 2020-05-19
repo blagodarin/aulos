@@ -66,7 +66,7 @@ script:
   - popd
 
 after_success:
-  - ${HOME}/aulos.build/bin/benchmark ${TRAVIS_BUILD_DIR}/examples/popcorn.aulos
+  - ${HOME}/aulos.build/bin/benchmark ${TRAVIS_BUILD_DIR}/examples/Popcorn.aulos
 
 notifications:
   email: false

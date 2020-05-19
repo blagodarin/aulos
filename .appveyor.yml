@@ -51,8 +51,8 @@ build_script:
 test_script:
   - if "%GENERATOR%"=="Ninja" ctest --output-on-failure
   - if "%GENERATOR%"=="VisualStudio" ctest --build-config %CONFIG% --output-on-failure
-  - if "%GENERATOR%"=="Ninja" %BUILD_DIR%\bin\benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\popcorn.aulos
-  - if "%GENERATOR%"=="VisualStudio" %BUILD_DIR%\bin\%CONFIG%\benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\popcorn.aulos
+  - if "%GENERATOR%"=="Ninja" %BUILD_DIR%\bin\benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\Popcorn.aulos
+  - if "%GENERATOR%"=="VisualStudio" %BUILD_DIR%\bin\%CONFIG%\benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\Popcorn.aulos
 
 artifacts:
   - path: AulosStudio-*.exe

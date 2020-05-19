@@ -89,9 +89,9 @@ Section
 	File "$%QTDIR%\plugins\styles\qwindowsvistastyle${SUFFIX}.dll"
 
 	SetOutPath "$INSTDIR\examples"
-	File "${SOURCE_DIR}\examples\fur_elise.aulos"
-	File "${SOURCE_DIR}\examples\grande_valse_brillante.aulos"
-	File "${SOURCE_DIR}\examples\popcorn.aulos"
+	File "${SOURCE_DIR}\examples\FurElise.aulos"
+	File "${SOURCE_DIR}\examples\GrandeValseBrillante.aulos"
+	File "${SOURCE_DIR}\examples\Popcorn.aulos"
 
 	SetShellVarContext all
 	CreateShortcut "$DESKTOP\Aulos Studio.lnk" "$INSTDIR\AulosStudio.exe"
@@ -117,9 +117,9 @@ Section "Uninstall"
 	Delete "$DESKTOP\Aulos Studio.lnk"
 	Delete "$SMPROGRAMS\Aulos Studio.lnk"
 
-	Delete "$INSTDIR\examples\fur_elise.aulos"
-	Delete "$INSTDIR\examples\grande_valse_brillante.aulos"
-	Delete "$INSTDIR\examples\popcorn.aulos"
+	Delete "$INSTDIR\examples\FurElise.aulos"
+	Delete "$INSTDIR\examples\GrandeValseBrillante.aulos"
+	Delete "$INSTDIR\examples\Popcorn.aulos"
 	RMDir "$INSTDIR\examples"
 
 	Delete "$INSTDIR\plugins\styles\qwindowsvistastyle${SUFFIX}.dll"
