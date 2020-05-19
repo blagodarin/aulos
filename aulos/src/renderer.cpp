@@ -143,6 +143,7 @@ namespace
 
 		size_t render(void* buffer, size_t bufferBytes) noexcept override
 		{
+			bufferBytes -= bufferBytes % _blockBytes;
 			if (buffer)
 				std::memset(buffer, 0, bufferBytes);
 			size_t offset = 0;
