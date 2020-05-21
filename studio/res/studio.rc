@@ -21,7 +21,7 @@ BEGIN
 			VALUE "FileDescription", "Aulos Studio"
 			VALUE "FileVersion", AULOS_VERSION
 			VALUE "InternalName", "AulosStudio"
-			VALUE "LegalCopyright", "© 2020 Sergei Blagodarin"
+			VALUE "LegalCopyright", "© Sergei Blagodarin"
 			VALUE "OriginalFilename", "AulosStudio.exe"
 			VALUE "ProductName", "Aulos Studio"
 			VALUE "ProductVersion", AULOS_VERSION
