@@ -27,6 +27,7 @@
 #include <aulos/data.hpp>
 
 #include <cassert>
+#include <stdexcept>
 
 #include <QApplication>
 #include <QCloseEvent>
