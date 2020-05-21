@@ -489,7 +489,7 @@ bool Studio::saveComposition(const QString& path) const
 	assert(!path.isEmpty());
 	const auto composition = _composition->pack();
 	assert(composition);
-	const auto buffer = composition->save();
+	const auto buffer = aulos::serialize(*composition);
 	QFile file{ path };
 	if (!file.open(QIODevice::WriteOnly) || file.write(reinterpret_cast<const char*>(buffer.data()), static_cast<qint64>(buffer.size())) < static_cast<qint64>(buffer.size()))
 	{

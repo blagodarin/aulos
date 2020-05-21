@@ -15,7 +15,7 @@
 // limitations under the License.
 //
 
-#include <aulos/data.hpp>
+#include <aulos/voice.hpp>
 
 #include <doctest.h>
 

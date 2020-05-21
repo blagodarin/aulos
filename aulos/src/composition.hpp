@@ -17,7 +17,9 @@
 
 #pragma once
 
-#include <aulos/data.hpp>
+#include <aulos/voice.hpp>
+
+#include <string>
 
 namespace aulos
 {
@@ -55,6 +57,5 @@ namespace aulos
 		std::string _author;
 
 		void load(const char* source);
-		std::vector<std::byte> save() const override;
 	};
 }

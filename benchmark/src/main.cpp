@@ -15,7 +15,7 @@
 // limitations under the License.
 //
 
-#include <aulos/playback.hpp>
+#include <aulos/composition.hpp>
 
 #include <array>
 #include <cassert>

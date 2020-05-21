@@ -16,14 +16,16 @@
 #
 
 set(_include
+	composition.hpp
 	data.hpp
-	playback.hpp
+	voice.hpp
 	)
 source_group("include" FILES ${_include})
 
 set(_src
 	src/composition.cpp
 	src/composition.hpp
+	src/data.cpp
 	src/modulator.hpp
 	src/note_table.hpp
 	src/oscillator.hpp

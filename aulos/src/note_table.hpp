@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <aulos/data.hpp>
+#include <aulos/voice.hpp>
 
 #include <array>
 
