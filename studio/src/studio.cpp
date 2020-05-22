@@ -186,11 +186,11 @@ Studio::Studio()
 			return;
 		assert(_mode == Mode::Editing);
 		_autoRepeatButton->setChecked(false);
-		const auto renderer = aulos::Renderer::create(*composition, _samplingRateCombo->currentData().toUInt(), _channelsCombo->currentData().toUInt());
+		auto renderer = aulos::Renderer::create(*composition, _samplingRateCombo->currentData().toUInt(), _channelsCombo->currentData().toUInt());
 		[[maybe_unused]] const auto skippedBytes = renderer->render(nullptr, _compositionWidget->startOffset() * renderer->samplingRate() * renderer->channels() * sizeof(float) / _composition->_speed);
-		_player->reset(*renderer, 0);
+		_player->stop();
 		_mode = Mode::Playing;
-		_player->start();
+		_player->start(std::move(renderer), 0);
 		updateStatus();
 	});
 	_stopAction = playbackMenu->addAction(qApp->style()->standardIcon(QStyle::SP_MediaStop), tr("&Stop"), [this] {
@@ -463,11 +463,10 @@ void Studio::playNote(aulos::Note note)
 	assert(voice);
 	const auto samplingRate = _samplingRateCombo->currentData().toUInt();
 	const auto channels = _channelsCombo->currentData().toUInt();
-	const auto renderer = aulos::VoiceRenderer::create(*voice, samplingRate, channels);
+	auto renderer = aulos::VoiceRenderer::create(*voice, samplingRate, channels);
 	assert(renderer);
 	renderer->start(note, _compositionWidget->selectedTrackWeight());
-	_player->reset(*renderer, samplingRate * channels * sizeof(float));
-	_player->start();
+	_player->start(std::move(renderer), samplingRate * channels * sizeof(float));
 }
 
 bool Studio::saveComposition(const QString& path) const

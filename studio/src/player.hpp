@@ -6,16 +6,17 @@
 
 #include <memory>
 
-#include <QByteArray>
-#include <QBuffer>
 #include <QObject>
 
 class QAudioOutput;
+class QByteArray;
 
 namespace aulos
 {
 	class Renderer;
 }
+
+class AudioSource;
 
 class Player final : public QObject
 {
@@ -26,8 +27,7 @@ public:
 	~Player() override;
 
 	constexpr bool isPlaying() const noexcept { return _state == State::Started; }
-	void reset(aulos::Renderer&, int minBufferBytes);
-	void start();
+	void start(std::unique_ptr<aulos::Renderer>&&, size_t minBufferBytes);
 	void stop();
 
 	static void renderData(QByteArray&, aulos::Renderer&);
@@ -43,8 +43,7 @@ private:
 		Started,
 	};
 
-	QByteArray _data;
-	QBuffer _buffer;
+	std::unique_ptr<AudioSource> _source;
 	std::unique_ptr<QAudioOutput> _output;
 	State _state = State::Stopped;
 };
