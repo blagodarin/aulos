@@ -61,7 +61,7 @@ namespace
 				{
 					if (sequence.empty())
 						continue;
-					unsigned current = 0;
+					unsigned current = 1;
 					std::for_each(std::next(sequence.begin()), sequence.end(), [&result, &current](const aulos::Sound& sound) {
 						if (sound._delay > 0)
 						{
