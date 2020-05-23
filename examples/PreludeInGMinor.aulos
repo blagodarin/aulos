@@ -1,0 +1,74 @@
+author "Sergei Rachmaninoff"
+speed 8
+title "Prelude in G minor"
+
+@voice 1 "Right"
+amplitude 10 1.00 90 0.50 900 0.00
+asymmetry 0 0.20
+frequency 0 -1.00 10 0.00
+oscillation 0 0.02 100 0.00
+stereo_delay -10.00
+stereo_inversion 0
+stereo_pan 0.00
+wave quintic -1.00
+
+@voice 2 "Left"
+amplitude 10 1.00 90 0.50 900 0.00
+asymmetry 0 0.20
+frequency 0 -1.00 10 0.00
+oscillation 0 0.02 100 0.00
+stereo_delay 10.00
+stereo_inversion 0
+stereo_pan 0.00
+wave quintic -1.00
+
+@tracks
+1 1 1
+2 1 1
+
+@sequences
+1 1 1 ,,D4A#3G3D3,D4A#3G3D3,D4A#3G3D3
+1 1 2 ,,,,D4A#3G3D3,,,,D4A#3G3D3
+1 1 3 ,,,,A#4G4D4A#3D3,A#4G4D4A#3D3,A#4G4D4A#3D3
+1 1 4 ,,,,D5A#4D4A#3D3,D5A#4D4A#3D3,D5A#4D4A#3D3
+1 1 5 ,,,,G5C5G4C4A3G3,G5C5G4C4A3G3,G5C5G4C4A3G3
+1 1 6 ,,,,F#5D5F#4D4A3F#3,F#5D5F#4D4A3F#3,F#5D5F#4D4A3F#3
+1 1 7 ,,,,E4D4G3E3D3,,,,E4D4A#3E3D3,,,,D5F#4D4A3F#3A2,D5F#4D4A3F#3A2,D5F#4D4A3F#3A2
+1 1 8 ,,,,E4D4E3D3,,,,E4D4E3D3,,,,D5F#4D4A3F#3A2,D5F#4D4A3F#3A2,D5F#4D4A3F#3A2
+1 1 9 ,,,,A#2A#1,A2A1,F#2F#1
+2 1 1 G3G2G1
+2 1 2 A#3A#2A#1,,D4D3D2,,,,A#3A#2A#1
+2 1 3 A3A2A1,A#3A#2A#1,D4D3D2,,,,A#3A#2A#1
+2 1 4 D4D3,F4F3,G4G3
+2 1 5 A#3A#2,D4D3,F4F3F2
+2 1 6 A#3A#2,D4D3,D#4D#3D#2
+2 1 7 G3G2,A3A2,D4D3D2
+2 1 8 F#3F#2F#1,,A#3A#2A#1,,,,G3G2G1,,,,D3D2D1
+2 1 9 F#3F#2F#1,A3A2A1,A#3A#2A#1,,,,G3G2G1,,,,D3D2D1
+2 1 10 A3F#3D3D2,A#3,C4G3D#3C3C2,,D#4C4G3,,A4D4A3,,F#4D4A3,,G4D4G3
+
+@fragments 1 1
+0 1
+6 2
+10 1
+6 2
+10 1
+6 3
+8 4
+8 5
+8 6
+8 8
+16 8
+
+@fragments 2 1
+0 1
+6 2
+10 1
+6 3
+10 1
+6 4
+8 5
+8 6
+8 7
+8 8
+16 9
