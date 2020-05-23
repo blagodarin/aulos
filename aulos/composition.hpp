@@ -21,7 +21,7 @@ namespace aulos
 	class Renderer
 	{
 	public:
-		[[nodiscard]] static std::unique_ptr<Renderer> create(const Composition&, unsigned samplingRate, unsigned channels);
+		[[nodiscard]] static std::unique_ptr<Renderer> create(const Composition&, unsigned samplingRate, unsigned channels, bool looping = false);
 
 		virtual ~Renderer() noexcept = default;
 

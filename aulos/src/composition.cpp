@@ -270,6 +270,13 @@ namespace aulos
 					throw CompositionError{ location(), "Unexpected command" };
 				readEnvelope(currentVoice->_frequencyEnvelope, -1.f, 1.f);
 			}
+			else if (command == "loop")
+			{
+				if (currentSection != Section::Global)
+					throw CompositionError{ location(), "Unexpected command" };
+				_loopOffset = readUnsigned(0, std::numeric_limits<unsigned>::max());
+				_loopLength = readUnsigned(0, std::numeric_limits<unsigned>::max());
+			}
 			else if (command == "oscillation")
 			{
 				if (currentSection != Section::Voice)

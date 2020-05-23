@@ -17,6 +17,7 @@
 #include <stdexcept>
 
 #include <QApplication>
+#include <QCheckBox>
 #include <QCloseEvent>
 #include <QComboBox>
 #include <QFileDialog>
@@ -186,7 +187,7 @@ Studio::Studio()
 			return;
 		assert(_mode == Mode::Editing);
 		_autoRepeatButton->setChecked(false);
-		auto renderer = aulos::Renderer::create(*composition, _samplingRateCombo->currentData().toUInt(), _channelsCombo->currentData().toUInt());
+		auto renderer = aulos::Renderer::create(*composition, _samplingRateCombo->currentData().toUInt(), _channelsCombo->currentData().toUInt(), _loopPlaybackCheck->isChecked());
 		[[maybe_unused]] const auto skippedBytes = renderer->render(nullptr, _compositionWidget->startOffset() * renderer->samplingRate() * renderer->channels() * sizeof(float) / _composition->_speed);
 		_player->stop();
 		_mode = Mode::Playing;
@@ -212,6 +213,8 @@ Studio::Studio()
 	for (const auto samplingRate : { 48'000u, 44'100u, 32'000u, 24'000u, 22'050u, 16'000u, 11'025u, 8'000u })
 		_samplingRateCombo->addItem(hz.arg(samplingRate), samplingRate);
 
+	_loopPlaybackCheck = new QCheckBox{ tr("Loop playback"), this };
+
 	const auto toolBar = new QToolBar{ this };
 	toolBar->setFloatable(false);
 	toolBar->setMovable(false);
@@ -226,6 +229,8 @@ Studio::Studio()
 	toolBar->addWidget(_channelsCombo);
 	toolBar->addSeparator();
 	toolBar->addWidget(_samplingRateCombo);
+	toolBar->addSeparator();
+	toolBar->addWidget(_loopPlaybackCheck);
 	addToolBar(toolBar);
 
 	const auto centralWidget = new QWidget{ this };
@@ -552,6 +557,7 @@ void Studio::updateStatus()
 	_speedSpin->setEnabled(_hasComposition && _mode == Mode::Editing);
 	_channelsCombo->setEnabled(_hasComposition && _mode == Mode::Editing);
 	_samplingRateCombo->setEnabled(_hasComposition && _mode == Mode::Editing);
+	_loopPlaybackCheck->setEnabled(_hasComposition && _mode == Mode::Editing);
 	_compositionWidget->setInteractive(_hasComposition && _mode == Mode::Editing);
 	_voiceWidget->setEnabled(_hasComposition && _mode == Mode::Editing && _voiceWidget->voice());
 	_sequenceWidget->setInteractive(_hasComposition && _mode == Mode::Editing && _voiceWidget->voice());

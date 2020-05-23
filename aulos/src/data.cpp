@@ -15,6 +15,8 @@ namespace aulos
 	{
 		const auto& packed = static_cast<const CompositionImpl&>(composition);
 		_speed = packed._speed;
+		_loopOffset = packed._loopOffset;
+		_loopLength = packed._loopLength;
 		_parts.reserve(packed._parts.size());
 		for (const auto& packedPart : packed._parts)
 		{
@@ -40,6 +42,8 @@ namespace aulos
 	{
 		auto packed = std::make_unique<CompositionImpl>();
 		packed->_speed = _speed;
+		packed->_loopOffset = _loopOffset;
+		packed->_loopLength = _loopLength;
 		packed->_parts.reserve(_parts.size());
 		for (const auto& partData : _parts)
 		{
@@ -83,6 +87,8 @@ namespace aulos
 		std::string text;
 		if (!impl._author.empty())
 			text += "\nauthor \"" + impl._author + '"';
+		if (impl._loopLength > 0)
+			text += "\nloop " + std::to_string(impl._loopOffset) + " " + std::to_string(impl._loopLength);
 		text += "\nspeed " + std::to_string(impl._speed);
 		if (!impl._title.empty())
 			text += "\ntitle \"" + impl._title + '"';

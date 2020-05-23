@@ -50,7 +50,7 @@ namespace
 	class RendererImpl final : public aulos::Renderer
 	{
 	public:
-		RendererImpl(const aulos::CompositionImpl& composition, unsigned samplingRate, unsigned channels)
+		RendererImpl(const aulos::CompositionImpl& composition, unsigned samplingRate, unsigned channels, bool looping)
 			: _samplingRate{ samplingRate }
 			, _channels{ channels }
 			, _stepSamples{ static_cast<size_t>(std::lround(static_cast<double>(samplingRate) / composition._speed)) }
@@ -118,6 +118,38 @@ namespace
 							}
 						}
 					}
+					assert(!trackState->_sounds.empty());
+				}
+			}
+			if (looping)
+			{
+				_looping = true;
+				const auto loopBegin = size_t{ composition._loopOffset };
+				const auto loopEnd = loopBegin + (composition._loopLength > 0 ? composition._loopLength : (totalSamples() + _stepSamples - 1) / _stepSamples);
+				for (auto& track : _tracks)
+				{
+					const auto findSoundAt = [&track](size_t offset) -> std::pair<size_t, size_t> {
+						size_t currentIndex = 0;
+						size_t currentOffset = 0;
+						for (; currentIndex < track._sounds.size(); ++currentIndex)
+						{
+							currentOffset += track._sounds[currentIndex]._delay;
+							if (currentOffset >= offset)
+								return { currentIndex, currentOffset };
+						}
+						return { currentIndex, offset };
+					};
+					size_t beginOffset;
+					size_t endOffset;
+					std::tie(track._loopBeginIndex, beginOffset) = findSoundAt(loopBegin);
+					std::tie(track._loopEndIndex, endOffset) = findSoundAt(loopEnd);
+					if (track._loopEndIndex > track._loopBeginIndex)
+					{
+						const auto beginDelay = beginOffset - loopBegin;
+						const auto endDelay = loopEnd - (track._loopEndIndex < track._sounds.size() ? endOffset - track._sounds[track._loopEndIndex - 1]._delay : track._lastSoundOffset);
+						track._loopDelay = endDelay + beginDelay;
+						assert(track._loopDelay > 0);
+					}
 				}
 			}
 			restart();
@@ -141,10 +173,30 @@ namespace
 				{
 					if (!track._soundBytesRemaining)
 					{
+						if (_looping && track._soundIndex == track._loopEndIndex)
+						{
+							assert(track._loopBeginIndex == track._loopEndIndex); // An infinite loop of silence.
+							break;
+						}
 						const auto nextIndex = track._soundIndex + 1;
-						track._soundBytesRemaining = nextIndex != track._sounds.size()
-							? _stepBytes * track._sounds[nextIndex]._delay
-							: track._voice->totalSamples() * _blockBytes;
+						if (_looping)
+						{
+							if (nextIndex == track._loopEndIndex)
+							{
+								if (track._loopBeginIndex == track._loopEndIndex)
+									break;
+								track._soundBytesRemaining = _stepBytes * track._loopDelay;
+							}
+							else
+							{
+								assert(nextIndex != track._sounds.size());
+								track._soundBytesRemaining = _stepBytes * track._sounds[nextIndex]._delay;
+							}
+						}
+						else if (nextIndex != track._sounds.size())
+							track._soundBytesRemaining = _stepBytes * track._sounds[nextIndex]._delay;
+						else
+							track._soundBytesRemaining = track._voice->totalSamples() * _blockBytes;
 						assert(track._soundBytesRemaining % _blockBytes == 0);
 						track._voice->start(track._sounds[track._soundIndex]._note, track._normalizedWeight);
 					}
@@ -156,7 +208,11 @@ namespace
 					track._soundBytesRemaining -= bytesToGenerate;
 					trackOffset += bytesToGenerate;
 					if (!track._soundBytesRemaining)
-						++track._soundIndex;
+					{
+						assert(!(_looping && track._soundIndex == track._loopEndIndex));
+						const auto nextIndex = track._soundIndex + 1;
+						track._soundIndex = nextIndex != track._loopEndIndex ? nextIndex : track._loopBeginIndex;
+					}
 				}
 				offset = std::max(offset, trackOffset);
 			}
@@ -206,6 +262,9 @@ namespace
 			size_t _lastSoundOffset = 0;
 			size_t _soundIndex = 0;
 			size_t _soundBytesRemaining = 0;
+			size_t _loopBeginIndex = 0;
+			size_t _loopEndIndex = 0;
+			size_t _loopDelay = 0;
 
 			TrackState(const aulos::VoiceData& voiceData, float normalizedWeight, unsigned samplingRate, unsigned channels)
 				: _voice{ ::createVoice(voiceData, samplingRate, channels) }
@@ -241,6 +300,7 @@ namespace
 		const size_t _blockBytes = _channels * sizeof(float);
 		const size_t _stepSamples;
 		const size_t _stepBytes = _stepSamples * _blockBytes;
+		bool _looping = false;
 		std::vector<TrackState> _tracks;
 	};
 }
@@ -252,10 +312,10 @@ namespace aulos
 		return ::createVoice(voiceData, samplingRate, channels);
 	}
 
-	std::unique_ptr<Renderer> Renderer::create(const Composition& composition, unsigned samplingRate, unsigned channels)
+	std::unique_ptr<Renderer> Renderer::create(const Composition& composition, unsigned samplingRate, unsigned channels, bool looping)
 	{
 		return channels == 1 || channels == 2
-			? std::make_unique<RendererImpl>(static_cast<const CompositionImpl&>(composition), samplingRate, channels)
+			? std::make_unique<RendererImpl>(static_cast<const CompositionImpl&>(composition), samplingRate, channels, looping)
 			: nullptr;
 	}
 }

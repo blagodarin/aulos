@@ -1,4 +1,5 @@
 author "Sergei Rachmaninoff"
+loop 16 16
 speed 8
 title "Prelude in G minor"
 

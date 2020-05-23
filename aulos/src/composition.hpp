@@ -39,6 +39,8 @@ namespace aulos
 	struct CompositionImpl final : public Composition
 	{
 		unsigned _speed = kMinSpeed;
+		unsigned _loopOffset = 0;
+		unsigned _loopLength = 0;
 		std::vector<Part> _parts;
 		std::string _title;
 		std::string _author;

@@ -81,6 +81,7 @@ private:
 	QSpinBox* _speedSpin;
 	QComboBox* _channelsCombo;
 	QComboBox* _samplingRateCombo;
+	QCheckBox* _loopPlaybackCheck;
 	CompositionWidget* _compositionWidget;
 	VoiceWidget* _voiceWidget;
 	SequenceWidget* _sequenceWidget;
