@@ -9,7 +9,6 @@
 #include <QObject>
 
 class QAudioOutput;
-class QByteArray;
 
 namespace aulos
 {
@@ -29,8 +28,6 @@ public:
 	constexpr bool isPlaying() const noexcept { return _state == State::Started; }
 	void start(std::unique_ptr<aulos::Renderer>&&, size_t minBufferBytes);
 	void stop();
-
-	static void renderData(QByteArray&, aulos::Renderer&);
 
 signals:
 	void stateChanged();

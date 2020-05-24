@@ -48,6 +48,7 @@ namespace aulos
 
 		CompositionData() = default;
 		CompositionData(const Composition&);
+		CompositionData(const std::shared_ptr<VoiceData>&, Note);
 
 		[[nodiscard]] std::unique_ptr<Composition> pack() const;
 	};

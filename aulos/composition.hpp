@@ -29,7 +29,6 @@ namespace aulos
 		[[nodiscard]] virtual size_t render(void* buffer, size_t bufferBytes) noexcept = 0;
 		virtual void restart() noexcept = 0;
 		[[nodiscard]] virtual unsigned samplingRate() const noexcept = 0;
-		[[nodiscard]] size_t totalBytes() const noexcept { return totalSamples() * channels() * sizeof(float); }
 		[[nodiscard]] virtual size_t totalSamples() const noexcept = 0;
 	};
 }

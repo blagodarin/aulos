@@ -398,9 +398,12 @@ void Studio::exportComposition()
 
 	const auto samplingRate = _samplingRateCombo->currentData().toUInt();
 	const auto channels = _channelsCombo->currentData().toUInt();
+	const auto renderer = aulos::Renderer::create(*composition, samplingRate, channels, false);
+	const auto totalBytes = renderer->totalSamples() * channels * sizeof(float);
 
 	QByteArray rawData;
-	Player::renderData(rawData, *aulos::Renderer::create(*composition, samplingRate, channels));
+	rawData.resize(static_cast<int>(totalBytes));
+	rawData.resize(static_cast<int>(renderer->render(rawData.data(), totalBytes)));
 
 	constexpr size_t chunkHeaderSize = 8;
 	constexpr size_t fmtChunkSize = 16;
@@ -464,14 +467,9 @@ bool Studio::openComposition(const QString& path)
 
 void Studio::playNote(aulos::Note note)
 {
-	const auto voice = _voiceWidget->voice();
-	assert(voice);
 	const auto samplingRate = _samplingRateCombo->currentData().toUInt();
 	const auto channels = _channelsCombo->currentData().toUInt();
-	auto renderer = aulos::VoiceRenderer::create(*voice, samplingRate, channels);
-	assert(renderer);
-	renderer->start(note, _compositionWidget->selectedTrackWeight());
-	_player->start(std::move(renderer), samplingRate * channels * sizeof(float));
+	_player->start(aulos::Renderer::create(*aulos::CompositionData{ _voiceWidget->voice(), note }.pack(), samplingRate, channels), size_t{ samplingRate } * channels * sizeof(float));
 }
 
 bool Studio::saveComposition(const QString& path) const

@@ -7,7 +7,6 @@
 #include <aulos/composition.hpp>
 
 #include <cassert>
-#include <cstring>
 
 #include <QAudioOutput>
 
@@ -30,7 +29,6 @@ private:
 	qint64 readData(char* data, qint64 maxSize) override
 	{
 		const auto bufferBytes = static_cast<size_t>(maxSize);
-		std::memset(data, 0, bufferBytes); // Single-voice renderers don't clear buffers.
 		auto renderedBytes = _renderer->render(data, bufferBytes);
 		assert(renderedBytes <= bufferBytes);
 		_minRemainingBytes -= std::min(_minRemainingBytes, renderedBytes);
@@ -96,12 +94,4 @@ void Player::stop()
 		_source.reset();
 	}
 	assert(_state == State::Stopped);
-}
-
-void Player::renderData(QByteArray& data, aulos::Renderer& renderer)
-{
-	const auto totalBytes = renderer.totalBytes();
-	data.resize(static_cast<int>(totalBytes));
-	data.fill(0);
-	data.resize(static_cast<int>(renderer.render(data.data(), totalBytes)));
 }

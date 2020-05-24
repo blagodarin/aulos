@@ -38,6 +38,18 @@ namespace aulos
 		_author = packed._author;
 	}
 
+	CompositionData::CompositionData(const std::shared_ptr<VoiceData>& voice, Note note)
+	{
+		const auto sequence = std::make_shared<SequenceData>();
+		sequence->_sounds.emplace_back(0u, note);
+		const auto track = std::make_shared<TrackData>(1u);
+		track->_sequences.emplace_back(sequence);
+		track->_fragments.emplace(0u, sequence);
+		const auto part = std::make_shared<PartData>(voice);
+		part->_tracks.emplace_back(track);
+		_parts.emplace_back(part);
+	}
+
 	std::unique_ptr<Composition> CompositionData::pack() const
 	{
 		auto packed = std::make_unique<CompositionImpl>();
