@@ -124,33 +124,10 @@ namespace
 			if (looping)
 			{
 				_looping = true;
-				const auto loopBegin = size_t{ composition._loopOffset };
-				const auto loopEnd = loopBegin + (composition._loopLength > 0 ? composition._loopLength : (totalSamples() + _stepSamples - 1) / _stepSamples);
+				const auto loopBegin = composition._loopOffset;
+				const auto loopLength = composition._loopLength > 0 ? composition._loopLength : (totalSamples() + _stepSamples - 1) / _stepSamples;
 				for (auto& track : _tracks)
-				{
-					const auto findSoundAt = [&track](size_t offset) -> std::pair<size_t, size_t> {
-						size_t currentIndex = 0;
-						size_t currentOffset = 0;
-						for (; currentIndex < track._sounds.size(); ++currentIndex)
-						{
-							currentOffset += track._sounds[currentIndex]._delay;
-							if (currentOffset >= offset)
-								return { currentIndex, currentOffset };
-						}
-						return { currentIndex, offset };
-					};
-					size_t beginOffset;
-					size_t endOffset;
-					std::tie(track._loopBeginIndex, beginOffset) = findSoundAt(loopBegin);
-					std::tie(track._loopEndIndex, endOffset) = findSoundAt(loopEnd);
-					if (track._loopEndIndex > track._loopBeginIndex)
-					{
-						const auto beginDelay = beginOffset - loopBegin;
-						const auto endDelay = loopEnd - (track._loopEndIndex < track._sounds.size() ? endOffset - track._sounds[track._loopEndIndex - 1]._delay : track._lastSoundOffset);
-						track._loopDelay = endDelay + beginDelay;
-						assert(track._loopDelay > 0);
-					}
-				}
+					track.setLoop(loopBegin, loopLength);
 			}
 			restart();
 		}
@@ -173,30 +150,37 @@ namespace
 				{
 					if (!track._soundBytesRemaining)
 					{
-						if (_looping && track._soundIndex == track._loopEndIndex)
-						{
-							assert(track._loopBeginIndex == track._loopEndIndex); // An infinite loop of silence.
-							break;
-						}
-						const auto nextIndex = track._soundIndex + 1;
 						if (_looping)
 						{
-							if (nextIndex == track._loopEndIndex)
+							if (track._soundIndex == track._loopEndIndex)
 							{
-								if (track._loopBeginIndex == track._loopEndIndex)
-									break;
+								assert(track._loopBeginIndex == track._loopEndIndex);
+								if (!track._loopDelay)
+									break; // An infinite loop of silence.
 								track._soundBytesRemaining = _stepBytes * track._loopDelay;
 							}
 							else
 							{
-								assert(nextIndex != track._sounds.size());
-								track._soundBytesRemaining = _stepBytes * track._sounds[nextIndex]._delay;
+								const auto nextIndex = track._soundIndex + 1;
+								if (nextIndex == track._loopEndIndex)
+								{
+									track._soundBytesRemaining = _stepBytes * track._loopDelay;
+								}
+								else
+								{
+									assert(nextIndex != track._sounds.size());
+									track._soundBytesRemaining = _stepBytes * track._sounds[nextIndex]._delay;
+								}
 							}
 						}
-						else if (nextIndex != track._sounds.size())
-							track._soundBytesRemaining = _stepBytes * track._sounds[nextIndex]._delay;
 						else
-							track._soundBytesRemaining = track._voice->totalSamples() * _blockBytes;
+						{
+							const auto nextIndex = track._soundIndex + 1;
+							track._soundBytesRemaining = nextIndex != track._sounds.size()
+								? _stepBytes * track._sounds[nextIndex]._delay
+								: track._voice->totalSamples() * _blockBytes;
+						}
+						assert(track._soundBytesRemaining > 0);
 						assert(track._soundBytesRemaining % _blockBytes == 0);
 						track._voice->start(track._sounds[track._soundIndex]._note, track._normalizedWeight);
 					}
@@ -207,11 +191,10 @@ namespace
 					assert(bytesGenerated <= bytesToGenerate); // Initial and inter-sound silence doesn't generate any data.
 					track._soundBytesRemaining -= bytesToGenerate;
 					trackOffset += bytesToGenerate;
-					if (!track._soundBytesRemaining)
+					if (!track._soundBytesRemaining && !(_looping && track._soundIndex == track._loopEndIndex && track._loopBeginIndex == track._loopEndIndex))
 					{
-						assert(!(_looping && track._soundIndex == track._loopEndIndex));
 						const auto nextIndex = track._soundIndex + 1;
-						track._soundIndex = nextIndex != track._loopEndIndex ? nextIndex : track._loopBeginIndex;
+						track._soundIndex = nextIndex == track._loopEndIndex ? track._loopBeginIndex : nextIndex;
 					}
 				}
 				offset = std::max(offset, trackOffset);
@@ -292,6 +275,43 @@ namespace
 				}
 				else
 					_sounds.clear();
+			}
+
+			void setLoop(size_t loopOffset, size_t loopLength) noexcept
+			{
+				assert(!_sounds.empty());
+				_loopBeginIndex = 0;
+				size_t firstSoundOffset = _sounds[_loopBeginIndex]._delay;
+				while (firstSoundOffset < loopOffset)
+				{
+					if (++_loopBeginIndex == _sounds.size())
+					{
+						_loopEndIndex = _loopBeginIndex;
+						_loopDelay = 0;
+						return; // Loop starts after the last sound of the track.
+					}
+					firstSoundOffset += _sounds[_loopBeginIndex]._delay;
+				}
+				_loopEndIndex = _loopBeginIndex;
+				const auto firstSoundLoopOffset = firstSoundOffset - loopOffset;
+				if (firstSoundLoopOffset >= loopLength)
+				{
+					_loopDelay = 0;
+					return; // Loop ends before the first sound of the track.
+				}
+				auto lastSoundLoopOffset = firstSoundLoopOffset;
+				for (;;)
+				{
+					++_loopEndIndex;
+					if (_loopEndIndex == _sounds.size())
+						break;
+					const auto nextOffset = lastSoundLoopOffset + _sounds[_loopEndIndex]._delay;
+					if (nextOffset >= loopLength)
+						break;
+					lastSoundLoopOffset = nextOffset;
+				}
+				_loopDelay = firstSoundLoopOffset + loopLength - lastSoundLoopOffset;
+				assert(_loopDelay > 0);
 			}
 		};
 
