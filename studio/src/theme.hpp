@@ -23,6 +23,9 @@ constexpr auto kFragmentFontSize = kTrackHeight * 0.75;
 constexpr auto kVoiceNameFontSize = kTrackHeight * 0.5;
 constexpr auto kVoiceNameMargin = (kTrackHeight - kVoiceNameFontSize) / 2;
 constexpr auto kCompositionPageSwitchMargin = 50;
+constexpr auto kLoopItemOffset = 2.0;
+constexpr auto kLoopItemHeight = 8.0;
+constexpr auto kCompositionFooterHeight = kLoopItemOffset + kLoopItemHeight;
 
 // Pianoroll.
 constexpr auto kNoteHeight = 20.0;
@@ -46,6 +49,7 @@ struct Colors
 extern const Colors kCursorColors;
 extern const std::array<Colors, 6> kFragmentColors;
 extern const std::array<Colors, 6> kFragmentHighlightColors;
+extern const Colors kLoopItemColors;
 extern const std::array<Colors, 2> kTimelineColors;
 extern const Colors kTimelineOffsetMarkColors;
 extern const std::array<Colors, 2> kVoiceColors;

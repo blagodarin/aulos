@@ -44,6 +44,8 @@ set(_src_composition
 	src/composition/cursor_item.hpp
 	src/composition/fragment_item.cpp
 	src/composition/fragment_item.hpp
+	src/composition/loop_item.cpp
+	src/composition/loop_item.hpp
 	src/composition/timeline_item.cpp
 	src/composition/timeline_item.hpp
 	src/composition/track_editor.cpp

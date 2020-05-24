@@ -9,6 +9,7 @@
 #include "add_voice_item.hpp"
 #include "cursor_item.hpp"
 #include "fragment_item.hpp"
+#include "loop_item.hpp"
 #include "timeline_item.hpp"
 #include "track_item.hpp"
 #include "voice_item.hpp"
@@ -118,6 +119,7 @@ CompositionScene::CompositionScene(QObject* parent)
 	, _timelineItem{ new TimelineItem{ _compositionItem.get() } }
 	, _rightBoundItem{ new ElusiveItem{ _compositionItem.get() } }
 	, _cursorItem{ new CursorItem{ _compositionItem.get() } }
+	, _loopItem{ new LoopItem{ _compositionItem.get() } }
 	, _voiceColumnWidth{ kMinVoiceItemWidth }
 {
 	setBackgroundBrush(kBackgroundColor);
@@ -133,6 +135,7 @@ CompositionScene::CompositionScene(QObject* parent)
 	});
 	_cursorItem->setVisible(false);
 	_cursorItem->setZValue(kCursorZValue);
+	_loopItem->setVisible(false);
 
 	QTextOption textOption;
 	textOption.setWrapMode(QTextOption::NoWrap);
@@ -175,6 +178,7 @@ void CompositionScene::addTrack(const void* voiceId, const void* trackId)
 	std::for_each(std::next(trackIt), _tracks.end(), [index = trackIndex + 1](const auto& trackPtr) mutable { trackPtr->setIndex(index++); });
 	_addVoiceItem->setPos(0, kCompositionHeaderHeight + _tracks.size() * kTrackHeight);
 	_cursorItem->setTrackCount(_tracks.size());
+	_loopItem->setPos(_composition->_loopOffset * kStepWidth, _tracks.size() * kTrackHeight + kLoopItemOffset);
 	updateSceneRect(_timelineItem->compositionLength());
 }
 
@@ -205,8 +209,8 @@ void CompositionScene::appendPart(const std::shared_ptr<aulos::PartData>& partDa
 
 	_addVoiceItem->setIndex(_voices.size());
 	_addVoiceItem->setPos(0, kCompositionHeaderHeight + _tracks.size() * kTrackHeight);
-
 	_cursorItem->setTrackCount(_tracks.size());
+	_loopItem->setPos(_composition->_loopOffset * kStepWidth, _tracks.size() * kTrackHeight + kLoopItemOffset);
 }
 
 void CompositionScene::insertFragment(const void* voiceId, const void* trackId, size_t offset, const std::shared_ptr<aulos::SequenceData>& sequence)
@@ -248,6 +252,7 @@ void CompositionScene::removeTrack(const void* voiceId, const void* trackId)
 	_tracks.erase(trackIt);
 	_addVoiceItem->setPos(0, kCompositionHeaderHeight + _tracks.size() * kTrackHeight);
 	_cursorItem->setTrackCount(_tracks.size());
+	_loopItem->setPos(_composition->_loopOffset * kStepWidth, _tracks.size() * kTrackHeight + kLoopItemOffset);
 	updateSceneRect(_timelineItem->compositionLength());
 	if (trackId == _selectedTrackId)
 	{
@@ -275,6 +280,7 @@ void CompositionScene::removeVoice(const void* voiceId)
 	_addVoiceItem->setIndex(_voices.size());
 	_addVoiceItem->setPos(0, kCompositionHeaderHeight + _tracks.size() * kTrackHeight);
 	_cursorItem->setTrackCount(_tracks.size());
+	_loopItem->setPos(_composition->_loopOffset * kStepWidth, _tracks.size() * kTrackHeight + kLoopItemOffset);
 	updateSceneRect(_timelineItem->compositionLength());
 	if (voiceId == _selectedVoiceId)
 	{
@@ -325,6 +331,9 @@ void CompositionScene::reset(const std::shared_ptr<aulos::CompositionData>& comp
 		_addVoiceItem->setPos(0, kCompositionHeaderHeight + _tracks.size() * kTrackHeight);
 		_cursorItem->setTrackCount(_tracks.size());
 		_cursorItem->setVisible(false);
+		_loopItem->setLoopLength(_composition->_loopLength);
+		_loopItem->setPos(_composition->_loopOffset * kStepWidth, _tracks.size() * kTrackHeight + kLoopItemOffset);
+		_loopItem->setVisible(_composition->_loopLength > 0);
 
 		setVoiceColumnWidth(requiredVoiceColumnWidth());
 		updateSceneRect(compositionLength);
@@ -550,5 +559,5 @@ void CompositionScene::setVoiceColumnWidth(qreal width)
 
 void CompositionScene::updateSceneRect(size_t compositionLength)
 {
-	setSceneRect(0, 0, _voiceColumnWidth + compositionLength * kStepWidth, kCompositionHeaderHeight + _tracks.size() * kTrackHeight + kAddVoiceItemHeight);
+	setSceneRect(0, 0, _voiceColumnWidth + compositionLength * kStepWidth, kCompositionHeaderHeight + _tracks.size() * kTrackHeight + std::max(kAddVoiceItemHeight, kCompositionFooterHeight));
 }

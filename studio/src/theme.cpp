@@ -30,6 +30,8 @@ const std::array<Colors, 6> kFragmentHighlightColors{
 	Colors{ "#404", "#f0f" },
 };
 
+const Colors kLoopItemColors{ Qt::darkCyan, Qt::transparent };
+
 const std::array<Colors, 2> kTimelineColors{
 	Colors{ "#444", "#ddd" },
 	Colors{ "#333", "#ddd" },

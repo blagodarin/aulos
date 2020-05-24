@@ -25,6 +25,7 @@ class CursorItem;
 class ElusiveItem;
 class FragmentItem;
 struct FragmentSound;
+class LoopItem;
 class TimelineItem;
 class VoiceItem;
 
@@ -86,6 +87,7 @@ private:
 	TimelineItem* const _timelineItem;
 	ElusiveItem* const _rightBoundItem;
 	CursorItem* const _cursorItem;
+	LoopItem* const _loopItem;
 	std::vector<std::unique_ptr<Track>> _tracks;
 	std::array<std::shared_ptr<QStaticText>, 7 * 10> _baseNoteNames; // C0, D0, ..., C1, D1, ...
 	std::array<std::shared_ptr<QStaticText>, 7> _extraNoteNames;     // C#, D#, ...
