@@ -79,6 +79,7 @@ Section
 	File "${SOURCE_DIR}\examples\FurElise.aulos"
 	File "${SOURCE_DIR}\examples\GrandeValseBrillante.aulos"
 	File "${SOURCE_DIR}\examples\Popcorn.aulos"
+	File "${SOURCE_DIR}\examples\PreludeInGMinor.aulos"
 
 	SetShellVarContext all
 	CreateShortcut "$DESKTOP\Aulos Studio.lnk" "$INSTDIR\AulosStudio.exe"
@@ -107,6 +108,7 @@ Section "Uninstall"
 	Delete "$INSTDIR\examples\FurElise.aulos"
 	Delete "$INSTDIR\examples\GrandeValseBrillante.aulos"
 	Delete "$INSTDIR\examples\Popcorn.aulos"
+	Delete "$INSTDIR\examples\PreludeInGMinor.aulos"
 	RMDir "$INSTDIR\examples"
 
 	Delete "$INSTDIR\plugins\styles\qwindowsvistastyle${SUFFIX}.dll"
