@@ -50,13 +50,16 @@ public:
 	void setSpeed(unsigned speed);
 	void showCursor(bool);
 	size_t startOffset() const;
+	void updateLoop();
 	void updateSelectedSequence(const std::shared_ptr<aulos::SequenceData>&);
 	void updateVoice(const void* id, const std::string& name);
 
 signals:
+	void loopMenuRequested(const QPoint& pos);
 	void newVoiceRequested();
 	void fragmentMenuRequested(const void* voiceId, const void* trackId, size_t offset, const QPoint& pos);
 	void sequenceSelected(const void* voiceId, const void* trackId, const void* sequenceId);
+	void timelineMenuRequested(size_t step, const QPoint& pos);
 	void trackActionRequested(const void* voiceId, const void* trackId);
 	void trackMenuRequested(const void* voiceId, const void* trackId, size_t offset, const QPoint& pos);
 	void voiceActionRequested(const void* voiceId);

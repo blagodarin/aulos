@@ -110,6 +110,19 @@ CompositionWidget::CompositionWidget(QWidget* parent)
 			return;
 		emit compositionChanged();
 	});
+	connect(_scene, &CompositionScene::loopMenuRequested, [this](const QPoint& pos) {
+		QMenu menu;
+		menu.addAction(tr("Remove loop"));
+		if (const auto action = menu.exec(pos))
+		{
+			_composition->_loopOffset = 0;
+			_composition->_loopLength = 0;
+		}
+		else
+			return;
+		_scene->updateLoop();
+		emit compositionChanged();
+	});
 	connect(_scene, &CompositionScene::newVoiceRequested, [this] {
 		_voiceEditor->setVoiceName(tr("NewVoice").toStdString());
 		if (_voiceEditor->exec() != QDialog::Accepted)
@@ -140,6 +153,25 @@ CompositionWidget::CompositionWidget(QWidget* parent)
 			}
 		}
 		emit selectionChanged(voice, sequence);
+	});
+	connect(_scene, &CompositionScene::timelineMenuRequested, [this](size_t step, const QPoint& pos) {
+		const auto loopEnd = size_t{ _composition->_loopOffset } + _composition->_loopLength;
+		QMenu menu;
+		const auto beginAction = menu.addAction(tr("Begin loop here"));
+		beginAction->setEnabled(step < loopEnd);
+		const auto endAction = menu.addAction(tr("End loop here"));
+		endAction->setEnabled(step >= _composition->_loopOffset);
+		if (const auto action = menu.exec(pos); action == beginAction)
+		{
+			_composition->_loopOffset = static_cast<unsigned>(step);
+			_composition->_loopLength = static_cast<unsigned>(loopEnd - step);
+		}
+		else if (action == endAction)
+			_composition->_loopLength = static_cast<unsigned>(step - _composition->_loopOffset + 1);
+		else
+			return;
+		_scene->updateLoop();
+		emit compositionChanged();
 	});
 	connect(_scene, &CompositionScene::trackActionRequested, [this](const void* voiceId, const void* trackId) {
 		const auto part = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [voiceId](const auto& partData) { return partData->_voice.get() == voiceId; });

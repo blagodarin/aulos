@@ -4,10 +4,12 @@
 
 #pragma once
 
-#include <QGraphicsItem>
+#include <QGraphicsObject>
 
-class TimelineItem final : public QGraphicsItem
+class TimelineItem final : public QGraphicsObject
 {
+	Q_OBJECT
+
 public:
 	explicit TimelineItem(QGraphicsItem* parent = nullptr);
 
@@ -20,7 +22,11 @@ public:
 	size_t compositionOffset() const noexcept { return _offset; }
 	unsigned compositionSpeed() const noexcept { return _speed; }
 
+signals:
+	void menuRequested(size_t offset, const QPoint& pos);
+
 private:
+	void contextMenuEvent(QGraphicsSceneContextMenuEvent*) override;
 	void mousePressEvent(QGraphicsSceneMouseEvent*) override;
 
 private:

@@ -164,7 +164,9 @@ namespace
 								const auto nextIndex = track._soundIndex + 1;
 								if (nextIndex == track._loopEndIndex)
 								{
-									track._soundBytesRemaining = _stepBytes * track._loopDelay;
+									track._soundBytesRemaining = track._loopDelay > 0
+										? _stepBytes * track._loopDelay
+										: track._voice->totalSamples() * _blockBytes;
 								}
 								else
 								{

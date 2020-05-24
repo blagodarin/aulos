@@ -127,6 +127,7 @@ CompositionScene::CompositionScene(QObject* parent)
 	connect(_addVoiceItem.get(), &ButtonItem::activated, this, &CompositionScene::newVoiceRequested);
 	_compositionItem->setPos(_voiceColumnWidth, kCompositionHeaderHeight);
 	_timelineItem->setPos(0, -kCompositionHeaderHeight);
+	connect(_timelineItem, &TimelineItem::menuRequested, this, &CompositionScene::timelineMenuRequested);
 	_rightBoundItem->setPos(_timelineItem->pos() + _timelineItem->boundingRect().topRight());
 	connect(_rightBoundItem, &ElusiveItem::elude, [this] {
 		const auto length = _timelineItem->compositionLength();
@@ -136,6 +137,7 @@ CompositionScene::CompositionScene(QObject* parent)
 	_cursorItem->setVisible(false);
 	_cursorItem->setZValue(kCursorZValue);
 	_loopItem->setVisible(false);
+	connect(_loopItem, &LoopItem::menuRequested, this, &CompositionScene::loopMenuRequested);
 
 	QTextOption textOption;
 	textOption.setWrapMode(QTextOption::NoWrap);
@@ -331,11 +333,9 @@ void CompositionScene::reset(const std::shared_ptr<aulos::CompositionData>& comp
 		_addVoiceItem->setPos(0, kCompositionHeaderHeight + _tracks.size() * kTrackHeight);
 		_cursorItem->setTrackCount(_tracks.size());
 		_cursorItem->setVisible(false);
-		_loopItem->setLoopLength(_composition->_loopLength);
-		_loopItem->setPos(_composition->_loopOffset * kStepWidth, _tracks.size() * kTrackHeight + kLoopItemOffset);
-		_loopItem->setVisible(_composition->_loopLength > 0);
 
 		setVoiceColumnWidth(requiredVoiceColumnWidth());
+		updateLoop();
 		updateSceneRect(compositionLength);
 		for (auto i = _voices.crbegin(); i != _voices.crend(); ++i)
 			addItem(i->get());
@@ -408,6 +408,13 @@ void CompositionScene::showCursor(bool visible)
 size_t CompositionScene::startOffset() const
 {
 	return _timelineItem->compositionOffset();
+}
+
+void CompositionScene::updateLoop()
+{
+	_loopItem->setLoopLength(_composition->_loopLength);
+	_loopItem->setPos(_composition->_loopOffset * kStepWidth, _tracks.size() * kTrackHeight + kLoopItemOffset);
+	_loopItem->setVisible(_composition->_loopLength > 0);
 }
 
 void CompositionScene::updateSelectedSequence(const std::shared_ptr<aulos::SequenceData>& sequence)

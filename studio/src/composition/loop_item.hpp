@@ -4,16 +4,24 @@
 
 #pragma once
 
-#include <QGraphicsItem>
+#include <QGraphicsObject>
 
-class LoopItem final : public QGraphicsItem
+class LoopItem final : public QGraphicsObject
 {
+	Q_OBJECT
+
 public:
 	explicit LoopItem(QGraphicsItem* parent = nullptr);
 
 	QRectF boundingRect() const override;
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
 	void setLoopLength(size_t);
+
+signals:
+	void menuRequested(const QPoint& pos);
+
+private:
+	void contextMenuEvent(QGraphicsSceneContextMenuEvent*) override;
 
 private:
 	size_t _loopLength = 0;

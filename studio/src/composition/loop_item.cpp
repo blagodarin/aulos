@@ -6,10 +6,11 @@
 
 #include "../theme.hpp"
 
+#include <QGraphicsSceneEvent>
 #include <QPainter>
 
 LoopItem::LoopItem(QGraphicsItem* parent)
-	: QGraphicsItem{ parent }
+	: QGraphicsObject{ parent }
 {
 }
 
@@ -29,4 +30,10 @@ void LoopItem::setLoopLength(size_t length)
 {
 	prepareGeometryChange();
 	_loopLength = length;
+}
+
+void LoopItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
+{
+	e->accept();
+	emit menuRequested(e->screenPos());
 }

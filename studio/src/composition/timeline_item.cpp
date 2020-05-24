@@ -13,7 +13,7 @@
 #include <QStyleOptionGraphicsItem>
 
 TimelineItem::TimelineItem(QGraphicsItem* parent)
-	: QGraphicsItem{ parent }
+	: QGraphicsObject{ parent }
 {
 	setFlag(QGraphicsItem::ItemUsesExtendedStyleOption);
 
@@ -83,6 +83,12 @@ void TimelineItem::setCompositionSpeed(unsigned speed)
 {
 	_speed = speed;
 	update();
+}
+
+void TimelineItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
+{
+	e->accept();
+	emit menuRequested(static_cast<size_t>(std::ceil(e->pos().x()) / kStepWidth), e->screenPos());
 }
 
 void TimelineItem::mousePressEvent(QGraphicsSceneMouseEvent* e)
