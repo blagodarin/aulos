@@ -26,6 +26,7 @@ namespace aulos
 		virtual ~Renderer() noexcept = default;
 
 		[[nodiscard]] virtual unsigned channels() const noexcept = 0;
+		[[nodiscard]] virtual std::pair<size_t, size_t> loopRange() const noexcept = 0;
 		[[nodiscard]] virtual size_t render(void* buffer, size_t bufferBytes) noexcept = 0;
 		virtual void restart() noexcept = 0;
 		[[nodiscard]] virtual unsigned samplingRate() const noexcept = 0;

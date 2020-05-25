@@ -192,6 +192,9 @@ Studio::Studio()
 		const auto channels = _channelsCombo->currentData().toUInt();
 		auto renderer = aulos::Renderer::create(*composition, samplingRate, channels, _loopPlaybackCheck->isChecked());
 		[[maybe_unused]] const auto skippedBytes = renderer->render(nullptr, _compositionWidget->startOffset() * samplingRate * channels * sizeof(float) / _composition->_speed);
+		const auto loopRange = renderer->loopRange();
+		_loopBeginUs = loopRange.first * 1'000'000 / samplingRate;
+		_loopEndUs = loopRange.second * 1'000'000 / samplingRate;
 		_player->stop();
 		_mode = Mode::Playing;
 		_player->start(std::move(renderer), 0);
@@ -313,6 +316,9 @@ Studio::Studio()
 	connect(_player.get(), &Player::timeAdvanced, [this](qint64 microseconds) {
 		if (_mode != Mode::Playing)
 			return;
+		if (_loopPlaybackCheck->isChecked())
+			while (microseconds >= _loopEndUs)
+				microseconds = _loopBeginUs + (microseconds - _loopEndUs);
 		_compositionWidget->setPlaybackOffset(microseconds * _composition->_speed / 1'000'000.0);
 	});
 	connect(_compositionWidget, &CompositionWidget::selectionChanged, [this](const std::shared_ptr<aulos::VoiceData>& voice, const std::shared_ptr<aulos::SequenceData>& sequence) {

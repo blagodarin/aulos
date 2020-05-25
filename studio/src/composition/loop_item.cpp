@@ -23,7 +23,7 @@ void LoopItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget
 {
 	painter->setPen(kLoopItemColors._pen);
 	painter->setBrush(kLoopItemColors._brush);
-	painter->drawRoundedRect(boundingRect().adjusted(2, 0, -2, 0), kLoopItemHeight / 2, kLoopItemHeight / 2);
+	painter->drawRoundedRect(boundingRect().adjusted(1, 0, -1, 0), kLoopItemHeight / 2, kLoopItemHeight / 2);
 }
 
 void LoopItem::setLoopLength(size_t length)

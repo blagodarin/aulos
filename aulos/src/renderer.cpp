@@ -54,6 +54,7 @@ namespace
 			: _samplingRate{ samplingRate }
 			, _channels{ channels }
 			, _stepSamples{ static_cast<size_t>(std::lround(static_cast<double>(samplingRate) / composition._speed)) }
+			, _loopOffset{ composition._loopOffset }
 		{
 			const auto maxSequenceSpan = [](const aulos::Track& track) {
 				unsigned result = 0;
@@ -121,15 +122,19 @@ namespace
 					assert(!trackState->_sounds.empty());
 				}
 			}
+			_loopLength = composition._loopLength > 0 ? composition._loopLength : (totalSamples() + _stepSamples - 1) / _stepSamples;
 			if (looping)
 			{
 				_looping = true;
-				const auto loopBegin = composition._loopOffset;
-				const auto loopLength = composition._loopLength > 0 ? composition._loopLength : (totalSamples() + _stepSamples - 1) / _stepSamples;
 				for (auto& track : _tracks)
-					track.setLoop(loopBegin, loopLength);
+					track.setLoop(_loopOffset, _loopLength);
 			}
 			restart();
+		}
+
+		std::pair<size_t, size_t> loopRange() const noexcept override
+		{
+			return { _loopOffset * _stepSamples, (_loopOffset + _loopLength) * _stepSamples };
 		}
 
 		unsigned channels() const noexcept override
@@ -322,6 +327,8 @@ namespace
 		const size_t _blockBytes = _channels * sizeof(float);
 		const size_t _stepSamples;
 		const size_t _stepBytes = _stepSamples * _blockBytes;
+		const size_t _loopOffset;
+		size_t _loopLength = 0;
 		bool _looping = false;
 		std::vector<TrackState> _tracks;
 	};
