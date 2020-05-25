@@ -4,13 +4,16 @@
 
 #pragma once
 
-#include <aulos/voice.hpp>
+#include <aulos/common.hpp>
 
 #include <map>
+#include <memory>
 #include <string>
 
 namespace aulos
 {
+	class Composition;
+
 	struct SequenceData
 	{
 		std::vector<Sound> _sounds;

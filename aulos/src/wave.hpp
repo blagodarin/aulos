@@ -8,6 +8,8 @@
 #include "note_table.hpp"
 #include "oscillator.hpp"
 
+#include <tuple>
+
 namespace aulos
 {
 	class WaveData
@@ -198,21 +200,6 @@ namespace aulos
 				return std::min({ _amplitudeModulator.maxContinuousAdvance(), _oscillator.maxAdvance(), _restartDelay });
 			}
 			return std::min(_amplitudeModulator.maxContinuousAdvance(), _oscillator.maxAdvance());
-		}
-
-		void restart() noexcept
-		{
-			assert(_frequency > 0);
-			_amplitudeModulator.stop();
-			startWave(_frequency, false);
-			_startDelay = _delay;
-			_restartDelay = 0;
-			_restartFrequency = 0.;
-		}
-
-		constexpr auto samplingRate() const noexcept
-		{
-			return _oscillator.samplingRate();
 		}
 
 		void start(Note note) noexcept

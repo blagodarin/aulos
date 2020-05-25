@@ -5,7 +5,7 @@
 set(_src
 	src/main.cpp
 	src/shaper.cpp
-	src/wave.cpp
+	src/voice.cpp
 	)
 source_group("src" FILES ${_src})
 

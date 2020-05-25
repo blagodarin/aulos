@@ -4,7 +4,8 @@
 
 #pragma once
 
-#include <aulos/voice.hpp>
+#include <aulos/composition.hpp>
+#include <aulos/common.hpp>
 
 #include <string>
 

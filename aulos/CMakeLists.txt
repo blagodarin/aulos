@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 set(_include
+	common.hpp
 	composition.hpp
 	data.hpp
-	voice.hpp
 	)
 source_group("include" FILES ${_include})
 

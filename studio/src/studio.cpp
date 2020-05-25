@@ -11,6 +11,7 @@
 #include "theme.hpp"
 #include "voice_widget.hpp"
 
+#include <aulos/composition.hpp>
 #include <aulos/data.hpp>
 
 #include <cassert>
@@ -187,8 +188,10 @@ Studio::Studio()
 			return;
 		assert(_mode == Mode::Editing);
 		_autoRepeatButton->setChecked(false);
-		auto renderer = aulos::Renderer::create(*composition, _samplingRateCombo->currentData().toUInt(), _channelsCombo->currentData().toUInt(), _loopPlaybackCheck->isChecked());
-		[[maybe_unused]] const auto skippedBytes = renderer->render(nullptr, _compositionWidget->startOffset() * renderer->samplingRate() * renderer->channels() * sizeof(float) / _composition->_speed);
+		const auto samplingRate = _samplingRateCombo->currentData().toUInt();
+		const auto channels = _channelsCombo->currentData().toUInt();
+		auto renderer = aulos::Renderer::create(*composition, samplingRate, channels, _loopPlaybackCheck->isChecked());
+		[[maybe_unused]] const auto skippedBytes = renderer->render(nullptr, _compositionWidget->startOffset() * samplingRate * channels * sizeof(float) / _composition->_speed);
 		_player->stop();
 		_mode = Mode::Playing;
 		_player->start(std::move(renderer), 0);

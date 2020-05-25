@@ -8,15 +8,20 @@
 
 namespace aulos
 {
-	class VoiceImpl : public VoiceRenderer
+	class Voice
 	{
 	public:
-		VoiceImpl(const VoiceData& data, unsigned samplingRate) noexcept
+		Voice(const VoiceData& data, unsigned samplingRate) noexcept
 			: _waveData{ data, samplingRate }
 		{
 		}
 
+		virtual ~Voice() noexcept = default;
+
+		virtual size_t render(float* buffer, size_t bufferBytes) noexcept = 0;
+		virtual void start(Note, float amplitude) noexcept = 0;
 		virtual void stop() noexcept = 0;
+		virtual size_t totalSamples() const noexcept = 0;
 
 	protected:
 		const WaveData _waveData;
@@ -24,32 +29,27 @@ namespace aulos
 	};
 
 	template <typename Shaper>
-	class MonoVoice final : public VoiceImpl
+	class MonoVoice final : public Voice
 	{
 	public:
 		static constexpr auto kBlockSize = sizeof(float);
 
 		MonoVoice(const VoiceData& data, unsigned samplingRate) noexcept
-			: VoiceImpl{ data, samplingRate }
+			: Voice{ data, samplingRate }
 			, _wave{ _waveData, samplingRate, 0.f }
 		{
 		}
 
-		unsigned channels() const noexcept override
+		size_t render(float* buffer, size_t bufferBytes) noexcept override
 		{
-			return 1;
-		}
-
-		size_t render(void* buffer, size_t bufferBytes) noexcept override
-		{
-			bufferBytes -= bufferBytes % kBlockSize;
+			assert(bufferBytes % kBlockSize == 0);
 			size_t offset = 0;
 			while (offset < bufferBytes && !_wave.stopped())
 			{
 				const auto blocksToGenerate = static_cast<unsigned>(std::min<size_t>((bufferBytes - offset) / kBlockSize, _wave.maxAdvance()));
 				if (buffer)
 				{
-					const auto output = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
+					const auto output = buffer + offset / sizeof(float);
 					Shaper waveShaper{ _wave.waveShaperData(_baseAmplitude) };
 					LinearShaper amplitudeShaper{ _wave.amplitudeShaperData() };
 					for (unsigned i = 0; i < blocksToGenerate; ++i)
@@ -59,16 +59,6 @@ namespace aulos
 				offset += blocksToGenerate * kBlockSize;
 			}
 			return offset;
-		}
-
-		void restart() noexcept override
-		{
-			_wave.restart();
-		}
-
-		unsigned samplingRate() const noexcept override
-		{
-			return _wave.samplingRate();
 		}
 
 		void start(Note note, float amplitude) noexcept override
@@ -92,13 +82,13 @@ namespace aulos
 	};
 
 	template <typename Shaper>
-	class StereoVoice final : public VoiceImpl
+	class StereoVoice final : public Voice
 	{
 	public:
 		static constexpr auto kBlockSize = 2 * sizeof(float);
 
 		StereoVoice(const VoiceData& data, unsigned samplingRate) noexcept
-			: VoiceImpl{ data, samplingRate }
+			: Voice{ data, samplingRate }
 			, _leftWave{ _waveData, samplingRate, std::max(0.f, -data._stereoDelay) }
 			, _rightWave{ _waveData, samplingRate, std::max(0.f, data._stereoDelay) }
 			, _leftAmplitude{ std::min(1.f - data._stereoPan, 1.f) }
@@ -106,21 +96,16 @@ namespace aulos
 		{
 		}
 
-		unsigned channels() const noexcept override
+		size_t render(float* buffer, size_t bufferBytes) noexcept override
 		{
-			return 2;
-		}
-
-		size_t render(void* buffer, size_t bufferBytes) noexcept override
-		{
-			bufferBytes -= bufferBytes % kBlockSize;
+			assert(bufferBytes % kBlockSize == 0);
 			size_t offset = 0;
 			while (offset < bufferBytes && !(_leftWave.stopped() && _rightWave.stopped()))
 			{
 				const auto samplesToGenerate = static_cast<unsigned>(std::min<size_t>({ (bufferBytes - offset) / kBlockSize, _leftWave.maxAdvance(), _rightWave.maxAdvance() }));
 				if (buffer)
 				{
-					auto output = reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + offset);
+					auto output = buffer + offset / sizeof(float);
 					Shaper leftWaveShaper{ _leftWave.waveShaperData(_baseAmplitude * _leftAmplitude) };
 					Shaper rightWaveShaper{ _rightWave.waveShaperData(_baseAmplitude * _rightAmplitude) };
 					LinearShaper leftAmplitudeShaper{ _leftWave.amplitudeShaperData() };
@@ -136,17 +121,6 @@ namespace aulos
 				offset += samplesToGenerate * kBlockSize;
 			}
 			return offset;
-		}
-
-		void restart() noexcept override
-		{
-			_leftWave.restart();
-			_rightWave.restart();
-		}
-
-		unsigned samplingRate() const noexcept override
-		{
-			return _leftWave.samplingRate();
 		}
 
 		void start(Note note, float amplitude) noexcept override

@@ -4,8 +4,6 @@
 
 #pragma once
 
-#include <aulos/composition.hpp>
-
 #include <chrono>
 #include <vector>
 
@@ -97,17 +95,6 @@ namespace aulos
 		float _stereoDelay = 0.f;
 		float _stereoPan = 0.f;
 		bool _stereoInversion = false;
-	};
-
-	// Generates PCM audio for a voice.
-	class VoiceRenderer : public Renderer
-	{
-	public:
-		[[nodiscard]] static std::unique_ptr<VoiceRenderer> create(const VoiceData&, unsigned samplingRate, unsigned channels);
-
-		virtual ~VoiceRenderer() noexcept = default;
-
-		virtual void start(Note, float amplitude) noexcept = 0;
 	};
 
 	constexpr unsigned kMinSpeed = 1;  // Minimum composition playback speed (in steps per second).

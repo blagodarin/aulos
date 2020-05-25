@@ -16,7 +16,7 @@ static_assert(aulos::kMaxQuinticShape == aulos::QuinticShaper::kMaxShape);
 
 namespace
 {
-	std::unique_ptr<aulos::VoiceImpl> createVoice(const aulos::VoiceData& data, unsigned samplingRate, unsigned channels)
+	std::unique_ptr<aulos::Voice> createVoice(const aulos::VoiceData& data, unsigned samplingRate, unsigned channels)
 	{
 		switch (channels)
 		{
@@ -189,7 +189,7 @@ namespace
 					const auto bytesToGenerate = std::min(track._soundBytesRemaining, bufferBytes - trackOffset);
 					if (!bytesToGenerate)
 						break;
-					[[maybe_unused]] const auto bytesGenerated = track._voice->render(buffer ? static_cast<std::byte*>(buffer) + trackOffset : nullptr, bytesToGenerate);
+					[[maybe_unused]] const auto bytesGenerated = track._voice->render(buffer ? reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + trackOffset) : nullptr, bytesToGenerate);
 					assert(bytesGenerated <= bytesToGenerate); // Initial and inter-sound silence doesn't generate any data.
 					track._soundBytesRemaining -= bytesToGenerate;
 					trackOffset += bytesToGenerate;
@@ -241,7 +241,7 @@ namespace
 
 		struct TrackState
 		{
-			std::unique_ptr<aulos::VoiceImpl> _voice;
+			std::unique_ptr<aulos::Voice> _voice;
 			const float _normalizedWeight;
 			std::vector<TrackSound> _sounds;
 			size_t _lastSoundOffset = 0;
@@ -329,11 +329,6 @@ namespace
 
 namespace aulos
 {
-	std::unique_ptr<VoiceRenderer> VoiceRenderer::create(const VoiceData& voiceData, unsigned samplingRate, unsigned channels)
-	{
-		return ::createVoice(voiceData, samplingRate, channels);
-	}
-
 	std::unique_ptr<Renderer> Renderer::create(const Composition& composition, unsigned samplingRate, unsigned channels, bool looping)
 	{
 		return channels == 1 || channels == 2

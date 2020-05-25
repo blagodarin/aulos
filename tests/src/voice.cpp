@@ -2,7 +2,7 @@
 // Copyright (C) Sergei Blagodarin.
 // SPDX-License-Identifier: Apache-2.0
 
-#include <aulos/voice.hpp>
+#include <aulos/src/voice.hpp>
 
 #include <doctest.h>
 
@@ -10,31 +10,43 @@ using namespace std::chrono_literals;
 
 namespace
 {
-	struct TestVoice
-	{
-		const std::unique_ptr<aulos::VoiceRenderer> _renderer;
+	constexpr auto kTestSamplingRate = 44'000u;
+	constexpr auto kTestNote = aulos::Note::A4; // A4 note frequency is exactly 440 Hz, so the period should be exactly 100 samples.
 
-		TestVoice(const aulos::VoiceData& data, float amplitude, unsigned channels = 1)
-			: _renderer{ aulos::VoiceRenderer::create(data, 44'000, channels) }
+	template <typename Shaper>
+	struct MonoTester
+	{
+		aulos::MonoVoice<Shaper> _voice;
+
+		MonoTester(const aulos::VoiceData& data, float amplitude)
+			: _voice{ data, kTestSamplingRate }
 		{
-			REQUIRE(_renderer);
-			CHECK(_renderer->channels() == channels);
-			CHECK(_renderer->samplingRate() == 44'000);
-			CHECK(_renderer->totalSamples() == 22'000);
-			_renderer->start(aulos::Note::A4, amplitude); // A4 note frequency is exactly 440 Hz, so the period should be exactly 100 samples.
+			_voice.start(kTestNote, amplitude);
 		}
 
-		auto renderSample()
+		auto render()
 		{
 			float sample = 0.f;
-			REQUIRE(_renderer->render(&sample, sizeof sample) == sizeof sample);
+			REQUIRE(_voice.render(&sample, sizeof sample) == sizeof sample);
 			return sample;
 		}
+	};
 
-		auto renderStereo()
+	template <typename Shaper>
+	struct StereoTester
+	{
+		aulos::StereoVoice<Shaper> _voice;
+
+		StereoTester(const aulos::VoiceData& data, float amplitude)
+			: _voice{ data, kTestSamplingRate }
+		{
+			_voice.start(kTestNote, amplitude);
+		}
+
+		auto render()
 		{
 			std::pair<float, float> block{ 0.f, 0.f };
-			REQUIRE(_renderer->render(&block.first, sizeof block) == sizeof block);
+			REQUIRE(_voice.render(&block.first, sizeof block) == sizeof block);
 			return block;
 		}
 	};
@@ -48,27 +60,17 @@ TEST_CASE("wave_sawtooth_mono")
 	data._asymmetryEnvelope._changes.emplace_back(0ms, 1.f, aulos::EnvelopeShape::Linear);
 
 	constexpr auto amplitude = .1f;
-	TestVoice voice{ data, amplitude };
-	auto sample = voice.renderSample();
-	CHECK(sample == amplitude);
-	for (int i = 1; i < 50; ++i)
-	{
-		const auto nextSample = voice.renderSample();
-		CHECK(nextSample > 0.f);
-		CHECK(sample > nextSample);
-		sample = nextSample;
-	}
-	voice._renderer->restart();
-	sample = voice.renderSample();
+	MonoTester<aulos::LinearShaper> tester{ data, amplitude };
+	auto sample = tester.render();
 	CHECK(sample == amplitude);
 	for (int i = 1; i < 100; ++i)
 	{
-		const auto nextSample = voice.renderSample();
+		const auto nextSample = tester.render();
 		CHECK(nextSample > -amplitude);
 		CHECK(sample > nextSample);
 		sample = nextSample;
 	}
-	CHECK(voice.renderSample() == amplitude);
+	CHECK(tester.render() == amplitude);
 }
 
 TEST_CASE("wave_sawtooth_stereo_inversion")
@@ -80,33 +82,20 @@ TEST_CASE("wave_sawtooth_stereo_inversion")
 	data._stereoInversion = true;
 
 	constexpr auto amplitude = .1f;
-	TestVoice voice{ data, amplitude, 2 };
-	auto block = voice.renderStereo();
-	CHECK(block.first == amplitude);
-	CHECK(block.second == -amplitude);
-	for (int i = 1; i < 50; ++i)
-	{
-		const auto nextBlock = voice.renderStereo();
-		CHECK(nextBlock.first > 0.f);
-		CHECK(block.first > nextBlock.first);
-		CHECK(nextBlock.second < 0.f);
-		CHECK(block.second < nextBlock.second);
-		block = nextBlock;
-	}
-	voice._renderer->restart();
-	block = voice.renderStereo();
+	StereoTester<aulos::LinearShaper> tester{ data, amplitude };
+	auto block = tester.render();
 	CHECK(block.first == amplitude);
 	CHECK(block.second == -amplitude);
 	for (int i = 1; i < 100; ++i)
 	{
-		const auto nextBlock = voice.renderStereo();
+		const auto nextBlock = tester.render();
 		CHECK(nextBlock.first > -amplitude);
 		CHECK(block.first > nextBlock.first);
 		CHECK(nextBlock.second < amplitude);
 		CHECK(block.second < nextBlock.second);
 		block = nextBlock;
 	}
-	block = voice.renderStereo();
+	block = tester.render();
 	CHECK(block.first == amplitude);
 	CHECK(block.second == -amplitude);
 }
@@ -119,12 +108,12 @@ TEST_CASE("wave_square_mono")
 	data._oscillationEnvelope._changes.emplace_back(0ms, 1.f, aulos::EnvelopeShape::Linear);
 
 	constexpr auto amplitude = .2f;
-	TestVoice voice{ data, amplitude };
+	MonoTester<aulos::LinearShaper> tester{ data, amplitude };
 	for (int i = 0; i < 50; ++i)
-		CHECK(voice.renderSample() == amplitude);
+		CHECK(tester.render() == amplitude);
 	for (int i = 0; i < 50; ++i)
-		CHECK(voice.renderSample() == -amplitude);
-	CHECK(voice.renderSample() == amplitude);
+		CHECK(tester.render() == -amplitude);
+	CHECK(tester.render() == amplitude);
 }
 
 TEST_CASE("wave_triangle_mono")
@@ -134,36 +123,25 @@ TEST_CASE("wave_triangle_mono")
 	data._amplitudeEnvelope._changes.emplace_back(500ms, 1.f, aulos::EnvelopeShape::Linear);
 
 	constexpr auto amplitude = .3f;
-	TestVoice voice{ data, amplitude };
-	auto sample = voice.renderSample();
+	MonoTester<aulos::LinearShaper> tester{ data, amplitude };
+	auto sample = tester.render();
 	CHECK(sample == amplitude);
 	for (int i = 1; i < 50; ++i)
 	{
-		const auto nextSample = voice.renderSample();
+		const auto nextSample = tester.render();
 		CHECK(nextSample > -amplitude);
 		CHECK(sample > nextSample);
 		sample = nextSample;
 	}
-	sample = voice.renderSample();
+	sample = tester.render();
 	CHECK(sample == -amplitude);
 	for (int i = 1; i < 25; ++i)
 	{
-		const auto nextSample = voice.renderSample();
+		const auto nextSample = tester.render();
 		CHECK(nextSample < 0.f);
 		CHECK(sample < nextSample);
 		sample = nextSample;
 	}
-	voice._renderer->restart();
-	sample = voice.renderSample();
-	CHECK(sample == amplitude);
-	for (int i = 1; i < 50; ++i)
-	{
-		const auto nextSample = voice.renderSample();
-		CHECK(nextSample > -amplitude);
-		CHECK(sample > nextSample);
-		sample = nextSample;
-	}
-	CHECK(voice.renderSample() == -amplitude);
 }
 
 TEST_CASE("wave_triangle_asymmetric_mono")
@@ -174,34 +152,24 @@ TEST_CASE("wave_triangle_asymmetric_mono")
 	data._asymmetryEnvelope._changes.emplace_back(0ms, .5f, aulos::EnvelopeShape::Linear);
 
 	constexpr auto amplitude = .4f;
-	TestVoice voice{ data, amplitude };
-	auto sample = voice.renderSample();
-	CHECK(sample == amplitude);
-	for (int i = 1; i < 50; ++i)
-	{
-		const auto nextSample = voice.renderSample();
-		CHECK(nextSample > -amplitude / 3);
-		CHECK(sample > nextSample);
-		sample = nextSample;
-	}
-	voice._renderer->restart();
-	sample = voice.renderSample();
+	MonoTester<aulos::LinearShaper> tester{ data, amplitude };
+	auto sample = tester.render();
 	CHECK(sample == amplitude);
 	for (int i = 1; i < 75; ++i)
 	{
-		const auto nextSample = voice.renderSample();
+		const auto nextSample = tester.render();
 		CHECK(nextSample > -amplitude);
 		CHECK(sample > nextSample);
 		sample = nextSample;
 	}
-	sample = voice.renderSample();
+	sample = tester.render();
 	CHECK(sample == -amplitude);
 	for (int i = 1; i < 25; ++i)
 	{
-		const auto nextSample = voice.renderSample();
+		const auto nextSample = tester.render();
 		CHECK(nextSample < amplitude);
 		CHECK(sample < nextSample);
 		sample = nextSample;
 	}
-	CHECK(voice.renderSample() == amplitude);
+	CHECK(tester.render() == amplitude);
 }

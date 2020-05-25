@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <aulos/voice.hpp>
+#include <aulos/common.hpp>
 
 #include <array>
 
