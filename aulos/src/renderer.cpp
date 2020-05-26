@@ -129,7 +129,7 @@ namespace
 				for (auto& track : _tracks)
 					track.setLoop(_loopOffset, _loopLength);
 			}
-			restart();
+			restart(1);
 		}
 
 		std::pair<size_t, size_t> loopRange() const noexcept override
@@ -189,7 +189,7 @@ namespace
 						}
 						assert(track._soundBytesRemaining > 0);
 						assert(track._soundBytesRemaining % _blockBytes == 0);
-						track._voice->start(track._sounds[track._soundIndex]._note, track._normalizedWeight);
+						track._voice->start(track._sounds[track._soundIndex]._note, track._normalizedWeight * _gain);
 					}
 					const auto bytesToGenerate = std::min(track._soundBytesRemaining, bufferBytes - trackOffset);
 					if (!bytesToGenerate)
@@ -209,8 +209,10 @@ namespace
 			return offset;
 		}
 
-		void restart() noexcept override
+		void restart(float gain) noexcept override
 		{
+			assert(gain >= 1);
+			_gain = gain;
 			for (auto& track : _tracks)
 			{
 				track._voice->stop();
@@ -331,6 +333,7 @@ namespace
 		size_t _loopLength = 0;
 		bool _looping = false;
 		std::vector<TrackState> _tracks;
+		float _gain = 1;
 	};
 }
 

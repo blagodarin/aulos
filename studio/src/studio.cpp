@@ -408,18 +408,30 @@ void Studio::exportComposition()
 	const auto samplingRate = _samplingRateCombo->currentData().toUInt();
 	const auto channels = _channelsCombo->currentData().toUInt();
 	const auto renderer = aulos::Renderer::create(*composition, samplingRate, channels, false);
-	const auto totalBytes = renderer->totalSamples() * channels * sizeof(float);
+	const auto bufferLength = renderer->totalSamples() * channels;
+	const auto bufferSize = bufferLength * sizeof(float);
 
-	QByteArray rawData;
-	rawData.resize(static_cast<int>(totalBytes));
-	rawData.resize(static_cast<int>(renderer->render(rawData.data(), totalBytes)));
+	const auto buffer = std::make_unique<float[]>(bufferLength);
+	[[maybe_unused]] auto renderedBytes = renderer->render(buffer.get(), bufferSize);
+	assert(renderedBytes == bufferSize);
+	if (bufferLength > 0)
+	{
+		const auto [minimum, maximum] = std::minmax_element(buffer.get(), buffer.get() + bufferLength);
+		const auto peak = std::max(std::abs(*minimum), std::abs(*maximum));
+		if (peak > 0)
+		{
+			renderer->restart(1 / peak);
+			renderedBytes = renderer->render(buffer.get(), bufferSize);
+			assert(renderedBytes == bufferSize);
+		}
+	}
 
 	constexpr size_t chunkHeaderSize = 8;
 	constexpr size_t fmtChunkSize = 16;
 	constexpr auto totalHeadersSize = chunkHeaderSize + 4 + chunkHeaderSize + fmtChunkSize + chunkHeaderSize;
 
 	file.write("RIFF");
-	::writeValue<uint32_t>(file, totalHeadersSize + rawData.size());
+	::writeValue<uint32_t>(file, static_cast<uint32_t>(totalHeadersSize + bufferSize));
 	assert(file.pos() == chunkHeaderSize);
 	file.write("WAVE");
 	file.write("fmt ");
@@ -431,9 +443,9 @@ void Studio::exportComposition()
 	::writeValue<uint16_t>(file, static_cast<uint16_t>(channels * sizeof(float))); // Bytes per frame.
 	::writeValue<uint16_t>(file, sizeof(float) * 8);                               // Bits per sample.
 	file.write("data");
-	::writeValue<uint32_t>(file, rawData.size());
+	::writeValue<uint32_t>(file, static_cast<uint32_t>(bufferSize));
 	assert(file.pos() == totalHeadersSize);
-	file.write(rawData);
+	file.write(QByteArray::fromRawData(reinterpret_cast<char*>(buffer.get()), static_cast<int>(bufferSize)));
 	file.commit();
 }
 
