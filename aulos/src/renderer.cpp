@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <functional>
 
 static_assert(aulos::kMinSmoothCubicShape == aulos::SmoothCubicShaper::kMinShape);
 static_assert(aulos::kMaxSmoothCubicShape == aulos::SmoothCubicShaper::kMaxShape);
@@ -56,70 +57,81 @@ namespace
 			, _stepSamples{ static_cast<size_t>(std::lround(static_cast<double>(samplingRate) / composition._speed)) }
 			, _loopOffset{ composition._loopOffset }
 		{
-			const auto maxSequenceSpan = [](const aulos::Track& track) {
-				unsigned result = 0;
-				for (const auto& sequence : track._sequences)
-				{
-					if (sequence.empty())
-						continue;
-					unsigned current = 1;
-					std::for_each(std::next(sequence.begin()), sequence.end(), [&result, &current](const aulos::Sound& sound) {
-						if (sound._delay > 0)
-						{
-							if (current > result)
-								result = current;
-							current = 1;
-						}
-						else
-							++current;
-					});
-					if (current > result)
-						result = current;
-				}
-				return result;
+			struct TrackInfo
+			{
+				size_t _index = 0;
+				size_t _samplesTotal = 0;
+				size_t _samplesPlayed = 0;
+				aulos::Note _note = aulos::Note::C0;
+
+				constexpr TrackInfo(size_t index) noexcept
+					: _index{ index } {}
 			};
 
-			size_t trackCount = 0;
-			const auto totalWeight = static_cast<float>(std::accumulate(composition._parts.cbegin(), composition._parts.cend(), 0u, [&trackCount, &maxSequenceSpan](unsigned weight, const aulos::Part& part) {
-				return weight + std::accumulate(part._tracks.cbegin(), part._tracks.cend(), 0u, [&trackCount, &maxSequenceSpan](unsigned partWeight, const aulos::Track& track) {
-					const auto span = maxSequenceSpan(track);
-					trackCount += span;
-					return partWeight + track._weight * span;
-				});
-			}));
-			_tracks.reserve(trackCount);
+			std::vector<TrackInfo> currentTracks;
+			std::vector<aulos::Sound> currentTrackSounds;
 			for (const auto& part : composition._parts)
 			{
+				const auto matcher = [&part]() -> std::function<bool(const TrackInfo&, aulos::Note)> {
+					switch (part._voice._polyphony)
+					{
+					case aulos::Polyphony::Full: return [](const TrackInfo& info, aulos::Note note) { return info._samplesPlayed == info._samplesTotal || info._note == note; };
+					default: return [](const TrackInfo& info, aulos::Note note) { return info._samplesPlayed > 0 || info._note == note; };
+					}
+				}();
+				currentTracks.clear();
 				for (const auto& track : part._tracks)
 				{
-					const auto trackSpan = maxSequenceSpan(track);
-					if (!trackSpan)
-						continue;
-					const auto trackWeight = track._weight / totalWeight;
-					const auto trackState = &_tracks.emplace_back(part._voice, trackWeight, samplingRate, channels);
-					for (unsigned i = 1; i < trackSpan; ++i)
-						_tracks.emplace_back(part._voice, trackWeight, samplingRate, channels);
-					assert(_tracks.size() <= trackCount);
-					size_t fragmentOffset = 0;
-					for (const auto& fragment : track._fragments)
+					currentTrackSounds.clear();
 					{
-						fragmentOffset += fragment._delay;
-						for (unsigned i = 0; i < trackSpan; ++i)
-							trackState[i].removeStartingAt(fragmentOffset);
-						if (const auto& sequence = track._sequences[fragment._sequence]; !sequence.empty())
+						size_t lastSoundOffset = 0;
+						size_t fragmentOffset = 0;
+						for (const auto& fragment : track._fragments)
 						{
-							auto soundOffset = fragmentOffset;
-							auto trackIndex = ~0u;
-							for (const auto& sound : sequence)
+							fragmentOffset += fragment._delay;
+							if (fragmentOffset > 0)
 							{
-								trackIndex = sound._delay > 0 ? 0 : trackIndex + 1;
-								assert(trackIndex < trackSpan);
+								while (lastSoundOffset >= fragmentOffset)
+								{
+									assert(!currentTrackSounds.empty());
+									const auto lastSoundDelay = currentTrackSounds.back()._delay;
+									assert(lastSoundOffset >= lastSoundDelay);
+									lastSoundOffset -= lastSoundDelay;
+									currentTrackSounds.pop_back();
+								}
+							}
+							else
+								currentTrackSounds.clear();
+							auto soundOffset = fragmentOffset;
+							for (const auto& sound : track._sequences[fragment._sequence])
+							{
 								soundOffset += sound._delay;
-								trackState[trackIndex].addSound(soundOffset, sound._note);
+								assert(soundOffset >= lastSoundOffset);
+								currentTrackSounds.emplace_back(soundOffset - lastSoundOffset, sound._note);
+								lastSoundOffset = soundOffset;
 							}
 						}
 					}
-					assert(!trackState->_sounds.empty());
+					size_t soundOffset = 0;
+					for (const auto& sound : currentTrackSounds)
+					{
+						const auto delaySamples = sound._delay * _stepSamples;
+						for (auto& currentTrack : currentTracks)
+							currentTrack._samplesPlayed += std::min(currentTrack._samplesTotal - currentTrack._samplesPlayed, delaySamples);
+						auto i = std::find_if(currentTracks.begin(), currentTracks.end(), [&matcher, &sound](const TrackInfo& info) { return matcher(info, sound._note); });
+						if (i == currentTracks.end())
+						{
+							currentTracks.emplace_back(_tracks.size());
+							_tracks.emplace_back(part._voice, track._weight, samplingRate, channels);
+							i = std::prev(currentTracks.end());
+						}
+						auto& trackState = _tracks[i->_index];
+						soundOffset += sound._delay;
+						trackState.addSound(soundOffset, sound._note);
+						i->_samplesTotal = trackState._voice->totalSamples();
+						i->_samplesPlayed = 0;
+						i->_note = sound._note;
+					}
 				}
 			}
 			_loopLength = composition._loopLength > 0 ? composition._loopLength : (totalSamples() + _stepSamples - 1) / _stepSamples;
@@ -189,7 +201,7 @@ namespace
 						}
 						assert(track._soundBytesRemaining > 0);
 						assert(track._soundBytesRemaining % _blockBytes == 0);
-						track._voice->start(track._sounds[track._soundIndex]._note, track._normalizedWeight * _gain);
+						track._voice->start(track._sounds[track._soundIndex]._note, track._gain);
 					}
 					const auto bytesToGenerate = std::min(track._soundBytesRemaining, bufferBytes - trackOffset);
 					if (!bytesToGenerate)
@@ -212,10 +224,11 @@ namespace
 		void restart(float gain) noexcept override
 		{
 			assert(gain >= 1);
-			_gain = gain;
+			const auto totalWeight = std::accumulate(_tracks.begin(), _tracks.end(), 0.f, [](float weight, const TrackState& track) { return weight + track._weight; }) / gain;
 			for (auto& track : _tracks)
 			{
 				track._voice->stop();
+				track._gain = track._weight / totalWeight;
 				const auto delay = !track._sounds.empty() ? track._sounds.front()._delay : 0;
 				track._soundIndex = delay ? std::numeric_limits<size_t>::max() : 0;
 				track._soundBytesRemaining = _stepBytes * delay;
@@ -249,7 +262,8 @@ namespace
 		struct TrackState
 		{
 			std::unique_ptr<aulos::Voice> _voice;
-			const float _normalizedWeight;
+			const float _weight;
+			float _gain = 0.f;
 			std::vector<TrackSound> _sounds;
 			size_t _lastSoundOffset = 0;
 			size_t _soundIndex = 0;
@@ -258,9 +272,9 @@ namespace
 			size_t _loopEndIndex = 0;
 			size_t _loopDelay = 0;
 
-			TrackState(const aulos::VoiceData& voiceData, float normalizedWeight, unsigned samplingRate, unsigned channels)
+			TrackState(const aulos::VoiceData& voiceData, unsigned weight, unsigned samplingRate, unsigned channels)
 				: _voice{ ::createVoice(voiceData, samplingRate, channels) }
-				, _normalizedWeight{ normalizedWeight }
+				, _weight{ static_cast<float>(weight) }
 			{
 			}
 
@@ -269,21 +283,6 @@ namespace
 				assert(offset > _lastSoundOffset || (offset == _lastSoundOffset && _sounds.empty()));
 				_sounds.emplace_back(offset - _lastSoundOffset, note);
 				_lastSoundOffset = offset;
-			}
-
-			void removeStartingAt(size_t offset) noexcept
-			{
-				if (offset > 0)
-				{
-					while (_lastSoundOffset >= offset)
-					{
-						assert(!_sounds.empty() && _lastSoundOffset >= _sounds.back()._delay);
-						_lastSoundOffset -= _sounds.back()._delay;
-						_sounds.pop_back();
-					}
-				}
-				else
-					_sounds.clear();
 			}
 
 			void setLoop(size_t loopOffset, size_t loopLength) noexcept
