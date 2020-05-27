@@ -55,7 +55,8 @@ namespace
 			: _samplingRate{ samplingRate }
 			, _channels{ channels }
 			, _stepSamples{ static_cast<size_t>(std::lround(static_cast<double>(samplingRate) / composition._speed)) }
-			, _loopOffset{ composition._loopOffset }
+			, _looping{ looping }
+			, _loopOffset{ composition._loopLength > 0 ? composition._loopOffset : 0 }
 		{
 			struct TrackInfo
 			{
@@ -68,8 +69,18 @@ namespace
 					: _index{ index } {}
 			};
 
+			struct AbsoluteSound
+			{
+				size_t _offset;
+				aulos::Note _note;
+
+				constexpr AbsoluteSound(size_t offset, aulos::Note note) noexcept
+					: _offset{ offset }, _note{ note } {}
+			};
+
 			std::vector<TrackInfo> currentTracks;
-			std::vector<aulos::Sound> currentTrackSounds;
+			std::vector<AbsoluteSound> sounds;
+			const auto loopEnd = looping && composition._loopLength > 0 ? size_t{ composition._loopOffset } + composition._loopLength : std::numeric_limits<size_t>::max();
 			for (const auto& part : composition._parts)
 			{
 				const auto matcher = [&part]() -> std::function<bool(const TrackInfo&, aulos::Note)> {
@@ -82,42 +93,27 @@ namespace
 				currentTracks.clear();
 				for (const auto& track : part._tracks)
 				{
-					currentTrackSounds.clear();
+					sounds.clear();
+					for (size_t fragmentOffset = 0; const auto& fragment : track._fragments)
 					{
-						size_t lastSoundOffset = 0;
-						size_t fragmentOffset = 0;
-						for (const auto& fragment : track._fragments)
+						fragmentOffset += fragment._delay;
+						if (fragmentOffset >= loopEnd)
+							break;
+						sounds.erase(std::find_if(sounds.crbegin(), sounds.crend(), [fragmentOffset](const AbsoluteSound& sound) { return sound._offset < fragmentOffset; }).base(), sounds.cend());
+						for (auto soundOffset = fragmentOffset; const auto& sound : track._sequences[fragment._sequence])
 						{
-							fragmentOffset += fragment._delay;
-							if (fragmentOffset > 0)
-							{
-								while (lastSoundOffset >= fragmentOffset)
-								{
-									assert(!currentTrackSounds.empty());
-									const auto lastSoundDelay = currentTrackSounds.back()._delay;
-									assert(lastSoundOffset >= lastSoundDelay);
-									lastSoundOffset -= lastSoundDelay;
-									currentTrackSounds.pop_back();
-								}
-							}
-							else
-								currentTrackSounds.clear();
-							auto soundOffset = fragmentOffset;
-							for (const auto& sound : track._sequences[fragment._sequence])
-							{
-								soundOffset += sound._delay;
-								assert(soundOffset >= lastSoundOffset);
-								currentTrackSounds.emplace_back(soundOffset - lastSoundOffset, sound._note);
-								lastSoundOffset = soundOffset;
-							}
+							soundOffset += sound._delay;
+							if (soundOffset >= loopEnd)
+								break;
+							sounds.emplace_back(soundOffset, sound._note);
 						}
 					}
-					size_t soundOffset = 0;
-					for (const auto& sound : currentTrackSounds)
+					for (size_t currentOffset = 0; const auto& sound : sounds)
 					{
-						const auto delaySamples = sound._delay * _stepSamples;
+						const auto delaySamples = (sound._offset - currentOffset) * _stepSamples;
 						for (auto& currentTrack : currentTracks)
 							currentTrack._samplesPlayed += std::min(currentTrack._samplesTotal - currentTrack._samplesPlayed, delaySamples);
+						currentOffset = sound._offset;
 						auto i = std::find_if(currentTracks.begin(), currentTracks.end(), [&matcher, &sound](const TrackInfo& info) { return matcher(info, sound._note); });
 						if (i == currentTracks.end())
 						{
@@ -126,8 +122,7 @@ namespace
 							i = std::prev(currentTracks.end());
 						}
 						auto& trackState = _tracks[i->_index];
-						soundOffset += sound._delay;
-						trackState.addSound(soundOffset, sound._note);
+						trackState.addSound(sound._offset, sound._note);
 						i->_samplesTotal = trackState._voice->totalSamples();
 						i->_samplesPlayed = 0;
 						i->_note = sound._note;
@@ -135,12 +130,9 @@ namespace
 				}
 			}
 			_loopLength = composition._loopLength > 0 ? composition._loopLength : (totalSamples() + _stepSamples - 1) / _stepSamples;
-			if (looping)
-			{
-				_looping = true;
+			if (_looping)
 				for (auto& track : _tracks)
 					track.setLoop(_loopOffset, _loopLength);
-			}
 			restart(1);
 		}
 
@@ -328,9 +320,9 @@ namespace
 		const size_t _blockBytes = _channels * sizeof(float);
 		const size_t _stepSamples;
 		const size_t _stepBytes = _stepSamples * _blockBytes;
+		const bool _looping;
 		const size_t _loopOffset;
 		size_t _loopLength = 0;
-		bool _looping = false;
 		std::vector<TrackState> _tracks;
 		float _gain = 1;
 	};
