@@ -93,7 +93,6 @@ namespace aulos
 	struct VoiceData
 	{
 		WaveShape _waveShape = WaveShape::Linear;
-		Polyphony _polyphony = Polyphony::Chord;
 		Envelope _amplitudeEnvelope;
 		Envelope _frequencyEnvelope;
 		Envelope _asymmetryEnvelope;
@@ -102,6 +101,7 @@ namespace aulos
 		float _stereoDelay = 0.f;
 		float _stereoPan = 0.f;
 		bool _stereoInversion = false;
+		Polyphony _polyphony = Polyphony::Chord;
 	};
 
 	constexpr unsigned kMinSpeed = 1;  // Minimum composition playback speed (in steps per second).

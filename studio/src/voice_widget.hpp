@@ -45,6 +45,7 @@ private:
 	QDoubleSpinBox* _stereoDelaySpin = nullptr;
 	QDoubleSpinBox* _stereoPanSpin = nullptr;
 	QCheckBox* _stereoInversionCheck = nullptr;
+	QComboBox* _polyphonyCombo = nullptr;
 	std::vector<EnvelopeChange> _amplitudeEnvelope;
 	std::vector<EnvelopeChange> _frequencyEnvelope;
 	std::vector<EnvelopeChange> _asymmetryEnvelope;
