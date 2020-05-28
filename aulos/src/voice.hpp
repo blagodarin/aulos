@@ -47,14 +47,11 @@ namespace aulos
 			while (offset < bufferBytes && !_wave.stopped())
 			{
 				const auto blocksToGenerate = static_cast<unsigned>(std::min<size_t>((bufferBytes - offset) / kBlockSize, _wave.maxAdvance()));
-				if (buffer)
-				{
-					const auto output = buffer + offset / sizeof(float);
-					Shaper waveShaper{ _wave.waveShaperData(_baseAmplitude) };
-					LinearShaper amplitudeShaper{ _wave.amplitudeShaperData() };
-					for (unsigned i = 0; i < blocksToGenerate; ++i)
-						output[i] += waveShaper.advance() * amplitudeShaper.advance();
-				}
+				const auto output = buffer + offset / sizeof(float);
+				Shaper waveShaper{ _wave.waveShaperData(_baseAmplitude) };
+				LinearShaper amplitudeShaper{ _wave.amplitudeShaperData() };
+				for (unsigned i = 0; i < blocksToGenerate; ++i)
+					output[i] += waveShaper.advance() * amplitudeShaper.advance();
 				_wave.advance(blocksToGenerate);
 				offset += blocksToGenerate * kBlockSize;
 			}
@@ -103,18 +100,15 @@ namespace aulos
 			while (offset < bufferBytes && !(_leftWave.stopped() && _rightWave.stopped()))
 			{
 				const auto samplesToGenerate = static_cast<unsigned>(std::min<size_t>({ (bufferBytes - offset) / kBlockSize, _leftWave.maxAdvance(), _rightWave.maxAdvance() }));
-				if (buffer)
+				auto output = buffer + offset / sizeof(float);
+				Shaper leftWaveShaper{ _leftWave.waveShaperData(_baseAmplitude * _leftAmplitude) };
+				Shaper rightWaveShaper{ _rightWave.waveShaperData(_baseAmplitude * _rightAmplitude) };
+				LinearShaper leftAmplitudeShaper{ _leftWave.amplitudeShaperData() };
+				LinearShaper rightAmplitudeShaper{ _rightWave.amplitudeShaperData() };
+				for (unsigned i = 0; i < samplesToGenerate; ++i)
 				{
-					auto output = buffer + offset / sizeof(float);
-					Shaper leftWaveShaper{ _leftWave.waveShaperData(_baseAmplitude * _leftAmplitude) };
-					Shaper rightWaveShaper{ _rightWave.waveShaperData(_baseAmplitude * _rightAmplitude) };
-					LinearShaper leftAmplitudeShaper{ _leftWave.amplitudeShaperData() };
-					LinearShaper rightAmplitudeShaper{ _rightWave.amplitudeShaperData() };
-					for (unsigned i = 0; i < samplesToGenerate; ++i)
-					{
-						*output++ += leftWaveShaper.advance() * leftAmplitudeShaper.advance();
-						*output++ += rightWaveShaper.advance() * rightAmplitudeShaper.advance();
-					}
+					*output++ += leftWaveShaper.advance() * leftAmplitudeShaper.advance();
+					*output++ += rightWaveShaper.advance() * rightAmplitudeShaper.advance();
 				}
 				_leftWave.advance(samplesToGenerate);
 				_rightWave.advance(samplesToGenerate);

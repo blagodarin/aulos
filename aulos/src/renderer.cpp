@@ -58,17 +58,6 @@ namespace
 			, _looping{ looping }
 			, _loopOffset{ composition._loopLength > 0 ? composition._loopOffset : 0 }
 		{
-			struct TrackInfo
-			{
-				size_t _index = 0;
-				size_t _samplesTotal = 0;
-				size_t _samplesPlayed = 0;
-				aulos::Note _note = aulos::Note::C0;
-
-				constexpr TrackInfo(size_t index) noexcept
-					: _index{ index } {}
-			};
-
 			struct AbsoluteSound
 			{
 				size_t _offset;
@@ -78,19 +67,11 @@ namespace
 					: _offset{ offset }, _note{ note } {}
 			};
 
-			std::vector<TrackInfo> currentTracks;
 			std::vector<AbsoluteSound> sounds;
+			std::vector<aulos::Note> noteCounter;
 			const auto loopEnd = looping && composition._loopLength > 0 ? size_t{ composition._loopOffset } + composition._loopLength : std::numeric_limits<size_t>::max();
 			for (const auto& part : composition._parts)
 			{
-				const auto matcher = [&part]() -> std::function<bool(const TrackInfo&, aulos::Note)> {
-					switch (part._voice._polyphony)
-					{
-					case aulos::Polyphony::Full: return [](const TrackInfo& info, aulos::Note note) { return info._samplesPlayed == info._samplesTotal || info._note == note; };
-					default: return [](const TrackInfo& info, aulos::Note note) { return info._samplesPlayed > 0 || info._note == note; };
-					}
-				}();
-				currentTracks.clear();
 				for (const auto& track : part._tracks)
 				{
 					sounds.clear();
@@ -108,31 +89,68 @@ namespace
 							sounds.emplace_back(soundOffset, sound._note);
 						}
 					}
+					if (sounds.empty())
+						break;
+					auto voice = ::createVoice(part._voice, samplingRate, channels);
+					const auto soundSamples = voice->totalSamples();
+					const auto soundSteps = (soundSamples + _stepSamples - 1) / _stepSamples;
+					if (!soundSteps)
+						break;
+					size_t maxPolyphony = 0;
+					switch (part._voice._polyphony)
+					{
+					case aulos::Polyphony::Chord:
+						for (auto i = sounds.cbegin(); i != sounds.cend();)
+						{
+							const auto j = std::find_if(std::next(i), sounds.cend(), [offset = i->_offset](const AbsoluteSound& sound) { return sound._offset != offset; });
+							maxPolyphony = std::max(maxPolyphony, static_cast<size_t>(j - i));
+							i = j;
+						}
+						break;
+					case aulos::Polyphony::Full:
+						for (auto i = sounds.cbegin(); i != sounds.cend(); ++i)
+						{
+							noteCounter.clear();
+							noteCounter.emplace_back(i->_note);
+							std::for_each(i, std::find_if(std::next(i), sounds.cend(), [endOffset = i->_offset + soundSteps](const AbsoluteSound& sound) { return sound._offset >= endOffset; }),
+								[&noteCounter](const AbsoluteSound& sound) {
+									if (std::none_of(noteCounter.cbegin(), noteCounter.cend(), [&sound](aulos::Note note) { return sound._note == note; }))
+										noteCounter.emplace_back(sound._note);
+								});
+							// TODO: Take looping into account.
+							maxPolyphony = std::max(maxPolyphony, noteCounter.size());
+						}
+						break;
+					}
+					auto& trackRenderer = _trackRenderers.emplace_back(static_cast<float>(track._weight) / maxPolyphony, part._voice._polyphony, soundSamples);
+					trackRenderer._voicePool.emplace_back(std::move(voice));
+					while (trackRenderer._voicePool.size() < maxPolyphony)
+						trackRenderer._voicePool.emplace_back(::createVoice(part._voice, samplingRate, channels));
+					trackRenderer._activeSounds.reserve(maxPolyphony);
+					trackRenderer._sounds.reserve(sounds.size());
 					for (size_t currentOffset = 0; const auto& sound : sounds)
 					{
-						const auto delaySamples = (sound._offset - currentOffset) * _stepSamples;
-						for (auto& currentTrack : currentTracks)
-							currentTrack._samplesPlayed += std::min(currentTrack._samplesTotal - currentTrack._samplesPlayed, delaySamples);
+						trackRenderer._sounds.emplace_back(sound._offset - currentOffset, sound._note);
 						currentOffset = sound._offset;
-						auto i = std::find_if(currentTracks.begin(), currentTracks.end(), [&matcher, &sound](const TrackInfo& info) { return matcher(info, sound._note); });
-						if (i == currentTracks.end())
-						{
-							currentTracks.emplace_back(_tracks.size());
-							_tracks.emplace_back(part._voice, track._weight, samplingRate, channels);
-							i = std::prev(currentTracks.end());
-						}
-						auto& trackState = _tracks[i->_index];
-						trackState.addSound(sound._offset, sound._note);
-						i->_samplesTotal = trackState._voice->totalSamples();
-						i->_samplesPlayed = 0;
-						i->_note = sound._note;
 					}
+					trackRenderer._nextSound = trackRenderer._sounds.cbegin();
+					const auto loopSound = std::find_if(sounds.cbegin(), sounds.cend(), [this](const AbsoluteSound& sound) { return sound._offset >= _loopOffset; });
+					trackRenderer._loopSound = std::next(trackRenderer._sounds.cbegin(), loopSound - sounds.cbegin());
 				}
 			}
 			_loopLength = composition._loopLength > 0 ? composition._loopLength : (totalSamples() + _stepSamples - 1) / _stepSamples;
 			if (_looping)
-				for (auto& track : _tracks)
-					track.setLoop(_loopOffset, _loopLength);
+			{
+				for (auto& track : _trackRenderers)
+				{
+					if (track._loopSound == track._sounds.cend())
+						continue;
+					const auto boundary = std::next(track._loopSound);
+					const auto trackLoopOffset = std::accumulate(track._sounds.cbegin(), boundary, size_t{}, [](size_t offset, const aulos::Sound& sound) { return offset + sound._delay; });
+					const auto trackEndOffset = std::accumulate(boundary, track._sounds.cend(), trackLoopOffset, [](size_t offset, const aulos::Sound& sound) { return offset + sound._delay; });
+					track._loopDelay = _loopLength - (trackEndOffset - trackLoopOffset);
+				}
+			}
 			restart(1);
 		}
 
@@ -152,61 +170,98 @@ namespace
 			if (buffer)
 				std::memset(buffer, 0, bufferBytes);
 			size_t offset = 0;
-			for (auto& track : _tracks)
+			for (auto& track : _trackRenderers)
 			{
 				size_t trackOffset = 0;
-				while (track._soundIndex != track._sounds.size())
+				while (trackOffset < bufferBytes)
 				{
-					if (!track._soundBytesRemaining)
+					if (!track._strideBytesRemaining)
 					{
-						if (_looping)
+						if (track._nextSound == track._sounds.cend())
 						{
-							if (track._soundIndex == track._loopEndIndex)
+							if (_looping)
 							{
-								assert(track._loopBeginIndex == track._loopEndIndex);
-								if (!track._loopDelay)
-									break; // An infinite loop of silence.
-								track._soundBytesRemaining = _stepBytes * track._loopDelay;
+								assert(!track._loopDelay);
+								trackOffset = bufferBytes;
 							}
-							else
+							break;
+						}
+						do
+						{
+							auto i = track._activeSounds.end();
+							switch (track._polyphony)
 							{
-								const auto nextIndex = track._soundIndex + 1;
-								if (nextIndex == track._loopEndIndex)
+							case aulos::Polyphony::Chord:
+								for (auto j = track._activeSounds.begin(); j != track._activeSounds.end(); ++j)
 								{
-									track._soundBytesRemaining = track._loopDelay > 0
-										? _stepBytes * track._loopDelay
-										: track._voice->totalSamples() * _blockBytes;
+									if (j->_bytesRemaining == track._soundSamples * _blockBytes)
+										continue;
+									if (i == track._activeSounds.end() || i->_note < j->_note)
+										i = j;
+								}
+								if (i == track._activeSounds.end())
+								{
+									assert(!track._voicePool.empty());
+									i = track._activeSounds.emplace(i, std::move(track._voicePool.back()), track._soundSamples * _blockBytes, track._nextSound->_note);
+									track._voicePool.pop_back();
 								}
 								else
+									i->_note = track._nextSound->_note;
+								break;
+							case aulos::Polyphony::Full:
+								i = std::find_if(track._activeSounds.begin(), track._activeSounds.end(), [&track](const TrackRenderer::ActiveSound& sound) { return sound._note == track._nextSound->_note; });
+								if (i == track._activeSounds.end())
 								{
-									assert(nextIndex != track._sounds.size());
-									track._soundBytesRemaining = _stepBytes * track._sounds[nextIndex]._delay;
+									assert(!track._voicePool.empty());
+									i = track._activeSounds.emplace(i, std::move(track._voicePool.back()), track._soundSamples * _blockBytes, track._nextSound->_note);
+									track._voicePool.pop_back();
 								}
+								break;
 							}
+							i->_voice->start(i->_note, track._gain);
+							i->_bytesRemaining = track._soundSamples * _blockBytes;
+							++track._nextSound;
+						} while (track._nextSound != track._sounds.cend() && !track._nextSound->_delay);
+						if (track._nextSound == track._sounds.cend())
+						{
+							if (track._loopDelay > 0)
+							{
+								track._strideBytesRemaining = track._loopDelay * _stepBytes;
+								track._nextSound = track._loopSound;
+							}
+							else
+								track._strideBytesRemaining = track._soundSamples * _blockBytes;
 						}
 						else
-						{
-							const auto nextIndex = track._soundIndex + 1;
-							track._soundBytesRemaining = nextIndex != track._sounds.size()
-								? _stepBytes * track._sounds[nextIndex]._delay
-								: track._voice->totalSamples() * _blockBytes;
-						}
-						assert(track._soundBytesRemaining > 0);
-						assert(track._soundBytesRemaining % _blockBytes == 0);
-						track._voice->start(track._sounds[track._soundIndex]._note, track._gain);
+							track._strideBytesRemaining = track._nextSound->_delay * _stepBytes;
+						assert(track._strideBytesRemaining > 0);
 					}
-					const auto bytesToGenerate = std::min(track._soundBytesRemaining, bufferBytes - trackOffset);
-					if (!bytesToGenerate)
-						break;
-					[[maybe_unused]] const auto bytesGenerated = track._voice->render(buffer ? reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + trackOffset) : nullptr, bytesToGenerate);
-					assert(bytesGenerated <= bytesToGenerate); // Initial and inter-sound silence doesn't generate any data.
-					track._soundBytesRemaining -= bytesToGenerate;
-					trackOffset += bytesToGenerate;
-					if (!track._soundBytesRemaining && !(_looping && track._soundIndex == track._loopEndIndex && track._loopBeginIndex == track._loopEndIndex))
+					const auto strideBytes = std::min(track._strideBytesRemaining, bufferBytes - trackOffset);
+					for (size_t i = 0; i < track._activeSounds.size();)
 					{
-						const auto nextIndex = track._soundIndex + 1;
-						track._soundIndex = nextIndex == track._loopEndIndex ? track._loopBeginIndex : nextIndex;
+						auto& activeSound = track._activeSounds[i];
+						assert(activeSound._bytesRemaining > 0);
+						const auto bytesToRender = std::min(activeSound._bytesRemaining, strideBytes);
+						if (buffer)
+						{
+							[[maybe_unused]] const auto bytesRendered = activeSound._voice->render(reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + trackOffset), bytesToRender);
+							assert(bytesRendered == bytesToRender);
+						}
+						activeSound._bytesRemaining -= bytesToRender;
+						if (!activeSound._bytesRemaining)
+						{
+							track._voicePool.emplace_back(std::move(activeSound._voice));
+							if (auto j = track._activeSounds.size() - 1; j != i)
+								activeSound = std::move(track._activeSounds[j]);
+							track._activeSounds.pop_back();
+						}
+						else
+							++i;
 					}
+					track._strideBytesRemaining -= strideBytes;
+					trackOffset += strideBytes;
+					if (track._strideBytesRemaining > 0)
+						break;
 				}
 				offset = std::max(offset, trackOffset);
 			}
@@ -216,14 +271,17 @@ namespace
 		void restart(float gain) noexcept override
 		{
 			assert(gain >= 1);
-			const auto totalWeight = std::accumulate(_tracks.begin(), _tracks.end(), 0.f, [](float weight, const TrackState& track) { return weight + track._weight; }) / gain;
-			for (auto& track : _tracks)
+			for (auto& track : _trackRenderers)
 			{
-				track._voice->stop();
-				track._gain = track._weight / totalWeight;
-				const auto delay = !track._sounds.empty() ? track._sounds.front()._delay : 0;
-				track._soundIndex = delay ? std::numeric_limits<size_t>::max() : 0;
-				track._soundBytesRemaining = _stepBytes * delay;
+				for (auto& activeVoice : track._activeSounds)
+				{
+					activeVoice._voice->stop();
+					track._voicePool.emplace_back(std::move(activeVoice._voice));
+				}
+				track._activeSounds.clear();
+				track._nextSound = track._sounds.cbegin();
+				track._strideBytesRemaining = track._nextSound->_delay * _stepBytes;
+				track._gain = track._weight * gain;
 			}
 		}
 
@@ -235,84 +293,41 @@ namespace
 		size_t totalSamples() const noexcept override
 		{
 			size_t result = 0;
-			for (const auto& track : _tracks)
-				if (!track._sounds.empty())
-					result = std::max(result, track._lastSoundOffset * _stepSamples + track._voice->totalSamples());
+			for (const auto& track : _trackRenderers)
+			{
+				assert(!track._sounds.empty());
+				result = std::max(result, std::accumulate(track._sounds.cbegin(), track._sounds.cend(), size_t{}, [](size_t offset, const aulos::Sound& sound) { return offset + sound._delay; }) * _stepSamples + track._soundSamples);
+			}
 			return result;
 		}
 
 	public:
-		struct TrackSound
+		struct TrackRenderer
 		{
-			size_t _delay = 0;
-			aulos::Note _note = aulos::Note::C0;
+			struct ActiveSound
+			{
+				std::unique_ptr<aulos::Voice> _voice;
+				size_t _bytesRemaining = 0;
+				aulos::Note _note = aulos::Note::C0;
 
-			constexpr TrackSound(size_t delay, aulos::Note note) noexcept
-				: _delay{ delay }, _note{ note } {}
-		};
+				ActiveSound(std::unique_ptr<aulos::Voice>&& voice, size_t bytesRemaining, aulos::Note note) noexcept
+					: _voice{ std::move(voice) }, _bytesRemaining{ bytesRemaining }, _note{ note } {}
+			};
 
-		struct TrackState
-		{
-			std::unique_ptr<aulos::Voice> _voice;
 			const float _weight;
-			float _gain = 0.f;
-			std::vector<TrackSound> _sounds;
-			size_t _lastSoundOffset = 0;
-			size_t _soundIndex = 0;
-			size_t _soundBytesRemaining = 0;
-			size_t _loopBeginIndex = 0;
-			size_t _loopEndIndex = 0;
+			const aulos::Polyphony _polyphony;
+			const size_t _soundSamples;
+			std::vector<std::unique_ptr<aulos::Voice>> _voicePool;
+			std::vector<ActiveSound> _activeSounds;
+			std::vector<aulos::Sound> _sounds;
+			std::vector<aulos::Sound>::const_iterator _nextSound = _sounds.cend();
+			std::vector<aulos::Sound>::const_iterator _loopSound = _sounds.cend();
 			size_t _loopDelay = 0;
+			size_t _strideBytesRemaining = 0;
+			float _gain = 0.f;
 
-			TrackState(const aulos::VoiceData& voiceData, unsigned weight, unsigned samplingRate, unsigned channels)
-				: _voice{ ::createVoice(voiceData, samplingRate, channels) }
-				, _weight{ static_cast<float>(weight) }
-			{
-			}
-
-			void addSound(size_t offset, aulos::Note note)
-			{
-				assert(offset > _lastSoundOffset || (offset == _lastSoundOffset && _sounds.empty()));
-				_sounds.emplace_back(offset - _lastSoundOffset, note);
-				_lastSoundOffset = offset;
-			}
-
-			void setLoop(size_t loopOffset, size_t loopLength) noexcept
-			{
-				assert(!_sounds.empty());
-				_loopBeginIndex = 0;
-				size_t firstSoundOffset = _sounds[_loopBeginIndex]._delay;
-				while (firstSoundOffset < loopOffset)
-				{
-					if (++_loopBeginIndex == _sounds.size())
-					{
-						_loopEndIndex = _loopBeginIndex;
-						_loopDelay = 0;
-						return; // Loop starts after the last sound of the track.
-					}
-					firstSoundOffset += _sounds[_loopBeginIndex]._delay;
-				}
-				_loopEndIndex = _loopBeginIndex;
-				const auto firstSoundLoopOffset = firstSoundOffset - loopOffset;
-				if (firstSoundLoopOffset >= loopLength)
-				{
-					_loopDelay = 0;
-					return; // Loop ends before the first sound of the track.
-				}
-				auto lastSoundLoopOffset = firstSoundLoopOffset;
-				for (;;)
-				{
-					++_loopEndIndex;
-					if (_loopEndIndex == _sounds.size())
-						break;
-					const auto nextOffset = lastSoundLoopOffset + _sounds[_loopEndIndex]._delay;
-					if (nextOffset >= loopLength)
-						break;
-					lastSoundLoopOffset = nextOffset;
-				}
-				_loopDelay = firstSoundLoopOffset + loopLength - lastSoundLoopOffset;
-				assert(_loopDelay > 0);
-			}
+			explicit TrackRenderer(float weight, aulos::Polyphony polyphony, size_t soundSamples) noexcept
+				: _weight{ weight }, _polyphony{ polyphony }, _soundSamples{ soundSamples } {}
 		};
 
 		const unsigned _samplingRate;
@@ -323,7 +338,7 @@ namespace
 		const bool _looping;
 		const size_t _loopOffset;
 		size_t _loopLength = 0;
-		std::vector<TrackState> _tracks;
+		std::vector<TrackRenderer> _trackRenderers;
 		float _gain = 1;
 	};
 }
