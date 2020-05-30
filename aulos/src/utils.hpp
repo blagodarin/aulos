@@ -7,21 +7,47 @@
 #include <cassert>
 #include <cstdlib>
 #include <type_traits>
+#include <utility>
 
 namespace aulos
 {
+	// std::vector-like container which:
+	// * is noncopyable and is able to contain immovable objects;
+	// * requires reserve() before use and allows only one reserve() during lifetime;
+	// * doesn't check preconditions at runtime.
 	template <typename T>
 	class StaticVector
 	{
 	public:
 		constexpr StaticVector() noexcept = default;
+
 		StaticVector(const StaticVector&) = delete;
-		StaticVector& operator=(const StaticVector&) = delete;
+
+		constexpr StaticVector(StaticVector&& other) noexcept
+			: _data(std::exchange(other._data, nullptr))
+			, _size(std::exchange(other._size, size_t{}))
+#ifndef NDEBUG
+			, _capacity(std::exchange(other._capacity, size_t{})) // No braces in initialization because of ClangFormat bug.
+#endif
+		{
+		}
 
 		~StaticVector() noexcept
 		{
 			clear();
 			std::free(_data);
+		}
+
+		StaticVector& operator=(const StaticVector&) = delete;
+
+		constexpr StaticVector& operator=(StaticVector&& other) noexcept
+		{
+			std::swap(_data, other._data);
+			std::swap(_size, other._size);
+#ifndef NDEBUG
+			std::swap(_capacity, other._capacity);
+#endif
+			return *this;
 		}
 
 		[[nodiscard]] constexpr T* begin() noexcept { return _data; }
@@ -56,7 +82,9 @@ namespace aulos
 		template <typename... Args>
 		T& emplace_back(Args&&... args)
 		{
+#ifndef NDEBUG
 			assert(_size < _capacity);
+#endif
 			T* value = new (_data + _size) T{ std::forward<Args>(args)... };
 			++_size;
 			return *value;
@@ -76,7 +104,9 @@ namespace aulos
 			_data = static_cast<T*>(std::malloc(capacity * sizeof(T)));
 			if (!_data)
 				throw std::bad_alloc{};
+#ifndef NDEBUG
 			_capacity = capacity;
+#endif
 		}
 
 		[[nodiscard]] T& operator[](size_t index) noexcept
@@ -94,6 +124,8 @@ namespace aulos
 	private:
 		T* _data = nullptr;
 		size_t _size = 0;
+#ifndef NDEBUG
 		size_t _capacity = 0;
+#endif
 	};
 }
