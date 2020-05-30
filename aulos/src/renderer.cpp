@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "composition.hpp"
+#include "utils.hpp"
 #include "voice.hpp"
 
 #include <algorithm>
@@ -17,31 +18,31 @@ static_assert(aulos::kMaxQuinticShape == aulos::QuinticShaper::kMaxShape);
 
 namespace
 {
-	std::unique_ptr<aulos::Voice> createVoice(const aulos::VoiceData& data, unsigned samplingRate, unsigned channels)
+	std::unique_ptr<aulos::Voice> createVoice(const aulos::WaveData& waveData, const aulos::VoiceData& voiceData, unsigned samplingRate, unsigned channels)
 	{
 		switch (channels)
 		{
 		case 1:
-			switch (data._waveShape)
+			switch (voiceData._waveShape)
 			{
-			case aulos::WaveShape::Linear: return std::make_unique<aulos::MonoVoice<aulos::LinearShaper>>(data, samplingRate);
-			case aulos::WaveShape::SmoothQuadratic: return std::make_unique<aulos::MonoVoice<aulos::SmoothQuadraticShaper>>(data, samplingRate);
-			case aulos::WaveShape::SharpQuadratic: return std::make_unique<aulos::MonoVoice<aulos::SharpQuadraticShaper>>(data, samplingRate);
-			case aulos::WaveShape::SmoothCubic: return std::make_unique<aulos::MonoVoice<aulos::SmoothCubicShaper>>(data, samplingRate);
-			case aulos::WaveShape::Quintic: return std::make_unique<aulos::MonoVoice<aulos::QuinticShaper>>(data, samplingRate);
-			case aulos::WaveShape::Cosine: return std::make_unique<aulos::MonoVoice<aulos::CosineShaper>>(data, samplingRate);
+			case aulos::WaveShape::Linear: return std::make_unique<aulos::MonoVoice<aulos::LinearShaper>>(waveData, voiceData, samplingRate);
+			case aulos::WaveShape::SmoothQuadratic: return std::make_unique<aulos::MonoVoice<aulos::SmoothQuadraticShaper>>(waveData, voiceData, samplingRate);
+			case aulos::WaveShape::SharpQuadratic: return std::make_unique<aulos::MonoVoice<aulos::SharpQuadraticShaper>>(waveData, voiceData, samplingRate);
+			case aulos::WaveShape::SmoothCubic: return std::make_unique<aulos::MonoVoice<aulos::SmoothCubicShaper>>(waveData, voiceData, samplingRate);
+			case aulos::WaveShape::Quintic: return std::make_unique<aulos::MonoVoice<aulos::QuinticShaper>>(waveData, voiceData, samplingRate);
+			case aulos::WaveShape::Cosine: return std::make_unique<aulos::MonoVoice<aulos::CosineShaper>>(waveData, voiceData, samplingRate);
 			}
 			break;
 
 		case 2:
-			switch (data._waveShape)
+			switch (voiceData._waveShape)
 			{
-			case aulos::WaveShape::Linear: return std::make_unique<aulos::StereoVoice<aulos::LinearShaper>>(data, samplingRate);
-			case aulos::WaveShape::SmoothQuadratic: return std::make_unique<aulos::StereoVoice<aulos::SmoothQuadraticShaper>>(data, samplingRate);
-			case aulos::WaveShape::SharpQuadratic: return std::make_unique<aulos::StereoVoice<aulos::SharpQuadraticShaper>>(data, samplingRate);
-			case aulos::WaveShape::SmoothCubic: return std::make_unique<aulos::StereoVoice<aulos::SmoothCubicShaper>>(data, samplingRate);
-			case aulos::WaveShape::Quintic: return std::make_unique<aulos::StereoVoice<aulos::QuinticShaper>>(data, samplingRate);
-			case aulos::WaveShape::Cosine: return std::make_unique<aulos::StereoVoice<aulos::CosineShaper>>(data, samplingRate);
+			case aulos::WaveShape::Linear: return std::make_unique<aulos::StereoVoice<aulos::LinearShaper>>(waveData, voiceData, samplingRate);
+			case aulos::WaveShape::SmoothQuadratic: return std::make_unique<aulos::StereoVoice<aulos::SmoothQuadraticShaper>>(waveData, voiceData, samplingRate);
+			case aulos::WaveShape::SharpQuadratic: return std::make_unique<aulos::StereoVoice<aulos::SharpQuadraticShaper>>(waveData, voiceData, samplingRate);
+			case aulos::WaveShape::SmoothCubic: return std::make_unique<aulos::StereoVoice<aulos::SmoothCubicShaper>>(waveData, voiceData, samplingRate);
+			case aulos::WaveShape::Quintic: return std::make_unique<aulos::StereoVoice<aulos::QuinticShaper>>(waveData, voiceData, samplingRate);
+			case aulos::WaveShape::Cosine: return std::make_unique<aulos::StereoVoice<aulos::CosineShaper>>(waveData, voiceData, samplingRate);
 			}
 			break;
 		}
@@ -57,57 +58,31 @@ namespace
 			: _offset{ offset }, _note{ note } {}
 	};
 
-	struct TrackSound
-	{
-		uint16_t _delaySteps;
-		aulos::Note _note;
-		uint8_t _chordLength;
-
-		constexpr TrackSound(uint16_t delaySteps, aulos::Note note, uint8_t chordLength) noexcept
-			: _delaySteps{ delaySteps }, _note{ note }, _chordLength{ chordLength } {}
-	};
-
 	struct TrackRenderer
 	{
-		struct ActiveSound
+	public:
+		TrackRenderer(const TrackRenderer&) = delete;
+		TrackRenderer& operator=(const TrackRenderer&) = delete;
+
+		TrackRenderer(const aulos::VoiceData& voiceData, unsigned samplingRate, unsigned channels, float weight) noexcept
+			: _waveData{ voiceData, samplingRate, channels == 2 }
+			, _polyphony{ voiceData._polyphony }
+			, _weight{ weight }
 		{
-			std::unique_ptr<aulos::Voice> _voice;
-			size_t _bytesRemaining = 0;
-			aulos::Note _note = aulos::Note::C0;
+		}
 
-			ActiveSound(std::unique_ptr<aulos::Voice>&& voice, aulos::Note note) noexcept
-				: _voice{ std::move(voice) }, _note{ note } {}
-		};
-
-		const float _weight;
-		const aulos::Polyphony _polyphony;
-		const size_t _soundBytes;
-		std::vector<std::unique_ptr<aulos::Voice>> _voicePool;
-		std::vector<ActiveSound> _activeSounds;
-		std::vector<TrackSound> _sounds;
-		std::vector<TrackSound>::const_iterator _nextSound = _sounds.cend();
-		std::vector<TrackSound>::const_iterator _loopSound = _sounds.cend();
-		size_t _lastSoundOffset = 0;
-		size_t _loopDelay = 0;
-		size_t _strideBytesRemaining = 0;
-		float _gain = 0.f;
-
-		explicit TrackRenderer(float weight, aulos::Polyphony polyphony, size_t soundBytes) noexcept
-			: _weight{ weight }, _polyphony{ polyphony }, _soundBytes{ soundBytes } {}
-
-		void setVoices(std::unique_ptr<aulos::Voice>&& firstVoice, size_t maxVoices, const aulos::VoiceData& voiceData, unsigned samplingRate, unsigned channels)
+		void setVoices(size_t maxVoices, const aulos::VoiceData& voiceData, unsigned samplingRate, unsigned channels)
 		{
 			assert(_voicePool.empty() && _activeSounds.empty());
 			_voicePool.reserve(maxVoices);
-			_voicePool.emplace_back(std::move(firstVoice));
 			while (_voicePool.size() < maxVoices)
-				_voicePool.emplace_back(::createVoice(voiceData, samplingRate, channels));
+				_voicePool.emplace_back(::createVoice(_waveData, voiceData, samplingRate, channels));
 			_activeSounds.reserve(maxVoices);
 		}
 
 		void setSounds(const std::vector<AbsoluteSound>& sounds)
 		{
-			assert(_sounds.empty());
+			assert(_sounds.empty() && !_nextSound && !_loopSound);
 			_sounds.reserve(sounds.size());
 			_lastSoundOffset = 0;
 			for (auto i = sounds.cbegin(); i != sounds.cend();)
@@ -177,7 +152,7 @@ namespace
 							if (i == _activeSounds.end())
 							{
 								assert(!_voicePool.empty());
-								i = _activeSounds.emplace(i, std::move(_voicePool.back()), sound._note);
+								i = &_activeSounds.emplace_back(std::move(_voicePool.back()), sound._note);
 								_voicePool.pop_back();
 							}
 							else
@@ -188,7 +163,7 @@ namespace
 							if (i == _activeSounds.end())
 							{
 								assert(!_voicePool.empty());
-								i = _activeSounds.emplace(i, std::move(_voicePool.back()), sound._note);
+								i = &_activeSounds.emplace_back(std::move(_voicePool.back()), sound._note);
 								_voicePool.pop_back();
 							}
 							break;
@@ -238,6 +213,41 @@ namespace
 			}
 			return trackOffset;
 		}
+
+	public:
+		struct ActiveSound
+		{
+			std::unique_ptr<aulos::Voice> _voice;
+			size_t _bytesRemaining = 0;
+			aulos::Note _note = aulos::Note::C0;
+
+			ActiveSound(std::unique_ptr<aulos::Voice>&& voice, aulos::Note note) noexcept
+				: _voice{ std::move(voice) }, _note{ note } {}
+		};
+
+		struct TrackSound
+		{
+			uint16_t _delaySteps;
+			aulos::Note _note;
+			uint8_t _chordLength;
+
+			constexpr TrackSound(uint16_t delaySteps, aulos::Note note, uint8_t chordLength) noexcept
+				: _delaySteps{ delaySteps }, _note{ note }, _chordLength{ chordLength } {}
+		};
+
+		const aulos::WaveData _waveData;
+		const aulos::Polyphony _polyphony;
+		float _weight = 0;
+		size_t _soundBytes = 0;
+		aulos::StaticVector<std::unique_ptr<aulos::Voice>> _voicePool;
+		aulos::StaticVector<ActiveSound> _activeSounds;
+		aulos::StaticVector<TrackSound> _sounds;
+		const TrackSound* _nextSound = nullptr;
+		const TrackSound* _loopSound = nullptr;
+		size_t _lastSoundOffset = 0;
+		size_t _loopDelay = 0;
+		size_t _strideBytesRemaining = 0;
+		float _gain = 0.f;
 	};
 
 	class CompositionRenderer final : public aulos::Renderer
@@ -252,6 +262,7 @@ namespace
 			std::vector<AbsoluteSound> sounds;
 			std::vector<aulos::Note> noteCounter;
 			const auto loopEnd = looping && composition._loopLength > 0 ? size_t{ composition._loopOffset } + composition._loopLength : std::numeric_limits<size_t>::max();
+			_trackRenderers.reserve(std::accumulate(composition._parts.cbegin(), composition._parts.cend(), size_t{}, [](size_t count, const aulos::Part& part) { return count + part._tracks.size(); }));
 			for (const auto& part : composition._parts)
 			{
 				for (const auto& track : part._tracks)
@@ -273,11 +284,14 @@ namespace
 					}
 					if (sounds.empty())
 						break;
-					auto voice = ::createVoice(part._voice, samplingRate, channels);
-					const auto soundSamples = voice->totalSamples();
+					auto& trackRenderer = _trackRenderers.emplace_back(part._voice, samplingRate, channels, static_cast<float>(track._weight));
+					const auto soundSamples = trackRenderer._waveData.totalSamples();
 					const auto soundSteps = (soundSamples + _stepSamples - 1) / _stepSamples;
 					if (!soundSteps)
+					{
+						_trackRenderers.pop_back();
 						break;
+					}
 					size_t maxPolyphony = 0;
 					switch (part._voice._polyphony)
 					{
@@ -304,8 +318,9 @@ namespace
 						}
 						break;
 					}
-					auto& trackRenderer = _trackRenderers.emplace_back(static_cast<float>(track._weight) / maxPolyphony, part._voice._polyphony, soundSamples * _blockBytes);
-					trackRenderer.setVoices(std::move(voice), maxPolyphony, part._voice, samplingRate, channels);
+					trackRenderer._weight /= maxPolyphony;
+					trackRenderer._soundBytes = soundSamples * _blockBytes;
+					trackRenderer.setVoices(maxPolyphony, part._voice, samplingRate, channels);
 					trackRenderer.setSounds(sounds);
 				}
 			}
@@ -378,7 +393,7 @@ namespace
 		const size_t _stepBytes = _stepSamples * _blockBytes;
 		const size_t _loopOffset;
 		size_t _loopLength = 0;
-		std::vector<TrackRenderer> _trackRenderers;
+		aulos::StaticVector<TrackRenderer> _trackRenderers;
 	};
 }
 

@@ -103,12 +103,6 @@ namespace aulos
 			return _nextIndex == _size;
 		}
 
-		auto totalSamples() const noexcept
-		{
-			// MSVC 16.5.4 doesn't have constexpr std::accumulate.
-			return std::accumulate(_points, _points + _size, size_t{}, [](size_t result, const SampledPoint& point) { return result + point._delaySamples; });
-		}
-
 	private:
 		const SampledPoint* const _points;
 		const unsigned _size;

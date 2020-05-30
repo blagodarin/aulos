@@ -11,20 +11,14 @@ namespace aulos
 	class Voice
 	{
 	public:
-		Voice(const VoiceData& data, unsigned samplingRate) noexcept
-			: _waveData{ data, samplingRate }
-		{
-		}
-
+		Voice() noexcept = default;
 		virtual ~Voice() noexcept = default;
 
 		virtual void render(float* buffer, size_t bufferBytes) noexcept = 0;
 		virtual void start(Note, float amplitude) noexcept = 0;
 		virtual void stop() noexcept = 0;
-		virtual size_t totalSamples() const noexcept = 0;
 
 	protected:
-		const WaveData _waveData;
 		float _baseAmplitude = 0.f;
 	};
 
@@ -34,9 +28,8 @@ namespace aulos
 	public:
 		static constexpr auto kBlockSize = sizeof(float);
 
-		MonoVoice(const VoiceData& data, unsigned samplingRate) noexcept
-			: Voice{ data, samplingRate }
-			, _wave{ _waveData, samplingRate, 0.f }
+		MonoVoice(const WaveData& waveData, const VoiceData&, unsigned samplingRate) noexcept
+			: _wave{ waveData, samplingRate, 0 }
 		{
 		}
 
@@ -69,11 +62,6 @@ namespace aulos
 			_wave.stop();
 		}
 
-		size_t totalSamples() const noexcept override
-		{
-			return _wave.totalSamples();
-		}
-
 	private:
 		WaveState _wave;
 	};
@@ -84,12 +72,11 @@ namespace aulos
 	public:
 		static constexpr auto kBlockSize = 2 * sizeof(float);
 
-		StereoVoice(const VoiceData& data, unsigned samplingRate) noexcept
-			: Voice{ data, samplingRate }
-			, _leftWave{ _waveData, samplingRate, std::max(0.f, -data._stereoDelay) }
-			, _rightWave{ _waveData, samplingRate, std::max(0.f, data._stereoDelay) }
-			, _leftAmplitude{ std::min(1.f - data._stereoPan, 1.f) }
-			, _rightAmplitude{ std::copysign(std::min(1.f + data._stereoPan, 1.f), data._stereoInversion ? -1.f : 1.f) }
+		StereoVoice(const WaveData& waveData, const VoiceData& voiceData, unsigned samplingRate) noexcept
+			: _leftWave{ waveData, samplingRate, voiceData._stereoDelay < 0 ? waveData.absoluteDelay() : 0 }
+			, _rightWave{ waveData, samplingRate, voiceData._stereoDelay > 0 ? waveData.absoluteDelay() : 0 }
+			, _leftAmplitude{ std::min(1.f - voiceData._stereoPan, 1.f) }
+			, _rightAmplitude{ std::copysign(std::min(1.f + voiceData._stereoPan, 1.f), voiceData._stereoInversion ? -1.f : 1.f) }
 		{
 		}
 
@@ -128,11 +115,6 @@ namespace aulos
 		{
 			_leftWave.stop();
 			_rightWave.stop();
-		}
-
-		size_t totalSamples() const noexcept override
-		{
-			return std::max(_leftWave.totalSamples(), _rightWave.totalSamples());
 		}
 
 	private:

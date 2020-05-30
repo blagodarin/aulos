@@ -15,13 +15,19 @@ namespace aulos
 	class WaveData
 	{
 	public:
-		WaveData(const VoiceData& data, unsigned samplingRate)
-			: _shapeParameter{ data._waveShapeParameter }
+		WaveData(const VoiceData& data, unsigned samplingRate, bool stereo)
+			: _absoluteDelay{ stereo ? static_cast<unsigned>(std::lround(samplingRate * std::abs(data._stereoDelay) / 1'000)) : 0 }
+			, _shapeParameter{ data._waveShapeParameter }
 		{
 			std::tie(_amplitudeOffset, _amplitudeSize) = addPoints(data._amplitudeEnvelope, samplingRate);
 			std::tie(_frequencyOffset, _frequencySize) = addPoints(data._frequencyEnvelope, samplingRate);
 			std::tie(_asymmetryOffset, _asymmetrySize) = addPoints(data._asymmetryEnvelope, samplingRate);
 			std::tie(_oscillationOffset, _oscillationSize) = addPoints(data._oscillationEnvelope, samplingRate);
+		}
+
+		constexpr auto absoluteDelay() const noexcept
+		{
+			return _absoluteDelay;
 		}
 
 		SampledPoints amplitudePoints() const noexcept
@@ -47,6 +53,12 @@ namespace aulos
 		constexpr auto shapeParameter() const noexcept
 		{
 			return _shapeParameter;
+		}
+
+		auto totalSamples() const noexcept
+		{
+			const auto begin = _pointBuffer.data() + _amplitudeOffset;
+			return _absoluteDelay + std::accumulate(begin, begin + _amplitudeSize, size_t{}, [](size_t result, const SampledPoint& point) { return result + point._delaySamples; });
 		}
 
 	private:
@@ -118,6 +130,7 @@ namespace aulos
 		}
 
 	private:
+		const unsigned _absoluteDelay;
 		const float _shapeParameter;
 		std::vector<SampledPoint> _pointBuffer;
 		unsigned _amplitudeOffset;
@@ -133,16 +146,15 @@ namespace aulos
 	class WaveState
 	{
 	public:
-		WaveState(const WaveData& data, unsigned samplingRate, float delay) noexcept
+		WaveState(const WaveData& data, unsigned samplingRate, unsigned delay) noexcept
 			: _shapeParameter{ data.shapeParameter() }
 			, _amplitudeModulator{ data.amplitudePoints() }
 			, _frequencyModulator{ data.frequencyPoints() }
 			, _asymmetryModulator{ data.asymmetryPoints() }
 			, _oscillationModulator{ data.oscillationPoints() }
 			, _oscillator{ samplingRate }
-			, _delay{ static_cast<unsigned>(std::lround(samplingRate * delay / 1'000)) }
+			, _delay{ delay }
 		{
-			assert(delay >= 0);
 		}
 
 		void advance(unsigned samples) noexcept
@@ -232,11 +244,6 @@ namespace aulos
 		constexpr bool stopped() const noexcept
 		{
 			return _amplitudeModulator.stopped();
-		}
-
-		size_t totalSamples() const noexcept
-		{
-			return _delay + _amplitudeModulator.totalSamples();
 		}
 
 	private:

@@ -16,10 +16,12 @@ namespace
 	template <typename Shaper>
 	struct MonoTester
 	{
+		const aulos::WaveData _waveData;
 		aulos::MonoVoice<Shaper> _voice;
 
 		MonoTester(const aulos::VoiceData& data, float amplitude)
-			: _voice{ data, kTestSamplingRate }
+			: _waveData{ data, kTestSamplingRate, false }
+			, _voice{ _waveData, data, kTestSamplingRate }
 		{
 			_voice.start(kTestNote, amplitude);
 		}
@@ -35,10 +37,12 @@ namespace
 	template <typename Shaper>
 	struct StereoTester
 	{
+		const aulos::WaveData _waveData;
 		aulos::StereoVoice<Shaper> _voice;
 
 		StereoTester(const aulos::VoiceData& data, float amplitude)
-			: _voice{ data, kTestSamplingRate }
+			: _waveData{ data, kTestSamplingRate, true }
+			, _voice{ _waveData, data, kTestSamplingRate }
 		{
 			_voice.start(kTestNote, amplitude);
 		}

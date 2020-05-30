@@ -18,6 +18,7 @@ set(_src
 	src/oscillator.hpp
 	src/renderer.cpp
 	src/shaper.hpp
+	src/utils.hpp
 	src/voice.hpp
 	src/wave.hpp
 	)
