@@ -27,32 +27,34 @@ cache:
 
 install:
   - cmake --version
-  - if "%CONFIG%"=="Release" (set GENERATOR=Ninja) else (set GENERATOR=VisualStudio)
-  - if "%ARCH%"=="x86" (set VS_ARCH=Win32) else (set VS_ARCH=x64)
-  - if "%GENERATOR%"=="Ninja" call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat" %ARCH%
-  - if "%GENERATOR%"=="Ninja" cinst ninja
+  - if "%CONFIG%"=="Release" (set CMAKE_GENERATOR=Ninja) else (set CMAKE_GENERATOR=Visual Studio 16 2019)
+  - if "%CMAKE_GENERATOR%"=="Ninja" call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat" %ARCH%
+  - if "%CMAKE_GENERATOR%"=="Ninja" cinst ninja
+  - if "%CMAKE_GENERATOR%"=="Ninja" set EXTRA_CMAKE_FLAGS=-DCMAKE_BUILD_TYPE=%CONFIG%
+  - if "%CMAKE_GENERATOR%"=="Visual Studio 16 2019" if "%ARCH%"=="x86" (set CMAKE_GENERATOR_PLATFORM=Win32) else (set CMAKE_GENERATOR_PLATFORM=x64)
+  - if "%CMAKE_GENERATOR%"=="Visual Studio 16 2019" set EXTRA_BUILD_FLAGS=-- /nologo "/verbosity:minimal"
+  - if "%CMAKE_GENERATOR%"=="Visual Studio 16 2019" set EXTRA_TEST_FLAGS=--build-config %CONFIG%
+  - set CMAKE_CONFIG_TYPE=%CONFIG%
 
 build_script:
   - set BUILD_DIR=%APPVEYOR_BUILD_FOLDER%\_build
   - set INSTALL_DIR=%APPVEYOR_BUILD_FOLDER%\_install
   - if not exist %BUILD_DIR% mkdir %BUILD_DIR%
   - cd %BUILD_DIR%
-  - set COMMON_CMAKE_OPTIONS=-DCMAKE_INSTALL_PREFIX=%INSTALL_DIR% -DCMAKE_PREFIX_PATH=%QTDIR% -DPUBLIC_BUILD=%APPVEYOR_REPO_TAG% -DWITH_BENCHMARK=ON -DWITH_STUDIO=ON -DWITH_STUDIO_INSTALLER=ON -DWITH_TESTS=ON
-  - if "%GENERATOR%"=="Ninja" cmake -G Ninja %APPVEYOR_BUILD_FOLDER% -DCMAKE_BUILD_TYPE=%CONFIG% %COMMON_CMAKE_OPTIONS%
-  - if "%GENERATOR%"=="VisualStudio" cmake -G "Visual Studio 16 2019" -A %VS_ARCH% %APPVEYOR_BUILD_FOLDER% %COMMON_CMAKE_OPTIONS%
-  - if "%GENERATOR%"=="Ninja" cmake --build .
-  - if "%GENERATOR%"=="VisualStudio" cmake --build . --config %CONFIG% -- /nologo "/verbosity:minimal"
-  - if "%GENERATOR%"=="Ninja" cmake --build . --target install
-  - if "%GENERATOR%"=="VisualStudio" cmake --build . --config %CONFIG% --target install -- /nologo "/verbosity:minimal"
-  - if "%GENERATOR%"=="Ninja" cmake --build . --target studio_installer
-  - if "%GENERATOR%"=="VisualStudio" cmake --build . --config %CONFIG% --target studio_installer -- /nologo "/verbosity:minimal"
+  - cmake %APPVEYOR_BUILD_FOLDER% %EXTRA_CMAKE_FLAGS% -DCMAKE_INSTALL_PREFIX=%INSTALL_DIR% -DCMAKE_PREFIX_PATH=%QTDIR% -DPUBLIC_BUILD=%APPVEYOR_REPO_TAG% -DWITH_BENCHMARK=ON -DWITH_STUDIO=ON -DWITH_STUDIO_INSTALLER=ON -DWITH_TESTS=ON
+  - cmake --build . %EXTRA_BUILD_FLAGS%
+  - cmake --build . --target install %EXTRA_BUILD_FLAGS%
+  - cmake --build . --target studio_installer %EXTRA_BUILD_FLAGS%
   - if "%INSTALLER%"=="ON" xcopy AulosStudio-*.exe %APPVEYOR_BUILD_FOLDER%
 
 test_script:
-  - if "%GENERATOR%"=="Ninja" ctest --output-on-failure
-  - if "%GENERATOR%"=="VisualStudio" ctest --build-config %CONFIG% --output-on-failure
-  - if "%GENERATOR%"=="Ninja" %BUILD_DIR%\bin\benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\Popcorn.aulos
-  - if "%GENERATOR%"=="VisualStudio" %BUILD_DIR%\bin\%CONFIG%\benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\Popcorn.aulos
+  - ctest --output-on-failure %EXTRA_TEST_FLAGS%
+  - if "%CMAKE_GENERATOR%"=="Ninja" cd %BUILD_DIR%\bin
+  - if "%CMAKE_GENERATOR%"=="Visual Studio 16 2019" cd %BUILD_DIR%\bin\%CONFIG%
+  - benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\FurElise.aulos
+  - benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\GrandeValseBrillante.aulos
+  - benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\Popcorn.aulos
+  - benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\PreludeInGMinor.aulos
 
 artifacts:
   - path: AulosStudio-*.exe

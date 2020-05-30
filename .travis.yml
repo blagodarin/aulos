@@ -66,7 +66,10 @@ script:
   - popd
 
 after_success:
+  - ${HOME}/aulos.build/bin/benchmark ${TRAVIS_BUILD_DIR}/examples/FurElise.aulos
+  - ${HOME}/aulos.build/bin/benchmark ${TRAVIS_BUILD_DIR}/examples/GrandeValseBrillante.aulos
   - ${HOME}/aulos.build/bin/benchmark ${TRAVIS_BUILD_DIR}/examples/Popcorn.aulos
+  - ${HOME}/aulos.build/bin/benchmark ${TRAVIS_BUILD_DIR}/examples/PreludeInGMinor.aulos
 
 notifications:
   email: false
