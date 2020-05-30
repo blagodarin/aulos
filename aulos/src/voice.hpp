@@ -18,7 +18,7 @@ namespace aulos
 
 		virtual ~Voice() noexcept = default;
 
-		virtual size_t render(float* buffer, size_t bufferBytes) noexcept = 0;
+		virtual void render(float* buffer, size_t bufferBytes) noexcept = 0;
 		virtual void start(Note, float amplitude) noexcept = 0;
 		virtual void stop() noexcept = 0;
 		virtual size_t totalSamples() const noexcept = 0;
@@ -40,7 +40,7 @@ namespace aulos
 		{
 		}
 
-		size_t render(float* buffer, size_t bufferBytes) noexcept override
+		void render(float* buffer, size_t bufferBytes) noexcept override
 		{
 			assert(bufferBytes % kBlockSize == 0);
 			size_t offset = 0;
@@ -55,7 +55,7 @@ namespace aulos
 				_wave.advance(blocksToGenerate);
 				offset += blocksToGenerate * kBlockSize;
 			}
-			return offset;
+			assert(offset == bufferBytes);
 		}
 
 		void start(Note note, float amplitude) noexcept override
@@ -93,7 +93,7 @@ namespace aulos
 		{
 		}
 
-		size_t render(float* buffer, size_t bufferBytes) noexcept override
+		void render(float* buffer, size_t bufferBytes) noexcept override
 		{
 			assert(bufferBytes % kBlockSize == 0);
 			size_t offset = 0;
@@ -114,7 +114,7 @@ namespace aulos
 				_rightWave.advance(samplesToGenerate);
 				offset += samplesToGenerate * kBlockSize;
 			}
-			return offset;
+			assert(offset == bufferBytes);
 		}
 
 		void start(Note note, float amplitude) noexcept override

@@ -27,7 +27,7 @@ namespace
 		auto render()
 		{
 			float sample = 0.f;
-			REQUIRE(_voice.render(&sample, sizeof sample) == sizeof sample);
+			_voice.render(&sample, sizeof sample);
 			return sample;
 		}
 	};
@@ -46,7 +46,7 @@ namespace
 		auto render()
 		{
 			std::pair<float, float> block{ 0.f, 0.f };
-			REQUIRE(_voice.render(&block.first, sizeof block) == sizeof block);
+			_voice.render(&block.first, sizeof block);
 			return block;
 		}
 	};
