@@ -6,6 +6,7 @@
 
 #include <cassert>
 #include <cstdlib>
+#include <memory>
 #include <type_traits>
 #include <utility>
 
@@ -16,14 +17,14 @@ namespace aulos
 	// * requires reserve() before use and allows only one reserve() during lifetime;
 	// * doesn't check preconditions at runtime.
 	template <typename T>
-	class StaticVector
+	class LimitedVector
 	{
 	public:
-		constexpr StaticVector() noexcept = default;
+		constexpr LimitedVector() noexcept = default;
 
-		StaticVector(const StaticVector&) = delete;
+		LimitedVector(const LimitedVector&) = delete;
 
-		constexpr StaticVector(StaticVector&& other) noexcept
+		constexpr LimitedVector(LimitedVector&& other) noexcept
 			: _data(std::exchange(other._data, nullptr))
 			, _size(std::exchange(other._size, size_t{}))
 #ifndef NDEBUG
@@ -32,15 +33,15 @@ namespace aulos
 		{
 		}
 
-		~StaticVector() noexcept
+		~LimitedVector() noexcept
 		{
-			clear();
+			std::destroy_n(_data, _size);
 			std::free(_data);
 		}
 
-		StaticVector& operator=(const StaticVector&) = delete;
+		LimitedVector& operator=(const LimitedVector&) = delete;
 
-		constexpr StaticVector& operator=(StaticVector&& other) noexcept
+		constexpr LimitedVector& operator=(LimitedVector&& other) noexcept
 		{
 			std::swap(_data, other._data);
 			std::swap(_size, other._size);
@@ -73,9 +74,7 @@ namespace aulos
 
 		void clear() noexcept
 		{
-			if constexpr (!std::is_trivially_destructible_v<T>)
-				for (size_t i = 0; i < _size; ++i)
-					_data[i].~T();
+			std::destroy_n(_data, _size);
 			_size = 0;
 		}
 
@@ -94,8 +93,7 @@ namespace aulos
 		{
 			assert(_size > 0);
 			--_size;
-			if constexpr (!std::is_trivially_destructible_v<T>)
-				_data[_size].~T();
+			std::destroy_at(_data + _size);
 		}
 
 		void reserve(size_t capacity)
@@ -127,5 +125,81 @@ namespace aulos
 #ifndef NDEBUG
 		size_t _capacity = 0;
 #endif
+	};
+
+	// std::vector-like container with preallocated storage (like std::array).
+	template <typename T, size_t kCapacity>
+	class StaticVector
+	{
+	public:
+		constexpr StaticVector() noexcept = default;
+
+		StaticVector(const StaticVector&) = delete;
+
+		~StaticVector() noexcept
+		{
+			clear();
+		}
+
+		StaticVector& operator=(const StaticVector&) = delete;
+
+		[[nodiscard]] constexpr T* begin() noexcept { return reinterpret_cast<T*>(_data); }
+		[[nodiscard]] constexpr const T* begin() const noexcept { return reinterpret_cast<const T*>(_data); }
+		[[nodiscard]] constexpr const T* cbegin() const noexcept { return reinterpret_cast<const T*>(_data); }
+		[[nodiscard]] constexpr const T* cend() const noexcept { return reinterpret_cast<const T*>(_data + _size); }
+		[[nodiscard]] constexpr bool empty() const noexcept { return !_size; }
+		[[nodiscard]] constexpr T* end() noexcept { return reinterpret_cast<T*>(_data + _size); }
+		[[nodiscard]] constexpr const T* end() const noexcept { return reinterpret_cast<const T*>(_data + _size); }
+		[[nodiscard]] constexpr size_t size() const noexcept { return _size; }
+
+		[[nodiscard]] constexpr T& back() noexcept
+		{
+			assert(_size > 0);
+			return reinterpret_cast<T*>(_data)[_size - 1];
+		}
+
+		[[nodiscard]] constexpr const T& back() const noexcept
+		{
+			assert(_size > 0);
+			return reinterpret_cast<const T*>(_data)[_size - 1];
+		}
+
+		void clear() noexcept
+		{
+			std::destroy_n(reinterpret_cast<T*>(_data), _size);
+			_size = 0;
+		}
+
+		template <typename... Args>
+		T& emplace_back(Args&&... args)
+		{
+			assert(_size < kCapacity);
+			T* value = new (_data + _size) T{ std::forward<Args>(args)... };
+			++_size;
+			return *value;
+		}
+
+		void pop_back() noexcept
+		{
+			assert(_size > 0);
+			--_size;
+			std::destroy_at(reinterpret_cast<T*>(_data) + _size);
+		}
+
+		[[nodiscard]] T& operator[](size_t index) noexcept
+		{
+			assert(index < _size);
+			return static_cast<T*>(_data)[index];
+		}
+
+		[[nodiscard]] const T& operator[](size_t index) const noexcept
+		{
+			assert(index < _size);
+			return static_cast<const T*>(_data)[index];
+		}
+
+	private:
+		size_t _size = 0;
+		std::aligned_storage_t<sizeof(T), alignof(T)> _data[kCapacity];
 	};
 }

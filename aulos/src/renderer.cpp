@@ -86,15 +86,19 @@ namespace
 	struct TrackRenderer
 	{
 	public:
-		TrackRenderer(const CompositionFormat& format, const aulos::VoiceData& voiceData) noexcept
+		TrackRenderer(const CompositionFormat& format, const aulos::VoiceData& voiceData, unsigned weight, const std::vector<AbsoluteSound>& sounds) noexcept
 			: _format{ format }
 			, _waveData{ voiceData, _format.samplingRate(), _format.isStereo() }
 			, _polyphony{ voiceData._polyphony }
 		{
 			assert(_soundSamples > 0);
+			setSounds(sounds);
+			const auto polyphony = maxPolyphony();
+			setWeight(static_cast<float>(weight) / polyphony);
+			setVoices(polyphony, voiceData);
 		}
 
-		size_t maxPolyphony(std::vector<aulos::Note>& noteCounter) const noexcept
+		size_t maxPolyphony() const noexcept
 		{
 			assert(!_sounds.empty());
 			size_t maxPolyphony = 0;
@@ -111,7 +115,7 @@ namespace
 				const auto soundSteps = _format.samplesToSteps(_soundSamples);
 				for (auto i = _sounds.cbegin(); i != _sounds.cend(); ++i)
 				{
-					noteCounter.clear();
+					aulos::StaticVector<aulos::Note, 120> noteCounter;
 					noteCounter.emplace_back(i->_note);
 					size_t currentDelay = 0;
 					for (auto j = std::next(i); j != _sounds.cend(); ++j)
@@ -327,9 +331,9 @@ namespace
 		const size_t _soundSamples = _waveData.totalSamples();
 		const size_t _soundBytes = _soundSamples * _format.blockBytes();
 		float _weight = 0;
-		aulos::StaticVector<std::unique_ptr<aulos::Voice>> _voicePool;
-		aulos::StaticVector<ActiveSound> _activeSounds;
-		aulos::StaticVector<TrackSound> _sounds;
+		aulos::LimitedVector<std::unique_ptr<aulos::Voice>> _voicePool;
+		aulos::LimitedVector<ActiveSound> _activeSounds;
+		aulos::LimitedVector<TrackSound> _sounds;
 		const TrackSound* _nextSound = nullptr;
 		const TrackSound* _loopSound = nullptr;
 		size_t _lastSoundOffset = 0;
@@ -372,13 +376,8 @@ namespace
 							sounds.emplace_back(soundOffset, sound._note);
 						}
 					}
-					if (sounds.empty())
-						break;
-					auto& trackRenderer = _tracks.emplace_back(_format, part._voice);
-					trackRenderer.setSounds(sounds);
-					const auto maxPolyphony = trackRenderer.maxPolyphony(noteCounter);
-					trackRenderer.setWeight(static_cast<float>(track._weight) / maxPolyphony);
-					trackRenderer.setVoices(maxPolyphony, part._voice);
+					if (!sounds.empty())
+						_tracks.emplace_back(_format, part._voice, track._weight, sounds);
 				}
 			}
 			_loopLength = composition._loopLength > 0 ? composition._loopLength : _format.samplesToSteps(totalSamples());
@@ -431,7 +430,7 @@ namespace
 		CompositionFormat _format;
 		const size_t _loopOffset;
 		size_t _loopLength = 0;
-		aulos::StaticVector<TrackRenderer> _tracks;
+		aulos::LimitedVector<TrackRenderer> _tracks;
 	};
 }
 
