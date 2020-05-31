@@ -91,6 +91,44 @@ namespace
 			, _waveData{ voiceData, _format.samplingRate(), _format.isStereo() }
 			, _polyphony{ voiceData._polyphony }
 		{
+			assert(_soundSamples > 0);
+		}
+
+		size_t maxPolyphony(std::vector<aulos::Note>& noteCounter) const noexcept
+		{
+			assert(!_sounds.empty());
+			size_t maxPolyphony = 0;
+			switch (_polyphony)
+			{
+			case aulos::Polyphony::Chord:
+				for (auto chordBegin = _sounds.cbegin(); chordBegin != _sounds.cend();)
+				{
+					maxPolyphony = std::max<size_t>(maxPolyphony, chordBegin->_chordLength);
+					chordBegin += chordBegin->_chordLength;
+				}
+				break;
+			case aulos::Polyphony::Full: {
+				const auto soundSteps = _format.samplesToSteps(_soundSamples);
+				for (auto i = _sounds.cbegin(); i != _sounds.cend(); ++i)
+				{
+					noteCounter.clear();
+					noteCounter.emplace_back(i->_note);
+					size_t currentDelay = 0;
+					for (auto j = std::next(i); j != _sounds.cend(); ++j)
+					{
+						currentDelay += j->_delaySteps;
+						if (currentDelay >= soundSteps)
+							break;
+						if (std::none_of(noteCounter.cbegin(), noteCounter.cend(), [j](aulos::Note note) { return note == j->_note; }))
+							noteCounter.emplace_back(j->_note);
+					}
+					maxPolyphony = std::max(maxPolyphony, noteCounter.size());
+				}
+				// TODO: Take looping into account.
+				break;
+			}
+			}
+			return maxPolyphony;
 		}
 
 		void setVoices(size_t maxVoices, const aulos::VoiceData& voiceData)
@@ -256,11 +294,6 @@ namespace
 			_gain = _weight * gain;
 		}
 
-		size_t soundSamples() const noexcept
-		{
-			return _soundSamples;
-		}
-
 		size_t totalSamples() const noexcept
 		{
 			assert(!_sounds.empty());
@@ -318,6 +351,10 @@ namespace
 			_tracks.reserve(std::accumulate(composition._parts.cbegin(), composition._parts.cend(), size_t{}, [](size_t count, const aulos::Part& part) { return count + part._tracks.size(); }));
 			for (const auto& part : composition._parts)
 			{
+				if (const auto soundDuration = std::accumulate(part._voice._amplitudeEnvelope._changes.cbegin(), part._voice._amplitudeEnvelope._changes.cend(), std::chrono::milliseconds::zero(),
+						[](const std::chrono::milliseconds& duration, const aulos::EnvelopeChange& change) { return duration + change._duration; });
+					!soundDuration.count())
+					continue;
 				for (const auto& track : part._tracks)
 				{
 					sounds.clear();
@@ -338,41 +375,10 @@ namespace
 					if (sounds.empty())
 						break;
 					auto& trackRenderer = _tracks.emplace_back(_format, part._voice);
-					if (!trackRenderer.soundSamples())
-					{
-						_tracks.pop_back();
-						break;
-					}
-					const auto soundSteps = _format.samplesToSteps(trackRenderer.soundSamples());
-					size_t maxPolyphony = 0;
-					switch (part._voice._polyphony)
-					{
-					case aulos::Polyphony::Chord:
-						for (auto i = sounds.cbegin(); i != sounds.cend();)
-						{
-							const auto j = std::find_if(std::next(i), sounds.cend(), [offset = i->_offset](const AbsoluteSound& sound) { return sound._offset != offset; });
-							maxPolyphony = std::max(maxPolyphony, static_cast<size_t>(j - i));
-							i = j;
-						}
-						break;
-					case aulos::Polyphony::Full:
-						for (auto i = sounds.cbegin(); i != sounds.cend(); ++i)
-						{
-							noteCounter.clear();
-							noteCounter.emplace_back(i->_note);
-							std::for_each(i, std::find_if(std::next(i), sounds.cend(), [endOffset = i->_offset + soundSteps](const AbsoluteSound& sound) { return sound._offset >= endOffset; }),
-								[&noteCounter](const AbsoluteSound& sound) {
-									if (std::none_of(noteCounter.cbegin(), noteCounter.cend(), [&sound](aulos::Note note) { return sound._note == note; }))
-										noteCounter.emplace_back(sound._note);
-								});
-							// TODO: Take looping into account.
-							maxPolyphony = std::max(maxPolyphony, noteCounter.size());
-						}
-						break;
-					}
+					trackRenderer.setSounds(sounds);
+					const auto maxPolyphony = trackRenderer.maxPolyphony(noteCounter);
 					trackRenderer.setWeight(static_cast<float>(track._weight) / maxPolyphony);
 					trackRenderer.setVoices(maxPolyphony, part._voice);
-					trackRenderer.setSounds(sounds);
 				}
 			}
 			_loopLength = composition._loopLength > 0 ? composition._loopLength : _format.samplesToSteps(totalSamples());
