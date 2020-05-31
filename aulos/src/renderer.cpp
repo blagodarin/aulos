@@ -86,105 +86,17 @@ namespace
 	struct TrackRenderer
 	{
 	public:
-		TrackRenderer(const CompositionFormat& format, const aulos::VoiceData& voiceData, unsigned weight, const std::vector<AbsoluteSound>& sounds) noexcept
+		TrackRenderer(const CompositionFormat& format, const aulos::VoiceData& voiceData, unsigned weight, const std::vector<AbsoluteSound>& sounds, size_t loopOffset, size_t loopLength) noexcept
 			: _format{ format }
 			, _waveData{ voiceData, _format.samplingRate(), _format.isStereo() }
 			, _polyphony{ voiceData._polyphony }
 		{
 			assert(_soundSamples > 0);
 			setSounds(sounds);
+			setLoop(loopOffset, loopLength);
 			const auto polyphony = maxPolyphony();
 			setWeight(static_cast<float>(weight) / polyphony);
 			setVoices(polyphony, voiceData);
-		}
-
-		size_t maxPolyphony() const noexcept
-		{
-			assert(!_sounds.empty());
-			size_t maxPolyphony = 0;
-			switch (_polyphony)
-			{
-			case aulos::Polyphony::Chord:
-				for (auto chordBegin = _sounds.cbegin(); chordBegin != _sounds.cend();)
-				{
-					maxPolyphony = std::max<size_t>(maxPolyphony, chordBegin->_chordLength);
-					chordBegin += chordBegin->_chordLength;
-				}
-				break;
-			case aulos::Polyphony::Full: {
-				const auto soundSteps = _format.samplesToSteps(_soundSamples);
-				for (auto i = _sounds.cbegin(); i != _sounds.cend(); ++i)
-				{
-					aulos::StaticVector<aulos::Note, 120> noteCounter;
-					noteCounter.emplace_back(i->_note);
-					size_t currentDelay = 0;
-					for (auto j = std::next(i); j != _sounds.cend(); ++j)
-					{
-						currentDelay += j->_delaySteps;
-						if (currentDelay >= soundSteps)
-							break;
-						if (std::none_of(noteCounter.cbegin(), noteCounter.cend(), [j](aulos::Note note) { return note == j->_note; }))
-							noteCounter.emplace_back(j->_note);
-					}
-					maxPolyphony = std::max(maxPolyphony, noteCounter.size());
-				}
-				// TODO: Take looping into account.
-				break;
-			}
-			}
-			return maxPolyphony;
-		}
-
-		void setVoices(size_t maxVoices, const aulos::VoiceData& voiceData)
-		{
-			assert(_voicePool.empty() && _activeSounds.empty());
-			_voicePool.reserve(maxVoices);
-			while (_voicePool.size() < maxVoices)
-				_voicePool.emplace_back(::createVoice(_waveData, voiceData, _format.samplingRate(), _format.isStereo()));
-			_activeSounds.reserve(maxVoices);
-		}
-
-		void setSounds(const std::vector<AbsoluteSound>& sounds)
-		{
-			assert(_sounds.empty() && !_nextSound && !_loopSound);
-			_sounds.reserve(sounds.size());
-			_lastSoundOffset = 0;
-			for (auto i = sounds.cbegin(); i != sounds.cend();)
-			{
-				auto delay = static_cast<uint16_t>(i->_offset - _lastSoundOffset);
-				_lastSoundOffset = i->_offset;
-				const auto chordEnd = std::find_if(std::next(i), sounds.cend(), [i](const AbsoluteSound& sound) { return sound._offset != i->_offset; });
-				do
-				{
-					_sounds.emplace_back(delay, i->_note, static_cast<uint8_t>(chordEnd - i));
-					delay = 0;
-				} while (++i != chordEnd);
-			}
-			_nextSound = _sounds.cbegin();
-			_loopSound = _sounds.cbegin();
-			_loopDelay = 0;
-		}
-
-		void setLoop(size_t loopOffset, size_t loopLength) noexcept
-		{
-			assert(!_sounds.empty() && _loopSound == _sounds.cbegin() && !_loopDelay);
-			auto loopSoundOffset = _loopSound->_delaySteps;
-			while (loopSoundOffset < loopOffset)
-			{
-				if (++_loopSound == _sounds.cend())
-					return;
-				loopSoundOffset += _loopSound->_delaySteps;
-			}
-			const auto loopDistance = _lastSoundOffset - loopSoundOffset;
-			assert(loopLength > loopDistance);
-			_loopDelay = loopLength - loopDistance;
-		}
-
-		void setWeight(float weight) noexcept
-		{
-			assert(_weight == 0);
-			assert(weight > 0);
-			_weight = weight;
 		}
 
 		size_t render(void* buffer, size_t bufferBytes) noexcept
@@ -298,10 +210,115 @@ namespace
 			_gain = _weight * gain;
 		}
 
+		void setWholeCompositionLoop(size_t loopLength) noexcept
+		{
+			assert(!_sounds.empty() && _loopSound == _sounds.cbegin() && !_loopDelay);
+			assert(_lastSoundOffset + _format.samplesToSteps(_soundSamples) <= loopLength); // To make sure polyphony calculations are still right.
+			const auto loopDistance = _lastSoundOffset - _loopSound->_delaySteps;
+			assert(loopLength > loopDistance);
+			_loopDelay = loopLength - loopDistance;
+		}
+
 		size_t totalSamples() const noexcept
 		{
 			assert(!_sounds.empty());
 			return _format.stepsToSamples(_lastSoundOffset) + _soundSamples;
+		}
+
+	private:
+		size_t maxPolyphony() const noexcept
+		{
+			assert(!_sounds.empty());
+			size_t maxPolyphony = 0;
+			switch (_polyphony)
+			{
+			case aulos::Polyphony::Chord:
+				for (auto chordBegin = _sounds.cbegin(); chordBegin != _sounds.cend();)
+				{
+					maxPolyphony = std::max<size_t>(maxPolyphony, chordBegin->_chordLength);
+					chordBegin += chordBegin->_chordLength;
+				}
+				break;
+			case aulos::Polyphony::Full: {
+				const auto soundSteps = _format.samplesToSteps(_soundSamples);
+				for (auto i = _sounds.cbegin(); i != _sounds.cend(); ++i)
+				{
+					aulos::StaticVector<aulos::Note, 120> noteCounter;
+					noteCounter.emplace_back(i->_note);
+					size_t currentDelay = 0;
+					for (auto j = std::next(i); j != _sounds.cend(); ++j)
+					{
+						currentDelay += j->_delaySteps;
+						if (currentDelay >= soundSteps)
+							break;
+						if (std::none_of(noteCounter.cbegin(), noteCounter.cend(), [j](aulos::Note note) { return note == j->_note; }))
+							noteCounter.emplace_back(j->_note);
+					}
+					maxPolyphony = std::max(maxPolyphony, noteCounter.size());
+				}
+				// TODO: Take looping into account.
+				break;
+			}
+			}
+			return maxPolyphony;
+		}
+
+		void setVoices(size_t maxVoices, const aulos::VoiceData& voiceData)
+		{
+			assert(_voicePool.empty() && _activeSounds.empty());
+			_voicePool.reserve(maxVoices);
+			while (_voicePool.size() < maxVoices)
+				_voicePool.emplace_back(::createVoice(_waveData, voiceData, _format.samplingRate(), _format.isStereo()));
+			_activeSounds.reserve(maxVoices);
+		}
+
+		void setSounds(const std::vector<AbsoluteSound>& sounds)
+		{
+			assert(_sounds.empty() && !_nextSound && !_loopSound);
+			_sounds.reserve(sounds.size());
+			_lastSoundOffset = 0;
+			for (auto i = sounds.cbegin(); i != sounds.cend();)
+			{
+				auto delay = static_cast<uint16_t>(i->_offset - _lastSoundOffset);
+				_lastSoundOffset = i->_offset;
+				const auto chordEnd = std::find_if(std::next(i), sounds.cend(), [i](const AbsoluteSound& sound) { return sound._offset != i->_offset; });
+				do
+				{
+					_sounds.emplace_back(delay, i->_note, static_cast<uint8_t>(chordEnd - i));
+					delay = 0;
+				} while (++i != chordEnd);
+			}
+			_nextSound = _sounds.cbegin();
+			_loopSound = _sounds.cbegin();
+			_loopDelay = 0;
+		}
+
+		void setLoop(size_t loopOffset, size_t loopLength) noexcept
+		{
+			assert(!_sounds.empty() && _loopSound == _sounds.cbegin() && !_loopDelay);
+			if (!loopLength)
+			{
+				assert(!loopOffset);
+				return;
+			}
+			assert(std::accumulate(_sounds.cbegin(), _sounds.cend(), size_t{}, [](size_t offset, const TrackSound& sound) { return offset + sound._delaySteps; }) < loopOffset + loopLength);
+			auto loopSoundOffset = _loopSound->_delaySteps;
+			while (loopSoundOffset < loopOffset)
+			{
+				if (++_loopSound == _sounds.cend())
+					return;
+				loopSoundOffset += _loopSound->_delaySteps;
+			}
+			const auto loopDistance = _lastSoundOffset - loopSoundOffset;
+			assert(loopLength > loopDistance);
+			_loopDelay = loopLength - loopDistance;
+		}
+
+		void setWeight(float weight) noexcept
+		{
+			assert(_weight == 0);
+			assert(weight > 0);
+			_weight = weight;
 		}
 
 	private:
@@ -377,13 +394,13 @@ namespace
 						}
 					}
 					if (!sounds.empty())
-						_tracks.emplace_back(_format, part._voice, track._weight, sounds);
+						_tracks.emplace_back(_format, part._voice, track._weight, sounds, _loopOffset, composition._loopLength);
 				}
 			}
 			_loopLength = composition._loopLength > 0 ? composition._loopLength : _format.samplesToSteps(totalSamples());
-			if (looping)
+			if (looping && !composition._loopLength)
 				for (auto& track : _tracks)
-					track.setLoop(_loopOffset, _loopLength);
+					track.setWholeCompositionLoop(_loopLength);
 			restart(1);
 		}
 
