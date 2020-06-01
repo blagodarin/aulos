@@ -301,7 +301,7 @@ namespace
 				assert(!loopOffset);
 				return;
 			}
-			assert(std::accumulate(_sounds.cbegin(), _sounds.cend(), size_t{}, [](size_t offset, const TrackSound& sound) { return offset + sound._delaySteps; }) < loopOffset + loopLength);
+			assert(_lastSoundOffset < loopOffset + loopLength);
 			auto loopSoundOffset = _loopSound->_delaySteps;
 			while (loopSoundOffset < loopOffset)
 			{
@@ -368,7 +368,7 @@ namespace
 		{
 			std::vector<AbsoluteSound> sounds;
 			std::vector<aulos::Note> noteCounter;
-			const auto loopEnd = looping && composition._loopLength > 0 ? size_t{ composition._loopOffset } + composition._loopLength : std::numeric_limits<size_t>::max();
+			const auto maxSoundOffset = looping && composition._loopLength > 0 ? size_t{ composition._loopOffset } + composition._loopLength - 1 : std::numeric_limits<size_t>::max();
 			_tracks.reserve(std::accumulate(composition._parts.cbegin(), composition._parts.cend(), size_t{}, [](size_t count, const aulos::Part& part) { return count + part._tracks.size(); }));
 			for (const auto& part : composition._parts)
 			{
@@ -382,19 +382,19 @@ namespace
 					for (size_t fragmentOffset = 0; const auto& fragment : track._fragments)
 					{
 						fragmentOffset += fragment._delay;
-						if (fragmentOffset >= loopEnd)
+						if (fragmentOffset > maxSoundOffset)
 							break;
 						sounds.erase(std::find_if(sounds.crbegin(), sounds.crend(), [fragmentOffset](const AbsoluteSound& sound) { return sound._offset < fragmentOffset; }).base(), sounds.cend());
 						for (auto soundOffset = fragmentOffset; const auto& sound : track._sequences[fragment._sequence])
 						{
 							soundOffset += sound._delay;
-							if (soundOffset >= loopEnd)
+							if (soundOffset > maxSoundOffset)
 								break;
 							sounds.emplace_back(soundOffset, sound._note);
 						}
 					}
 					if (!sounds.empty())
-						_tracks.emplace_back(_format, part._voice, track._weight, sounds, _loopOffset, composition._loopLength);
+						_tracks.emplace_back(_format, part._voice, track._weight, sounds, _loopOffset, looping ? composition._loopLength : 0);
 				}
 			}
 			_loopLength = composition._loopLength > 0 ? composition._loopLength : _format.samplesToSteps(totalSamples());
