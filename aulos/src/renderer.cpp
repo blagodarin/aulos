@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <cstring>
 #include <functional>
+#include <optional>
 
 static_assert(aulos::kMinSmoothCubicShape == aulos::SmoothCubicShaper::kMinShape);
 static_assert(aulos::kMaxSmoothCubicShape == aulos::SmoothCubicShaper::kMaxShape);
@@ -86,14 +87,15 @@ namespace
 	struct TrackRenderer
 	{
 	public:
-		TrackRenderer(const CompositionFormat& format, const aulos::VoiceData& voiceData, unsigned weight, const std::vector<AbsoluteSound>& sounds, size_t loopOffset, size_t loopLength) noexcept
+		TrackRenderer(const CompositionFormat& format, const aulos::VoiceData& voiceData, unsigned weight, const std::vector<AbsoluteSound>& sounds, const std::optional<std::pair<size_t, size_t>>& loop) noexcept
 			: _format{ format }
 			, _waveData{ voiceData, _format.samplingRate(), _format.isStereo() }
 			, _polyphony{ voiceData._polyphony }
 		{
 			assert(_soundSamples > 0);
 			setSounds(sounds);
-			setLoop(loopOffset, loopLength);
+			if (loop)
+				setLoop(loop->first, loop->second);
 			const auto polyphony = maxPolyphony();
 			setWeight(static_cast<float>(weight) / polyphony);
 			setVoices(polyphony, voiceData);
@@ -213,7 +215,7 @@ namespace
 		void setWholeCompositionLoop(size_t loopLength) noexcept
 		{
 			assert(!_sounds.empty() && _loopSound == _sounds.cbegin() && !_loopDelay);
-			assert(_lastSoundOffset + _format.samplesToSteps(_soundSamples) <= loopLength); // To make sure polyphony calculations are still right.
+			assert(_lastSoundOffset + _format.samplesToSteps(_soundSamples) <= loopLength); // To make sure polyphony calculations are still correct.
 			const auto loopDistance = _lastSoundOffset - _loopSound->_delaySteps;
 			assert(loopLength > loopDistance);
 			_loopDelay = loopLength - loopDistance;
@@ -241,22 +243,31 @@ namespace
 				break;
 			case aulos::Polyphony::Full: {
 				const auto soundSteps = _format.samplesToSteps(_soundSamples);
-				for (auto i = _sounds.cbegin(); i != _sounds.cend(); ++i)
+				const auto loopSoundCount = _sounds.size() - static_cast<size_t>(_loopSound - _sounds.cbegin());
+				assert(loopSoundCount > 0 || !_loopDelay);
+				for (size_t i = 0; i < _sounds.size(); ++i)
 				{
 					aulos::StaticVector<aulos::Note, 120> noteCounter;
-					noteCounter.emplace_back(i->_note);
+					noteCounter.emplace_back(_sounds[i]._note);
 					size_t currentDelay = 0;
-					for (auto j = std::next(i); j != _sounds.cend(); ++j)
+					for (auto j = i + 1;; ++j)
 					{
-						currentDelay += j->_delaySteps;
+						if (j >= _sounds.size())
+						{
+							if (!_loopDelay)
+								break;
+							do
+								j -= loopSoundCount;
+							while (j >= _sounds.size());
+						}
+						currentDelay += j == _sounds.size() ? _loopDelay : _sounds[j]._delaySteps;
 						if (currentDelay >= soundSteps)
 							break;
-						if (std::none_of(noteCounter.cbegin(), noteCounter.cend(), [j](aulos::Note note) { return note == j->_note; }))
-							noteCounter.emplace_back(j->_note);
+						if (const auto currentNote = _sounds[j]._note; std::find(noteCounter.cbegin(), noteCounter.cend(), currentNote) == noteCounter.cend())
+							noteCounter.emplace_back(currentNote);
 					}
 					maxPolyphony = std::max(maxPolyphony, noteCounter.size());
 				}
-				// TODO: Take looping into account.
 				break;
 			}
 			}
@@ -296,12 +307,6 @@ namespace
 		void setLoop(size_t loopOffset, size_t loopLength) noexcept
 		{
 			assert(!_sounds.empty() && _loopSound == _sounds.cbegin() && !_loopDelay);
-			if (!loopLength)
-			{
-				assert(!loopOffset);
-				return;
-			}
-			assert(_lastSoundOffset < loopOffset + loopLength);
 			auto loopSoundOffset = _loopSound->_delaySteps;
 			while (loopSoundOffset < loopOffset)
 			{
@@ -309,9 +314,12 @@ namespace
 					return;
 				loopSoundOffset += _loopSound->_delaySteps;
 			}
-			const auto loopDistance = _lastSoundOffset - loopSoundOffset;
-			assert(loopLength > loopDistance);
-			_loopDelay = loopLength - loopDistance;
+			if (loopLength > 0)
+			{
+				const auto loopDistance = _lastSoundOffset - loopSoundOffset;
+				assert(loopLength > loopDistance);
+				_loopDelay = loopLength - loopDistance;
+			}
 		}
 
 		void setWeight(float weight) noexcept
@@ -394,7 +402,7 @@ namespace
 						}
 					}
 					if (!sounds.empty())
-						_tracks.emplace_back(_format, part._voice, track._weight, sounds, _loopOffset, looping ? composition._loopLength : 0);
+						_tracks.emplace_back(_format, part._voice, track._weight, sounds, looping && composition._loopLength > 0 ? std::optional{ std::pair{ composition._loopOffset, composition._loopLength } } : std::nullopt);
 				}
 			}
 			_loopLength = composition._loopLength > 0 ? composition._loopLength : _format.samplesToSteps(totalSamples());
@@ -440,7 +448,7 @@ namespace
 		size_t totalSamples() const noexcept override
 		{
 			return std::accumulate(_tracks.cbegin(), _tracks.cend(), _format.stepsToSamples(_loopOffset + _loopLength),
-				[this](size_t samples, const TrackRenderer& track) { return std::max(samples, track.totalSamples()); });
+				[](size_t samples, const TrackRenderer& track) { return std::max(samples, track.totalSamples()); });
 		}
 
 	public:
