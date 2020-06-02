@@ -494,6 +494,7 @@ bool Studio::openComposition(const QString& path)
 	_compositionPath = path;
 	_compositionFileName = QFileInfo{ file }.fileName();
 	_speedSpin->setValue(static_cast<int>(_composition->_speed));
+	_loopPlaybackCheck->setChecked(_composition->_loopLength > 0);
 	_compositionWidget->setComposition(_composition);
 	_hasComposition = true;
 	setRecentFile(path);
