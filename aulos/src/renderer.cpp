@@ -463,7 +463,7 @@ namespace aulos
 {
 	std::unique_ptr<Renderer> Renderer::create(const Composition& composition, unsigned samplingRate, unsigned channels, bool looping)
 	{
-		return channels == 1 || channels == 2
+		return samplingRate >= kMinSamplingRate && samplingRate <= kMaxSamplingRate && (channels == 1 || channels == 2)
 			? std::make_unique<CompositionRenderer>(static_cast<const CompositionImpl&>(composition), samplingRate, channels, looping)
 			: nullptr;
 	}

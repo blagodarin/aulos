@@ -21,6 +21,9 @@ namespace aulos
 	class Renderer
 	{
 	public:
+		static constexpr unsigned kMinSamplingRate = 8'000;
+		static constexpr unsigned kMaxSamplingRate = 48'000;
+
 		[[nodiscard]] static std::unique_ptr<Renderer> create(const Composition&, unsigned samplingRate, unsigned channels, bool looping = false);
 
 		virtual ~Renderer() noexcept = default;

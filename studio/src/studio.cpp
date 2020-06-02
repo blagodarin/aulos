@@ -41,6 +41,28 @@ namespace
 	constexpr int kMaxRecentFiles = 10;
 	const auto kRecentFileKeyBase = QStringLiteral("RecentFile%1");
 
+	float compositionGain(const aulos::Composition& composition, bool looping)
+	{
+		const auto renderer = aulos::Renderer::create(composition, aulos::Renderer::kMaxSamplingRate, 1, looping);
+		assert(renderer);
+		constexpr size_t bufferSamples = aulos::Renderer::kMaxSamplingRate;
+		const auto buffer = std::make_unique<float[]>(bufferSamples);
+		float minimum = 0.f;
+		float maximum = 0.f;
+		for (auto remainingSamples = renderer->totalSamples(); remainingSamples > 0;)
+		{
+			const auto samplesToRender = std::min(bufferSamples, remainingSamples);
+			const auto samplesRendered = renderer->render(buffer.get(), samplesToRender * sizeof(float)) / sizeof(float);
+			assert(samplesRendered == samplesToRender);
+			const auto minmax = std::minmax_element(buffer.get(), buffer.get() + samplesRendered);
+			minimum = std::min(minimum, *minmax.first);
+			maximum = std::max(maximum, *minmax.second);
+			remainingSamples -= samplesRendered;
+		}
+		const auto peak = std::max(-minimum, maximum);
+		return peak > 0 ? 1 / peak : 1;
+	}
+
 	QStringList loadRecentFileList()
 	{
 		QSettings settings;
@@ -191,6 +213,8 @@ Studio::Studio()
 		const auto samplingRate = _samplingRateCombo->currentData().toUInt();
 		const auto channels = _channelsCombo->currentData().toUInt();
 		auto renderer = aulos::Renderer::create(*composition, samplingRate, channels, _loopPlaybackCheck->isChecked());
+		assert(renderer);
+		renderer->restart(::compositionGain(*composition, _loopPlaybackCheck->isChecked()));
 		[[maybe_unused]] const auto skippedBytes = renderer->render(nullptr, _compositionWidget->startOffset() * samplingRate * channels * sizeof(float) / _composition->_speed);
 		const auto loopRange = renderer->loopRange();
 		_loopBeginUs = loopRange.first * 1'000'000 / samplingRate;
@@ -408,23 +432,14 @@ void Studio::exportComposition()
 	const auto samplingRate = _samplingRateCombo->currentData().toUInt();
 	const auto channels = _channelsCombo->currentData().toUInt();
 	const auto renderer = aulos::Renderer::create(*composition, samplingRate, channels, false);
+	assert(renderer);
+	renderer->restart(::compositionGain(*composition, false));
+
 	const auto bufferLength = renderer->totalSamples() * channels;
 	const auto bufferSize = bufferLength * sizeof(float);
-
 	const auto buffer = std::make_unique<float[]>(bufferLength);
 	[[maybe_unused]] auto renderedBytes = renderer->render(buffer.get(), bufferSize);
 	assert(renderedBytes == bufferSize);
-	if (bufferLength > 0)
-	{
-		const auto [minimum, maximum] = std::minmax_element(buffer.get(), buffer.get() + bufferLength);
-		const auto peak = std::max(std::abs(*minimum), std::abs(*maximum));
-		if (peak > 0)
-		{
-			renderer->restart(1 / peak);
-			renderedBytes = renderer->render(buffer.get(), bufferSize);
-			assert(renderedBytes == bufferSize);
-		}
-	}
 
 	constexpr size_t chunkHeaderSize = 8;
 	constexpr size_t fmtChunkSize = 16;

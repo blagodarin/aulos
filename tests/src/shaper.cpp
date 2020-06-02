@@ -4,6 +4,8 @@
 
 #include <aulos/src/shaper.hpp> // Included first to check header consistency.
 
+#include <aulos/composition.hpp>
+
 #include <aulos/src/note_table.hpp>
 
 #include <doctest.h>
@@ -16,8 +18,8 @@ namespace
 		constexpr auto amplitude = 1.f;
 		constexpr auto range = 2 * amplitude;
 		const auto precision = std::ldexp(range, -precisionBits);
-		constexpr auto minFrequency = aulos::kNoteTable[aulos::Note::C0] / 2; // Lowest note at lowest frequency modulation.
-		constexpr auto deltaX = 48'000 / minFrequency;                        // Asymmetric wave of minimum frequency at highest supported sampling rate.
+		constexpr auto minFrequency = aulos::kNoteTable[aulos::Note::C0] / 2;     // Lowest note at lowest frequency modulation.
+		constexpr auto deltaX = aulos::Renderer::kMaxSamplingRate / minFrequency; // Asymmetric wave of minimum frequency at highest supported sampling rate.
 		Shaper shaper{ { amplitude, -range, deltaX, shapeParameter } };
 		for (float i = 0; i < deltaX; ++i)
 		{

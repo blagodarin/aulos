@@ -20,6 +20,7 @@ int main(int argc, char** argv)
 	::messageHandler = qInstallMessageHandler([](QtMsgType type, const QMessageLogContext& context, const QString& message) {
 		assert(type == QtDebugMsg || type == QtInfoMsg
 			|| message.startsWith("QWindowsWindow::setGeometry: Unable to set geometry ") // A window was too small to contain all its widgets, so its size was increased.
+			|| message == "QIODevice::seek (QIODevice): Cannot call seek on a sequential device"
 		);
 		::messageHandler(type, context, message);
 	});
