@@ -6,6 +6,7 @@ title "Popcorn"
 amplitude 10 1.00 40 1.00 50 0.50 900 0.00
 asymmetry 10 0.85 990 sharp_quadratic_2 0.55
 frequency 0 -0.50 10 0.00
+polyphony chord
 stereo_delay 5.00
 stereo_inversion 0
 stereo_pan 0.00
@@ -16,6 +17,7 @@ amplitude 20 1.00 480 sharp_quadratic_4 0.00
 asymmetry 20 0.80 480 sharp_quadratic_4 0.50
 frequency 0 -0.50 20 0.00 480 smooth_quadratic_4 -0.01
 oscillation 0 0.05 20 0.00
+polyphony chord
 stereo_delay -5.00
 stereo_inversion 0
 stereo_pan 0.00
@@ -26,6 +28,7 @@ amplitude 10 1.00 90 0.20 400 0.00
 asymmetry 0 0.00
 frequency 10 0.00 90 sharp_quadratic_4 -0.40
 oscillation 0 0.02 100 0.00
+polyphony chord
 stereo_delay 20.00
 stereo_inversion 0
 stereo_pan -0.25
@@ -35,6 +38,7 @@ wave cosine
 amplitude 20 1.00 980 0.00
 asymmetry 0 0.00 20 0.20
 oscillation 0 0.05
+polyphony chord
 stereo_delay 2.00
 stereo_inversion 0
 stereo_pan 0.00

@@ -283,6 +283,17 @@ namespace aulos
 					throw CompositionError{ location(), "Unexpected command" };
 				readEnvelope(currentVoice->_oscillationEnvelope, 0.f, 1.f);
 			}
+			else if (command == "polyphony")
+			{
+				if (currentSection != Section::Voice)
+					throw CompositionError{ location(), "Unexpected command" };
+				if (const auto type = readIdentifier(); type == "chord")
+					currentVoice->_polyphony = Polyphony::Chord;
+				else if (type == "full")
+					currentVoice->_polyphony = Polyphony::Full;
+				else
+					throw CompositionError{ location(), "Bad voice polyphony" };
+			}
 			else if (command == "stereo_delay")
 			{
 				if (currentSection != Section::Voice)

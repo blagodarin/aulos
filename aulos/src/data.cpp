@@ -134,6 +134,12 @@ namespace aulos
 			saveEnvelope("asymmetry", part._voice._asymmetryEnvelope);
 			saveEnvelope("frequency", part._voice._frequencyEnvelope);
 			saveEnvelope("oscillation", part._voice._oscillationEnvelope);
+			text += "\npolyphony ";
+			switch (part._voice._polyphony)
+			{
+			case Polyphony::Chord: text += "chord"; break;
+			case Polyphony::Full: text += "full"; break;
+			}
 			text += "\nstereo_delay " + floatToString(part._voice._stereoDelay);
 			text += "\nstereo_inversion " + std::to_string(static_cast<int>(part._voice._stereoInversion));
 			text += "\nstereo_pan " + floatToString(part._voice._stereoPan);

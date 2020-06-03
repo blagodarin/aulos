@@ -7,6 +7,7 @@ amplitude 10 1.00 40 1.00 950 sharp_quadratic_2 0.00
 asymmetry 0 0.50
 frequency 0 -0.25 10 0.00
 oscillation 0 0.02 50 smooth_quadratic_4 0.00
+polyphony full
 stereo_delay -10.00
 stereo_inversion 0
 stereo_pan 0.00
@@ -17,6 +18,7 @@ amplitude 10 1.00 40 1.00 950 sharp_quadratic_2 0.00
 asymmetry 0 0.50
 frequency 0 -0.25 10 0.00
 oscillation 0 0.02 50 smooth_quadratic_4 0.00
+polyphony full
 stereo_delay 10.00
 stereo_inversion 0
 stereo_pan 0.00
