@@ -178,9 +178,9 @@ namespace
 					auto& activeSound = _activeSounds[i];
 					assert(activeSound._bytesRemaining > 0);
 					const auto bytesToRender = std::min(activeSound._bytesRemaining, strideBytes);
-					if (buffer)
-						activeSound._voice->render(reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + trackOffset), bytesToRender);
-					activeSound._bytesRemaining -= bytesToRender;
+					const auto bytesRendered = activeSound._voice->render(buffer ? reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + trackOffset) : nullptr, bytesToRender);
+					assert(bytesRendered == bytesToRender);
+					activeSound._bytesRemaining -= bytesRendered;
 					if (!activeSound._bytesRemaining)
 					{
 						_voicePool.emplace_back(std::move(activeSound._voice));

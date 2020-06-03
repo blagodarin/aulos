@@ -14,7 +14,7 @@ namespace aulos
 		Voice() noexcept = default;
 		virtual ~Voice() noexcept = default;
 
-		virtual void render(float* buffer, size_t bufferBytes) noexcept = 0;
+		virtual size_t render(float* buffer, size_t bufferBytes) noexcept = 0;
 		virtual void start(Note, float amplitude) noexcept = 0;
 		virtual void stop() noexcept = 0;
 
@@ -33,22 +33,25 @@ namespace aulos
 		{
 		}
 
-		void render(float* buffer, size_t bufferBytes) noexcept override
+		size_t render(float* buffer, size_t bufferBytes) noexcept override
 		{
 			assert(bufferBytes % kBlockSize == 0);
 			size_t offset = 0;
 			while (offset < bufferBytes && !_wave.stopped())
 			{
 				const auto blocksToGenerate = static_cast<unsigned>(std::min<size_t>((bufferBytes - offset) / kBlockSize, _wave.maxAdvance()));
-				const auto output = buffer + offset / sizeof(float);
-				Shaper waveShaper{ _wave.waveShaperData(_baseAmplitude) };
-				LinearShaper amplitudeShaper{ _wave.amplitudeShaperData() };
-				for (unsigned i = 0; i < blocksToGenerate; ++i)
-					output[i] += waveShaper.advance() * amplitudeShaper.advance();
+				if (buffer)
+				{
+					const auto output = buffer + offset / sizeof(float);
+					Shaper waveShaper{ _wave.waveShaperData(_baseAmplitude) };
+					LinearShaper amplitudeShaper{ _wave.amplitudeShaperData() };
+					for (unsigned i = 0; i < blocksToGenerate; ++i)
+						output[i] += waveShaper.advance() * amplitudeShaper.advance();
+				}
 				_wave.advance(blocksToGenerate);
 				offset += blocksToGenerate * kBlockSize;
 			}
-			assert(offset == bufferBytes);
+			return offset;
 		}
 
 		void start(Note note, float amplitude) noexcept override
@@ -80,28 +83,31 @@ namespace aulos
 		{
 		}
 
-		void render(float* buffer, size_t bufferBytes) noexcept override
+		size_t render(float* buffer, size_t bufferBytes) noexcept override
 		{
 			assert(bufferBytes % kBlockSize == 0);
 			size_t offset = 0;
 			while (offset < bufferBytes && !(_leftWave.stopped() && _rightWave.stopped()))
 			{
 				const auto samplesToGenerate = static_cast<unsigned>(std::min<size_t>({ (bufferBytes - offset) / kBlockSize, _leftWave.maxAdvance(), _rightWave.maxAdvance() }));
-				auto output = buffer + offset / sizeof(float);
-				Shaper leftWaveShaper{ _leftWave.waveShaperData(_baseAmplitude * _leftAmplitude) };
-				Shaper rightWaveShaper{ _rightWave.waveShaperData(_baseAmplitude * _rightAmplitude) };
-				LinearShaper leftAmplitudeShaper{ _leftWave.amplitudeShaperData() };
-				LinearShaper rightAmplitudeShaper{ _rightWave.amplitudeShaperData() };
-				for (unsigned i = 0; i < samplesToGenerate; ++i)
+				if (buffer)
 				{
-					*output++ += leftWaveShaper.advance() * leftAmplitudeShaper.advance();
-					*output++ += rightWaveShaper.advance() * rightAmplitudeShaper.advance();
+					auto output = buffer + offset / sizeof(float);
+					Shaper leftWaveShaper{ _leftWave.waveShaperData(_baseAmplitude * _leftAmplitude) };
+					Shaper rightWaveShaper{ _rightWave.waveShaperData(_baseAmplitude * _rightAmplitude) };
+					LinearShaper leftAmplitudeShaper{ _leftWave.amplitudeShaperData() };
+					LinearShaper rightAmplitudeShaper{ _rightWave.amplitudeShaperData() };
+					for (unsigned i = 0; i < samplesToGenerate; ++i)
+					{
+						*output++ += leftWaveShaper.advance() * leftAmplitudeShaper.advance();
+						*output++ += rightWaveShaper.advance() * rightAmplitudeShaper.advance();
+					}
 				}
 				_leftWave.advance(samplesToGenerate);
 				_rightWave.advance(samplesToGenerate);
 				offset += samplesToGenerate * kBlockSize;
 			}
-			assert(offset == bufferBytes);
+			return offset;
 		}
 
 		void start(Note note, float amplitude) noexcept override
