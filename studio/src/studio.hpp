@@ -63,6 +63,7 @@ private:
 	QString _compositionFileName;
 
 	Mode _mode = Mode::Editing;
+	qint64 _playbackStartUs = 0;
 	qint64 _loopBeginUs = 0;
 	qint64 _loopEndUs = 0;
 	std::optional<aulos::Note> _autoRepeatNote;

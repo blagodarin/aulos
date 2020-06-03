@@ -291,7 +291,7 @@ void CompositionWidget::setInteractive(bool interactive)
 
 void CompositionWidget::setPlaybackOffset(double step)
 {
-	const auto sceneCursorRect = _scene->setCurrentStep(_scene->startOffset() + step);
+	const auto sceneCursorRect = _scene->setCurrentStep(step);
 	QRect viewCursorRect{ _view->mapFromScene(sceneCursorRect.topLeft()), _view->mapFromScene(sceneCursorRect.bottomRight()) };
 	const auto viewportRect = _view->viewport()->rect();
 	if (viewCursorRect.right() > viewportRect.right() - kCompositionPageSwitchMargin)

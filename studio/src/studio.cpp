@@ -215,7 +215,9 @@ Studio::Studio()
 		auto renderer = aulos::Renderer::create(*composition, samplingRate, channels, _loopPlaybackCheck->isChecked());
 		assert(renderer);
 		renderer->restart(::compositionGain(*composition, _loopPlaybackCheck->isChecked()));
-		[[maybe_unused]] const auto skippedBytes = renderer->render(nullptr, _compositionWidget->startOffset() * samplingRate * channels * sizeof(float) / _composition->_speed);
+		const auto blockSize = channels * sizeof(float);
+		const auto skippedSamples = renderer->render(nullptr, _compositionWidget->startOffset() * samplingRate * blockSize / _composition->_speed) / blockSize;
+		_playbackStartUs = skippedSamples * 1'000'000 / samplingRate;
 		const auto loopRange = renderer->loopRange();
 		_loopBeginUs = loopRange.first * 1'000'000 / samplingRate;
 		_loopEndUs = loopRange.second * 1'000'000 / samplingRate;
@@ -340,6 +342,7 @@ Studio::Studio()
 	connect(_player.get(), &Player::timeAdvanced, [this](qint64 microseconds) {
 		if (_mode != Mode::Playing)
 			return;
+		microseconds += _playbackStartUs;
 		if (_loopPlaybackCheck->isChecked())
 			while (microseconds >= _loopEndUs)
 				microseconds = _loopBeginUs + (microseconds - _loopEndUs);
