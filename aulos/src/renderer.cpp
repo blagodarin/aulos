@@ -463,8 +463,7 @@ namespace
 
 		size_t totalSamples() const noexcept override
 		{
-			return std::accumulate(_tracks.cbegin(), _tracks.cend(), _format.stepsToSamples(_loopOffset + _loopLength),
-				[](size_t samples, const TrackRenderer& track) { return std::max(samples, track.totalSamples()); });
+			return std::accumulate(_tracks.cbegin(), _tracks.cend(), size_t{ 0 }, [](size_t samples, const TrackRenderer& track) { return std::max(samples, track.totalSamples()); });
 		}
 
 	public:
