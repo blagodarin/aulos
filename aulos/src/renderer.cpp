@@ -73,7 +73,6 @@ namespace
 		constexpr bool isStereo() const noexcept { return _channels == 2; }
 		constexpr auto samplesToSteps(size_t samples) const noexcept { return (samples + _stepSamples - 1) / _stepSamples; }
 		constexpr auto samplingRate() const noexcept { return _samplingRate; }
-		constexpr auto stepsToBytes(size_t steps) const noexcept { return steps * _stepBytes; }
 		constexpr auto stepsToSamples(size_t steps) const noexcept { return steps * _stepSamples; }
 
 	private:
@@ -81,7 +80,6 @@ namespace
 		const unsigned _channels;
 		const size_t _blockBytes = _channels * sizeof(float);
 		const size_t _stepSamples;
-		const size_t _stepBytes = _stepSamples * _blockBytes;
 	};
 
 	struct TrackRenderer
@@ -101,19 +99,19 @@ namespace
 			setVoices(polyphony, voiceData);
 		}
 
-		size_t render(void* buffer, size_t bufferBytes) noexcept
+		size_t render(void* buffer, size_t bufferSamples) noexcept
 		{
 			size_t trackOffset = 0;
-			while (trackOffset < bufferBytes)
+			while (trackOffset < bufferSamples)
 			{
-				if (!_strideBytesRemaining)
+				if (!_strideSamplesRemaining)
 				{
 					if (_nextSound == _sounds.cend())
 					{
 						if (_loopSound == _sounds.cend())
 						{
 							assert(!_loopDelay);
-							trackOffset = bufferBytes;
+							trackOffset = bufferSamples;
 						}
 						break;
 					}
@@ -129,7 +127,7 @@ namespace
 						case aulos::Polyphony::Chord:
 							for (auto j = _activeSounds.begin(); j != _activeSounds.end(); ++j)
 							{
-								if (j->_bytesRemaining == _soundBytes)
+								if (j->_samplesRemaining == _soundSamples)
 									continue;
 								if (i == _activeSounds.end() || i->_note < j->_note)
 									i = j;
@@ -153,35 +151,34 @@ namespace
 							}
 							break;
 						}
-						assert(i->_bytesRemaining < _soundBytes);
+						assert(i->_samplesRemaining < _soundSamples);
 						i->_voice->start(i->_note, _gain);
-						i->_bytesRemaining = _soundBytes;
+						i->_samplesRemaining = _soundSamples;
 					});
 					_nextSound = chordEnd;
 					if (_nextSound == _sounds.cend())
 					{
 						if (_loopDelay > 0)
 						{
-							_strideBytesRemaining = _format.stepsToBytes(_loopDelay);
+							_strideSamplesRemaining = _format.stepsToSamples(_loopDelay);
 							_nextSound = _loopSound;
 						}
 						else
-							_strideBytesRemaining = _soundBytes;
+							_strideSamplesRemaining = _soundSamples;
 					}
 					else
-						_strideBytesRemaining = _format.stepsToBytes(_nextSound->_delaySteps);
-					assert(_strideBytesRemaining > 0);
+						_strideSamplesRemaining = _format.stepsToSamples(_nextSound->_delaySteps);
+					assert(_strideSamplesRemaining > 0);
 				}
-				const auto strideBytes = std::min(_strideBytesRemaining, bufferBytes - trackOffset);
+				const auto strideSamples = std::min(_strideSamplesRemaining, bufferSamples - trackOffset);
 				for (size_t i = 0; i < _activeSounds.size();)
 				{
 					auto& activeSound = _activeSounds[i];
-					assert(activeSound._bytesRemaining > 0);
-					const auto bytesToRender = std::min(activeSound._bytesRemaining, strideBytes);
-					const auto bytesRendered = activeSound._voice->render(buffer ? reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + trackOffset) : nullptr, bytesToRender);
-					assert(bytesRendered == bytesToRender);
-					activeSound._bytesRemaining -= bytesRendered;
-					if (!activeSound._bytesRemaining)
+					assert(activeSound._samplesRemaining > 0);
+					const auto samplesToRender = std::min(activeSound._samplesRemaining, strideSamples);
+					activeSound._voice->render(reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + trackOffset * _format.blockBytes()), samplesToRender);
+					activeSound._samplesRemaining -= samplesToRender;
+					if (!activeSound._samplesRemaining)
 					{
 						_voicePool.emplace_back(std::move(activeSound._voice));
 						if (auto j = _activeSounds.size() - 1; j != i)
@@ -191,9 +188,9 @@ namespace
 					else
 						++i;
 				}
-				_strideBytesRemaining -= strideBytes;
-				trackOffset += strideBytes;
-				if (_strideBytesRemaining > 0)
+				_strideSamplesRemaining -= strideSamples;
+				trackOffset += strideSamples;
+				if (_strideSamplesRemaining > 0)
 					break;
 			}
 			return trackOffset;
@@ -208,7 +205,7 @@ namespace
 			}
 			_activeSounds.clear();
 			_nextSound = _sounds.cbegin();
-			_strideBytesRemaining = _format.stepsToBytes(_nextSound->_delaySteps);
+			_strideSamplesRemaining = _format.stepsToSamples(_nextSound->_delaySteps);
 			_gain = _weight * gain;
 		}
 
@@ -333,7 +330,7 @@ namespace
 		struct ActiveSound
 		{
 			std::unique_ptr<aulos::Voice> _voice;
-			size_t _bytesRemaining = 0;
+			size_t _samplesRemaining = 0;
 			aulos::Note _note = aulos::Note::C0;
 
 			ActiveSound(std::unique_ptr<aulos::Voice>&& voice, aulos::Note note) noexcept
@@ -354,7 +351,6 @@ namespace
 		const aulos::WaveData _waveData;
 		const aulos::Polyphony _polyphony;
 		const size_t _soundSamples = _waveData.totalSamples();
-		const size_t _soundBytes = _soundSamples * _format.blockBytes();
 		float _weight = 0;
 		aulos::LimitedVector<std::unique_ptr<aulos::Voice>> _voicePool;
 		aulos::LimitedVector<ActiveSound> _activeSounds;
@@ -363,7 +359,7 @@ namespace
 		const TrackSound* _loopSound = nullptr;
 		size_t _lastSoundOffset = 0;
 		size_t _loopDelay = 0;
-		size_t _strideBytesRemaining = 0;
+		size_t _strideSamplesRemaining = 0;
 		float _gain = 0.f;
 	};
 
@@ -427,13 +423,12 @@ namespace
 
 		size_t render(void* buffer, size_t bufferBytes) noexcept override
 		{
-			bufferBytes -= bufferBytes % _format.blockBytes();
-			if (buffer)
-				std::memset(buffer, 0, bufferBytes);
+			std::memset(buffer, 0, bufferBytes);
+			const auto bufferSamples = bufferBytes / _format.blockBytes();
 			size_t offset = 0;
 			for (auto& track : _tracks)
-				offset = std::max(offset, track.render(buffer, bufferBytes));
-			return offset;
+				offset = std::max(offset, track.render(buffer, bufferSamples));
+			return offset * _format.blockBytes();
 		}
 
 		void restart(float gain) noexcept override
@@ -446,6 +441,24 @@ namespace
 		unsigned samplingRate() const noexcept override
 		{
 			return _format.samplingRate();
+		}
+
+		size_t skipSamples(size_t samples) noexcept override
+		{
+			static std::array<std::byte, 65'536> skipBuffer;
+			const auto bufferSamples = skipBuffer.size() / _format.blockBytes();
+			size_t offset = 0;
+			while (offset < samples)
+			{
+				const auto samplesToRender = std::min(samples - offset, bufferSamples);
+				size_t samplesRendered = 0;
+				for (auto& track : _tracks)
+					samplesRendered = std::max(samplesRendered, track.render(skipBuffer.data(), samplesToRender));
+				if (samplesRendered < samplesToRender)
+					break;
+				offset += samplesRendered;
+			}
+			return offset;
 		}
 
 		size_t totalSamples() const noexcept override

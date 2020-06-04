@@ -29,7 +29,7 @@ namespace
 		auto render()
 		{
 			float sample = 0.f;
-			_voice.render(&sample, sizeof sample);
+			_voice.render(&sample, 1);
 			return sample;
 		}
 	};
@@ -50,7 +50,7 @@ namespace
 		auto render()
 		{
 			std::pair<float, float> block{ 0.f, 0.f };
-			_voice.render(&block.first, sizeof block);
+			_voice.render(&block.first, 1);
 			return block;
 		}
 	};
