@@ -157,16 +157,22 @@ namespace aulos
 		{
 		}
 
-		void advance(unsigned samples) noexcept
+		unsigned advance(unsigned maxSamples) noexcept
 		{
-			assert(samples > 0);
+			assert(maxSamples > 0);
 			if (_startDelay > 0)
 			{
-				assert(_startDelay >= samples);
 				assert(!_restartDelay);
-				_startDelay -= samples;
-				return;
+				if (_startDelay < maxSamples)
+					return std::exchange(_startDelay, 0u);
+				_startDelay -= maxSamples;
+				return maxSamples;
 			}
+			auto samples = std::min(_amplitudeModulator.maxContinuousAdvance(), _oscillator.maxAdvance());
+			if (_restartDelay > 0 && samples > _restartDelay)
+				samples = _restartDelay;
+			if (samples > maxSamples)
+				samples = maxSamples;
 			assert(_frequency > 0);
 			_amplitudeModulator.advance(samples);
 			_frequencyModulator.advance(samples);
@@ -181,6 +187,7 @@ namespace aulos
 				if (!_restartDelay)
 					startWave(_restartFrequency, true);
 			}
+			return samples;
 		}
 
 		constexpr ShaperData amplitudeShaperData() const noexcept
@@ -197,21 +204,6 @@ namespace aulos
 		{
 			const auto orientedAmplitude = amplitude * _oscillator.stageSign();
 			return { orientedAmplitude, -2 * orientedAmplitude * (1 - _oscillationModulator.currentValue<LinearShaper>()), _oscillator.stageLength(), _shapeParameter, _oscillator.stageOffset() };
-		}
-
-		auto maxAdvance() const noexcept
-		{
-			if (_startDelay > 0)
-			{
-				assert(!_restartDelay);
-				return _startDelay;
-			}
-			if (_restartDelay > 0)
-			{
-				assert(!_startDelay);
-				return std::min({ _amplitudeModulator.maxContinuousAdvance(), _oscillator.maxAdvance(), _restartDelay });
-			}
-			return std::min(_amplitudeModulator.maxContinuousAdvance(), _oscillator.maxAdvance());
 		}
 
 		void start(Note note) noexcept

@@ -176,7 +176,8 @@ namespace
 					auto& activeSound = _activeSounds[i];
 					assert(activeSound._samplesRemaining > 0);
 					const auto samplesToRender = std::min(activeSound._samplesRemaining, strideSamples);
-					activeSound._voice->render(reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + trackOffset * _format.blockBytes()), samplesToRender);
+					assert(samplesToRender <= std::numeric_limits<unsigned>::max());
+					activeSound._voice->render(reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + trackOffset * _format.blockBytes()), static_cast<unsigned>(samplesToRender));
 					activeSound._samplesRemaining -= samplesToRender;
 					if (!activeSound._samplesRemaining)
 					{

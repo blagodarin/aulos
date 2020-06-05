@@ -14,7 +14,7 @@ namespace aulos
 		Voice() noexcept = default;
 		virtual ~Voice() noexcept = default;
 
-		virtual void render(float* buffer, size_t samples) noexcept = 0;
+		virtual void render(float* buffer, unsigned samples) noexcept = 0;
 		virtual void start(Note, float amplitude) noexcept = 0;
 		virtual void stop() noexcept = 0;
 
@@ -31,21 +31,21 @@ namespace aulos
 		{
 		}
 
-		void render(float* buffer, size_t samples) noexcept override
+		void render(float* buffer, unsigned samples) noexcept override
 		{
-			size_t offset = 0;
-			while (offset < samples && !_wave.stopped())
+			assert(samples > 0);
+			do
 			{
-				const auto samplesToGenerate = static_cast<unsigned>(std::min<size_t>(samples - offset, _wave.maxAdvance()));
-				const auto output = buffer + offset;
+				assert(!_wave.stopped());
 				Shaper waveShaper{ _wave.waveShaperData(_baseAmplitude) };
 				LinearShaper amplitudeShaper{ _wave.amplitudeShaperData() };
-				for (unsigned i = 0; i < samplesToGenerate; ++i)
-					output[i] += waveShaper.advance() * amplitudeShaper.advance();
-				_wave.advance(samplesToGenerate);
-				offset += samplesToGenerate;
-			}
-			assert(offset == samples);
+				auto nextSamples = _wave.advance(samples);
+				assert(nextSamples > 0);
+				samples -= nextSamples;
+				do
+					*buffer++ += waveShaper.advance() * amplitudeShaper.advance();
+				while (--nextSamples > 0);
+			} while (samples > 0);
 		}
 
 		void start(Note note, float amplitude) noexcept override
@@ -75,27 +75,31 @@ namespace aulos
 		{
 		}
 
-		void render(float* buffer, size_t samples) noexcept override
+		void render(float* buffer, unsigned samples) noexcept override
 		{
-			size_t offset = 0;
-			while (offset < samples && !(_leftWave.stopped() && _rightWave.stopped()))
+			assert(samples > 0);
+			do
 			{
-				const auto samplesToGenerate = static_cast<unsigned>(std::min<size_t>({ samples - offset, _leftWave.maxAdvance(), _rightWave.maxAdvance() }));
-				auto output = buffer + offset * 2;
+				assert(!(_leftWave.stopped() && _rightWave.stopped()));
 				Shaper leftWaveShaper{ _leftWave.waveShaperData(_baseAmplitude * _leftAmplitude) };
-				Shaper rightWaveShaper{ _rightWave.waveShaperData(_baseAmplitude * _rightAmplitude) };
 				LinearShaper leftAmplitudeShaper{ _leftWave.amplitudeShaperData() };
-				LinearShaper rightAmplitudeShaper{ _rightWave.amplitudeShaperData() };
-				for (unsigned i = 0; i < samplesToGenerate; ++i)
+				auto leftSamples = _leftWave.advance(samples);
+				assert(leftSamples > 0);
+				samples -= leftSamples;
+				do
 				{
-					*output++ += leftWaveShaper.advance() * leftAmplitudeShaper.advance();
-					*output++ += rightWaveShaper.advance() * rightAmplitudeShaper.advance();
-				}
-				_leftWave.advance(samplesToGenerate);
-				_rightWave.advance(samplesToGenerate);
-				offset += samplesToGenerate;
-			}
-			assert(offset == samples);
+					Shaper rightWaveShaper{ _rightWave.waveShaperData(_baseAmplitude * _rightAmplitude) };
+					LinearShaper rightAmplitudeShaper{ _rightWave.amplitudeShaperData() };
+					auto rightSamples = _rightWave.advance(leftSamples);
+					assert(rightSamples > 0);
+					leftSamples -= rightSamples;
+					do
+					{
+						*buffer++ += leftWaveShaper.advance() * leftAmplitudeShaper.advance();
+						*buffer++ += rightWaveShaper.advance() * rightAmplitudeShaper.advance();
+					} while (--rightSamples > 0);
+				} while (leftSamples > 0);
+			} while (samples > 0);
 		}
 
 		void start(Note note, float amplitude) noexcept override
