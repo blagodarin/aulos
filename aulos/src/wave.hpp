@@ -23,6 +23,8 @@ namespace aulos
 			std::tie(_frequencyOffset, _frequencySize) = addPoints(data._frequencyEnvelope, samplingRate);
 			std::tie(_asymmetryOffset, _asymmetrySize) = addPoints(data._asymmetryEnvelope, samplingRate);
 			std::tie(_oscillationOffset, _oscillationSize) = addPoints(data._oscillationEnvelope, samplingRate);
+			const auto begin = _pointBuffer.data() + _amplitudeOffset;
+			_soundSamples = std::accumulate(begin, begin + _amplitudeSize, size_t{ _absoluteDelay }, [](size_t result, const SampledPoint& point) { return result + point._delaySamples; });
 		}
 
 		constexpr auto absoluteDelay() const noexcept
@@ -55,10 +57,9 @@ namespace aulos
 			return _shapeParameter;
 		}
 
-		auto totalSamples() const noexcept
+		auto totalSamples(Note) const noexcept
 		{
-			const auto begin = _pointBuffer.data() + _amplitudeOffset;
-			return std::accumulate(begin, begin + _amplitudeSize, size_t{ _absoluteDelay }, [](size_t result, const SampledPoint& point) { return result + point._delaySamples; });
+			return _soundSamples;
 		}
 
 	private:
@@ -141,6 +142,7 @@ namespace aulos
 		unsigned _asymmetrySize;
 		unsigned _oscillationOffset;
 		unsigned _oscillationSize;
+		size_t _soundSamples;
 	};
 
 	class WaveState

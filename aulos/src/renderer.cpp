@@ -90,7 +90,6 @@ namespace
 			, _waveData{ voiceData, _format.samplingRate(), _format.isStereo() }
 			, _polyphony{ voiceData._polyphony }
 		{
-			assert(_soundSamples > 0);
 			setSounds(sounds);
 			if (loop)
 				setLoop(loop->first, loop->second);
@@ -127,7 +126,7 @@ namespace
 						case aulos::Polyphony::Chord:
 							for (auto j = _activeSounds.begin(); j != _activeSounds.end(); ++j)
 							{
-								if (j->_samplesRemaining == _soundSamples)
+								if (j->_noteSamplesRemaining == j->_noteSamples)
 									continue;
 								if (i == _activeSounds.end() || i->_note < j->_note)
 									i = j;
@@ -151,9 +150,10 @@ namespace
 							}
 							break;
 						}
-						assert(i->_samplesRemaining < _soundSamples);
+						assert(!i->_noteSamples || i->_noteSamplesRemaining < i->_noteSamples);
 						i->_voice->start(i->_note, _gain);
-						i->_samplesRemaining = _soundSamples;
+						i->_noteSamples = _waveData.totalSamples(i->_note);
+						i->_noteSamplesRemaining = i->_noteSamples;
 					});
 					_nextSound = chordEnd;
 					if (_nextSound == _sounds.cend())
@@ -164,7 +164,7 @@ namespace
 							_nextSound = _loopSound;
 						}
 						else
-							_strideSamplesRemaining = _soundSamples;
+							_strideSamplesRemaining = lastChordSamples();
 					}
 					else
 						_strideSamplesRemaining = _format.stepsToSamples(_nextSound->_delaySteps);
@@ -174,12 +174,12 @@ namespace
 				for (size_t i = 0; i < _activeSounds.size();)
 				{
 					auto& activeSound = _activeSounds[i];
-					assert(activeSound._samplesRemaining > 0);
-					const auto samplesToRender = std::min(activeSound._samplesRemaining, strideSamples);
+					assert(activeSound._noteSamplesRemaining > 0);
+					const auto samplesToRender = std::min(activeSound._noteSamplesRemaining, strideSamples);
 					assert(samplesToRender <= std::numeric_limits<unsigned>::max());
 					activeSound._voice->render(reinterpret_cast<float*>(static_cast<std::byte*>(buffer) + trackOffset * _format.blockBytes()), static_cast<unsigned>(samplesToRender));
-					activeSound._samplesRemaining -= samplesToRender;
-					if (!activeSound._samplesRemaining)
+					activeSound._noteSamplesRemaining -= samplesToRender;
+					if (!activeSound._noteSamplesRemaining)
 					{
 						_voicePool.emplace_back(std::move(activeSound._voice));
 						if (auto j = _activeSounds.size() - 1; j != i)
@@ -213,7 +213,7 @@ namespace
 		void setWholeCompositionLoop(size_t loopLength) noexcept
 		{
 			assert(!_sounds.empty() && _loopSound == _sounds.cbegin() && !_loopDelay);
-			assert(_lastSoundOffset + _format.samplesToSteps(_soundSamples) <= loopLength); // To make sure polyphony calculations are still correct.
+			assert(_lastSoundOffset + _format.samplesToSteps(lastChordSamples()) <= loopLength); // To make sure polyphony calculations are still correct.
 			const auto loopDistance = _lastSoundOffset - _loopSound->_delaySteps;
 			assert(loopLength > loopDistance);
 			_loopDelay = loopLength - loopDistance;
@@ -221,11 +221,22 @@ namespace
 
 		size_t totalSamples() const noexcept
 		{
-			assert(!_sounds.empty());
-			return _format.stepsToSamples(_lastSoundOffset) + _soundSamples;
+			return _format.stepsToSamples(_lastSoundOffset) + lastChordSamples();
 		}
 
 	private:
+		size_t lastChordSamples() const noexcept
+		{
+			auto lastChordBegin = _sounds.end();
+			while (lastChordBegin != _sounds.begin())
+			{
+				--lastChordBegin;
+				if (lastChordBegin->_delaySteps > 0)
+					break;
+			}
+			return std::accumulate(lastChordBegin, _sounds.end(), size_t{}, [this](size_t samples, const TrackSound& sound) { return std::max(samples, _waveData.totalSamples(sound._note)); });
+		}
+
 		size_t maxPolyphony() const noexcept
 		{
 			assert(!_sounds.empty());
@@ -240,13 +251,13 @@ namespace
 				}
 				break;
 			case aulos::Polyphony::Full: {
-				const auto soundSteps = _format.samplesToSteps(_soundSamples);
 				const auto loopSoundCount = _sounds.size() - static_cast<size_t>(_loopSound - _sounds.cbegin());
 				assert(loopSoundCount > 0 || !_loopDelay);
 				for (size_t i = 0; i < _sounds.size(); ++i)
 				{
 					aulos::StaticVector<aulos::Note, 120> noteCounter;
 					noteCounter.emplace_back(_sounds[i]._note);
+					const auto soundSteps = _format.samplesToSteps(_waveData.totalSamples(_sounds[i]._note));
 					size_t currentDelay = 0;
 					for (auto j = i + 1;; ++j)
 					{
@@ -331,7 +342,8 @@ namespace
 		struct ActiveSound
 		{
 			std::unique_ptr<aulos::Voice> _voice;
-			size_t _samplesRemaining = 0;
+			size_t _noteSamples = 0;
+			size_t _noteSamplesRemaining = 0;
 			aulos::Note _note = aulos::Note::C0;
 
 			ActiveSound(std::unique_ptr<aulos::Voice>&& voice, aulos::Note note) noexcept
@@ -351,7 +363,6 @@ namespace
 		const CompositionFormat& _format;
 		const aulos::WaveData _waveData;
 		const aulos::Polyphony _polyphony;
-		const size_t _soundSamples = _waveData.totalSamples();
 		float _weight = 0;
 		aulos::LimitedVector<std::unique_ptr<aulos::Voice>> _voicePool;
 		aulos::LimitedVector<ActiveSound> _activeSounds;
