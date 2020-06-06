@@ -58,7 +58,7 @@ namespace aulos
 		auto totalSamples() const noexcept
 		{
 			const auto begin = _pointBuffer.data() + _amplitudeOffset;
-			return _absoluteDelay + std::accumulate(begin, begin + _amplitudeSize, size_t{}, [](size_t result, const SampledPoint& point) { return result + point._delaySamples; });
+			return std::accumulate(begin, begin + _amplitudeSize, size_t{ _absoluteDelay }, [](size_t result, const SampledPoint& point) { return result + point._delaySamples; });
 		}
 
 	private:
@@ -146,14 +146,13 @@ namespace aulos
 	class WaveState
 	{
 	public:
-		WaveState(const WaveData& data, unsigned samplingRate, unsigned delay) noexcept
+		WaveState(const WaveData& data, unsigned samplingRate) noexcept
 			: _shapeParameter{ data.shapeParameter() }
 			, _amplitudeModulator{ data.amplitudePoints() }
 			, _frequencyModulator{ data.frequencyPoints() }
 			, _asymmetryModulator{ data.asymmetryPoints() }
 			, _oscillationModulator{ data.oscillationPoints() }
 			, _oscillator{ samplingRate }
-			, _delay{ delay }
 		{
 		}
 
@@ -206,7 +205,7 @@ namespace aulos
 			return { orientedAmplitude, -2 * orientedAmplitude * (1 - _oscillationModulator.currentValue<LinearShaper>()), _oscillator.stageLength(), _shapeParameter, _oscillator.stageOffset() };
 		}
 
-		void start(Note note) noexcept
+		void start(Note note, unsigned delay = 0) noexcept
 		{
 			const auto frequency = kNoteTable[note];
 			assert(frequency > 0);
@@ -214,16 +213,16 @@ namespace aulos
 			if (_amplitudeModulator.stopped() || _startDelay > 0)
 			{
 				startWave(frequency, false);
-				_startDelay = _delay;
+				_startDelay = delay;
 			}
-			else if (!_delay)
+			else if (!delay)
 			{
 				startWave(frequency, true);
-				_startDelay = _delay;
+				_startDelay = delay;
 			}
 			else
 			{
-				_restartDelay = _delay;
+				_restartDelay = delay;
 				_restartFrequency = frequency;
 			}
 		}
@@ -256,7 +255,6 @@ namespace aulos
 		Modulator _asymmetryModulator;
 		Modulator _oscillationModulator;
 		Oscillator _oscillator;
-		const unsigned _delay;
 		float _frequency = 0;
 		unsigned _startDelay = 0;
 		unsigned _restartDelay = 0;

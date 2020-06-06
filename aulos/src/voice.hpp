@@ -27,7 +27,7 @@ namespace aulos
 	{
 	public:
 		MonoVoice(const WaveData& waveData, const VoiceData&, unsigned samplingRate) noexcept
-			: _wave{ waveData, samplingRate, 0 }
+			: _wave{ waveData, samplingRate }
 		{
 		}
 
@@ -68,10 +68,12 @@ namespace aulos
 	{
 	public:
 		StereoVoice(const WaveData& waveData, const VoiceData& voiceData, unsigned samplingRate) noexcept
-			: _leftWave{ waveData, samplingRate, voiceData._stereoDelay < 0 ? waveData.absoluteDelay() : 0 }
-			, _rightWave{ waveData, samplingRate, voiceData._stereoDelay > 0 ? waveData.absoluteDelay() : 0 }
+			: _leftWave{ waveData, samplingRate }
+			, _rightWave{ waveData, samplingRate }
 			, _leftAmplitude{ std::min(1.f - voiceData._stereoPan, 1.f) }
 			, _rightAmplitude{ std::copysign(std::min(1.f + voiceData._stereoPan, 1.f), voiceData._stereoInversion ? -1.f : 1.f) }
+			, _leftDelay{ voiceData._stereoDelay < 0 ? waveData.absoluteDelay() : 0 }
+			, _rightDelay{ voiceData._stereoDelay > 0 ? waveData.absoluteDelay() : 0 }
 		{
 		}
 
@@ -105,8 +107,8 @@ namespace aulos
 		void start(Note note, float amplitude) noexcept override
 		{
 			_baseAmplitude = std::clamp(amplitude, -1.f, 1.f);
-			_leftWave.start(note);
-			_rightWave.start(note);
+			_leftWave.start(note, _leftDelay);
+			_rightWave.start(note, _rightDelay);
 		}
 
 		void stop() noexcept override
@@ -120,5 +122,7 @@ namespace aulos
 		WaveState _rightWave;
 		const float _leftAmplitude;
 		const float _rightAmplitude;
+		const unsigned _leftDelay;
+		const unsigned _rightDelay;
 	};
 }
