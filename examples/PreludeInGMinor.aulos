@@ -9,7 +9,7 @@ asymmetry 0 0.00 10 0.80
 frequency 0 -1.00 10 0.00
 oscillation 0 0.02 100 0.00
 polyphony full
-stereo_delay -3.00
+stereo_delay 3.00
 stereo_inversion 0
 stereo_pan 0.00
 wave quintic -1.00
@@ -20,7 +20,7 @@ asymmetry 0 0.00 10 0.80
 frequency 0 -1.00 10 0.00
 oscillation 0 0.02 100 0.00
 polyphony full
-stereo_delay 3.00
+stereo_delay -3.00
 stereo_inversion 0
 stereo_pan 0.00
 wave quintic -1.00

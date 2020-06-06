@@ -225,7 +225,7 @@ namespace
 		}
 
 	private:
-		size_t lastChordSamples() const noexcept
+		unsigned lastChordSamples() const noexcept
 		{
 			auto lastChordBegin = _sounds.end();
 			while (lastChordBegin != _sounds.begin())
@@ -234,7 +234,7 @@ namespace
 				if (lastChordBegin->_delaySteps > 0)
 					break;
 			}
-			return std::accumulate(lastChordBegin, _sounds.end(), size_t{}, [this](size_t samples, const TrackSound& sound) { return std::max(samples, _waveData.totalSamples(sound._note)); });
+			return std::accumulate(lastChordBegin, _sounds.end(), 0u, [this](unsigned samples, const TrackSound& sound) { return std::max(samples, _waveData.totalSamples(sound._note)); });
 		}
 
 		size_t maxPolyphony() const noexcept

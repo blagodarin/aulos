@@ -7,7 +7,7 @@ amplitude 10 1.00 90 0.25 900 0.00
 asymmetry 0 0.80 10 0.60
 oscillation 0 0.02 10 0.00 990 0.01
 polyphony chord
-stereo_delay -10.00
+stereo_delay 10.00
 stereo_inversion 1
 stereo_pan 0.00
 wave quintic -1.00
@@ -17,7 +17,7 @@ amplitude 10 1.00 90 0.25 900 0.00
 asymmetry 0 0.80 10 0.60
 oscillation 0 0.02 10 0.00 990 0.01
 polyphony chord
-stereo_delay 10.00
+stereo_delay -10.00
 stereo_inversion 0
 stereo_pan 0.00
 wave quintic -1.00

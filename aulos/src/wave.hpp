@@ -16,7 +16,7 @@ namespace aulos
 	{
 	public:
 		WaveData(const VoiceData& data, unsigned samplingRate, bool stereo)
-			: _absoluteDelay{ stereo ? static_cast<unsigned>(std::lround(samplingRate * std::abs(data._stereoDelay) / 1'000)) : 0 }
+			: _stereoDelaySamples{ static_cast<int>(std::lround(samplingRate * data._stereoDelay / 1'000)) }
 			, _shapeParameter{ data._waveShapeParameter }
 		{
 			std::tie(_amplitudeOffset, _amplitudeSize) = addPoints(data._amplitudeEnvelope, samplingRate);
@@ -24,12 +24,13 @@ namespace aulos
 			std::tie(_asymmetryOffset, _asymmetrySize) = addPoints(data._asymmetryEnvelope, samplingRate);
 			std::tie(_oscillationOffset, _oscillationSize) = addPoints(data._oscillationEnvelope, samplingRate);
 			const auto begin = _pointBuffer.data() + _amplitudeOffset;
-			_soundSamples = std::accumulate(begin, begin + _amplitudeSize, size_t{ _absoluteDelay }, [](size_t result, const SampledPoint& point) { return result + point._delaySamples; });
+			const auto absoluteDelay = stereo ? static_cast<unsigned>(std::abs(_stereoDelaySamples)) : 0;
+			_soundSamples = std::accumulate(begin, begin + _amplitudeSize, absoluteDelay, [](unsigned result, const SampledPoint& point) { return result + point._delaySamples; });
 		}
 
-		constexpr auto absoluteDelay() const noexcept
+		constexpr auto stereoDelay() const noexcept
 		{
-			return _absoluteDelay;
+			return _stereoDelaySamples;
 		}
 
 		SampledPoints amplitudePoints() const noexcept
@@ -131,7 +132,7 @@ namespace aulos
 		}
 
 	private:
-		const unsigned _absoluteDelay;
+		const int _stereoDelaySamples;
 		const float _shapeParameter;
 		std::vector<SampledPoint> _pointBuffer;
 		unsigned _amplitudeOffset;
@@ -142,7 +143,7 @@ namespace aulos
 		unsigned _asymmetrySize;
 		unsigned _oscillationOffset;
 		unsigned _oscillationSize;
-		size_t _soundSamples;
+		unsigned _soundSamples;
 	};
 
 	class WaveState

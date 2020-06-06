@@ -13,6 +13,7 @@ namespace aulos
 	class NoteTable
 	{
 	public:
+		static constexpr size_t kNoteCount = 120;
 		static constexpr double kNoteRatio = 1.0594630943592952645618252949463;
 		static constexpr size_t kOctaveLength = 12;
 
@@ -47,7 +48,7 @@ namespace aulos
 		}
 
 	private:
-		std::array<float, 120> _frequencies{};
+		std::array<float, kNoteCount> _frequencies{};
 	};
 
 	constexpr NoteTable kNoteTable;
