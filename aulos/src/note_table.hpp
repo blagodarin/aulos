@@ -47,6 +47,12 @@ namespace aulos
 			return _frequencies[static_cast<size_t>(note)];
 		}
 
+		static constexpr int stereoDelay(Note note, int offset, int radius) noexcept
+		{
+			constexpr auto kLastNoteIndex = static_cast<int>(kNoteCount - 1);
+			return offset + radius * (2 * static_cast<int>(note) - kLastNoteIndex) / kLastNoteIndex;
+		}
+
 	private:
 		std::array<float, kNoteCount> _frequencies{};
 	};

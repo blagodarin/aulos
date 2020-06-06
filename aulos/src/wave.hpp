@@ -16,7 +16,8 @@ namespace aulos
 	{
 	public:
 		WaveData(const VoiceData& data, unsigned samplingRate, bool stereo)
-			: _stereoDelaySamples{ static_cast<int>(std::lround(samplingRate * data._stereoDelay / 1'000)) }
+			: _stereoOffset{ stereo ? static_cast<int>(std::lround(samplingRate * data._stereoDelay / 1'000)) : 0 }
+			, _stereoRadius{ stereo ? static_cast<int>(std::lround(samplingRate * data._stereoRadius / 1'000)) : 0 }
 			, _shapeParameter{ data._waveShapeParameter }
 		{
 			std::tie(_amplitudeOffset, _amplitudeSize) = addPoints(data._amplitudeEnvelope, samplingRate);
@@ -24,13 +25,7 @@ namespace aulos
 			std::tie(_asymmetryOffset, _asymmetrySize) = addPoints(data._asymmetryEnvelope, samplingRate);
 			std::tie(_oscillationOffset, _oscillationSize) = addPoints(data._oscillationEnvelope, samplingRate);
 			const auto begin = _pointBuffer.data() + _amplitudeOffset;
-			const auto absoluteDelay = stereo ? static_cast<unsigned>(std::abs(_stereoDelaySamples)) : 0;
-			_soundSamples = std::accumulate(begin, begin + _amplitudeSize, absoluteDelay, [](unsigned result, const SampledPoint& point) { return result + point._delaySamples; });
-		}
-
-		constexpr auto stereoDelay() const noexcept
-		{
-			return _stereoDelaySamples;
+			_soundSamples = std::accumulate(begin, begin + _amplitudeSize, 0u, [](unsigned result, const SampledPoint& point) { return result + point._delaySamples; });
 		}
 
 		SampledPoints amplitudePoints() const noexcept
@@ -58,9 +53,19 @@ namespace aulos
 			return _shapeParameter;
 		}
 
-		auto totalSamples(Note) const noexcept
+		constexpr auto stereoOffset() const noexcept
 		{
-			return _soundSamples;
+			return _stereoOffset;
+		}
+
+		constexpr auto stereoRadius() const noexcept
+		{
+			return _stereoRadius;
+		}
+
+		auto totalSamples(Note note) const noexcept
+		{
+			return _soundSamples + std::abs(NoteTable::stereoDelay(note, _stereoOffset, _stereoRadius));
 		}
 
 	private:
@@ -132,7 +137,8 @@ namespace aulos
 		}
 
 	private:
-		const int _stereoDelaySamples;
+		const int _stereoOffset;
+		const int _stereoRadius;
 		const float _shapeParameter;
 		std::vector<SampledPoint> _pointBuffer;
 		unsigned _amplitudeOffset;

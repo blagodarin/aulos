@@ -99,6 +99,7 @@ namespace aulos
 		Envelope _oscillationEnvelope;
 		float _waveShapeParameter = 0.f;
 		float _stereoDelay = 0.f;
+		float _stereoRadius = 0.f;
 		float _stereoPan = 0.f;
 		bool _stereoInversion = false;
 		Polyphony _polyphony = Polyphony::Chord;

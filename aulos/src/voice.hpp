@@ -72,7 +72,8 @@ namespace aulos
 			, _rightWave{ waveData, samplingRate }
 			, _leftAmplitude{ std::min(1.f - voiceData._stereoPan, 1.f) }
 			, _rightAmplitude{ std::copysign(std::min(1.f + voiceData._stereoPan, 1.f), voiceData._stereoInversion ? -1.f : 1.f) }
-			, _stereoDelay{ waveData.stereoDelay() }
+			, _stereoOffset{ waveData.stereoOffset() }
+			, _stereoRadius{ waveData.stereoRadius() }
 		{
 		}
 
@@ -105,11 +106,10 @@ namespace aulos
 
 		void start(Note note, float amplitude) noexcept override
 		{
-			auto leftDelay = static_cast<unsigned>(std::max(_stereoDelay, 0));
-			auto rightDelay = static_cast<unsigned>(std::max(-_stereoDelay, 0));
+			const auto noteDelay = NoteTable::stereoDelay(note, _stereoOffset, _stereoRadius);
 			_baseAmplitude = std::clamp(amplitude, -1.f, 1.f);
-			_leftWave.start(note, leftDelay);
-			_rightWave.start(note, rightDelay);
+			_leftWave.start(note, static_cast<unsigned>(std::max(noteDelay, 0)));
+			_rightWave.start(note, static_cast<unsigned>(std::max(-noteDelay, 0)));
 		}
 
 		void stop() noexcept override
@@ -123,6 +123,7 @@ namespace aulos
 		WaveState _rightWave;
 		const float _leftAmplitude;
 		const float _rightAmplitude;
-		const int _stereoDelay;
+		const int _stereoOffset;
+		const int _stereoRadius;
 	};
 }

@@ -43,6 +43,7 @@ private:
 	QLabel* _waveShapeParameterLabel = nullptr;
 	QDoubleSpinBox* _waveShapeParameterSpin = nullptr;
 	QDoubleSpinBox* _stereoDelaySpin = nullptr;
+	QDoubleSpinBox* _stereoRadiusSpin = nullptr;
 	QDoubleSpinBox* _stereoPanSpin = nullptr;
 	QCheckBox* _stereoInversionCheck = nullptr;
 	QComboBox* _polyphonyCombo = nullptr;

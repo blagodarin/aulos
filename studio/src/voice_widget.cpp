@@ -59,6 +59,17 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 	connect(_stereoDelaySpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
 	++row;
 
+	_stereoRadiusSpin = new QDoubleSpinBox{ parent };
+	_stereoRadiusSpin->setDecimals(2);
+	_stereoRadiusSpin->setRange(-1'000.0, 1'000.0);
+	_stereoRadiusSpin->setSingleStep(0.01);
+	_stereoRadiusSpin->setSuffix(tr("ms"));
+	_stereoRadiusSpin->setValue(0.0);
+	layout->addWidget(new QLabel{ tr("Radius:"), this }, row, 1, 1, 2);
+	layout->addWidget(_stereoRadiusSpin, row, 3, 1, 2);
+	connect(_stereoRadiusSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
+	++row;
+
 	_stereoPanSpin = new QDoubleSpinBox{ parent };
 	_stereoPanSpin->setDecimals(2);
 	_stereoPanSpin->setRange(-1.0, 1.0);
@@ -202,6 +213,7 @@ void VoiceWidget::setVoice(const std::shared_ptr<aulos::VoiceData>& voice)
 	updateShapeParameter();
 	_waveShapeParameterSpin->setValue(usedVoice->_waveShapeParameter);
 	_stereoDelaySpin->setValue(usedVoice->_stereoDelay);
+	_stereoRadiusSpin->setValue(usedVoice->_stereoRadius);
 	_stereoPanSpin->setValue(usedVoice->_stereoPan);
 	_stereoInversionCheck->setChecked(usedVoice->_stereoInversion);
 	_polyphonyCombo->setCurrentIndex(_polyphonyCombo->findData(static_cast<int>(usedVoice->_polyphony)));
@@ -251,6 +263,7 @@ void VoiceWidget::updateVoice()
 	storeEnvelope(_voice->_asymmetryEnvelope, _asymmetryEnvelope);
 	storeEnvelope(_voice->_oscillationEnvelope, _oscillationEnvelope);
 	_voice->_stereoDelay = static_cast<float>(_stereoDelaySpin->value());
+	_voice->_stereoRadius = static_cast<float>(_stereoRadiusSpin->value());
 	_voice->_stereoPan = static_cast<float>(_stereoPanSpin->value());
 	_voice->_stereoInversion = _stereoInversionCheck->isChecked();
 	_voice->_polyphony = static_cast<aulos::Polyphony>(_polyphonyCombo->currentData().toInt());
