@@ -143,6 +143,7 @@ namespace aulos
 			text += "\nstereo_delay " + floatToString(part._voice._stereoDelay);
 			text += "\nstereo_inversion " + std::to_string(static_cast<int>(part._voice._stereoInversion));
 			text += "\nstereo_pan " + floatToString(part._voice._stereoPan);
+			text += "\nstereo_radius " + floatToString(part._voice._stereoRadius);
 			text += "\nwave ";
 			switch (part._voice._waveShape)
 			{

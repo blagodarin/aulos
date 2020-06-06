@@ -2,31 +2,21 @@ author "Ludwig van Beethoven"
 speed 5
 title "Fur Elise"
 
-@voice 1 "Right"
+@voice 1 "Voice"
 amplitude 10 1.00 40 1.00 950 sharp_quadratic_2 0.00
 asymmetry 0 0.50
 frequency 0 -0.25 10 0.00
 oscillation 0 0.02 50 smooth_quadratic_4 0.00
 polyphony full
-stereo_delay 10.00
+stereo_delay 0.25
 stereo_inversion 0
 stereo_pan 0.00
-wave quintic 1.00
-
-@voice 2 "Left"
-amplitude 10 1.00 40 1.00 950 sharp_quadratic_2 0.00
-asymmetry 0 0.50
-frequency 0 -0.25 10 0.00
-oscillation 0 0.02 50 smooth_quadratic_4 0.00
-polyphony full
-stereo_delay -10.00
-stereo_inversion 0
-stereo_pan 0.00
+stereo_radius 3.00
 wave quintic 1.00
 
 @tracks
 1 1 1
-2 1 2
+1 2 1
 
 @sequences
 1 1 1 E5,D#5,E5,D#5,E5,B4,D5,C5,A4
@@ -39,8 +29,8 @@ wave quintic 1.00
 1 1 8 F4,E5,D5,C5
 1 1 9 E4,D5,C5,B4
 1 1 10 E4,E4,E5,E4,E5,E5,E6,D#5,E5,D#5,E5,D#5,E5,D#5
-2 1 1 A2,E3,A3,,,,E2,E3,G#3,,,,A2,E3,A3
-2 1 2 C3,G3,C4,,,,G2,G3,B3,,,,A2,E3,A3,,,,E2,E3
+1 2 1 A2,E3,A3,,,,E2,E3,G#3,,,,A2,E3,A3
+1 2 2 C3,G3,C4,,,,G2,G3,B3,,,,A2,E3,A3,,,,E2,E3
 
 @fragments 1 1
 1 1
@@ -70,7 +60,7 @@ wave quintic 1.00
 11 2
 6 5
 
-@fragments 2 1
+@fragments 1 2
 9 1
 24 1
 24 1

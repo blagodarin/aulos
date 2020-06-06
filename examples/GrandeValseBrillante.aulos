@@ -10,6 +10,7 @@ polyphony chord
 stereo_delay 10.00
 stereo_inversion 1
 stereo_pan 0.00
+stereo_radius 0.00
 wave quintic -1.00
 
 @voice 2 "Left"
@@ -20,6 +21,7 @@ polyphony chord
 stereo_delay -10.00
 stereo_inversion 0
 stereo_pan 0.00
+stereo_radius 0.00
 wave quintic -1.00
 
 @tracks

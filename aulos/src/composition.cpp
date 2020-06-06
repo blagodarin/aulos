@@ -312,6 +312,12 @@ namespace aulos
 					throw CompositionError{ location(), "Unexpected command" };
 				currentVoice->_stereoPan = readFloat(-1.f, 1.f);
 			}
+			else if (command == "stereo_radius")
+			{
+				if (currentSection != Section::Voice)
+					throw CompositionError{ location(), "Unexpected command" };
+				currentVoice->_stereoRadius = readFloat(-1'000.f, 1'000.f);
+			}
 			else if (command == "wave")
 			{
 				if (currentSection != Section::Voice)

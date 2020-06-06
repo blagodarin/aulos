@@ -10,6 +10,7 @@ polyphony chord
 stereo_delay -5.00
 stereo_inversion 0
 stereo_pan 0.00
+stereo_radius 0.00
 wave cosine
 
 @voice 2 "Melody"
@@ -21,6 +22,7 @@ polyphony chord
 stereo_delay 5.00
 stereo_inversion 0
 stereo_pan 0.00
+stereo_radius 0.00
 wave cosine
 
 @voice 3 "Drum"
@@ -32,6 +34,7 @@ polyphony chord
 stereo_delay -20.00
 stereo_inversion 0
 stereo_pan -0.25
+stereo_radius 0.00
 wave cosine
 
 @voice 4 "Bass"
@@ -42,6 +45,7 @@ polyphony chord
 stereo_delay -2.00
 stereo_inversion 0
 stereo_pan 0.00
+stereo_radius 0.00
 wave cosine
 
 @tracks
