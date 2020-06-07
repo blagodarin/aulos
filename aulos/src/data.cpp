@@ -164,15 +164,13 @@ namespace aulos
 			}
 		}
 		text += "\n\n@tracks";
-		for (const auto& part : impl._parts)
-		{
-			const auto partIndex = static_cast<size_t>(&part - impl._parts.data() + 1);
-			for (const auto& track : part._tracks)
-			{
-				const auto trackIndex = static_cast<size_t>(&track - part._tracks.data() + 1);
+		std::for_each(impl._parts.cbegin(), impl._parts.cend(), [&text, partIndex = 1](const Part& part) mutable {
+			std::for_each(part._tracks.cbegin(), part._tracks.cend(), [&text, partIndex, trackIndex = 1](const Track& track) mutable {
 				text += '\n' + std::to_string(partIndex) + ' ' + std::to_string(trackIndex) + ' ' + std::to_string(track._weight);
-			}
-		}
+				++trackIndex;
+			});
+			++partIndex;
+		});
 		text += "\n\n@sequences";
 		for (const auto& part : impl._parts)
 		{
@@ -183,7 +181,9 @@ namespace aulos
 				for (const auto& sequence : track._sequences)
 				{
 					const auto sequenceIndex = static_cast<size_t>(&sequence - track._sequences.data() + 1);
-					text += '\n' + std::to_string(partIndex) + ' ' + std::to_string(trackIndex) + ' ' + std::to_string(sequenceIndex) + ' ';
+					text += '\n' + std::to_string(partIndex) + ' ' + std::to_string(trackIndex) + ' ' + std::to_string(sequenceIndex);
+					if (!sequence.empty())
+						text += ' ';
 					for (const auto& sound : sequence)
 					{
 						text.append(sound._delay, ',');
@@ -209,19 +209,15 @@ namespace aulos
 			}
 		}
 		text += "\n\n@fragments";
-		for (const auto& part : impl._parts)
-		{
-			const auto partIndex = static_cast<size_t>(&part - impl._parts.data() + 1);
-			for (const auto& track : part._tracks)
-			{
-				if (track._fragments.empty())
-					continue;
-				const auto trackIndex = static_cast<size_t>(&track - part._tracks.data() + 1);
+		std::for_each(impl._parts.cbegin(), impl._parts.cend(), [&text, partIndex = 1](const Part& part) mutable {
+			std::for_each(part._tracks.cbegin(), part._tracks.cend(), [&text, partIndex, trackIndex = 1](const Track& track) mutable {
 				text += '\n' + std::to_string(partIndex) + ' ' + std::to_string(trackIndex);
 				for (const auto& fragment : track._fragments)
-					text += ' '  + std::to_string(fragment._delay) + ' ' + std::to_string(fragment._sequence + 1);
-			}
-		}
+					text += ' ' + std::to_string(fragment._delay) + ' ' + std::to_string(fragment._sequence + 1);
+				++trackIndex;
+			});
+			++partIndex;
+		});
 		text += '\n';
 
 		std::vector<std::byte> buffer;
