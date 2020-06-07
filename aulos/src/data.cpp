@@ -57,6 +57,7 @@ namespace aulos
 		packed->_loopOffset = _loopOffset;
 		packed->_loopLength = _loopLength;
 		packed->_parts.reserve(_parts.size());
+		std::vector<std::shared_ptr<SequenceData>> currentTrackSequences;
 		for (const auto& partData : _parts)
 		{
 			auto& packedPart = packed->_parts.emplace_back();
@@ -66,19 +67,26 @@ namespace aulos
 			for (const auto& trackData : partData->_tracks)
 			{
 				auto& packedTrack = packedPart._tracks.emplace_back(trackData->_weight);
-				packedTrack._sequences.reserve(trackData->_sequences.size());
-				for (const auto& sequenceData : trackData->_sequences)
-					packedTrack._sequences.emplace_back(sequenceData->_sounds);
 				packedTrack._fragments.reserve(trackData->_fragments.size());
-				size_t lastOffset = 0;
-				for (const auto& fragmentData : trackData->_fragments)
+				for (size_t lastOffset = 0; const auto& fragmentData : trackData->_fragments)
 				{
-					const auto s = std::find(trackData->_sequences.begin(), trackData->_sequences.end(), fragmentData.second);
-					if (s == trackData->_sequences.end())
-						return {};
-					packedTrack._fragments.emplace_back(fragmentData.first - lastOffset, static_cast<size_t>(s - trackData->_sequences.begin()));
+					if (fragmentData.second->_sounds.empty())
+						continue;
+					size_t sequenceIndex = 0;
+					if (auto i = std::find(currentTrackSequences.cbegin(), currentTrackSequences.cend(), fragmentData.second); i == currentTrackSequences.cend())
+					{
+						sequenceIndex = currentTrackSequences.size();
+						currentTrackSequences.emplace_back(fragmentData.second);
+					}
+					else
+						sequenceIndex = static_cast<size_t>(i - currentTrackSequences.cbegin());
+					packedTrack._fragments.emplace_back(fragmentData.first - lastOffset, sequenceIndex);
 					lastOffset = fragmentData.first;
 				}
+				packedTrack._sequences.reserve(currentTrackSequences.size());
+				for (const auto& sequenceData : currentTrackSequences)
+					packedTrack._sequences.emplace_back(sequenceData->_sounds);
+				currentTrackSequences.clear();
 			}
 		}
 		packed->_title = _title;
