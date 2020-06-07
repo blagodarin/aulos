@@ -45,7 +45,6 @@ namespace aulos
 		const char* lineBase = source;
 		Section currentSection = Section::Global;
 		VoiceData* currentVoice = nullptr;
-		Track* currentTrack = nullptr;
 
 		const auto location = [&]() -> Location { return { line, source - lineBase }; };
 
@@ -420,11 +419,11 @@ namespace aulos
 					break;
 				}
 				case Section::Fragments: {
-					assert(currentTrack);
-					const auto delay = readUnsigned(0, std::numeric_limits<unsigned>::max());
-					const auto sequenceIndex = readUnsigned(1, static_cast<unsigned>(currentTrack->_sequences.size()));
+					auto& part = _parts[readUnsigned(1, static_cast<unsigned>(_parts.size())) - 1];
+					auto& track = part._tracks[readUnsigned(1, static_cast<unsigned>(part._tracks.size())) - 1];
+					while (const auto delay = tryReadUnsigned(0, std::numeric_limits<unsigned>::max()))
+						track._fragments.emplace_back(*delay, readUnsigned(1, static_cast<unsigned>(track._sequences.size())) - 1);
 					consumeEndOfLine();
-					currentTrack->_fragments.emplace_back(delay, sequenceIndex - 1);
 					break;
 				}
 				default:
@@ -456,11 +455,8 @@ namespace aulos
 				}
 				else if (section == "fragments")
 				{
-					auto& part = _parts[readUnsigned(1, static_cast<unsigned>(_parts.size())) - 1];
-					auto& track = part._tracks[readUnsigned(1, static_cast<unsigned>(part._tracks.size())) - 1];
 					consumeEndOfLine();
 					currentSection = Section::Fragments;
-					currentTrack = &track;
 				}
 				else
 					throw CompositionError{ location(), "Unknown section \"@" + std::string{ section } + "\"" };

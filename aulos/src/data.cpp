@@ -208,6 +208,7 @@ namespace aulos
 				}
 			}
 		}
+		text += "\n\n@fragments";
 		for (const auto& part : impl._parts)
 		{
 			const auto partIndex = static_cast<size_t>(&part - impl._parts.data() + 1);
@@ -216,9 +217,9 @@ namespace aulos
 				if (track._fragments.empty())
 					continue;
 				const auto trackIndex = static_cast<size_t>(&track - part._tracks.data() + 1);
-				text += "\n\n@fragments " + std::to_string(partIndex) + ' ' + std::to_string(trackIndex);
+				text += '\n' + std::to_string(partIndex) + ' ' + std::to_string(trackIndex);
 				for (const auto& fragment : track._fragments)
-					text += '\n' + std::to_string(fragment._delay) + ' ' + std::to_string(fragment._sequence + 1);
+					text += ' '  + std::to_string(fragment._delay) + ' ' + std::to_string(fragment._sequence + 1);
 			}
 		}
 		text += '\n';
