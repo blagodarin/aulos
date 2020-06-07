@@ -51,10 +51,10 @@ test_script:
   - ctest --output-on-failure %EXTRA_TEST_FLAGS%
   - if "%CMAKE_GENERATOR%"=="Ninja" cd %BUILD_DIR%\bin
   - if "%CMAKE_GENERATOR%"=="Visual Studio 16 2019" cd %BUILD_DIR%\bin\%CONFIG%
-  - benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\FurElise.aulos
-  - benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\GrandeValseBrillante.aulos
-  - benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\Popcorn.aulos
-  - benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\PreludeInGMinor.aulos
+  - benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\fur_elise.aulos
+  - benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\grande_valse_brillante.aulos
+  - benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\popcorn.aulos
+  - benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\prelude_in_g_minor.aulos
 
 artifacts:
   - path: AulosStudio-*.exe
