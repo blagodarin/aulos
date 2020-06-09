@@ -78,7 +78,6 @@ Section
 	SetOutPath "$INSTDIR\examples"
 	File "${SOURCE_DIR}\examples\fur_elise.aulos"
 	File "${SOURCE_DIR}\examples\grande_valse_brillante.aulos"
-	File "${SOURCE_DIR}\examples\popcorn.aulos"
 	File "${SOURCE_DIR}\examples\prelude_in_g_minor.aulos"
 
 	SetShellVarContext all
@@ -107,7 +106,6 @@ Section "Uninstall"
 
 	Delete "$INSTDIR\examples\fur_elise.aulos"
 	Delete "$INSTDIR\examples\grande_valse_brillante.aulos"
-	Delete "$INSTDIR\examples\popcorn.aulos"
 	Delete "$INSTDIR\examples\prelude_in_g_minor.aulos"
 	RMDir "$INSTDIR\examples"
 
