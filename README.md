@@ -5,7 +5,7 @@
 
 ### [Download Aulos Studio 0.0.3 for Windows](https://ci.appveyor.com/api/buildjobs/39onvf6nvf22bw0t/artifacts/AulosStudio-0.0.3.exe)
 
-[...or get the latest unstable installer at your own risk](https://ci.appveyor.com/api/projects/blagodarin/aulos/artifacts/AulosStudio-0.0.3-unstable.exe?branch=master&job=Environment%3A%20CONFIG%3DRelease%2C%20ARCH%3Damd64%2C%20QTDIR%3DC%3A%5CQt%5C5.13.2%5Cmsvc2017_64%2C%20INSTALLER%3DON)
+[...or get the latest unstable installer at your own risk](https://ci.appveyor.com/api/projects/blagodarin/aulos/artifacts/AulosStudio-0.0.4-unstable.exe?branch=master&job=Environment%3A%20CONFIG%3DRelease%2C%20ARCH%3Damd64%2C%20QTDIR%3DC%3A%5CQt%5C5.13.2%5Cmsvc2017_64%2C%20INSTALLER%3DON)
 
 
 # Aulos
