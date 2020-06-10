@@ -58,7 +58,7 @@ install:
 
 script:
   - if [ "${CONFIG}" = "Debug" ]; then CMAKE_OPTIONS="-DUSE_SANITIZERS=ON"; fi
-  - cmake -H. -B"${HOME}/aulos.build" -G"Ninja" -DCMAKE_BUILD_TYPE=${CONFIG} -DCMAKE_INSTALL_PREFIX="${HOME}/aulos.install" -DWITH_BENCHMARK=ON -DWITH_STUDIO=ON -DWITH_TESTS=ON ${CMAKE_OPTIONS}
+  - cmake -H. -B"${HOME}/aulos.build" -G"Ninja" -DCMAKE_BUILD_TYPE=${CONFIG} -DCMAKE_INSTALL_PREFIX="${HOME}/aulos.install" -DCMAKE_RUNTIME_OUTPUT_DIRECTORY="${HOME}/aulos.build/bin" -DWITH_BENCHMARK=ON -DWITH_STUDIO=ON -DWITH_TESTS=ON ${CMAKE_OPTIONS}
   - pushd "${HOME}/aulos.build"
   - TERM=dumb cmake --build .
   - ctest --output-on-failure
