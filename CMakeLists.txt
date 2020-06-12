@@ -4,7 +4,7 @@
 
 cmake_minimum_required(VERSION 3.15)
 
-project(aulos VERSION 0.0.4.0 HOMEPAGE_URL https://github.com/blagodarin/aulos LANGUAGES CXX)
+project(Aulos VERSION 0.0.4.0 HOMEPAGE_URL https://github.com/blagodarin/aulos LANGUAGES CXX)
 
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
@@ -66,6 +66,10 @@ if(NOT CMAKE_GENERATOR MATCHES "^Visual Studio")
 	set(CMAKE_RC_FLAGS "${CMAKE_RC_FLAGS} /nologo")
 endif()
 
+if(WIN32)
+	set(CMAKE_DEBUG_POSTFIX "d")
+endif()
+
 set(AULOS_RC_VERSION "${PROJECT_VERSION_MAJOR},${PROJECT_VERSION_MINOR},${PROJECT_VERSION_PATCH},${PROJECT_VERSION_TWEAK}")
 set(AULOS_VERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
 configure_file(config.h.in ${PROJECT_BINARY_DIR}/aulos_config.h)
@@ -110,11 +114,7 @@ if(WITH_STUDIO)
 	add_subdirectory(studio)
 endif()
 
-if(WIN32)
-	set(_cmake_config_dir cmake)
-else()
-	set(_cmake_config_dir ${CMAKE_INSTALL_LIBDIR}/cmake/Aulos)
-endif()
+set(_cmake_config_dir ${CMAKE_INSTALL_LIBDIR}/cmake/Aulos)
 
 configure_package_config_file(AulosConfig.cmake.in
 	${CMAKE_CURRENT_BINARY_DIR}/AulosConfig.cmake
@@ -124,4 +124,4 @@ write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/AulosConfigVersion.
 	COMPATIBILITY SameMinorVersion)
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/AulosConfig.cmake ${CMAKE_CURRENT_BINARY_DIR}/AulosConfigVersion.cmake DESTINATION ${_cmake_config_dir})
-install(EXPORT AulosTargets NAMESPACE Aulos:: DESTINATION ${_cmake_config_dir})
+install(EXPORT AulosTargets DESTINATION ${_cmake_config_dir} NAMESPACE Aulos::)

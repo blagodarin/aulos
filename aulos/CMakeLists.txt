@@ -27,7 +27,7 @@ source_group("src" FILES ${_src})
 add_library(aulos STATIC ${_include} ${_src})
 target_compile_definitions(aulos PRIVATE _USE_MATH_DEFINES)
 target_compile_options(aulos PRIVATE ${MAX_WARNINGS})
-target_include_directories(aulos PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>)
+target_include_directories(aulos PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
 install(FILES ${_include} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aulos)
 install(TARGETS aulos EXPORT AulosTargets
