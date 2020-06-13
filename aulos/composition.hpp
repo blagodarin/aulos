@@ -8,13 +8,15 @@
 
 namespace aulos
 {
-	// Contains audio data in an optimized format.
+	// Contains packed audio data.
 	class Composition
 	{
 	public:
 		[[nodiscard]] static std::unique_ptr<Composition> create(const char* textSource);
 
 		virtual ~Composition() noexcept = default;
+
+		virtual bool hasLoop() const noexcept = 0;
 	};
 
 	// Generates PCM audio for a composition.

@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 set(_src
+	src/loop.cpp
 	src/main.cpp
 	src/shaper.cpp
 	src/voice.cpp
