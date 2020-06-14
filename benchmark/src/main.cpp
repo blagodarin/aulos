@@ -122,7 +122,7 @@ int main(int argc, char** argv)
 		[&composition, source = data.get()] { composition = aulos::Composition::create(source); }, // Clang 9 is unable to capture 'data' by reference.
 		[&composition] { composition.reset(); });
 
-	constexpr unsigned samplingRate = 48'000;
+	static constexpr unsigned samplingRate = 48'000;
 	std::unique_ptr<aulos::Renderer> renderer;
 	const auto preparation = ::measure<10'000>(
 		[&renderer, &composition] { renderer = aulos::Renderer::create(*composition, samplingRate, 2); },
@@ -131,7 +131,7 @@ int main(int argc, char** argv)
 	const auto compositionSize = renderer->totalSamples() * sizeof(float) * 2;
 	const auto compositionDuration = renderer->totalSamples() * double{ Measurement::Duration::period::den } / samplingRate;
 
-	constexpr size_t bufferSize = 65'536;
+	static constexpr size_t bufferSize = 65'536;
 	const auto buffer = std::make_unique<std::byte[]>(bufferSize);
 	const auto baseline = ::measure(
 		[bufferData = buffer.get(), compositionSize] {
