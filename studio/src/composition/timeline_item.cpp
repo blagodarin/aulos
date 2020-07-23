@@ -53,7 +53,9 @@ void TimelineItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* opti
 			painter->setBrush(colors._brush);
 			painter->drawRect(rect);
 			painter->setPen(colors._pen);
-			painter->drawText(rect.adjusted(-textOffset, 0.0, -textOffset, 0.0), Qt::AlignRight | Qt::AlignVCenter, QString::number(index + 1));
+			const auto seconds = index + 1;
+			painter->drawText(rect.adjusted(-textOffset, 0.0, -textOffset, 0.0), Qt::AlignRight | Qt::AlignVCenter,
+				seconds < 60 ? QString::number(seconds) : QStringLiteral("%1:%2").arg(seconds / 60).arg(seconds % 60, 2, 10, QLatin1Char{ '0' }));
 		}
 		rect.moveLeft(rect.right());
 		++index;
