@@ -381,8 +381,8 @@ float CompositionScene::selectedTrackWeight() const
 	assert(trackIt != (*partIt)->_tracks.cend());
 	unsigned totalWeight = 0;
 	for (const auto& part : _composition->_parts)
-		totalWeight = std::accumulate(part->_tracks.begin(), part->_tracks.end(), totalWeight, [](unsigned weight, const auto& trackData) { return weight + trackData->_weight; });
-	return static_cast<float>((*trackIt)->_weight) / totalWeight;
+		totalWeight = std::accumulate(part->_tracks.begin(), part->_tracks.end(), totalWeight, [](unsigned weight, const auto& trackData) { return weight + trackData->_properties->_weight; });
+	return static_cast<float>((*trackIt)->_properties->_weight) / totalWeight;
 }
 
 QRectF CompositionScene::setCurrentStep(double step)

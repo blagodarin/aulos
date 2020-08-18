@@ -94,7 +94,7 @@ namespace
 			if (loop)
 				setLoop(loop->first, loop->second);
 			const auto polyphony = maxPolyphony();
-			setWeight(weight / polyphony);
+			setWeight(weight / static_cast<float>(polyphony));
 			setVoices(polyphony, voiceData);
 		}
 
@@ -413,7 +413,7 @@ namespace
 						}
 					}
 					if (!sounds.empty())
-						_tracks.emplace_back(_format, part._voice, track._weight / totalWeight, sounds, looping && composition._loopLength > 0 ? std::optional{ std::pair{ composition._loopOffset, composition._loopLength } } : std::nullopt);
+						_tracks.emplace_back(_format, part._voice, static_cast<float>(track._weight) / totalWeight, sounds, looping && composition._loopLength > 0 ? std::optional{ std::pair{ composition._loopOffset, composition._loopLength } } : std::nullopt);
 				}
 			}
 			_loopLength = composition._loopLength > 0 ? composition._loopLength : _format.samplesToSteps(totalSamples());

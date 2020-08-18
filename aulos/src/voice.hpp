@@ -6,6 +6,8 @@
 
 #include "wave.hpp"
 
+#include <algorithm>
+
 namespace aulos
 {
 	class Voice

@@ -129,7 +129,7 @@ int main(int argc, char** argv)
 		[&renderer] { renderer.reset(); });
 
 	const auto compositionSize = renderer->totalSamples() * sizeof(float) * 2;
-	const auto compositionDuration = renderer->totalSamples() * double{ Measurement::Duration::period::den } / samplingRate;
+	const auto compositionDuration = static_cast<double>(renderer->totalSamples()) * double{ Measurement::Duration::period::den } / samplingRate;
 
 	static constexpr size_t bufferSize = 65'536;
 	const auto buffer = std::make_unique<std::byte[]>(bufferSize);
@@ -152,9 +152,9 @@ int main(int argc, char** argv)
 	std::cout << "ParseTime: " << ::printTime(parsing.average()) << " [N=" << parsing._iterations << ", min=" << ::printTime(parsing._minDuration) << ", max=" << ::printTime(parsing._maxDuration) << "]\n";
 	std::cout << "PrepareTime: " << ::printTime(preparation.average()) << " [N=" << preparation._iterations << ", min=" << ::printTime(preparation._minDuration) << ", max=" << ::printTime(preparation._maxDuration) << "]\n";
 	std::cout << "RenderTime: " << ::printTime(rendering.average()) << " [N=" << rendering._iterations << ", min=" << ::printTime(rendering._minDuration) << ", max=" << ::printTime(rendering._maxDuration) << "]\n";
-	std::cout << "RenderSpeed: " << compositionDuration / rendering.average().count() << "x ("
-			  << std::to_string(compositionSize * std::ldexp(1'000'000'000, -20) / rendering.average().count()) << " MiB/s, "
-			  << std::to_string(compositionSize * 8. / rendering.average().count()) << " Gbit/s, "
-			  << std::to_string(static_cast<double>(rendering.average().count()) / baseline.average().count()) << " memsets)\n";
+	std::cout << "RenderSpeed: " << compositionDuration / static_cast<double>(rendering.average().count()) << "x ("
+			  << std::to_string(static_cast<double>(compositionSize) * std::ldexp(1'000'000'000, -20) / static_cast<double>(rendering.average().count())) << " MiB/s, "
+			  << std::to_string(static_cast<double>(compositionSize) * 8. / static_cast<double>(rendering.average().count())) << " Gbit/s, "
+			  << std::to_string(static_cast<double>(rendering.average().count()) / static_cast<double>(baseline.average().count())) << " memsets)\n";
 	return 0;
 }

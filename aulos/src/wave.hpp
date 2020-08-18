@@ -16,8 +16,8 @@ namespace aulos
 	{
 	public:
 		WaveData(const VoiceData& data, unsigned samplingRate, bool stereo)
-			: _stereoOffset{ stereo ? static_cast<int>(std::lround(samplingRate * data._stereoDelay / 1'000)) : 0 }
-			, _stereoRadius{ stereo ? static_cast<int>(std::lround(samplingRate * data._stereoRadius / 1'000)) : 0 }
+			: _stereoOffset{ stereo ? static_cast<int>(std::lround(static_cast<float>(samplingRate) * data._stereoDelay / 1'000)) : 0 }
+			, _stereoRadius{ stereo ? static_cast<int>(std::lround(static_cast<float>(samplingRate) * data._stereoRadius / 1'000)) : 0 }
 			, _shapeParameter{ data._waveShapeParameter }
 		{
 			std::tie(_amplitudeOffset, _amplitudeSize) = addPoints(data._amplitudeEnvelope, samplingRate);
@@ -186,7 +186,7 @@ namespace aulos
 			_frequencyModulator.advance(samples);
 			_asymmetryModulator.advance(samples);
 			_oscillationModulator.advance(samples);
-			_oscillator.advance(samples, _frequency * std::pow(2.f, _frequencyModulator.currentValue<LinearShaper>()), _asymmetryModulator.currentValue<LinearShaper>());
+			_oscillator.advance(static_cast<float>(samples), _frequency * std::pow(2.f, _frequencyModulator.currentValue<LinearShaper>()), _asymmetryModulator.currentValue<LinearShaper>());
 			if (_restartDelay > 0)
 			{
 				assert(!_startDelay);

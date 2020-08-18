@@ -17,11 +17,11 @@ namespace aulos
 	{
 	public:
 		constexpr explicit Oscillator(unsigned samplingRate) noexcept
-			: _samplingRate{ samplingRate }
+			: _samplingRate{ static_cast<float>(samplingRate) }
 		{
 		}
 
-		constexpr void advance(unsigned samples, float nextFrequency, float nextAsymmetry) noexcept
+		constexpr void advance(float samples, float nextFrequency, float nextAsymmetry) noexcept
 		{
 			auto remaining = _stageRemainder - samples;
 			assert(remaining > -1);
@@ -37,11 +37,6 @@ namespace aulos
 		auto maxAdvance() const noexcept
 		{
 			return static_cast<unsigned>(std::ceil(_stageRemainder));
-		}
-
-		constexpr auto samplingRate() const noexcept
-		{
-			return _samplingRate;
 		}
 
 		constexpr auto stageLength() const noexcept
@@ -86,7 +81,7 @@ namespace aulos
 		}
 
 	private:
-		const unsigned _samplingRate;
+		const float _samplingRate;
 		float _stageLength = 0;
 		float _stageRemainder = 0;
 		float _amplitudeSign = 1;

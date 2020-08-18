@@ -66,7 +66,7 @@ namespace aulos
 			packedPart._tracks.reserve(partData->_tracks.size());
 			for (const auto& trackData : partData->_tracks)
 			{
-				auto& packedTrack = packedPart._tracks.emplace_back(trackData->_weight);
+				auto& packedTrack = packedPart._tracks.emplace_back(trackData->_properties->_weight);
 				packedTrack._fragments.reserve(trackData->_fragments.size());
 				for (size_t lastOffset = 0; const auto& fragmentData : trackData->_fragments)
 				{

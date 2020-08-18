@@ -325,10 +325,10 @@ void CompositionWidget::updateSelectedSequence(const std::shared_ptr<aulos::Sequ
 
 bool CompositionWidget::editTrack(aulos::TrackData& track)
 {
-	_trackEditor->setTrackWeight(track._weight);
+	_trackEditor->setTrackWeight(track._properties->_weight);
 	if (_trackEditor->exec() != QDialog::Accepted)
 		return false;
-	track._weight = _trackEditor->trackWeight();
+	track._properties->_weight = _trackEditor->trackWeight();
 	return true;
 }
 
