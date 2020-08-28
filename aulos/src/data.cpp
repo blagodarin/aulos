@@ -159,6 +159,7 @@ namespace aulos
 			case WaveShape::SmoothQuadratic: text += "smooth_quadratic"; break;
 			case WaveShape::SharpQuadratic: text += "sharp_quadratic"; break;
 			case WaveShape::SmoothCubic: text += "cubic " + floatToString(part._voice._waveShapeParameter); break;
+			case WaveShape::SharpCubic: text += "sharp_cubic " + floatToString(part._voice._waveShapeParameter); break;
 			case WaveShape::Quintic: text += "quintic " + floatToString(part._voice._waveShapeParameter); break;
 			case WaveShape::Cosine: text += "cosine"; break;
 			}

@@ -45,6 +45,15 @@ TEST_CASE("shaper_linear")
 	::checkShaper<aulos::LinearShaper>({}, 23);
 }
 
+TEST_CASE("shaper_sharp_cubic")
+{
+	for (const auto shape : { 0.f, 1.f })
+	{
+		INFO("S = " << shape);
+		::checkShaper<aulos::SharpCubicShaper>(shape, 22);
+	}
+}
+
 TEST_CASE("shaper_sharp_quadratic")
 {
 	::checkShaper<aulos::SharpQuadraticShaper>({}, 23);

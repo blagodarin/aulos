@@ -95,7 +95,8 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 	_waveShapeCombo->addItem(tr("Linear"), static_cast<int>(aulos::WaveShape::Linear));
 	_waveShapeCombo->addItem(tr("Smooth Quadratic"), static_cast<int>(aulos::WaveShape::SmoothQuadratic));
 	_waveShapeCombo->addItem(tr("Sharp Quadratic"), static_cast<int>(aulos::WaveShape::SharpQuadratic));
-	_waveShapeCombo->addItem(tr("Cubic"), static_cast<int>(aulos::WaveShape::SmoothCubic));
+	_waveShapeCombo->addItem(tr("Smooth Cubic"), static_cast<int>(aulos::WaveShape::SmoothCubic));
+	_waveShapeCombo->addItem(tr("Sharp Cubic"), static_cast<int>(aulos::WaveShape::SharpCubic));
 	_waveShapeCombo->addItem(tr("Quintic"), static_cast<int>(aulos::WaveShape::Quintic));
 	_waveShapeCombo->addItem(tr("Cosine"), static_cast<int>(aulos::WaveShape::Cosine));
 	layout->addWidget(new QLabel{ tr("Wave shape:"), this }, row, 1, 1, 2);
@@ -231,6 +232,12 @@ void VoiceWidget::updateShapeParameter()
 		_waveShapeParameterLabel->setEnabled(true);
 		_waveShapeParameterSpin->setEnabled(true);
 		_waveShapeParameterSpin->setRange(aulos::kMinSmoothCubicShape, aulos::kMaxSmoothCubicShape);
+	}
+	else if (waveShape == aulos::WaveShape::SharpCubic)
+	{
+		_waveShapeParameterLabel->setEnabled(true);
+		_waveShapeParameterSpin->setEnabled(true);
+		_waveShapeParameterSpin->setRange(aulos::kMinSharpCubicShape, aulos::kMaxSharpCubicShape);
 	}
 	else if (waveShape == aulos::WaveShape::Quintic)
 	{

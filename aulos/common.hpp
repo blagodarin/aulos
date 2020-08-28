@@ -41,6 +41,7 @@ namespace aulos
 		SmoothQuadratic, // Quadratic curve with zero derivative on the left.
 		SharpQuadratic,  // Quadratic curve with zero derivative on the right.
 		SmoothCubic,     // Cubic curve with parameterized derivative on the right.
+		SharpCubic,      // Cubic curve with zero value and parameterized derivative in the middle.
 		Quintic,         // Quintic curve with zero value and parameterized derivative in the middle.
 		Cosine,          // Cosine curve.
 	};
@@ -52,6 +53,9 @@ namespace aulos
 	//  * [2, 3] - the second critical point moves from negative infinity to zero (i. e. to the left end of the curve).
 	constexpr float kMinSmoothCubicShape = 0;
 	constexpr float kMaxSmoothCubicShape = 3;
+
+	constexpr float kMinSharpCubicShape = 0;
+	constexpr float kMaxSharpCubicShape = 1;
 
 	constexpr float kMinQuinticShape = -1;
 	constexpr float kMaxQuinticShape = 1;

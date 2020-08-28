@@ -14,6 +14,9 @@
 static_assert(aulos::kMinSmoothCubicShape == aulos::SmoothCubicShaper::kMinShape);
 static_assert(aulos::kMaxSmoothCubicShape == aulos::SmoothCubicShaper::kMaxShape);
 
+static_assert(aulos::kMinSharpCubicShape == aulos::SharpCubicShaper::kMinShape);
+static_assert(aulos::kMaxSharpCubicShape == aulos::SharpCubicShaper::kMaxShape);
+
 static_assert(aulos::kMinQuinticShape == aulos::QuinticShaper::kMinShape);
 static_assert(aulos::kMaxQuinticShape == aulos::QuinticShaper::kMaxShape);
 
@@ -29,6 +32,7 @@ namespace
 			case aulos::WaveShape::SmoothQuadratic: return std::make_unique<aulos::MonoVoice<aulos::SmoothQuadraticShaper>>(waveData, voiceData, samplingRate);
 			case aulos::WaveShape::SharpQuadratic: return std::make_unique<aulos::MonoVoice<aulos::SharpQuadraticShaper>>(waveData, voiceData, samplingRate);
 			case aulos::WaveShape::SmoothCubic: return std::make_unique<aulos::MonoVoice<aulos::SmoothCubicShaper>>(waveData, voiceData, samplingRate);
+			case aulos::WaveShape::SharpCubic: return std::make_unique<aulos::MonoVoice<aulos::SharpCubicShaper>>(waveData, voiceData, samplingRate);
 			case aulos::WaveShape::Quintic: return std::make_unique<aulos::MonoVoice<aulos::QuinticShaper>>(waveData, voiceData, samplingRate);
 			case aulos::WaveShape::Cosine: return std::make_unique<aulos::MonoVoice<aulos::CosineShaper>>(waveData, voiceData, samplingRate);
 			}
@@ -41,6 +45,7 @@ namespace
 			case aulos::WaveShape::SmoothQuadratic: return std::make_unique<aulos::StereoVoice<aulos::SmoothQuadraticShaper>>(waveData, voiceData, samplingRate);
 			case aulos::WaveShape::SharpQuadratic: return std::make_unique<aulos::StereoVoice<aulos::SharpQuadraticShaper>>(waveData, voiceData, samplingRate);
 			case aulos::WaveShape::SmoothCubic: return std::make_unique<aulos::StereoVoice<aulos::SmoothCubicShaper>>(waveData, voiceData, samplingRate);
+			case aulos::WaveShape::SharpCubic: return std::make_unique<aulos::StereoVoice<aulos::SharpCubicShaper>>(waveData, voiceData, samplingRate);
 			case aulos::WaveShape::Quintic: return std::make_unique<aulos::StereoVoice<aulos::QuinticShaper>>(waveData, voiceData, samplingRate);
 			case aulos::WaveShape::Cosine: return std::make_unique<aulos::StereoVoice<aulos::CosineShaper>>(waveData, voiceData, samplingRate);
 			}

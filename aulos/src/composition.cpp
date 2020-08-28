@@ -335,6 +335,12 @@ namespace aulos
 					minShape = kMinSmoothCubicShape;
 					maxShape = kMaxSmoothCubicShape;
 				}
+				else if (type == "sharp_cubic")
+				{
+					currentVoice->_waveShape = WaveShape::SharpCubic;
+					minShape = kMinSharpCubicShape;
+					maxShape = kMaxSharpCubicShape;
+				}
 				else if (type == "quintic")
 				{
 					currentVoice->_waveShape = WaveShape::Quintic;

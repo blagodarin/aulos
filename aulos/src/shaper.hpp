@@ -163,11 +163,56 @@ namespace aulos
 		{
 			assert(shape >= kMinShape && shape <= kMaxShape);
 			const auto normalizedX = offsetX / deltaX;
-			return firstY + deltaY * (3 - shape - (2 - shape) * normalizedX) * normalizedX * normalizedX;
+			return firstY + deltaY * (1 + (2 - shape) * (1 - normalizedX)) * normalizedX * normalizedX;
 		}
 
 	private:
 		const float _c0;
+		const float _c2;
+		const float _c3;
+		float _nextX;
+	};
+
+	// C1 = (3 - 2 * shape) * deltaY / deltaX
+	// C2 = 6 * (1 - shape) * deltaY / deltaX^2
+	// C3 = 4 * (1 - shape) * deltaY / deltaX^3
+	// Y(X) = firstY + (C1 - (C2 - C3 * X) * X) * X
+	// Y(deltaX / 2) = 0
+	// Y'(deltaX / 2) = shape * deltaY / deltaX
+	class SharpCubicShaper
+	{
+	public:
+		// TODO: Find out actual shape limits.
+		static constexpr float kMinShape = 0;
+		static constexpr float kMaxShape = 1;
+
+		explicit constexpr SharpCubicShaper(const ShaperData& data) noexcept
+			: _c0{ data._firstY }
+			, _c1{ (3 - 2 * data._shape) * data._deltaY / data._deltaX }
+			, _c2{ 6 * (1 - data._shape) * data._deltaY / (data._deltaX * data._deltaX) }
+			, _c3{ 4 * (1 - data._shape) * data._deltaY / (data._deltaX * data._deltaX * data._deltaX) }
+			, _nextX{ data._offsetX }
+		{
+		}
+
+		constexpr auto advance() noexcept
+		{
+			const auto result = _c0 + (_c1 - (_c2 - _c3 * _nextX) * _nextX) * _nextX;
+			_nextX += 1;
+			return result;
+		}
+
+		template <typename Float, typename = std::enable_if_t<std::is_floating_point_v<Float>>>
+		static constexpr auto value(Float firstY, Float deltaY, Float deltaX, Float shape, Float offsetX) noexcept
+		{
+			assert(shape >= kMinShape && shape <= kMaxShape);
+			const auto normalizedX = offsetX / deltaX;
+			return firstY + deltaY * (1 + (1 - shape) * (2 - (6 - 4 * normalizedX) * normalizedX)) * normalizedX;
+		}
+
+	private:
+		const float _c0;
+		const float _c1;
 		const float _c2;
 		const float _c3;
 		float _nextX;
