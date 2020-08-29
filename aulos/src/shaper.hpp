@@ -182,8 +182,7 @@ namespace aulos
 	class SharpCubicShaper
 	{
 	public:
-		// TODO: Find out actual shape limits.
-		static constexpr float kMinShape = 0;
+		static constexpr float kMinShape = -2.99f; // It's actually -3, but float precision is insufficient to keep values in [-1, 1] range.
 		static constexpr float kMaxShape = 1;
 
 		explicit constexpr SharpCubicShaper(const ShaperData& data) noexcept

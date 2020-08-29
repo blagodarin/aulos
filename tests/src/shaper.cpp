@@ -15,6 +15,7 @@ namespace
 	template <typename Shaper>
 	void checkShaper(float shapeParameter, int precisionBits)
 	{
+		INFO("S = " << shapeParameter);
 		constexpr auto amplitude = 1.f;
 		constexpr auto range = 2 * amplitude;
 		const auto precision = std::ldexp(range, -precisionBits);
@@ -47,11 +48,11 @@ TEST_CASE("shaper_linear")
 
 TEST_CASE("shaper_sharp_cubic")
 {
-	for (const auto shape : { 0.f, 1.f })
-	{
-		INFO("S = " << shape);
-		::checkShaper<aulos::SharpCubicShaper>(shape, 22);
-	}
+	::checkShaper<aulos::SharpCubicShaper>(-2.99f, 18);
+	::checkShaper<aulos::SharpCubicShaper>(-2.f, 19);
+	::checkShaper<aulos::SharpCubicShaper>(-1.f, 20);
+	::checkShaper<aulos::SharpCubicShaper>(0.f, 22);
+	::checkShaper<aulos::SharpCubicShaper>(1.f, 23);
 }
 
 TEST_CASE("shaper_sharp_quadratic")
@@ -61,11 +62,10 @@ TEST_CASE("shaper_sharp_quadratic")
 
 TEST_CASE("shaper_smooth_cubic")
 {
-	for (const auto shape : { 0.f, 1.f, 2.f, 3.f })
-	{
-		INFO("S = " << shape);
-		::checkShaper<aulos::SmoothCubicShaper>(shape, 23);
-	}
+	::checkShaper<aulos::SmoothCubicShaper>(0.f, 23);
+	::checkShaper<aulos::SmoothCubicShaper>(1.f, 23);
+	::checkShaper<aulos::SmoothCubicShaper>(2.f, 23);
+	::checkShaper<aulos::SmoothCubicShaper>(3.f, 23);
 }
 
 TEST_CASE("shaper_smooth_quadratic")
@@ -75,9 +75,7 @@ TEST_CASE("shaper_smooth_quadratic")
 
 TEST_CASE("shaper_quintic")
 {
-	for (const auto shape : { -1.f, 0.f, 1.f })
-	{
-		INFO("S = " << shape);
-		::checkShaper<aulos::QuinticShaper>(shape, 18);
-	}
+	::checkShaper<aulos::QuinticShaper>(-1.f, 18);
+	::checkShaper<aulos::QuinticShaper>(0.f, 19);
+	::checkShaper<aulos::QuinticShaper>(1.f, 20);
 }
