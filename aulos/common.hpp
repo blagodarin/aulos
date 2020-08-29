@@ -51,18 +51,18 @@ namespace aulos
 	//  * [0, 1] - the derivative on the right starts at zero and increases until it becomes equal to the derivative of a linear shape;
 	//  * [1, 2] - the second critical point moves right until it reaches positive infinity and the curve becomes quadratic;
 	//  * [2, 3] - the second critical point moves from negative infinity to zero (i. e. to the left end of the curve).
-	constexpr float kMinSmoothCubicShape = 0;
-	constexpr float kMaxSmoothCubicShape = 3;
+	constexpr float kMinSmoothCubicShape = 0.f;
+	constexpr float kMaxSmoothCubicShape = 3.f;
 
 	// The shape parameter defines the curve shape as follows:
 	//  * [ 0, 1] - the function is monotonic and gradually transforms to linear at 1;
 	//  * [-3, 0) - the function is non-monotonic with two distinct extrema in the range.
 	// Below -3 and above 1 the extrema are outside of the Y range.
 	constexpr float kMinSharpCubicShape = -2.99f; // At -3, the extrema should exactly touch the Y range, but float precision loss pushes them outside.
-	constexpr float kMaxSharpCubicShape = 1;
+	constexpr float kMaxSharpCubicShape = 1.f;
 
-	constexpr float kMinQuinticShape = -1;
-	constexpr float kMaxQuinticShape = 1;
+	constexpr float kMinQuinticShape = -4.f;
+	constexpr float kMaxQuinticShape = 1.5f;
 
 	enum class EnvelopeShape
 	{

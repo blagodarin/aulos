@@ -139,8 +139,8 @@ namespace aulos
 	class SmoothCubicShaper
 	{
 	public:
-		static constexpr float kMinShape = 0;
-		static constexpr float kMaxShape = 3;
+		static constexpr float kMinShape = 0.f;
+		static constexpr float kMaxShape = 3.f;
 
 		explicit constexpr SmoothCubicShaper(const ShaperData& data) noexcept
 			: _c0{ data._firstY }
@@ -183,7 +183,7 @@ namespace aulos
 	{
 	public:
 		static constexpr float kMinShape = -2.99f; // It's actually -3, but float precision is insufficient to keep values in [-1, 1] range.
-		static constexpr float kMaxShape = 1;
+		static constexpr float kMaxShape = 1.f;
 
 		explicit constexpr SharpCubicShaper(const ShaperData& data) noexcept
 			: _c0{ data._firstY }
@@ -228,8 +228,8 @@ namespace aulos
 	{
 	public:
 		// TODO: Find out actual shape limits.
-		static constexpr float kMinShape = -1;
-		static constexpr float kMaxShape = 1;
+		static constexpr float kMinShape = -4.f;
+		static constexpr float kMaxShape = 1.5f;
 
 		explicit constexpr QuinticShaper(const ShaperData& data) noexcept
 			: _c0{ data._firstY }

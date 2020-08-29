@@ -75,7 +75,11 @@ TEST_CASE("shaper_smooth_quadratic")
 
 TEST_CASE("shaper_quintic")
 {
+	::checkShaper<aulos::QuinticShaper>(-4.f, 16);
+	::checkShaper<aulos::QuinticShaper>(-3.f, 17);
+	::checkShaper<aulos::QuinticShaper>(-2.f, 17);
 	::checkShaper<aulos::QuinticShaper>(-1.f, 18);
 	::checkShaper<aulos::QuinticShaper>(0.f, 19);
 	::checkShaper<aulos::QuinticShaper>(1.f, 20);
+	::checkShaper<aulos::QuinticShaper>(1.5f, 23);
 }
