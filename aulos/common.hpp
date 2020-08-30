@@ -55,11 +55,11 @@ namespace aulos
 	constexpr float kMaxSmoothCubicShape = 3.f;
 
 	// The shape parameter defines the curve shape as follows:
-	//  * [ 0, 1] - the function is monotonic and gradually transforms to linear at 1;
-	//  * [-3, 0) - the function is non-monotonic with two distinct extrema in the range.
-	// Below -3 and above 1 the extrema are outside of the Y range.
-	constexpr float kMinSharpCubicShape = -2.99f; // At -3, the extrema should exactly touch the Y range, but float precision loss pushes them outside.
-	constexpr float kMaxSharpCubicShape = 1.f;
+	//  * [0, 2] - the function is monotonic and gradually transforms from linear to cubic with zero derivative in the middle;
+	//  * (2, 8] - the function is non-monotonic with two distinct extrema in the range.
+	// Below 0 and above 8 the extrema are outside of the Y range.
+	constexpr float kMinSharpCubicShape = 0.f;
+	constexpr float kMaxSharpCubicShape = 7.99f; // At 8, the extrema should exactly touch the Y range, but float precision loss pushes them outside.
 
 	constexpr float kMinQuinticShape = -4.f;
 	constexpr float kMaxQuinticShape = 1.5f;

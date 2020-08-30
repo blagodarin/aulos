@@ -173,23 +173,23 @@ namespace aulos
 		float _nextX;
 	};
 
-	// C1 = (3 - 2 * shape) * deltaY / deltaX
-	// C2 = 6 * (1 - shape) * deltaY / deltaX^2
-	// C3 = 4 * (1 - shape) * deltaY / deltaX^3
+	// C1 = (1 + shape) * deltaY / deltaX
+	// C2 = 3 * shape * deltaY / deltaX^2
+	// C3 = 2 * shape * deltaY / deltaX^3
 	// Y(X) = firstY + (C1 - (C2 - C3 * X) * X) * X
 	// Y(deltaX / 2) = 0
-	// Y'(deltaX / 2) = shape * deltaY / deltaX
+	// Y'(deltaX / 2) = (1 - shape / 2) * deltaY / deltaX
 	class SharpCubicShaper
 	{
 	public:
-		static constexpr float kMinShape = -2.99f; // It's actually -3, but float precision is insufficient to keep values in [-1, 1] range.
-		static constexpr float kMaxShape = 1.f;
+		static constexpr float kMinShape = 0.f;
+		static constexpr float kMaxShape = 7.99f; // It's actually 8, but float precision is insufficient to keep values in [-1, 1] range.
 
 		explicit constexpr SharpCubicShaper(const ShaperData& data) noexcept
 			: _c0{ data._firstY }
-			, _c1{ (3 - 2 * data._shape) * data._deltaY / data._deltaX }
-			, _c2{ 6 * (1 - data._shape) * data._deltaY / (data._deltaX * data._deltaX) }
-			, _c3{ 4 * (1 - data._shape) * data._deltaY / (data._deltaX * data._deltaX * data._deltaX) }
+			, _c1{ (1 + data._shape) * data._deltaY / data._deltaX }
+			, _c2{ 3 * data._shape * data._deltaY / (data._deltaX * data._deltaX) }
+			, _c3{ 2 * data._shape * data._deltaY / (data._deltaX * data._deltaX * data._deltaX) }
 			, _nextX{ data._offsetX }
 		{
 		}
@@ -206,7 +206,7 @@ namespace aulos
 		{
 			assert(shape >= kMinShape && shape <= kMaxShape);
 			const auto normalizedX = offsetX / deltaX;
-			return firstY + deltaY * (1 + (1 - shape) * (2 - (6 - 4 * normalizedX) * normalizedX)) * normalizedX;
+			return firstY + deltaY * (1 + shape * (1 - (3 - 2 * normalizedX) * normalizedX)) * normalizedX;
 		}
 
 	private:

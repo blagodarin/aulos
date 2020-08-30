@@ -11,7 +11,7 @@ stereo_delay 0.25
 stereo_inversion 0
 stereo_pan 0.00
 stereo_radius 2.00
-wave cubic 3.00
+wave sharp_cubic 5.00
 
 @tracks
 1 1 4

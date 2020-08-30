@@ -48,11 +48,15 @@ TEST_CASE("shaper_linear")
 
 TEST_CASE("shaper_sharp_cubic")
 {
-	::checkShaper<aulos::SharpCubicShaper>(-2.99f, 18);
-	::checkShaper<aulos::SharpCubicShaper>(-2.f, 19);
-	::checkShaper<aulos::SharpCubicShaper>(-1.f, 20);
-	::checkShaper<aulos::SharpCubicShaper>(0.f, 22);
-	::checkShaper<aulos::SharpCubicShaper>(1.f, 23);
+	::checkShaper<aulos::SharpCubicShaper>(0.f, 23);   // +1.0 (linear)
+	::checkShaper<aulos::SharpCubicShaper>(1.f, 23);   // +0.5
+	::checkShaper<aulos::SharpCubicShaper>(2.f, 22);   //  0.0
+	::checkShaper<aulos::SharpCubicShaper>(3.f, 20);   // -0.5
+	::checkShaper<aulos::SharpCubicShaper>(4.f, 20);   // -1.0
+	::checkShaper<aulos::SharpCubicShaper>(5.f, 20);   // -1.5
+	::checkShaper<aulos::SharpCubicShaper>(6.f, 19);   // -2.0
+	::checkShaper<aulos::SharpCubicShaper>(7.f, 19);   // -2.5
+	::checkShaper<aulos::SharpCubicShaper>(7.99f, 18); // -3.0
 }
 
 TEST_CASE("shaper_sharp_quadratic")
