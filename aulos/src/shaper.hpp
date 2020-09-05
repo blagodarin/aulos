@@ -92,41 +92,45 @@ namespace aulos
 		float _nextX;
 	};
 
-	// C1 = 2 * deltaY / deltaX
-	// C2 = deltaY / deltaX^2
-	// Y(X) = firstY + (C1 - C2 * X) * X
-	// Y'(deltaX) = 0
+	// H(X) = deltaY / 2 - 2 * deltaY / deltaX * X + 2 * deltaY / deltaX^2 * X^2
+	// 0 <= X <= deltaX / 2 : Y(X) = firstY + deltaY / 2 - H(X)
+	// deltaX / 2 <= X <= deltaX : Y(X) = firstY + deltaY / 2 + H(X)
+	// Y(0) = firstY
+	// Y(deltaX / 2) = firstY + deltaY / 2
+	// Y(deltaX) = firstY + deltaY
 	class SharpQuadraticShaper
 	{
 	public:
 		explicit constexpr SharpQuadraticShaper(const ShaperData& data) noexcept
-			: _c0{ data._firstY }
+			: _c0{ data._deltaY / 2 }
 			, _c1{ 2 * data._deltaY / data._deltaX }
-			, _c2{ data._deltaY / (data._deltaX * data._deltaX) }
+			, _c2{ _c1 / data._deltaX }
+			, _baseY{ data._firstY + _c0 }
+			, _halfDeltaX{ data._deltaX / 2 }
 			, _nextX{ data._offsetX }
 		{
 		}
 
-		constexpr auto advance() noexcept
+		auto advance() noexcept
 		{
-			// Values can also be computed incrementally: Y(X + 1) = 2 * (Y(X) - C2) - Y(X - 1)
-			// Unfortunately, float doesn't have enough precision, and double is much slower.
-			const auto result = _c0 + (_c1 - _c2 * _nextX) * _nextX;
+			const auto result = _baseY + std::copysign(1.f, _nextX - _halfDeltaX) * (_c0 - (_c1 - _c2 * _nextX) * _nextX);
 			_nextX += 1;
 			return result;
 		}
 
 		template <typename Float, typename = std::enable_if_t<std::is_floating_point_v<Float>>>
-		static constexpr auto value(Float firstY, Float deltaY, Float deltaX, Float, Float offsetX) noexcept
+		static auto value(Float firstY, Float deltaY, Float deltaX, Float, Float offsetX) noexcept
 		{
 			const auto normalizedX = offsetX / deltaX;
-			return firstY + deltaY * (2 - normalizedX) * normalizedX;
+			return firstY + deltaY * (1 + std::copysign(1 - 4 * normalizedX * (1 - normalizedX), offsetX - deltaX / 2)) / 2;
 		}
 
 	private:
 		const float _c0;
 		const float _c1;
 		const float _c2;
+		const float _baseY;
+		const float _halfDeltaX;
 		float _nextX;
 	};
 
