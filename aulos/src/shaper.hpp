@@ -57,24 +57,29 @@ namespace aulos
 		double _nextY;
 	};
 
-	// C2 = deltaY / deltaX^2
-	// Y(X) = firstY + C2 * X^2
+	// P(X) = firstY - deltaY / 2 + 2 * deltaY / deltaX * X
+	// Q(X) = deltaY / 2 - 2 * deltaY / deltaX * X + 2 * deltaY / deltaX^2 * X^2
+	// 0 <= X <= deltaX / 2 : Y(X) = P(X) + Q(X)
+	// deltaX / 2 <= X <= deltaX : Y(X) = P(X) - Q(X)
+	// Y(deltaX / 2) = firstY + deltaY / 2
 	// Y'(0) = 0
+	// Y'(deltaX) = 0
 	class SmoothQuadraticShaper
 	{
 	public:
 		explicit constexpr SmoothQuadraticShaper(const ShaperData& data) noexcept
-			: _c0{ data._firstY }
-			, _c2{ data._deltaY / (data._deltaX * data._deltaX) }
+			: _halfDeltaY{ data._deltaY / 2 }
+			, _baseY{ data._firstY - _halfDeltaY }
+			, _halfDeltaX{ data._deltaX / 2 }
 			, _nextX{ data._offsetX }
 		{
 		}
 
-		constexpr float advance() noexcept
+		float advance() noexcept
 		{
-			// Values can also be computed incrementally: Y(X + 1) = 2 * (Y(X) + C2) - Y(X - 1)
-			// Unfortunately, float doesn't have enough precision, and double is much slower.
-			const auto result = _c0 + _c2 * _nextX * _nextX;
+			// It's REALLY difficult to change this function without losing either performance or precision.
+			const auto normalizedX = _nextX / _halfDeltaX;
+			const auto result = _baseY + 2 * _halfDeltaY * normalizedX + _halfDeltaY * (1 - (2 - normalizedX) * normalizedX) * std::copysign(1.f, _halfDeltaX - _nextX);
 			_nextX += 1;
 			return result;
 		}
@@ -83,21 +88,22 @@ namespace aulos
 		static constexpr auto value(Float firstY, Float deltaY, Float deltaX, Float, Float offsetX) noexcept
 		{
 			const auto normalizedX = offsetX / deltaX;
-			return firstY + deltaY * normalizedX * normalizedX;
+			return firstY + deltaY * (2 * normalizedX + std::copysign(.5f - 2 * normalizedX * (1 - normalizedX), deltaX / 2 - offsetX) - .5f);
 		}
 
 	private:
-		const float _c0;
-		const float _c2;
+		const float _halfDeltaY;
+		const float _baseY;
+		const float _halfDeltaX;
 		float _nextX;
 	};
 
-	// H(X) = deltaY / 2 - 2 * deltaY / deltaX * X + 2 * deltaY / deltaX^2 * X^2
-	// 0 <= X <= deltaX / 2 : Y(X) = firstY + deltaY / 2 - H(X)
-	// deltaX / 2 <= X <= deltaX : Y(X) = firstY + deltaY / 2 + H(X)
-	// Y(0) = firstY
+	// P = firstY + deltaY / 2
+	// Q(X) = deltaY / 2 - 2 * deltaY / deltaX * X + 2 * deltaY / deltaX^2 * X^2
+	// 0 <= X <= deltaX / 2 : Y(X) = P - Q(X)
+	// deltaX / 2 <= X <= deltaX : Y(X) = P + Q(X)
 	// Y(deltaX / 2) = firstY + deltaY / 2
-	// Y(deltaX) = firstY + deltaY
+	// Y'(deltaX / 2) = 0
 	class SharpQuadraticShaper
 	{
 	public:
@@ -122,7 +128,7 @@ namespace aulos
 		static auto value(Float firstY, Float deltaY, Float deltaX, Float, Float offsetX) noexcept
 		{
 			const auto normalizedX = offsetX / deltaX;
-			return firstY + deltaY * (1 + std::copysign(1 - 4 * normalizedX * (1 - normalizedX), offsetX - deltaX / 2)) / 2;
+			return firstY + deltaY * (.5f + std::copysign(.5f - 2 * normalizedX * (1 - normalizedX), offsetX - deltaX / 2));
 		}
 
 	private:
