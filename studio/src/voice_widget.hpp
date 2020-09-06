@@ -35,6 +35,7 @@ signals:
 private:
 	void updateShapeParameter();
 	void updateVoice();
+	void updateWaveImage();
 
 private:
 	struct EnvelopeChange;
@@ -42,6 +43,7 @@ private:
 	QComboBox* _waveShapeCombo = nullptr;
 	QLabel* _waveShapeParameterLabel = nullptr;
 	QDoubleSpinBox* _waveShapeParameterSpin = nullptr;
+	QLabel* _waveShapeImage = nullptr;
 	QDoubleSpinBox* _stereoDelaySpin = nullptr;
 	QDoubleSpinBox* _stereoRadiusSpin = nullptr;
 	QDoubleSpinBox* _stereoPanSpin = nullptr;

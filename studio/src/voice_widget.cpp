@@ -5,6 +5,7 @@
 #include "voice_widget.hpp"
 
 #include <aulos/data.hpp>
+#include <aulos/src/shaper.hpp>
 
 #include <cassert>
 
@@ -13,7 +14,21 @@
 #include <QGridLayout>
 #include <QGroupBox>
 #include <QLabel>
+#include <QPainter>
 #include <QSpinBox>
+
+namespace
+{
+	template <typename Shaper>
+	void drawShape(QPainter& painter, const QRect& rect, float parameter)
+	{
+		auto i = rect.left();
+		for (Shaper shaper{ { static_cast<float>(rect.top()), static_cast<float>(rect.height() - 1), static_cast<float>(rect.width() / 2), parameter, 0 } }; i < rect.left() + rect.width() / 2; ++i)
+			painter.drawPoint(i, std::lround(shaper.advance()));
+		for (Shaper shaper{ { static_cast<float>(rect.bottom()), static_cast<float>(1 - rect.height()), static_cast<float>(rect.width() / 2), parameter, 0 } }; i <= rect.right(); ++i)
+			painter.drawPoint(i, std::lround(shaper.advance()));
+	}
+}
 
 struct VoiceWidget::EnvelopeChange
 {
@@ -91,6 +106,10 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 	layout->addWidget(separator, row, 0, 1, 5);
 	++row;
 
+	const auto waveShapeLayout = new QGridLayout{};
+	layout->addLayout(waveShapeLayout, row, 0, 1, 5);
+	++row;
+
 	_waveShapeCombo = new QComboBox{ this };
 	_waveShapeCombo->addItem(tr("Linear"), static_cast<int>(aulos::WaveShape::Linear));
 	_waveShapeCombo->addItem(tr("Smooth Quadratic"), static_cast<int>(aulos::WaveShape::SmoothQuadratic));
@@ -99,25 +118,32 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 	_waveShapeCombo->addItem(tr("Sharp Cubic"), static_cast<int>(aulos::WaveShape::SharpCubic));
 	_waveShapeCombo->addItem(tr("Quintic"), static_cast<int>(aulos::WaveShape::Quintic));
 	_waveShapeCombo->addItem(tr("Cosine"), static_cast<int>(aulos::WaveShape::Cosine));
-	layout->addWidget(new QLabel{ tr("Wave shape:"), this }, row, 1, 1, 2);
-	layout->addWidget(_waveShapeCombo, row, 3, 1, 2);
+	waveShapeLayout->addWidget(new QLabel{ tr("Wave shape:"), this }, 0, 0);
+	waveShapeLayout->addWidget(_waveShapeCombo, 0, 1);
 	connect(_waveShapeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), [this] {
 		updateShapeParameter();
+		updateWaveImage();
 		updateVoice();
 	});
-	++row;
 
 	_waveShapeParameterLabel = new QLabel{ tr("Shape parameter:"), this };
-	layout->addWidget(_waveShapeParameterLabel, row, 1, 1, 2);
+	waveShapeLayout->addWidget(_waveShapeParameterLabel, 1, 0);
 
 	_waveShapeParameterSpin = new QDoubleSpinBox{ parent };
 	_waveShapeParameterSpin->setDecimals(2);
 	_waveShapeParameterSpin->setRange(0.0, 0.0);
 	_waveShapeParameterSpin->setSingleStep(0.01);
 	_waveShapeParameterSpin->setValue(0.0);
-	layout->addWidget(_waveShapeParameterSpin, row, 3, 1, 2);
-	connect(_waveShapeParameterSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
-	++row;
+	waveShapeLayout->addWidget(_waveShapeParameterSpin, 1, 1);
+	connect(_waveShapeParameterSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [this] {
+		updateWaveImage();
+		updateVoice();
+	});
+
+	waveShapeLayout->addItem(new QSpacerItem{ 0, 0, QSizePolicy::Fixed, QSizePolicy::Fixed }, 2, 0);
+
+	_waveShapeImage = new QLabel{ this };
+	waveShapeLayout->addWidget(_waveShapeImage, 0, 2, 3, 1);
 
 	const auto createEnvelopeWidgets = [this, layout, &row](std::vector<EnvelopeChange>& envelope, double minimum) {
 		for (int i = 0; i < 5; ++i, ++row)
@@ -184,6 +210,8 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 
 	layout->addItem(new QSpacerItem{ 0, 0, QSizePolicy::Minimum, QSizePolicy::Expanding }, row, 0, 1, 5);
 	layout->setRowStretch(row, 1);
+
+	updateWaveImage();
 }
 
 VoiceWidget::~VoiceWidget() = default;
@@ -213,6 +241,7 @@ void VoiceWidget::setVoice(const std::shared_ptr<aulos::VoiceData>& voice)
 	_waveShapeCombo->setCurrentIndex(_waveShapeCombo->findData(static_cast<int>(usedVoice->_waveShape)));
 	updateShapeParameter();
 	_waveShapeParameterSpin->setValue(usedVoice->_waveShapeParameter);
+	updateWaveImage();
 	_stereoDelaySpin->setValue(usedVoice->_stereoDelay);
 	_stereoRadiusSpin->setValue(usedVoice->_stereoRadius);
 	_stereoPanSpin->setValue(usedVoice->_stereoPan);
@@ -275,4 +304,34 @@ void VoiceWidget::updateVoice()
 	_voice->_stereoInversion = _stereoInversionCheck->isChecked();
 	_voice->_polyphony = static_cast<aulos::Polyphony>(_polyphonyCombo->currentData().toInt());
 	emit voiceChanged();
+}
+
+void VoiceWidget::updateWaveImage()
+{
+	constexpr int size = 24;
+	constexpr int width = 1 + size * 4 + 1;
+	constexpr int height = 1 + size + 1 + size + 1;
+	QImage image(width, height, QImage::Format_ARGB32);
+	{
+		QPainter painter{ &image };
+		painter.setPen(Qt::black);
+		painter.setBrush(Qt::white);
+		painter.drawRect(0, 0, width - 1, height - 1);
+		painter.setPen(Qt::lightGray);
+		painter.drawLine(1, height / 2, width - 2, height / 2);
+		painter.setPen(Qt::red);
+		const auto rect = image.rect().adjusted(1, 1, -1, -1);
+		const auto parameter = static_cast<float>(_waveShapeParameterSpin->value());
+		switch (static_cast<aulos::WaveShape>(_waveShapeCombo->currentData().toInt()))
+		{
+		case aulos::WaveShape::Linear: ::drawShape<aulos::LinearShaper>(painter, rect, parameter); break;
+		case aulos::WaveShape::SmoothQuadratic: ::drawShape<aulos::SmoothQuadraticShaper>(painter, rect, parameter); break;
+		case aulos::WaveShape::SharpQuadratic: ::drawShape<aulos::SharpQuadraticShaper>(painter, rect, parameter); break;
+		case aulos::WaveShape::SmoothCubic: ::drawShape<aulos::SmoothCubicShaper>(painter, rect, parameter); break;
+		case aulos::WaveShape::SharpCubic: ::drawShape<aulos::SharpCubicShaper>(painter, rect, parameter); break;
+		case aulos::WaveShape::Quintic: ::drawShape<aulos::QuinticShaper>(painter, rect, parameter); break;
+		case aulos::WaveShape::Cosine: ::drawShape<aulos::CosineShaper>(painter, rect, parameter); break;
+		}
+	}
+	_waveShapeImage->setPixmap(QPixmap::fromImage(std::move(image)));
 }
