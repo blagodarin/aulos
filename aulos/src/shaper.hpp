@@ -75,11 +75,11 @@ namespace aulos
 		{
 		}
 
-		float advance() noexcept
+		constexpr float advance() noexcept
 		{
-			// It's REALLY difficult to change this function without losing either performance or precision.
-			const auto normalizedX = _nextX / _halfDeltaX;
-			const auto result = _baseY + 2 * _halfDeltaY * normalizedX + _halfDeltaY * (1 - (2 - normalizedX) * normalizedX) * std::copysign(1.f, _halfDeltaX - _nextX);
+			const auto doubleNormalizedX = _nextX / _halfDeltaX;
+			const auto offset = 1 - (2 - doubleNormalizedX) * doubleNormalizedX;
+			const auto result = _baseY + _halfDeltaY * (2 * doubleNormalizedX - (_nextX - _halfDeltaX > 0 ? offset : -offset));
 			_nextX += 1;
 			return result;
 		}
@@ -88,7 +88,8 @@ namespace aulos
 		static constexpr auto value(Float firstY, Float deltaY, Float deltaX, Float, Float offsetX) noexcept
 		{
 			const auto normalizedX = offsetX / deltaX;
-			return firstY + deltaY * (2 * normalizedX + std::copysign(.5f - 2 * normalizedX * (1 - normalizedX), deltaX / 2 - offsetX) - .5f);
+			const auto offset = .5f - 2 * normalizedX * (1 - normalizedX);
+			return firstY + deltaY * (2 * normalizedX - (.5f + (offsetX - deltaX / 2 > 0 ? offset : -offset)));
 		}
 
 	private:
@@ -117,18 +118,20 @@ namespace aulos
 		{
 		}
 
-		auto advance() noexcept
+		constexpr auto advance() noexcept
 		{
-			const auto result = _baseY + std::copysign(1.f, _nextX - _halfDeltaX) * (_c0 - (_c1 - _c2 * _nextX) * _nextX);
+			const auto offset = _c0 - (_c1 - _c2 * _nextX) * _nextX;
+			const auto result = _baseY + (_nextX - _halfDeltaX > 0 ? offset : -offset);
 			_nextX += 1;
 			return result;
 		}
 
 		template <typename Float, typename = std::enable_if_t<std::is_floating_point_v<Float>>>
-		static auto value(Float firstY, Float deltaY, Float deltaX, Float, Float offsetX) noexcept
+		static constexpr auto value(Float firstY, Float deltaY, Float deltaX, Float, Float offsetX) noexcept
 		{
 			const auto normalizedX = offsetX / deltaX;
-			return firstY + deltaY * (.5f + std::copysign(.5f - 2 * normalizedX * (1 - normalizedX), offsetX - deltaX / 2));
+			const auto offset = .5f - 2 * normalizedX * (1 - normalizedX);
+			return firstY + deltaY * (.5f + (offsetX - deltaX / 2 > 0 ? offset : -offset));
 		}
 
 	private:
