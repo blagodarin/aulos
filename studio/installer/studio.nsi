@@ -80,6 +80,7 @@ Section
 	File "${SOURCE_DIR}\examples\grande_valse_brillante.aulos"
 	File "${SOURCE_DIR}\examples\hungarian_dance.aulos"
 	File "${SOURCE_DIR}\examples\prelude_in_g_minor.aulos"
+	File "${SOURCE_DIR}\examples\turkish_march.aulos"
 
 	SetShellVarContext all
 	CreateShortcut "$DESKTOP\Aulos Studio.lnk" "$INSTDIR\AulosStudio.exe"
@@ -109,6 +110,7 @@ Section "Uninstall"
 	Delete "$INSTDIR\examples\grande_valse_brillante.aulos"
 	Delete "$INSTDIR\examples\hungarian_dance.aulos"
 	Delete "$INSTDIR\examples\prelude_in_g_minor.aulos"
+	Delete "$INSTDIR\examples\turkish_march.aulos"
 	RMDir "$INSTDIR\examples"
 
 	Delete "$INSTDIR\plugins\styles\qwindowsvistastyle${SUFFIX}.dll"
