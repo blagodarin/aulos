@@ -22,11 +22,34 @@ namespace
 	template <typename Shaper>
 	void drawShape(QPainter& painter, const QRect& rect, float parameter)
 	{
-		auto i = rect.left();
-		for (Shaper shaper{ { static_cast<float>(rect.top()), static_cast<float>(rect.height() - 1), static_cast<float>(rect.width() / 2), parameter, 0 } }; i < rect.left() + rect.width() / 2; ++i)
-			painter.drawPoint(i, std::lround(shaper.advance()));
-		for (Shaper shaper{ { static_cast<float>(rect.bottom()), static_cast<float>(1 - rect.height()), static_cast<float>(rect.width() / 2), parameter, 0 } }; i <= rect.right(); ++i)
-			painter.drawPoint(i, std::lround(shaper.advance()));
+		auto drawPoint = [&painter, &rect, lastY = 0](int x, int y) mutable {
+			if (x > rect.left())
+			{
+				auto y1 = lastY;
+				auto y2 = y;
+				const auto step = y1 < y2 ? 1 : -1;
+				while (std::abs(y2 - y1) > 1)
+				{
+					y1 += step;
+					y2 -= step;
+					if (y1 != y2)
+					{
+						painter.drawPoint(x - 1, y1);
+						painter.drawPoint(x, y2);
+					}
+					else
+						painter.drawPoint(x - (y1 & 1), y1);
+				}
+			}
+			painter.drawPoint(x, y);
+			lastY = y;
+		};
+		int x = rect.left();
+		for (Shaper shaper{ { static_cast<float>(rect.top()), static_cast<float>(rect.height() - 1), static_cast<float>(rect.width() / 2), parameter, 0 } }; x < rect.left() + rect.width() / 2; ++x)
+			drawPoint(x, std::lround(shaper.advance()));
+		for (Shaper shaper{ { static_cast<float>(rect.bottom()), static_cast<float>(1 - rect.height()), static_cast<float>(rect.width() / 2), parameter, 0 } }; x < rect.right(); ++x)
+			drawPoint(x, std::lround(shaper.advance()));
+		drawPoint(x, rect.top());
 	}
 }
 
@@ -308,9 +331,9 @@ void VoiceWidget::updateVoice()
 
 void VoiceWidget::updateWaveImage()
 {
-	constexpr int size = 24;
-	constexpr int width = 1 + size * 4 + 1;
-	constexpr int height = 1 + size + 1 + size + 1;
+	constexpr int size = 25;
+	constexpr int width = 1 + (size * 4 + 1) + 1;
+	constexpr int height = 1 + (size + 1 + size) + 1;
 	QImage image(width, height, QImage::Format_ARGB32);
 	{
 		QPainter painter{ &image };
