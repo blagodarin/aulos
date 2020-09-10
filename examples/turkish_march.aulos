@@ -1,5 +1,6 @@
 author "Wolfgang Amadeus Mozart"
-speed 10
+loop 0 520
+speed 11
 title "Turkish March"
 
 @voice 1 "Voice"
@@ -7,11 +8,11 @@ amplitude 10 1.00 90 0.50 900 0.00
 asymmetry 0 0.20
 oscillation 0 0.10 100 0.00
 polyphony full
-stereo_delay 0.25
+stereo_delay 0.00
 stereo_inversion 0
 stereo_pan 0.00
-stereo_radius 2.00
-wave cosine
+stereo_radius 5.00
+wave sharp_quadratic
 
 @tracks
 1 1 3
@@ -22,11 +23,35 @@ wave cosine
 1 1 2 D5,C5,B4,C5,E5
 1 1 3 F5,E5,D#5,E5,B5,A5,G#5,A5,B5,A5,G#5,A5,C6
 1 1 4 A5,,C6,,B5A5G5,,A5F#5,,G5E5,,A5F#5,,B5A5G5,,A5F#5,,G5E5,,A5F#5,,B5A5G5,,A5F#5,,G5E5,,F#5D#5,,E5
+1 1 5 E5C5,,F5D5,,G5E5,,G5E5,,A5,G5,F5,E5,D5B4
+1 1 6 G4
+1 1 7 C5A4,,D5B4,,E5C5,,E5C5,,F5,E5,D5,C5,B4G#4
+1 1 8 E4
+1 1 9 A5,,B5,,C6,,B5,,A5,,G#5,,A5,,E5,,F5,,D5,,C5,,,,B4,C5,B4,C5,A4
+1 1 10 A5A4,,B5B4,,C#6C#5,,,,A5A4,,B5B4,,C#6C#5,,B5B4,,A5A4,,G#5G#4
+1 1 11 F#5F#4,,G#5G#4,,A5A4,,B5B4,,G#5G#4,,E5E4
+1 1 12 F#5F#4,,B5B4,,G#5G#4,,E5E4,,A5A4
+1 1 13 C#6C#5,,,C#6C#5
+1 1 14 C#6A5E5C#5,,,,,,,,C#6A5E5C#5,,,,,,,,D6,C#6,B5,C#6,D6,C#6,B5,C#6,D6A5F#5
+1 1 15 D6C#6A5E5,,D6C#6A5E5,,D6C#6A5E5,,D6C#6A5E5,,B5G#5E5,,,,,,E6E5
+1 1 16 D6C#6A5E5,,,,,,,,C#6B5G#5E5,,C#6B5G#5E5,,C#6B5G#5E5,,C#6B5G#5E5
+1 1 17 A5E5C#5A4,,,,,,C#6C#5,,A5A4,,,,,,E6E5,,A5A4,,,,,,C#6C#5,,A5A4,,C#6C#5,,A5A4,,E6E5,,A5A4
+1 1 18 A5E5C#5A4
 1 2 1 A3,,E4C4,,E4C4,,E4C4
 1 2 2 A3,,E4C4,,A3,,E4C4
 1 2 3 E3,,E4B3,,E4B3,,E4B3
 1 2 4 E3,,E4B3,,B2,,B3,,E3
+1 2 5 C3,,C4,,E3,,E4,,G3
+1 2 6 A2,,A3,,C3,,C4,,E3
+1 2 7 F3,,D#4A3,,D#4A3,,D#4A3
+1 2 8 E3,,E4A3,,D3,,B3F3,,C3,,A3E3,,D3,,B3F3,,A3E3,,A3E3,,G#3E3,,G#3E3,,A3A2,,A3,,A3,,A3
+1 2 9 A3E3C#3A2,,A3,,A3,,A3
+1 2 10 D3A2F#2D2,,D3,,D#3A2F#2D#2,,D#3
+1 2 11 E3B2G#2E2,,E3,,E3,,E3
+1 2 12 D3A2F#2D2,,D3,,E3B2G#2E2,,E3
+1 2 13 D3A2F#2D2,,D3,,D3,,D3
+1 2 14 A3E3C#3A2
 
 @fragments
-1 1 0 1 8 2 8 3 16 4
-1 2 4 1 8 1 8 2 8 1 8 3 8 3 8 4
+1 1 0 1 8 2 8 3 16 4 32 1 8 2 8 3 16 4 32 5 14 6 2 5 16 7 14 8 2 7 16 1 8 2 8 3 16 9 32 10 20 11 12 10 20 12 12 10 20 11 12 10 20 12 12 13 4 14 32 15 16 14 32 16 16 17 36 18 4 18
+1 2 4 1 8 1 8 2 8 1 8 3 8 3 8 4 16 1 8 1 8 2 8 1 8 3 8 3 8 4 16 5 16 5 16 6 16 6 16 1 8 1 8 2 8 7 8 8 32 9 8 9 8 10 8 11 8 9 8 9 8 12 8 9 8 9 8 9 8 10 8 11 8 9 8 9 8 12 8 9 8 9 8 9 8 9 8 13 8 9 8 11 8 9 8 9 8 9 8 13 8 9 8 11 8 9 8 9 8 9 8 9 8 14 4 14 4 14
