@@ -12,7 +12,7 @@ stereo_delay 10.00
 stereo_inversion 1
 stereo_pan 0.00
 stereo_radius 0.00
-wave quintic -1.00
+wave quintic 1.00
 
 @voice 2 "Left"
 amplitude 10 1.00 90 0.25 900 0.00
@@ -23,7 +23,7 @@ stereo_delay -10.00
 stereo_inversion 0
 stereo_pan 0.00
 stereo_radius 0.00
-wave quintic -1.00
+wave quintic 1.00
 
 @tracks
 1 1 2

@@ -186,25 +186,22 @@ namespace aulos
 		float _nextX;
 	};
 
-	// C1 = (1 + shape) * deltaY / deltaX
-	// C2 = 3 * shape * deltaY / deltaX^2
-	// C3 = 2 * shape * deltaY / deltaX^3
+	// C1 = (3 + 2 * shape) * deltaY / deltaX
+	// C2 = 6 * (1 + shape) * deltaY / deltaX^2
+	// C3 = 4 * (1 + shape) * deltaY / deltaX^3
 	// Y(X) = firstY + (C1 - (C2 - C3 * X) * X) * X
 	// Y(deltaX / 2) = 0
-	// Y'(deltaX / 2) = (1 - shape / 2) * deltaY / deltaX
+	// Y'(deltaX / 2) = -shape * deltaY / deltaX
 	class SharpCubicShaper
 	{
 	public:
-		static constexpr float kMinShape = 0.f;
-		static constexpr float kMaxShape = 7.99f; // It's actually 8, but float precision is insufficient to keep values in [-1, 1] range.
+		static constexpr float kMinShape = -1.f;
+		static constexpr float kMaxShape = 2.99f;
 
 		explicit constexpr SharpCubicShaper(const ShaperData& data) noexcept
-			: _c0{ data._firstY }
-			, _c1{ (1 + data._shape) * data._deltaY / data._deltaX }
-			, _c2{ 3 * data._shape * data._deltaY / (data._deltaX * data._deltaX) }
-			, _c3{ 2 * data._shape * data._deltaY / (data._deltaX * data._deltaX * data._deltaX) }
-			, _nextX{ data._offsetX }
+			: SharpCubicShaper{ data._firstY, data._deltaY, data._deltaX, 2 * (1 + data._shape), data._offsetX }
 		{
+			assert(data._shape >= kMinShape && data._shape <= kMaxShape);
 		}
 
 		constexpr auto advance() noexcept
@@ -219,7 +216,17 @@ namespace aulos
 		{
 			assert(shape >= kMinShape && shape <= kMaxShape);
 			const auto normalizedX = offsetX / deltaX;
-			return firstY + deltaY * (1 + shape * (1 - (3 - 2 * normalizedX) * normalizedX)) * normalizedX;
+			return firstY + deltaY * (1 + 2 * (1 + shape) * (1 - (3 - 2 * normalizedX) * normalizedX)) * normalizedX;
+		}
+
+	private:
+		constexpr SharpCubicShaper(float firstY, float deltaY, float deltaX, float shape, float offsetX) noexcept
+			: _c0{ firstY }
+			, _c1{ (1 + shape) * deltaY / deltaX }
+			, _c2{ 3 * shape * deltaY / (deltaX * deltaX) }
+			, _c3{ 2 * shape * deltaY / (deltaX * deltaX * deltaX) }
+			, _nextX{ offsetX }
+		{
 		}
 
 	private:
@@ -230,26 +237,25 @@ namespace aulos
 		float _nextX;
 	};
 
-	// C2 = (15 - 8 * shape) * deltaY / deltaX^2
-	// C3 = (50 - 32 * shape) * deltaY / deltaX^3
-	// C4 = (60 - 40 * shape) * deltaY / deltaX^4
-	// C5 = (24 - 16 * shape) * deltaY / deltaX^5
+	// C2 = (15 + 8 * shape) * deltaY / deltaX^2
+	// C3 = (50 + 32 * shape) * deltaY / deltaX^3
+	// C4 = (60 + 40 * shape) * deltaY / deltaX^4
+	// C5 = (24 + 16 * shape) * deltaY / deltaX^5
 	// Y(X) = firstY + (C2 - (C3 - (C4 - C5 * X) * X) * X) * X^2
 	// Y(deltaX / 2) = firstY + deltaY / 2
-	// Y'(deltaX / 2) = shape * deltaY / deltaX
+	// Y'(deltaX / 2) = -shape * deltaY / deltaX
 	class QuinticShaper
 	{
 	public:
-		// TODO: Find out actual shape limits.
-		static constexpr float kMinShape = -4.f;
-		static constexpr float kMaxShape = 1.5f;
+		static constexpr float kMinShape = -1.5f;
+		static constexpr float kMaxShape = 4.01f;
 
 		explicit constexpr QuinticShaper(const ShaperData& data) noexcept
 			: _c0{ data._firstY }
-			, _c2{ (15 - 8 * data._shape) * data._deltaY }
-			, _c3{ (50 - 32 * data._shape) * data._deltaY }
-			, _c4{ (60 - 40 * data._shape) * data._deltaY }
-			, _c5{ (24 - 16 * data._shape) * data._deltaY }
+			, _c2{ (15 + 8 * data._shape) * data._deltaY }
+			, _c3{ (50 + 32 * data._shape) * data._deltaY }
+			, _c4{ (60 + 40 * data._shape) * data._deltaY }
+			, _c5{ (24 + 16 * data._shape) * data._deltaY }
 			, _deltaX{ data._deltaX }
 			, _nextX{ data._offsetX }
 		{
@@ -271,7 +277,7 @@ namespace aulos
 		{
 			assert(shape >= kMinShape && shape <= kMaxShape);
 			const auto normalizedX = offsetX / deltaX;
-			return firstY + deltaY * (15 - 8 * shape - (50 - 32 * shape - (60 - 40 * shape - (24 - 16 * shape) * normalizedX) * normalizedX) * normalizedX) * normalizedX * normalizedX;
+			return firstY + deltaY * (15 + 8 * shape - (50 + 32 * shape - (60 + 40 * shape - (24 + 16 * shape) * normalizedX) * normalizedX) * normalizedX) * normalizedX * normalizedX;
 		}
 
 	private:

@@ -55,14 +55,17 @@ namespace aulos
 	constexpr float kMaxSmoothCubicShape = 3.f;
 
 	// The shape parameter defines the curve shape as follows:
-	//  * [0, 2] - the function is monotonic and gradually transforms from linear to cubic with zero derivative in the middle;
-	//  * (2, 8] - the function is non-monotonic with two distinct extrema in the range.
-	// Below 0 and above 8 the extrema are outside of the Y range.
-	constexpr float kMinSharpCubicShape = 0.f;
-	constexpr float kMaxSharpCubicShape = 7.99f; // At 8, the extrema should exactly touch the Y range, but float precision loss pushes them outside.
+	//  * [-1, 0] - the function is monotonic and gradually transforms from linear to cubic with zero derivative in the middle;
+	//  * ( 0, 3] - the function is non-monotonic with two distinct extrema in the range which touch Y limits at 3.
+	// Below -1 and above 3 the extrema are outside of the Y range.
+	constexpr float kMinSharpCubicShape = -1.f;
+	constexpr float kMaxSharpCubicShape = 2.99f; // The precise maximum breaks Y range constraints.
 
-	constexpr float kMinQuinticShape = -4.f;
-	constexpr float kMaxQuinticShape = 1.5f;
+	// The shape parameter defines the curve shape as follows:
+	//  * [-1.5, 0.000] - the function is monotonic and gradually transforms from smooth cubic to quintic with zero derivative in the middle;
+	//  * ( 0.0, 4.045] - the function is non-monotonic with two distinct extrema in the range which touch Y limits at (4016+3025*sqrt(110))/8836.
+	constexpr float kMinQuinticShape = -1.5f;
+	constexpr float kMaxQuinticShape = 4.01f; // More precise maximum breaks Y range constraints.
 
 	enum class EnvelopeShape
 	{

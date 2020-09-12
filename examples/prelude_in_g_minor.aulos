@@ -13,7 +13,7 @@ stereo_delay 0.50
 stereo_inversion 0
 stereo_pan 0.00
 stereo_radius 3.00
-wave quintic -1.00
+wave quintic 1.00
 
 @tracks
 1 1 1
