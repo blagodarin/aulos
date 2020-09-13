@@ -283,19 +283,19 @@ void VoiceWidget::updateShapeParameter()
 	{
 		_waveShapeParameterLabel->setEnabled(true);
 		_waveShapeParameterSpin->setEnabled(true);
-		_waveShapeParameterSpin->setRange(aulos::kMinSmoothCubicShape, aulos::kMaxSmoothCubicShape);
+		_waveShapeParameterSpin->setRange(aulos::SmoothCubicShaper::kMinShape, aulos::SmoothCubicShaper::kMaxShape);
 	}
 	else if (waveShape == aulos::WaveShape::SharpCubic)
 	{
 		_waveShapeParameterLabel->setEnabled(true);
 		_waveShapeParameterSpin->setEnabled(true);
-		_waveShapeParameterSpin->setRange(aulos::kMinSharpCubicShape, aulos::kMaxSharpCubicShape);
+		_waveShapeParameterSpin->setRange(aulos::SharpCubicShaper::kMinShape, aulos::SharpCubicShaper::kMaxShape);
 	}
 	else if (waveShape == aulos::WaveShape::Quintic)
 	{
 		_waveShapeParameterLabel->setEnabled(true);
 		_waveShapeParameterSpin->setEnabled(true);
-		_waveShapeParameterSpin->setRange(aulos::kMinQuinticShape, aulos::kMaxQuinticShape);
+		_waveShapeParameterSpin->setRange(aulos::QuinticShaper::kMinShape, aulos::QuinticShaper::kMaxShape);
 	}
 	else
 	{
@@ -340,8 +340,9 @@ void VoiceWidget::updateWaveImage()
 		painter.setPen(Qt::black);
 		painter.setBrush(Qt::white);
 		painter.drawRect(0, 0, width - 1, height - 1);
-		painter.setPen(Qt::lightGray);
+		painter.setPen(QPen{ Qt::lightGray, 0, Qt::DotLine });
 		painter.drawLine(1, height / 2, width - 2, height / 2);
+		painter.drawLine(width / 2, 1, width / 2, height - 2);
 		painter.setPen(Qt::red);
 		const auto rect = image.rect().adjusted(1, 1, -1, -1);
 		const auto parameter = static_cast<float>(_waveShapeParameterSpin->value());

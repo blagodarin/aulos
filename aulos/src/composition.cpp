@@ -4,6 +4,8 @@
 
 #include "composition.hpp"
 
+#include "shaper.hpp"
+
 #include <cassert>
 #include <charconv>
 #include <limits>
@@ -332,20 +334,20 @@ namespace aulos
 				else if (type == "cubic")
 				{
 					currentVoice->_waveShape = WaveShape::SmoothCubic;
-					minShape = kMinSmoothCubicShape;
-					maxShape = kMaxSmoothCubicShape;
+					minShape = SmoothCubicShaper::kMinShape;
+					maxShape = SmoothCubicShaper::kMaxShape;
 				}
 				else if (type == "sharp_cubic")
 				{
 					currentVoice->_waveShape = WaveShape::SharpCubic;
-					minShape = kMinSharpCubicShape;
-					maxShape = kMaxSharpCubicShape;
+					minShape = SharpCubicShaper::kMinShape;
+					maxShape = SharpCubicShaper::kMaxShape;
 				}
 				else if (type == "quintic")
 				{
 					currentVoice->_waveShape = WaveShape::Quintic;
-					minShape = kMinQuinticShape;
-					maxShape = kMaxQuinticShape;
+					minShape = QuinticShaper::kMinShape;
+					maxShape = QuinticShaper::kMaxShape;
 				}
 				else if (type == "cosine")
 					currentVoice->_waveShape = WaveShape::Cosine;

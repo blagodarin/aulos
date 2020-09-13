@@ -46,27 +46,6 @@ namespace aulos
 		Cosine,          // Cosine curve.
 	};
 
-	// The left derivative of a smooth cubic shape is always zero (which means that one of the critial points
-	// always coincides with the left end of the curve), and the right one is defined by the shape parameter:
-	//  * [0, 1] - the derivative on the right starts at zero and increases until it becomes equal to the derivative of a linear shape;
-	//  * [1, 2] - the second critical point moves right until it reaches positive infinity and the curve becomes quadratic;
-	//  * [2, 3] - the second critical point moves from negative infinity to zero (i. e. to the left end of the curve).
-	constexpr float kMinSmoothCubicShape = 0.f;
-	constexpr float kMaxSmoothCubicShape = 3.f;
-
-	// The shape parameter defines the curve shape as follows:
-	//  * [-1, 0] - the function is monotonic and gradually transforms from linear to cubic with zero derivative in the middle;
-	//  * ( 0, 3] - the function is non-monotonic with two distinct extrema in the range which touch Y limits at 3.
-	// Below -1 and above 3 the extrema are outside of the Y range.
-	constexpr float kMinSharpCubicShape = -1.f;
-	constexpr float kMaxSharpCubicShape = 2.99f; // The precise maximum breaks Y range constraints.
-
-	// The shape parameter defines the curve shape as follows:
-	//  * [-1.5, 0.000] - the function is monotonic and gradually transforms from smooth cubic to quintic with zero derivative in the middle;
-	//  * ( 0.0, 4.045] - the function is non-monotonic with two distinct extrema in the range which touch Y limits at (4016+3025*sqrt(110))/8836.
-	constexpr float kMinQuinticShape = -1.5f;
-	constexpr float kMaxQuinticShape = 4.01f; // More precise maximum breaks Y range constraints.
-
 	enum class EnvelopeShape
 	{
 		Linear,

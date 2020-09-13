@@ -11,15 +11,6 @@
 #include <functional>
 #include <optional>
 
-static_assert(aulos::kMinSmoothCubicShape == aulos::SmoothCubicShaper::kMinShape);
-static_assert(aulos::kMaxSmoothCubicShape == aulos::SmoothCubicShaper::kMaxShape);
-
-static_assert(aulos::kMinSharpCubicShape == aulos::SharpCubicShaper::kMinShape);
-static_assert(aulos::kMaxSharpCubicShape == aulos::SharpCubicShaper::kMaxShape);
-
-static_assert(aulos::kMinQuinticShape == aulos::QuinticShaper::kMinShape);
-static_assert(aulos::kMaxQuinticShape == aulos::QuinticShaper::kMaxShape);
-
 namespace
 {
 	std::unique_ptr<aulos::Voice> createVoice(const aulos::WaveData& waveData, const aulos::VoiceData& voiceData, unsigned samplingRate, bool isStereo)
