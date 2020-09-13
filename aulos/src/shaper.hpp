@@ -143,72 +143,28 @@ namespace aulos
 		float _nextX;
 	};
 
-	// C2 = (3 - shape) * deltaY / deltaX^2
-	// C3 = (2 - shape) * deltaY / deltaX^3
-	// Y(X) = firstY + (C2 - C3 * X) * X^2
-	// Y'(0) = 0
-	// Y'(deltaX) = shape * deltaY / deltaX
-	// 0 <= shape <= 3 : 0 <= |Y - firstY| <= |deltaY|
-	class SmoothCubicShaper
-	{
-	public:
-		// The left derivative of a smooth cubic shape is always zero (which means that one of the critial points
-		// always coincides with the left end of the curve), and the right one is defined by the shape parameter:
-		//  * [0, 1] - the derivative on the right starts at zero and increases until it becomes equal to the derivative of a linear shape;
-		//  * [1, 2] - the second critical point moves right until it reaches positive infinity and the curve becomes quadratic;
-		//  * [2, 3] - the second critical point moves from negative infinity to zero (i. e. to the left end of the curve).
-		static constexpr float kMinShape = 0.f;
-		static constexpr float kMaxShape = 3.f;
-
-		explicit constexpr SmoothCubicShaper(const ShaperData& data) noexcept
-			: _c0{ data._firstY }
-			, _c2{ (3 - data._shape) * data._deltaY / (data._deltaX * data._deltaX) }
-			, _c3{ (2 - data._shape) * data._deltaY / (data._deltaX * data._deltaX * data._deltaX) }
-			, _nextX{ data._offsetX }
-		{
-			assert(data._shape >= kMinShape && data._shape <= kMaxShape);
-		}
-
-		constexpr auto advance() noexcept
-		{
-			const auto result = _c0 + (_c2 - _c3 * _nextX) * _nextX * _nextX;
-			_nextX += 1;
-			return result;
-		}
-
-		template <typename Float, typename = std::enable_if_t<std::is_floating_point_v<Float>>>
-		static constexpr auto value(Float firstY, Float deltaY, Float deltaX, Float shape, Float offsetX) noexcept
-		{
-			assert(shape >= kMinShape && shape <= kMaxShape);
-			const auto normalizedX = offsetX / deltaX;
-			return firstY + deltaY * (1 + (2 - shape) * (1 - normalizedX)) * normalizedX * normalizedX;
-		}
-
-	private:
-		const float _c0;
-		const float _c2;
-		const float _c3;
-		float _nextX;
-	};
-
-	// C1 = (3 + 2 * shape) * deltaY / deltaX
-	// C2 = 6 * (1 + shape) * deltaY / deltaX^2
-	// C3 = 4 * (1 + shape) * deltaY / deltaX^3
+	// C1 = S1 * deltaY / deltaX
+	// C2 = (2 * S1 + S2 - 3) * deltaY / deltaX^2
+	// C3 = (S1 + S2 - 1) * deltaY / deltaX^3
 	// Y(X) = firstY + (C1 - (C2 - C3 * X) * X) * X
-	// Y(deltaX / 2) = 0
-	// Y'(deltaX / 2) = -shape * deltaY / deltaX
-	class SharpCubicShaper
+	// Y'(0) = S1 * deltaY / deltaX
+	// Y'(deltaX) = S2 * deltaY / deltaX
+	class CubicShaper
 	{
 	public:
 		// The shape parameter defines the curve shape as follows:
-		//  * [-1, 0] - the function is monotonic and gradually transforms from linear to cubic with zero derivative in the middle;
-		//  * ( 0, 3] - the function is non-monotonic with two distinct extrema in the range which touch Y limits at 3.
-		// Below -1 and above 3 the extrema are outside of the Y range.
-		static constexpr float kMinShape = -1.f;
-		static constexpr float kMaxShape = 2.99f; // The precise maximum breaks Y range constraints.
+		//  * [0, 1] - the function is monotonic and gradually transforms from cubic with zero derivatives at the ends to linear;
+		//  * (1, 3] - the function is monotonic and gradually transforms from linear to cubic with zero derivative in the middle;
+		//  * (3, 9] - the function is non-monotonic with two distinct extrema in the range which touch Y limits at 9.
+		static constexpr float kMinShape = 0.f;
+		static constexpr float kMaxShape = 8.98f; // Float precision is insufficient to satisfy Y range constraints at the precise maximum.
 
-		explicit constexpr SharpCubicShaper(const ShaperData& data) noexcept
-			: SharpCubicShaper{ data._firstY, data._deltaY, data._deltaX, 2 * (1 + data._shape), data._offsetX }
+		explicit constexpr CubicShaper(const ShaperData& data) noexcept
+			: _c0{ data._firstY }
+			, _c1{ data._shape /*1*/ * data._deltaY / data._deltaX }
+			, _c2{ (2 * data._shape /*1*/ + data._shape /*2*/ - 3) * data._deltaY / (data._deltaX * data._deltaX) }
+			, _c3{ (data._shape /*1*/ + data._shape /*2*/ - 2) * data._deltaY / (data._deltaX * data._deltaX * data._deltaX) }
+			, _nextX{ data._offsetX }
 		{
 			assert(data._shape >= kMinShape && data._shape <= kMaxShape);
 		}
@@ -225,17 +181,7 @@ namespace aulos
 		{
 			assert(shape >= kMinShape && shape <= kMaxShape);
 			const auto normalizedX = offsetX / deltaX;
-			return firstY + deltaY * (1 + 2 * (1 + shape) * (1 - (3 - 2 * normalizedX) * normalizedX)) * normalizedX;
-		}
-
-	private:
-		constexpr SharpCubicShaper(float firstY, float deltaY, float deltaX, float shape, float offsetX) noexcept
-			: _c0{ firstY }
-			, _c1{ (1 + shape) * deltaY / deltaX }
-			, _c2{ 3 * shape * deltaY / (deltaX * deltaX) }
-			, _c3{ 2 * shape * deltaY / (deltaX * deltaX * deltaX) }
-			, _nextX{ offsetX }
-		{
+			return firstY + deltaY * (shape /*1*/ - ((2 * shape /*1*/ + shape /*2*/ - 3) - (shape /*1*/ + shape /*2*/ - 2) * normalizedX) * normalizedX) * normalizedX;
 		}
 
 	private:

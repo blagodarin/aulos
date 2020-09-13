@@ -41,31 +41,23 @@ TEST_CASE("shaper_cosine")
 	::checkShaper<aulos::CosineShaper>({}, 23);
 }
 
+TEST_CASE("shaper_cubic")
+{
+	::checkShaper<aulos::CubicShaper>(0.f, 23);
+	::checkShaper<aulos::CubicShaper>(2.f, 23);
+	::checkShaper<aulos::CubicShaper>(3.f, 22);
+	::checkShaper<aulos::CubicShaper>(4.f, 20);
+	::checkShaper<aulos::CubicShaper>(8.98f, 20);
+}
+
 TEST_CASE("shaper_linear")
 {
 	::checkShaper<aulos::LinearShaper>({}, 23);
 }
 
-TEST_CASE("shaper_sharp_cubic")
-{
-	::checkShaper<aulos::SharpCubicShaper>(-1.f, 23);
-	::checkShaper<aulos::SharpCubicShaper>(0.f, 22);
-	::checkShaper<aulos::SharpCubicShaper>(1.f, 20);
-	::checkShaper<aulos::SharpCubicShaper>(2.f, 19);
-	::checkShaper<aulos::SharpCubicShaper>(2.99f, 19);
-}
-
 TEST_CASE("shaper_sharp_quadratic")
 {
 	::checkShaper<aulos::SharpQuadraticShaper>({}, 23);
-}
-
-TEST_CASE("shaper_smooth_cubic")
-{
-	::checkShaper<aulos::SmoothCubicShaper>(0.f, 23);
-	::checkShaper<aulos::SmoothCubicShaper>(1.f, 23);
-	::checkShaper<aulos::SmoothCubicShaper>(2.f, 23);
-	::checkShaper<aulos::SmoothCubicShaper>(3.f, 23);
 }
 
 TEST_CASE("shaper_smooth_quadratic")
