@@ -12,7 +12,7 @@ stereo_delay 0.00
 stereo_inversion 0
 stereo_pan 0.00
 stereo_radius 5.00
-wave sharp_quadratic
+wave quadratic 2.00
 
 @tracks
 1 1 3

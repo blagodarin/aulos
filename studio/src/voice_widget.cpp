@@ -135,8 +135,7 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 
 	_waveShapeCombo = new QComboBox{ this };
 	_waveShapeCombo->addItem(tr("Linear"), static_cast<int>(aulos::WaveShape::Linear));
-	_waveShapeCombo->addItem(tr("Smooth Quadratic"), static_cast<int>(aulos::WaveShape::SmoothQuadratic));
-	_waveShapeCombo->addItem(tr("Sharp Quadratic"), static_cast<int>(aulos::WaveShape::SharpQuadratic));
+	_waveShapeCombo->addItem(tr("Quadratic"), static_cast<int>(aulos::WaveShape::Quadratic));
 	_waveShapeCombo->addItem(tr("Cubic"), static_cast<int>(aulos::WaveShape::Cubic));
 	_waveShapeCombo->addItem(tr("Quintic"), static_cast<int>(aulos::WaveShape::Quintic));
 	_waveShapeCombo->addItem(tr("Cosine"), static_cast<int>(aulos::WaveShape::Cosine));
@@ -278,7 +277,13 @@ void VoiceWidget::setVoice(const std::shared_ptr<aulos::VoiceData>& voice)
 
 void VoiceWidget::updateShapeParameter()
 {
-	if (const auto waveShape = static_cast<aulos::WaveShape>(_waveShapeCombo->currentData().toInt()); waveShape == aulos::WaveShape::Cubic)
+	if (const auto waveShape = static_cast<aulos::WaveShape>(_waveShapeCombo->currentData().toInt()); waveShape == aulos::WaveShape::Quadratic)
+	{
+		_waveShapeParameterLabel->setEnabled(true);
+		_waveShapeParameterSpin->setEnabled(true);
+		_waveShapeParameterSpin->setRange(aulos::QuadraticShaper::kMinShape, aulos::QuadraticShaper::kMaxShape);
+	}
+	else if (waveShape == aulos::WaveShape::Cubic)
 	{
 		_waveShapeParameterLabel->setEnabled(true);
 		_waveShapeParameterSpin->setEnabled(true);
@@ -342,8 +347,7 @@ void VoiceWidget::updateWaveImage()
 		switch (static_cast<aulos::WaveShape>(_waveShapeCombo->currentData().toInt()))
 		{
 		case aulos::WaveShape::Linear: ::drawShape<aulos::LinearShaper>(painter, rect, parameter); break;
-		case aulos::WaveShape::SmoothQuadratic: ::drawShape<aulos::SmoothQuadraticShaper>(painter, rect, parameter); break;
-		case aulos::WaveShape::SharpQuadratic: ::drawShape<aulos::SharpQuadraticShaper>(painter, rect, parameter); break;
+		case aulos::WaveShape::Quadratic: ::drawShape<aulos::QuadraticShaper>(painter, rect, parameter); break;
 		case aulos::WaveShape::Cubic: ::drawShape<aulos::CubicShaper>(painter, rect, parameter); break;
 		case aulos::WaveShape::Quintic: ::drawShape<aulos::QuinticShaper>(painter, rect, parameter); break;
 		case aulos::WaveShape::Cosine: ::drawShape<aulos::CosineShaper>(painter, rect, parameter); break;

@@ -57,19 +57,23 @@ namespace aulos
 		double _nextY;
 	};
 
-	// P(X) = firstY - deltaY / 2 + 2 * deltaY / deltaX * X
-	// Q(X) = deltaY / 2 - 2 * deltaY / deltaX * X + 2 * deltaY / deltaX^2 * X^2
-	// 0 <= X <= deltaX / 2 : Y(X) = P(X) + Q(X)
-	// deltaX / 2 <= X <= deltaX : Y(X) = P(X) - Q(X)
+	// Y'(0) = shape * deltaY / deltaX
 	// Y(deltaX / 2) = firstY + deltaY / 2
-	// Y'(0) = 0
-	// Y'(deltaX) = 0
-	class SmoothQuadraticShaper
+	// Y'(deltaX) = shape * deltaY / deltaX
+	class QuadraticShaper
 	{
 	public:
-		explicit constexpr SmoothQuadraticShaper(const ShaperData& data) noexcept
-			: _halfDeltaY{ data._deltaY / 2 }
-			, _baseY{ data._firstY - _halfDeltaY }
+		// The shape parameter defines the curve shape as follows:
+		//  * [0.00, 1.00] - the function is monotonic and gradually transforms from quadratic with zero derivatives at the ends to linear;
+		//  * (1.00, 2.00] - the function is monotonic and gradually transforms from linear to quadratic with zero derivative in the middle;
+		//  * (2.00, 6.82] - the function is non-monotonic with two distinct extrema in the range which touch Y limits at 4+2*sqrt(2).
+		static constexpr float kMinShape = 0.f;
+		static constexpr float kMaxShape = 6.82f;
+
+		explicit constexpr QuadraticShaper(const ShaperData& data) noexcept
+			: _b0{ (1 - data._shape) * data._deltaY / 2 }
+			, _a0{ data._firstY - _b0 }
+			, _a1{ data._deltaY / 2 + _b0 }
 			, _halfDeltaX{ data._deltaX / 2 }
 			, _nextX{ data._offsetX }
 		{
@@ -77,68 +81,25 @@ namespace aulos
 
 		constexpr float advance() noexcept
 		{
-			const auto doubleNormalizedX = _nextX / _halfDeltaX;
-			const auto offset = 1 - (2 - doubleNormalizedX) * doubleNormalizedX;
-			const auto result = _baseY + _halfDeltaY * (2 * doubleNormalizedX - (_nextX - _halfDeltaX > 0 ? offset : -offset));
+			const auto x = _nextX / _halfDeltaX;
+			const auto a = _a0 + _a1 * x;
+			const auto b = _b0 * (1 - (2 - x) * x);
+			const auto result = _nextX < _halfDeltaX ? a + b : a - b;
 			_nextX += 1;
 			return result;
 		}
 
 		template <typename Float, typename = std::enable_if_t<std::is_floating_point_v<Float>>>
-		static constexpr auto value(Float firstY, Float deltaY, Float deltaX, Float, Float offsetX) noexcept
+		static constexpr auto value(Float firstY, Float deltaY, Float deltaX, Float shape, Float offsetX) noexcept
 		{
 			const auto normalizedX = offsetX / deltaX;
-			const auto offset = .5f - 2 * normalizedX * (1 - normalizedX);
-			return firstY + deltaY * (2 * normalizedX - (.5f + (offsetX - deltaX / 2 > 0 ? offset : -offset)));
+			return firstY + deltaY * (offsetX < deltaX / 2 ? (shape + 2 * (1 - shape) * normalizedX) * normalizedX : (shape - 1) * (1 + 2 * normalizedX * normalizedX) + (4 - 3 * shape) * normalizedX);
 		}
 
 	private:
-		const float _halfDeltaY;
-		const float _baseY;
-		const float _halfDeltaX;
-		float _nextX;
-	};
-
-	// P = firstY + deltaY / 2
-	// Q(X) = deltaY / 2 - 2 * deltaY / deltaX * X + 2 * deltaY / deltaX^2 * X^2
-	// 0 <= X <= deltaX / 2 : Y(X) = P - Q(X)
-	// deltaX / 2 <= X <= deltaX : Y(X) = P + Q(X)
-	// Y(deltaX / 2) = firstY + deltaY / 2
-	// Y'(deltaX / 2) = 0
-	class SharpQuadraticShaper
-	{
-	public:
-		explicit constexpr SharpQuadraticShaper(const ShaperData& data) noexcept
-			: _c0{ data._deltaY / 2 }
-			, _c1{ 2 * data._deltaY / data._deltaX }
-			, _c2{ _c1 / data._deltaX }
-			, _baseY{ data._firstY + _c0 }
-			, _halfDeltaX{ data._deltaX / 2 }
-			, _nextX{ data._offsetX }
-		{
-		}
-
-		constexpr auto advance() noexcept
-		{
-			const auto offset = _c0 - (_c1 - _c2 * _nextX) * _nextX;
-			const auto result = _baseY + (_nextX - _halfDeltaX > 0 ? offset : -offset);
-			_nextX += 1;
-			return result;
-		}
-
-		template <typename Float, typename = std::enable_if_t<std::is_floating_point_v<Float>>>
-		static constexpr auto value(Float firstY, Float deltaY, Float deltaX, Float, Float offsetX) noexcept
-		{
-			const auto normalizedX = offsetX / deltaX;
-			const auto offset = .5f - 2 * normalizedX * (1 - normalizedX);
-			return firstY + deltaY * (.5f + (offsetX - deltaX / 2 > 0 ? offset : -offset));
-		}
-
-	private:
-		const float _c0;
-		const float _c1;
-		const float _c2;
-		const float _baseY;
+		const float _b0;
+		const float _a0;
+		const float _a1;
 		const float _halfDeltaX;
 		float _nextX;
 	};

@@ -327,10 +327,12 @@ namespace aulos
 				float maxShape = 0;
 				if (const auto type = readIdentifier(); type == "linear")
 					currentVoice->_waveShape = WaveShape::Linear;
-				else if (type == "smooth_quadratic")
-					currentVoice->_waveShape = WaveShape::SmoothQuadratic;
-				else if (type == "sharp_quadratic")
-					currentVoice->_waveShape = WaveShape::SharpQuadratic;
+				else if (type == "quadratic")
+				{
+					currentVoice->_waveShape = WaveShape::Quadratic;
+					minShape = QuadraticShaper::kMinShape;
+					maxShape = QuadraticShaper::kMaxShape;
+				}
 				else if (type == "cubic")
 				{
 					currentVoice->_waveShape = WaveShape::Cubic;

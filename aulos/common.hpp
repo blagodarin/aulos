@@ -37,12 +37,11 @@ namespace aulos
 	// Shape types.
 	enum class WaveShape
 	{
-		Linear,          // Straight line (used for synthesizing square, rectangular, sawtooth and triangle waves).
-		SmoothQuadratic, // Quadratic curve with zero derivative on the left.
-		SharpQuadratic,  // Quadratic curve with zero derivative on the right.
-		Cubic,           // Cubic curve with parameterized derivatives at the ends.
-		Quintic,         // Quintic curve with zero value and parameterized derivative in the middle.
-		Cosine,          // Cosine curve.
+		Linear,    // Straight line (used for synthesizing square, rectangular, sawtooth and triangle waves).
+		Quadratic, // Two quadratic curves with parameterized derivatives at the ends and a common point in the middle.
+		Cubic,     // Cubic curve with parameterized derivatives at the ends.
+		Quintic,   // Quintic curve with zero value and parameterized derivative in the middle.
+		Cosine,    // Cosine curve.
 	};
 
 	enum class EnvelopeShape
