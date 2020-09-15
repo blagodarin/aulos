@@ -71,9 +71,9 @@ namespace aulos
 		static constexpr float kMaxShape = 6.82f;
 
 		explicit constexpr QuadraticShaper(const ShaperData& data) noexcept
-			: _b0{ (1 - data._shape) * data._deltaY / 2 }
-			, _a0{ data._firstY - _b0 }
-			, _a1{ data._deltaY / 2 + _b0 }
+			: _quadratic{ (1 - data._shape) * data._deltaY / 2 }
+			, _linear0{ data._firstY - _quadratic }
+			, _linear1{ data._deltaY / 2 + _quadratic }
 			, _halfDeltaX{ data._deltaX / 2 }
 			, _nextX{ data._offsetX }
 		{
@@ -82,11 +82,9 @@ namespace aulos
 		constexpr float advance() noexcept
 		{
 			const auto x = _nextX / _halfDeltaX;
-			const auto a = _a0 + _a1 * x;
-			const auto b = _b0 * (1 - (2 - x) * x);
-			const auto result = _nextX < _halfDeltaX ? a + b : a - b;
+			const auto quadratic = (_nextX < _halfDeltaX ? _quadratic : -_quadratic) * (1 - x) * (1 - x);
 			_nextX += 1;
-			return result;
+			return _linear0 + _linear1 * x + quadratic;
 		}
 
 		template <typename Float, typename = std::enable_if_t<std::is_floating_point_v<Float>>>
@@ -97,9 +95,9 @@ namespace aulos
 		}
 
 	private:
-		const float _b0;
-		const float _a0;
-		const float _a1;
+		const float _quadratic;
+		const float _linear0;
+		const float _linear1;
 		const float _halfDeltaX;
 		float _nextX;
 	};
