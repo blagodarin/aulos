@@ -20,7 +20,6 @@ namespace aulos
 }
 
 class CompositionScene;
-class TrackEditor;
 class VoiceEditor;
 
 class CompositionWidget final : public QWidget
@@ -41,15 +40,13 @@ public:
 
 signals:
 	void compositionChanged();
-	void selectionChanged(const std::shared_ptr<aulos::VoiceData>&, const std::shared_ptr<aulos::SequenceData>&);
+	void selectionChanged(const std::shared_ptr<aulos::VoiceData>&, const std::shared_ptr<aulos::TrackData>&, const std::shared_ptr<aulos::SequenceData>&);
 
 private:
-	bool editTrack(aulos::TrackData&);
 	bool editVoiceName(const void* id, std::string&);
 
 private:
 	std::unique_ptr<VoiceEditor> _voiceEditor;
-	std::unique_ptr<TrackEditor> _trackEditor;
 	CompositionScene* const _scene;
 	QGraphicsView* _view = nullptr;
 	std::shared_ptr<aulos::CompositionData> _composition;

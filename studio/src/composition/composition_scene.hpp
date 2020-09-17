@@ -60,7 +60,6 @@ signals:
 	void fragmentMenuRequested(const void* voiceId, const void* trackId, size_t offset, const QPoint& pos);
 	void sequenceSelected(const void* voiceId, const void* trackId, const void* sequenceId);
 	void timelineMenuRequested(size_t step, const QPoint& pos);
-	void trackActionRequested(const void* voiceId, const void* trackId);
 	void trackMenuRequested(const void* voiceId, const void* trackId, size_t offset, const QPoint& pos);
 	void voiceActionRequested(const void* voiceId);
 	void voiceMenuRequested(const void* voiceId, const QPoint& pos);

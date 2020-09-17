@@ -485,9 +485,6 @@ CompositionScene::TrackIterator CompositionScene::addTrackItem(const void* voice
 		(*trackIt)->_background->stackBefore((*firstFragmentTrackIt)->_fragments.cbegin()->second);
 	else
 		(*trackIt)->_background->stackBefore(_rightBoundItem);
-	connect((*trackIt)->_background, &TrackItem::trackActionRequested, [this, voiceId](const void* trackId) {
-		emit trackActionRequested(voiceId, trackId);
-	});
 	connect((*trackIt)->_background, &TrackItem::trackMenuRequested, [this, voiceId](const void* trackId, size_t offset, const QPoint& pos) {
 		emit trackMenuRequested(voiceId, trackId, offset, pos);
 	});

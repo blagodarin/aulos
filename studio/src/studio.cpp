@@ -274,6 +274,10 @@ Studio::Studio()
 	_voiceWidget = new VoiceWidget{ centralWidget };
 	_voiceWidget->setSizePolicy(::makeExpandingSizePolicy(0, 0));
 	rootLayout->addWidget(_voiceWidget);
+	connect(_voiceWidget, &VoiceWidget::trackParametersChanged, [this] {
+		_changed = true;
+		updateStatus();
+	});
 	connect(_voiceWidget, &VoiceWidget::voiceChanged, [this] {
 		_changed = true;
 		updateStatus();
@@ -347,8 +351,8 @@ Studio::Studio()
 				microseconds = _loopBeginUs + (microseconds - _loopEndUs);
 		_compositionWidget->setPlaybackOffset(microseconds * _composition->_speed / 1'000'000.0);
 	});
-	connect(_compositionWidget, &CompositionWidget::selectionChanged, [this](const std::shared_ptr<aulos::VoiceData>& voice, const std::shared_ptr<aulos::SequenceData>& sequence) {
-		_voiceWidget->setVoice(voice);
+	connect(_compositionWidget, &CompositionWidget::selectionChanged, [this](const std::shared_ptr<aulos::VoiceData>& voice, const std::shared_ptr<aulos::TrackData>& track, const std::shared_ptr<aulos::SequenceData>& sequence) {
+		_voiceWidget->setParameters(voice, track ? track->_properties : nullptr);
 		_sequenceWidget->setSequence(sequence);
 		_autoRepeatButton->setChecked(false);
 		updateStatus();

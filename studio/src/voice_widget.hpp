@@ -12,9 +12,11 @@ class QCheckBox;
 class QComboBox;
 class QDoubleSpinBox;
 class QLabel;
+class QSpinBox;
 
 namespace aulos
 {
+	struct TrackProperties;
 	struct VoiceData;
 }
 
@@ -26,20 +28,23 @@ public:
 	explicit VoiceWidget(QWidget* parent);
 	~VoiceWidget() override;
 
-	void setVoice(const std::shared_ptr<aulos::VoiceData>&);
+	void setParameters(const std::shared_ptr<aulos::VoiceData>&, const std::shared_ptr<aulos::TrackProperties>&);
 	std::shared_ptr<aulos::VoiceData> voice() const { return _voice; }
 
 signals:
+	void trackParametersChanged();
 	void voiceChanged();
 
 private:
 	void updateShapeParameter();
+	void updateTrackParameters();
 	void updateVoice();
 	void updateWaveImage();
 
 private:
 	struct EnvelopeChange;
 
+	QSpinBox* _trackWeightSpin = nullptr;
 	QComboBox* _waveShapeCombo = nullptr;
 	QLabel* _waveShapeParameterLabel = nullptr;
 	QDoubleSpinBox* _waveShapeParameterSpin = nullptr;
@@ -54,4 +59,5 @@ private:
 	std::vector<EnvelopeChange> _asymmetryEnvelope;
 	std::vector<EnvelopeChange> _oscillationEnvelope;
 	std::shared_ptr<aulos::VoiceData> _voice;
+	std::shared_ptr<aulos::TrackProperties> _trackParameters;
 };

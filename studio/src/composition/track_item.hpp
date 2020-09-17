@@ -22,12 +22,10 @@ public:
 	size_t trackIndex() const noexcept { return _index; }
 
 signals:
-	void trackActionRequested(const void* trackId);
 	void trackMenuRequested(const void* trackId, size_t offset, const QPoint& pos);
 
 private:
 	void contextMenuEvent(QGraphicsSceneContextMenuEvent*) override;
-	void mouseDoubleClickEvent(QGraphicsSceneMouseEvent*) override;
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
 
 private:

@@ -74,6 +74,21 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 		++row;
 	};
 
+	createHeader(tr("Track parameters"));
+
+	_trackWeightSpin = new QSpinBox{ this };
+	_trackWeightSpin->setRange(1, 255);
+	layout->addWidget(new QLabel{ tr("Weight:"), this }, row, 1, 1, 2);
+	layout->addWidget(_trackWeightSpin, row, 3, 1, 2);
+	connect(_trackWeightSpin, QOverload<int>::of(&QSpinBox::valueChanged), this, &VoiceWidget::updateTrackParameters);
+	++row;
+
+	const auto trackFooter = new QFrame{ this };
+	trackFooter->setFrameShadow(QFrame::Sunken);
+	trackFooter->setFrameShape(QFrame::HLine);
+	layout->addWidget(trackFooter, row, 0, 1, 5);
+	++row;
+
 	layout->addItem(new QSpacerItem{ 0, 0, QSizePolicy::Fixed, QSizePolicy::Fixed }, row, 0);
 
 	_polyphonyCombo = new QComboBox{ this };
@@ -237,7 +252,7 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 
 VoiceWidget::~VoiceWidget() = default;
 
-void VoiceWidget::setVoice(const std::shared_ptr<aulos::VoiceData>& voice)
+void VoiceWidget::setParameters(const std::shared_ptr<aulos::VoiceData>& voice, const std::shared_ptr<aulos::TrackProperties>& trackParameters)
 {
 	const auto loadEnvelope = [](std::vector<EnvelopeChange>& dst, const aulos::Envelope& src) {
 		for (auto i = dst.rbegin(); i != dst.rend(); ++i)
@@ -256,9 +271,14 @@ void VoiceWidget::setVoice(const std::shared_ptr<aulos::VoiceData>& voice)
 		}
 	};
 
-	_voice.reset(); // Prevent handling voice changes.
+	// Prevent handling changes.
+	_voice.reset();
+	_trackParameters.reset();
+
 	aulos::VoiceData defaultVoice;
 	const auto usedVoice = voice ? voice.get() : &defaultVoice;
+	_trackWeightSpin->setEnabled(static_cast<bool>(trackParameters));
+	_trackWeightSpin->setValue(trackParameters ? trackParameters->_weight : 0);
 	_waveShapeCombo->setCurrentIndex(_waveShapeCombo->findData(static_cast<int>(usedVoice->_waveShape)));
 	updateShapeParameter();
 	_waveShapeParameterSpin->setValue(usedVoice->_waveShapeParameter);
@@ -272,7 +292,9 @@ void VoiceWidget::setVoice(const std::shared_ptr<aulos::VoiceData>& voice)
 	loadEnvelope(_frequencyEnvelope, usedVoice->_frequencyEnvelope);
 	loadEnvelope(_asymmetryEnvelope, usedVoice->_asymmetryEnvelope);
 	loadEnvelope(_oscillationEnvelope, usedVoice->_oscillationEnvelope);
+
 	_voice = voice;
+	_trackParameters = trackParameters;
 }
 
 void VoiceWidget::updateShapeParameter()
@@ -301,6 +323,14 @@ void VoiceWidget::updateShapeParameter()
 		_waveShapeParameterSpin->setEnabled(false);
 		_waveShapeParameterSpin->setRange(0.0, 0.0);
 	}
+}
+
+void VoiceWidget::updateTrackParameters()
+{
+	if (!_trackParameters)
+		return;
+	_trackParameters->_weight = _trackWeightSpin->value();
+	emit trackParametersChanged();
 }
 
 void VoiceWidget::updateVoice()

@@ -6,7 +6,6 @@
 
 #include "../theme.hpp"
 #include "composition_scene.hpp"
-#include "track_editor.hpp"
 #include "voice_editor.hpp"
 
 #include <aulos/data.hpp>
@@ -65,7 +64,6 @@ namespace
 CompositionWidget::CompositionWidget(QWidget* parent)
 	: QWidget{ parent }
 	, _voiceEditor{ std::make_unique<VoiceEditor>(this) }
-	, _trackEditor{ std::make_unique<TrackEditor>(this) }
 	, _scene{ new CompositionScene{ this } }
 {
 	const auto layout = new QGridLayout{ this };
@@ -85,18 +83,12 @@ CompositionWidget::CompositionWidget(QWidget* parent)
 		QMenu menu;
 		const auto removeFragmentAction = menu.addAction(tr("Remove fragment"));
 		menu.addSeparator();
-		const auto editTrackAction = menu.addAction(tr("Edit track..."));
 		const auto removeTrackAction = menu.addAction(tr("Remove track"));
 		removeTrackAction->setEnabled((*part)->_tracks.size() > 1);
 		if (const auto action = menu.exec(pos); action == removeFragmentAction)
 		{
 			_scene->removeFragment(trackId, offset);
 			(*track)->_fragments.erase(fragment);
-		}
-		else if (action == editTrackAction)
-		{
-			if (!editTrack(**track))
-				return;
 		}
 		else if (action == removeTrackAction)
 		{
@@ -136,23 +128,27 @@ CompositionWidget::CompositionWidget(QWidget* parent)
 	});
 	connect(_scene, &CompositionScene::sequenceSelected, [this](const void* voiceId, const void* trackId, const void* sequenceId) {
 		std::shared_ptr<aulos::VoiceData> voice;
+		std::shared_ptr<aulos::TrackData> track;
 		std::shared_ptr<aulos::SequenceData> sequence;
 		if (voiceId)
 		{
 			const auto partIt = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [voiceId](const auto& partData) { return partData->_voice.get() == voiceId; });
 			assert(partIt != _composition->_parts.cend());
 			voice = (*partIt)->_voice;
-			if (sequenceId)
+			if (trackId)
 			{
-				assert(trackId);
 				const auto trackIt = std::find_if((*partIt)->_tracks.cbegin(), (*partIt)->_tracks.cend(), [trackId](const auto& trackData) { return trackData.get() == trackId; });
 				assert(trackIt != (*partIt)->_tracks.cend());
-				const auto sequenceIt = std::find_if((*trackIt)->_sequences.cbegin(), (*trackIt)->_sequences.cend(), [sequenceId](const auto& sequenceData) { return sequenceData.get() == sequenceId; });
-				assert(sequenceIt != (*trackIt)->_sequences.end());
-				sequence = *sequenceIt;
+				track = *trackIt;
+				if (sequenceId)
+				{
+					const auto sequenceIt = std::find_if((*trackIt)->_sequences.cbegin(), (*trackIt)->_sequences.cend(), [sequenceId](const auto& sequenceData) { return sequenceData.get() == sequenceId; });
+					assert(sequenceIt != (*trackIt)->_sequences.end());
+					sequence = *sequenceIt;
+				}
 			}
 		}
-		emit selectionChanged(voice, sequence);
+		emit selectionChanged(voice, track, sequence);
 	});
 	connect(_scene, &CompositionScene::timelineMenuRequested, [this](size_t step, const QPoint& pos) {
 		const auto loopEnd = size_t{ _composition->_loopOffset } + _composition->_loopLength;
@@ -173,23 +169,12 @@ CompositionWidget::CompositionWidget(QWidget* parent)
 		_scene->updateLoop();
 		emit compositionChanged();
 	});
-	connect(_scene, &CompositionScene::trackActionRequested, [this](const void* voiceId, const void* trackId) {
-		const auto part = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [voiceId](const auto& partData) { return partData->_voice.get() == voiceId; });
-		assert(part != _composition->_parts.cend());
-		const auto track = std::find_if((*part)->_tracks.cbegin(), (*part)->_tracks.cend(), [trackId](const auto& trackData) { return trackData.get() == trackId; });
-		assert(track != (*part)->_tracks.cend());
-		if (!editTrack(**track))
-			return;
-		emit compositionChanged();
-	});
 	connect(_scene, &CompositionScene::trackMenuRequested, [this](const void* voiceId, const void* trackId, size_t offset, const QPoint& pos) {
 		const auto part = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [voiceId](const auto& partData) { return partData->_voice.get() == voiceId; });
 		assert(part != _composition->_parts.cend());
 		const auto track = std::find_if((*part)->_tracks.cbegin(), (*part)->_tracks.cend(), [trackId](const auto& trackData) { return trackData.get() == trackId; });
 		assert(track != (*part)->_tracks.cend());
 		QMenu menu;
-		const auto editTrackAction = menu.addAction(tr("Edit track..."));
-		editTrackAction->setFont(::makeBold(editTrackAction->font()));
 		const auto insertSubmenu = menu.addMenu(tr("Insert sequence"));
 		const auto sequenceCount = (*track)->_sequences.size();
 		for (size_t sequenceIndex = 0; sequenceIndex < sequenceCount; ++sequenceIndex)
@@ -199,12 +184,7 @@ CompositionWidget::CompositionWidget(QWidget* parent)
 		const auto newSequenceAction = insertSubmenu->addAction(tr("New sequence..."));
 		const auto removeTrackAction = menu.addAction(tr("Remove track"));
 		removeTrackAction->setEnabled((*part)->_tracks.size() > 1);
-		if (const auto action = menu.exec(pos); action == editTrackAction)
-		{
-			if (!editTrack(**track))
-				return;
-		}
-		else if (action == newSequenceAction)
+		if (const auto action = menu.exec(pos); action == newSequenceAction)
 		{
 			const auto sequence = std::make_shared<aulos::SequenceData>();
 			(*track)->_sequences.emplace_back(sequence);
@@ -321,15 +301,6 @@ size_t CompositionWidget::startOffset() const
 void CompositionWidget::updateSelectedSequence(const std::shared_ptr<aulos::SequenceData>& sequence)
 {
 	_scene->updateSelectedSequence(sequence);
-}
-
-bool CompositionWidget::editTrack(aulos::TrackData& track)
-{
-	_trackEditor->setTrackWeight(track._properties->_weight);
-	if (_trackEditor->exec() != QDialog::Accepted)
-		return false;
-	track._properties->_weight = _trackEditor->trackWeight();
-	return true;
 }
 
 bool CompositionWidget::editVoiceName(const void* id, std::string& voiceName)

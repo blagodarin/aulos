@@ -48,8 +48,6 @@ set(_src_composition
 	src/composition/loop_item.hpp
 	src/composition/timeline_item.cpp
 	src/composition/timeline_item.hpp
-	src/composition/track_editor.cpp
-	src/composition/track_editor.hpp
 	src/composition/track_item.cpp
 	src/composition/track_item.hpp
 	src/composition/voice_editor.cpp
