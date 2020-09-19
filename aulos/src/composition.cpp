@@ -38,7 +38,7 @@ namespace aulos
 		{
 			Global,
 			Voice,
-			Tracks,
+			Track,
 			Sequences,
 			Fragments,
 		};
@@ -47,6 +47,7 @@ namespace aulos
 		const char* lineBase = source;
 		Section currentSection = Section::Global;
 		VoiceData* currentVoice = nullptr;
+		Track* currentTrack = nullptr;
 
 		const auto location = [&]() -> Location { return { line, source - lineBase }; };
 
@@ -372,6 +373,12 @@ namespace aulos
 					throw CompositionError{ location(), "Unexpected command" };
 				_author = readString();
 			}
+			else if (command == "weight")
+			{
+				if (currentSection != Section::Track)
+					throw CompositionError{ location(), "Unexpected command" };
+				currentTrack->_weight = readUnsigned(1, 255);
+			}
 			else
 				throw CompositionError{ location(), "Unknown command \"" + std::string{ command } + "\"" };
 			if (*source && *source != '\n' && *source != '\r')
@@ -414,14 +421,6 @@ namespace aulos
 					parseSequence(track._sequences.emplace_back());
 					break;
 				}
-				case Section::Tracks: {
-					auto& part = _parts[readUnsigned(1, static_cast<unsigned>(_parts.size())) - 1];
-					const auto trackIndex = static_cast<unsigned>(part._tracks.size() + 1);
-					readUnsigned(trackIndex, trackIndex);
-					const auto weight = tryReadUnsigned(1, 255);
-					part._tracks.emplace_back(weight ? *weight : 1);
-					break;
-				}
 				case Section::Fragments: {
 					auto& part = _parts[readUnsigned(1, static_cast<unsigned>(_parts.size())) - 1];
 					auto& track = part._tracks[readUnsigned(1, static_cast<unsigned>(part._tracks.size())) - 1];
@@ -447,10 +446,14 @@ namespace aulos
 					if (name)
 						_parts.back()._voiceName = std::move(*name);
 				}
-				else if (section == "tracks")
+				else if (section == "track")
 				{
+					auto& part = _parts[readUnsigned(1, static_cast<unsigned>(_parts.size())) - 1];
+					const auto trackIndex = static_cast<unsigned>(part._tracks.size() + 1);
+					readUnsigned(trackIndex, trackIndex);
 					consumeEndOfLine();
-					currentSection = Section::Tracks;
+					currentSection = Section::Track;
+					currentTrack = &part._tracks.emplace_back();
 				}
 				else if (section == "sequences")
 				{

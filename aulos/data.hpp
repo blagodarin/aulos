@@ -23,7 +23,7 @@ namespace aulos
 	{
 		unsigned _weight = 0;
 
-		constexpr TrackProperties(unsigned weight) noexcept
+		explicit constexpr TrackProperties(unsigned weight) noexcept
 			: _weight{ weight } {}
 	};
 

@@ -66,7 +66,8 @@ namespace aulos
 			packedPart._tracks.reserve(partData->_tracks.size());
 			for (const auto& trackData : partData->_tracks)
 			{
-				auto& packedTrack = packedPart._tracks.emplace_back(trackData->_properties->_weight);
+				auto& packedTrack = packedPart._tracks.emplace_back();
+				packedTrack._weight = trackData->_properties->_weight;
 				packedTrack._fragments.reserve(trackData->_fragments.size());
 				for (size_t lastOffset = 0; const auto& fragmentData : trackData->_fragments)
 				{
@@ -162,10 +163,10 @@ namespace aulos
 			case WaveShape::Cosine: text += "cosine"; break;
 			}
 		}
-		text += "\n\n@tracks";
 		std::for_each(impl._parts.cbegin(), impl._parts.cend(), [&text, partIndex = 1](const Part& part) mutable {
 			std::for_each(part._tracks.cbegin(), part._tracks.cend(), [&text, partIndex, trackIndex = 1](const Track& track) mutable {
-				text += '\n' + std::to_string(partIndex) + ' ' + std::to_string(trackIndex) + ' ' + std::to_string(track._weight);
+				text += "\n\n@track " + std::to_string(partIndex) + ' ' + std::to_string(trackIndex);
+				text += "\nweight " + std::to_string(track._weight);
 				++trackIndex;
 			});
 			++partIndex;

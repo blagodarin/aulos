@@ -14,9 +14,11 @@ stereo_pan 0.00
 stereo_radius 3.00
 wave cubic 8.00
 
-@tracks
-1 1 1
-1 2 1
+@track 1 1
+weight 1
+
+@track 1 2
+weight 1
 
 @sequences
 1 1 1 E5,D#5,E5,D#5,E5,B4,D5,C5,A4

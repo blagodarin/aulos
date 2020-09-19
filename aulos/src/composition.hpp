@@ -22,12 +22,9 @@ namespace aulos
 
 	struct Track
 	{
-		unsigned _weight = 0;
+		unsigned _weight = 1;
 		std::vector<std::vector<Sound>> _sequences;
 		std::vector<Fragment> _fragments;
-
-		explicit Track(unsigned weight) noexcept
-			: _weight{ weight } {}
 	};
 
 	struct Part
