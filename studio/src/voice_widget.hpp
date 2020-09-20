@@ -32,12 +32,12 @@ public:
 	std::shared_ptr<aulos::VoiceData> voice() const { return _voice; }
 
 signals:
-	void trackParametersChanged();
+	void trackPropertiesChanged();
 	void voiceChanged();
 
 private:
 	void updateShapeParameter();
-	void updateTrackParameters();
+	void updateTrackProperties();
 	void updateVoice();
 	void updateWaveImage();
 
@@ -59,5 +59,5 @@ private:
 	std::vector<EnvelopeChange> _asymmetryEnvelope;
 	std::vector<EnvelopeChange> _oscillationEnvelope;
 	std::shared_ptr<aulos::VoiceData> _voice;
-	std::shared_ptr<aulos::TrackProperties> _trackParameters;
+	std::shared_ptr<aulos::TrackProperties> _trackProperties;
 };

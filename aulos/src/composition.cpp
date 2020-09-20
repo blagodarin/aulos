@@ -47,7 +47,7 @@ namespace aulos
 		const char* lineBase = source;
 		Section currentSection = Section::Global;
 		VoiceData* currentVoice = nullptr;
-		Track* currentTrack = nullptr;
+		TrackProperties* currentTrackProperties = nullptr;
 
 		const auto location = [&]() -> Location { return { line, source - lineBase }; };
 
@@ -377,7 +377,7 @@ namespace aulos
 			{
 				if (currentSection != Section::Track)
 					throw CompositionError{ location(), "Unexpected command" };
-				currentTrack->_weight = readUnsigned(1, 255);
+				currentTrackProperties->_weight = readUnsigned(1, 255);
 			}
 			else
 				throw CompositionError{ location(), "Unknown command \"" + std::string{ command } + "\"" };
@@ -453,7 +453,7 @@ namespace aulos
 					readUnsigned(trackIndex, trackIndex);
 					consumeEndOfLine();
 					currentSection = Section::Track;
-					currentTrack = &part._tracks.emplace_back();
+					currentTrackProperties = &part._tracks.emplace_back()._properties;
 				}
 				else if (section == "sequences")
 				{

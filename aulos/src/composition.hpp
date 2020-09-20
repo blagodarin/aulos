@@ -22,7 +22,7 @@ namespace aulos
 
 	struct Track
 	{
-		unsigned _weight = 1;
+		TrackProperties _properties;
 		std::vector<std::vector<Sound>> _sequences;
 		std::vector<Fragment> _fragments;
 	};

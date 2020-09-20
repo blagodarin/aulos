@@ -74,13 +74,13 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 		++row;
 	};
 
-	createHeader(tr("Track parameters"));
+	createHeader(tr("Track properties"));
 
 	_trackWeightSpin = new QSpinBox{ this };
 	_trackWeightSpin->setRange(1, 255);
 	layout->addWidget(new QLabel{ tr("Weight:"), this }, row, 1, 1, 2);
 	layout->addWidget(_trackWeightSpin, row, 3, 1, 2);
-	connect(_trackWeightSpin, QOverload<int>::of(&QSpinBox::valueChanged), this, &VoiceWidget::updateTrackParameters);
+	connect(_trackWeightSpin, QOverload<int>::of(&QSpinBox::valueChanged), this, &VoiceWidget::updateTrackProperties);
 	++row;
 
 	const auto trackFooter = new QFrame{ this };
@@ -252,7 +252,7 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 
 VoiceWidget::~VoiceWidget() = default;
 
-void VoiceWidget::setParameters(const std::shared_ptr<aulos::VoiceData>& voice, const std::shared_ptr<aulos::TrackProperties>& trackParameters)
+void VoiceWidget::setParameters(const std::shared_ptr<aulos::VoiceData>& voice, const std::shared_ptr<aulos::TrackProperties>& trackProperties)
 {
 	const auto loadEnvelope = [](std::vector<EnvelopeChange>& dst, const aulos::Envelope& src) {
 		for (auto i = dst.rbegin(); i != dst.rend(); ++i)
@@ -273,12 +273,12 @@ void VoiceWidget::setParameters(const std::shared_ptr<aulos::VoiceData>& voice, 
 
 	// Prevent handling changes.
 	_voice.reset();
-	_trackParameters.reset();
+	_trackProperties.reset();
 
 	aulos::VoiceData defaultVoice;
 	const auto usedVoice = voice ? voice.get() : &defaultVoice;
-	_trackWeightSpin->setEnabled(static_cast<bool>(trackParameters));
-	_trackWeightSpin->setValue(trackParameters ? trackParameters->_weight : 0);
+	_trackWeightSpin->setEnabled(static_cast<bool>(trackProperties));
+	_trackWeightSpin->setValue(trackProperties ? trackProperties->_weight : 0);
 	_waveShapeCombo->setCurrentIndex(_waveShapeCombo->findData(static_cast<int>(usedVoice->_waveShape)));
 	updateShapeParameter();
 	_waveShapeParameterSpin->setValue(usedVoice->_waveShapeParameter);
@@ -294,7 +294,7 @@ void VoiceWidget::setParameters(const std::shared_ptr<aulos::VoiceData>& voice, 
 	loadEnvelope(_oscillationEnvelope, usedVoice->_oscillationEnvelope);
 
 	_voice = voice;
-	_trackParameters = trackParameters;
+	_trackProperties = trackProperties;
 }
 
 void VoiceWidget::updateShapeParameter()
@@ -325,12 +325,12 @@ void VoiceWidget::updateShapeParameter()
 	}
 }
 
-void VoiceWidget::updateTrackParameters()
+void VoiceWidget::updateTrackProperties()
 {
-	if (!_trackParameters)
+	if (!_trackProperties)
 		return;
-	_trackParameters->_weight = _trackWeightSpin->value();
-	emit trackParametersChanged();
+	_trackProperties->_weight = _trackWeightSpin->value();
+	emit trackPropertiesChanged();
 }
 
 void VoiceWidget::updateVoice()

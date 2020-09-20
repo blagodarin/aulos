@@ -121,7 +121,7 @@ CompositionWidget::CompositionWidget(QWidget* parent)
 			return;
 		const auto& part = _composition->_parts.emplace_back(std::make_shared<aulos::PartData>(::makeDefaultVoice()));
 		part->_voiceName = _voiceEditor->voiceName();
-		part->_tracks.emplace_back(std::make_shared<aulos::TrackData>(1));
+		part->_tracks.emplace_back(std::make_shared<aulos::TrackData>(std::make_shared<aulos::TrackProperties>()));
 		_scene->appendPart(part);
 		_view->horizontalScrollBar()->setValue(_view->horizontalScrollBar()->minimum());
 		emit compositionChanged();
@@ -235,7 +235,7 @@ CompositionWidget::CompositionWidget(QWidget* parent)
 		}
 		else if (action == addTrackAction)
 		{
-			auto& track = (*part)->_tracks.emplace_back(std::make_shared<aulos::TrackData>(1));
+			auto& track = (*part)->_tracks.emplace_back(std::make_shared<aulos::TrackData>(std::make_shared<aulos::TrackProperties>()));
 			_scene->addTrack(voiceId, track.get());
 		}
 		else if (action == removeVoiceAction)

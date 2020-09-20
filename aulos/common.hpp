@@ -93,6 +93,11 @@ namespace aulos
 		Polyphony _polyphony = Polyphony::Chord;
 	};
 
+	struct TrackProperties
+	{
+		unsigned _weight = 1;
+	};
+
 	constexpr unsigned kMinSpeed = 1;  // Minimum composition playback speed (in steps per second).
 	constexpr unsigned kMaxSpeed = 32; // Maximum composition playback speed (in steps per second).
 }

@@ -25,7 +25,7 @@ namespace aulos
 			partData->_tracks.reserve(packedPart._tracks.size());
 			for (const auto& packedTrack : packedPart._tracks)
 			{
-				auto& trackData = *partData->_tracks.emplace_back(std::make_shared<TrackData>(packedTrack._weight));
+				auto& trackData = *partData->_tracks.emplace_back(std::make_shared<TrackData>(std::make_shared<TrackProperties>(packedTrack._properties)));
 				trackData._sequences.reserve(packedTrack._sequences.size());
 				for (const auto& packedSequence : packedTrack._sequences)
 					trackData._sequences.emplace_back(std::make_shared<SequenceData>())->_sounds = packedSequence;
@@ -42,7 +42,7 @@ namespace aulos
 	{
 		const auto sequence = std::make_shared<SequenceData>();
 		sequence->_sounds.emplace_back(0u, note);
-		const auto track = std::make_shared<TrackData>(1u);
+		const auto track = std::make_shared<TrackData>(std::make_shared<TrackProperties>());
 		track->_sequences.emplace_back(sequence);
 		track->_fragments.emplace(0u, sequence);
 		const auto part = std::make_shared<PartData>(voice);
@@ -67,7 +67,7 @@ namespace aulos
 			for (const auto& trackData : partData->_tracks)
 			{
 				auto& packedTrack = packedPart._tracks.emplace_back();
-				packedTrack._weight = trackData->_properties->_weight;
+				packedTrack._properties = *trackData->_properties;
 				packedTrack._fragments.reserve(trackData->_fragments.size());
 				for (size_t lastOffset = 0; const auto& fragmentData : trackData->_fragments)
 				{
@@ -166,7 +166,7 @@ namespace aulos
 		std::for_each(impl._parts.cbegin(), impl._parts.cend(), [&text, partIndex = 1](const Part& part) mutable {
 			std::for_each(part._tracks.cbegin(), part._tracks.cend(), [&text, partIndex, trackIndex = 1](const Track& track) mutable {
 				text += "\n\n@track " + std::to_string(partIndex) + ' ' + std::to_string(trackIndex);
-				text += "\nweight " + std::to_string(track._weight);
+				text += "\nweight " + std::to_string(track._properties._weight);
 				++trackIndex;
 			});
 			++partIndex;

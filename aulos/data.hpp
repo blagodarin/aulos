@@ -19,22 +19,14 @@ namespace aulos
 		std::vector<Sound> _sounds;
 	};
 
-	struct TrackProperties
-	{
-		unsigned _weight = 0;
-
-		explicit constexpr TrackProperties(unsigned weight) noexcept
-			: _weight{ weight } {}
-	};
-
 	struct TrackData
 	{
 		std::shared_ptr<TrackProperties> _properties;
 		std::vector<std::shared_ptr<SequenceData>> _sequences;
 		std::map<size_t, std::shared_ptr<SequenceData>> _fragments;
 
-		explicit TrackData(unsigned weight) noexcept
-			: _properties{ std::make_shared<TrackProperties>(weight) } {}
+		explicit TrackData(std::shared_ptr<TrackProperties>&& properties) noexcept
+			: _properties{ std::move(properties) } {}
 	};
 
 	struct PartData

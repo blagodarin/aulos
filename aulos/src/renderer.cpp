@@ -378,7 +378,7 @@ namespace
 			std::vector<aulos::Note> noteCounter;
 			const auto maxSoundOffset = looping && composition._loopLength > 0 ? size_t{ composition._loopOffset } + composition._loopLength - 1 : std::numeric_limits<size_t>::max();
 			const auto totalWeight = static_cast<float>(std::accumulate(composition._parts.cbegin(), composition._parts.cend(), 0u, [](unsigned weight, const aulos::Part& part) {
-				return std::accumulate(part._tracks.cbegin(), part._tracks.cend(), weight, [](unsigned partWeight, const aulos::Track& track) { return partWeight + track._weight; });
+				return std::accumulate(part._tracks.cbegin(), part._tracks.cend(), weight, [](unsigned partWeight, const aulos::Track& track) { return partWeight + track._properties._weight; });
 			}));
 			_tracks.reserve(std::accumulate(composition._parts.cbegin(), composition._parts.cend(), size_t{}, [](size_t count, const aulos::Part& part) { return count + part._tracks.size(); }));
 			for (const auto& part : composition._parts)
@@ -405,7 +405,7 @@ namespace
 						}
 					}
 					if (!sounds.empty())
-						_tracks.emplace_back(_format, part._voice, static_cast<float>(track._weight) / totalWeight, sounds, looping && composition._loopLength > 0 ? std::optional{ std::pair{ composition._loopOffset, composition._loopLength } } : std::nullopt);
+						_tracks.emplace_back(_format, part._voice, static_cast<float>(track._properties._weight) / totalWeight, sounds, looping && composition._loopLength > 0 ? std::optional{ std::pair{ composition._loopOffset, composition._loopLength } } : std::nullopt);
 				}
 			}
 			_loopLength = composition._loopLength > 0 ? composition._loopLength : _format.samplesToSteps(totalSamples());

@@ -274,7 +274,7 @@ Studio::Studio()
 	_voiceWidget = new VoiceWidget{ centralWidget };
 	_voiceWidget->setSizePolicy(::makeExpandingSizePolicy(0, 0));
 	rootLayout->addWidget(_voiceWidget);
-	connect(_voiceWidget, &VoiceWidget::trackParametersChanged, [this] {
+	connect(_voiceWidget, &VoiceWidget::trackPropertiesChanged, [this] {
 		_changed = true;
 		updateStatus();
 	});
@@ -414,7 +414,7 @@ void Studio::createEmptyComposition()
 	_composition->_speed = 6;
 	const auto& part = _composition->_parts.emplace_back(std::make_shared<aulos::PartData>(::makeDefaultVoice()));
 	part->_voiceName = tr("NewVoice").toStdString();
-	part->_tracks.emplace_back(std::make_shared<aulos::TrackData>(1));
+	part->_tracks.emplace_back(std::make_shared<aulos::TrackData>(std::make_shared<aulos::TrackProperties>()));
 	_compositionFileName = tr("New composition");
 	_speedSpin->setValue(static_cast<int>(_composition->_speed));
 	_compositionWidget->setComposition(_composition);
