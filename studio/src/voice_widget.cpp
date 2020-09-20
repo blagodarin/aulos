@@ -72,70 +72,79 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 		header->setStyleSheet("font-weight: bold");
 		layout->addWidget(header, row, 0, 1, 5);
 		++row;
+		return header;
 	};
 
-	createHeader(tr("Track properties"));
+	_trackWidgets.emplace_back(createHeader(tr("Track properties")));
 
 	layout->addItem(new QSpacerItem{ 0, 0, QSizePolicy::Fixed, QSizePolicy::Fixed }, row, 0);
 
+	const auto trackWeightLabel = new QLabel{ tr("Weight:"), this };
 	_trackWeightSpin = new QSpinBox{ this };
 	_trackWeightSpin->setRange(1, 255);
-	layout->addWidget(new QLabel{ tr("Weight:"), this }, row, 1, 1, 2);
+	layout->addWidget(trackWeightLabel, row, 1, 1, 2);
 	layout->addWidget(_trackWeightSpin, row, 3, 1, 2);
 	connect(_trackWeightSpin, QOverload<int>::of(&QSpinBox::valueChanged), this, &VoiceWidget::updateTrackProperties);
+	_trackWidgets.emplace_back(trackWeightLabel);
+	_trackWidgets.emplace_back(_trackWeightSpin);
 	++row;
 
+	const auto polyphonyLabel = new QLabel{ tr("Polyphony:"), this };
 	_polyphonyCombo = new QComboBox{ this };
 	_polyphonyCombo->addItem(tr("Chord"), static_cast<int>(aulos::Polyphony::Chord));
 	_polyphonyCombo->addItem(tr("Full"), static_cast<int>(aulos::Polyphony::Full));
-	layout->addWidget(new QLabel{ tr("Polyphony:"), this }, row, 1, 1, 2);
+	layout->addWidget(polyphonyLabel, row, 1, 1, 2);
 	layout->addWidget(_polyphonyCombo, row, 3, 1, 2);
 	connect(_polyphonyCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &VoiceWidget::updateTrackProperties);
+	_trackWidgets.emplace_back(polyphonyLabel);
+	_trackWidgets.emplace_back(_polyphonyCombo);
 	++row;
 
-	const auto trackFooter = new QFrame{ this };
-	trackFooter->setFrameShadow(QFrame::Sunken);
-	trackFooter->setFrameShape(QFrame::HLine);
-	layout->addWidget(trackFooter, row, 0, 1, 5);
-	++row;
-
-	createHeader(tr("Stereo parameters"));
-
+	const auto stereoDelayLabel = new QLabel{ tr("Stereo delay:"), this };
 	_stereoDelaySpin = new QDoubleSpinBox{ parent };
 	_stereoDelaySpin->setDecimals(2);
 	_stereoDelaySpin->setRange(-1'000.0, 1'000.0);
 	_stereoDelaySpin->setSingleStep(0.01);
 	_stereoDelaySpin->setSuffix(tr("ms"));
 	_stereoDelaySpin->setValue(0.0);
-	layout->addWidget(new QLabel{ tr("Delay:"), this }, row, 1, 1, 2);
+	layout->addWidget(stereoDelayLabel, row, 1, 1, 2);
 	layout->addWidget(_stereoDelaySpin, row, 3, 1, 2);
-	connect(_stereoDelaySpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
+	connect(_stereoDelaySpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateTrackProperties);
+	_trackWidgets.emplace_back(stereoDelayLabel);
+	_trackWidgets.emplace_back(_stereoDelaySpin);
 	++row;
 
+	const auto stereoRadiusLabel = new QLabel{ tr("Stereo radius:"), this };
 	_stereoRadiusSpin = new QDoubleSpinBox{ parent };
 	_stereoRadiusSpin->setDecimals(2);
 	_stereoRadiusSpin->setRange(-1'000.0, 1'000.0);
 	_stereoRadiusSpin->setSingleStep(0.01);
 	_stereoRadiusSpin->setSuffix(tr("ms"));
 	_stereoRadiusSpin->setValue(0.0);
-	layout->addWidget(new QLabel{ tr("Radius:"), this }, row, 1, 1, 2);
+	layout->addWidget(stereoRadiusLabel, row, 1, 1, 2);
 	layout->addWidget(_stereoRadiusSpin, row, 3, 1, 2);
-	connect(_stereoRadiusSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
+	connect(_stereoRadiusSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateTrackProperties);
+	_trackWidgets.emplace_back(stereoRadiusLabel);
+	_trackWidgets.emplace_back(_stereoRadiusSpin);
 	++row;
 
+	const auto stereoPanLabel = new QLabel{ tr("Stereo pan:"), this };
 	_stereoPanSpin = new QDoubleSpinBox{ parent };
 	_stereoPanSpin->setDecimals(2);
 	_stereoPanSpin->setRange(-1.0, 1.0);
 	_stereoPanSpin->setSingleStep(0.01);
 	_stereoPanSpin->setValue(0.0);
-	layout->addWidget(new QLabel{ tr("Pan:"), this }, row, 1, 1, 2);
+	layout->addWidget(stereoPanLabel, row, 1, 1, 2);
 	layout->addWidget(_stereoPanSpin, row, 3, 1, 2);
-	connect(_stereoPanSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
+	connect(_stereoPanSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateTrackProperties);
+	_trackWidgets.emplace_back(stereoPanLabel);
+	_trackWidgets.emplace_back(_stereoPanSpin);
 	++row;
 
 	_stereoInversionCheck = new QCheckBox{ tr("Invert right channel"), this };
 	layout->addWidget(_stereoInversionCheck, row, 1, 1, 4);
 	connect(_stereoInversionCheck, &QCheckBox::toggled, this, &VoiceWidget::updateVoice);
+	_trackWidgets.emplace_back(_stereoInversionCheck);
 	++row;
 
 	const auto separator = new QFrame{ this };
@@ -144,8 +153,10 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 	layout->addWidget(separator, row, 0, 1, 5);
 	++row;
 
+	createHeader(tr("Voice properties"));
+
 	const auto waveShapeLayout = new QGridLayout{};
-	layout->addLayout(waveShapeLayout, row, 0, 1, 5);
+	layout->addLayout(waveShapeLayout, row, 1, 1, 4);
 	++row;
 
 	_waveShapeCombo = new QComboBox{ this };
@@ -275,22 +286,24 @@ void VoiceWidget::setParameters(const std::shared_ptr<aulos::VoiceData>& voice, 
 	_voice.reset();
 	_trackProperties.reset();
 
-	aulos::VoiceData defaultVoice;
+	for (const auto widget : _trackWidgets)
+		widget->setEnabled(static_cast<bool>(trackProperties));
+
 	aulos::TrackProperties defaultTrackProperties;
-	const auto usedVoice = voice ? voice.get() : &defaultVoice;
 	const auto usedTrackProperties = trackProperties ? trackProperties.get() : &defaultTrackProperties;
-	_trackWeightSpin->setEnabled(static_cast<bool>(trackProperties));
 	_trackWeightSpin->setValue(trackProperties ? trackProperties->_weight : 0);
-	_polyphonyCombo->setEnabled(static_cast<bool>(trackProperties));
 	_polyphonyCombo->setCurrentIndex(_polyphonyCombo->findData(static_cast<int>(usedTrackProperties->_polyphony)));
+	_stereoDelaySpin->setValue(usedTrackProperties->_stereoDelay);
+	_stereoRadiusSpin->setValue(usedTrackProperties->_stereoRadius);
+	_stereoPanSpin->setValue(usedTrackProperties->_stereoPan);
+	_stereoInversionCheck->setChecked(usedTrackProperties->_stereoInversion);
+
+	aulos::VoiceData defaultVoice;
+	const auto usedVoice = voice ? voice.get() : &defaultVoice;
 	_waveShapeCombo->setCurrentIndex(_waveShapeCombo->findData(static_cast<int>(usedVoice->_waveShape)));
 	updateShapeParameter();
 	_waveShapeParameterSpin->setValue(usedVoice->_waveShapeParameter);
 	updateWaveImage();
-	_stereoDelaySpin->setValue(usedVoice->_stereoDelay);
-	_stereoRadiusSpin->setValue(usedVoice->_stereoRadius);
-	_stereoPanSpin->setValue(usedVoice->_stereoPan);
-	_stereoInversionCheck->setChecked(usedVoice->_stereoInversion);
 	loadEnvelope(_amplitudeEnvelope, usedVoice->_amplitudeEnvelope);
 	loadEnvelope(_frequencyEnvelope, usedVoice->_frequencyEnvelope);
 	loadEnvelope(_asymmetryEnvelope, usedVoice->_asymmetryEnvelope);
@@ -334,6 +347,10 @@ void VoiceWidget::updateTrackProperties()
 		return;
 	_trackProperties->_weight = _trackWeightSpin->value();
 	_trackProperties->_polyphony = static_cast<aulos::Polyphony>(_polyphonyCombo->currentData().toInt());
+	_trackProperties->_stereoDelay = static_cast<float>(_stereoDelaySpin->value());
+	_trackProperties->_stereoRadius = static_cast<float>(_stereoRadiusSpin->value());
+	_trackProperties->_stereoPan = static_cast<float>(_stereoPanSpin->value());
+	_trackProperties->_stereoInversion = _stereoInversionCheck->isChecked();
 	emit trackPropertiesChanged();
 }
 
@@ -353,10 +370,6 @@ void VoiceWidget::updateVoice()
 	storeEnvelope(_voice->_frequencyEnvelope, _frequencyEnvelope);
 	storeEnvelope(_voice->_asymmetryEnvelope, _asymmetryEnvelope);
 	storeEnvelope(_voice->_oscillationEnvelope, _oscillationEnvelope);
-	_voice->_stereoDelay = static_cast<float>(_stereoDelaySpin->value());
-	_voice->_stereoRadius = static_cast<float>(_stereoRadiusSpin->value());
-	_voice->_stereoPan = static_cast<float>(_stereoPanSpin->value());
-	_voice->_stereoInversion = _stereoInversionCheck->isChecked();
 	emit voiceChanged();
 }
 

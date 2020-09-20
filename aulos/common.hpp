@@ -86,16 +86,16 @@ namespace aulos
 		Envelope _asymmetryEnvelope;
 		Envelope _oscillationEnvelope;
 		float _waveShapeParameter = 0.f;
-		float _stereoDelay = 0.f;
-		float _stereoRadius = 0.f;
-		float _stereoPan = 0.f;
-		bool _stereoInversion = false;
 	};
 
 	struct TrackProperties
 	{
 		unsigned _weight = 1;
 		Polyphony _polyphony = Polyphony::Chord;
+		float _stereoDelay = 0.f;
+		float _stereoRadius = 0.f;
+		float _stereoPan = 0.f;
+		bool _stereoInversion = false;
 	};
 
 	constexpr unsigned kMinSpeed = 1;  // Minimum composition playback speed (in steps per second).

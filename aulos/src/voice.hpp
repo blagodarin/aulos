@@ -28,7 +28,7 @@ namespace aulos
 	class MonoVoice final : public Voice
 	{
 	public:
-		MonoVoice(const WaveData& waveData, const VoiceData&, unsigned samplingRate) noexcept
+		MonoVoice(const WaveData& waveData, unsigned samplingRate) noexcept
 			: _wave{ waveData, samplingRate }
 		{
 		}
@@ -69,11 +69,11 @@ namespace aulos
 	class StereoVoice final : public Voice
 	{
 	public:
-		StereoVoice(const WaveData& waveData, const VoiceData& voiceData, unsigned samplingRate) noexcept
+		StereoVoice(const WaveData& waveData, const TrackProperties& trackProperties, unsigned samplingRate) noexcept
 			: _leftWave{ waveData, samplingRate }
 			, _rightWave{ waveData, samplingRate }
-			, _leftAmplitude{ std::min(1.f - voiceData._stereoPan, 1.f) }
-			, _rightAmplitude{ std::copysign(std::min(1.f + voiceData._stereoPan, 1.f), voiceData._stereoInversion ? -1.f : 1.f) }
+			, _leftAmplitude{ std::min(1.f - trackProperties._stereoPan, 1.f) }
+			, _rightAmplitude{ std::copysign(std::min(1.f + trackProperties._stereoPan, 1.f), trackProperties._stereoInversion ? -1.f : 1.f) }
 			, _stereoOffset{ waveData.stereoOffset() }
 			, _stereoRadius{ waveData.stereoRadius() }
 		{

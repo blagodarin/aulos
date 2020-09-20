@@ -20,8 +20,8 @@ namespace
 		aulos::MonoVoice<Shaper> _voice;
 
 		MonoTester(const aulos::VoiceData& data, float amplitude)
-			: _waveData{ data, kTestSamplingRate, false }
-			, _voice{ _waveData, data, kTestSamplingRate }
+			: _waveData{ data, {}, kTestSamplingRate, false }
+			, _voice{ _waveData, kTestSamplingRate }
 		{
 			_voice.start(kTestNote, amplitude);
 		}
@@ -40,9 +40,9 @@ namespace
 		const aulos::WaveData _waveData;
 		aulos::StereoVoice<Shaper> _voice;
 
-		StereoTester(const aulos::VoiceData& data, float amplitude)
-			: _waveData{ data, kTestSamplingRate, true }
-			, _voice{ _waveData, data, kTestSamplingRate }
+		StereoTester(const aulos::VoiceData& data, const aulos::TrackProperties& trackProperties, float amplitude)
+			: _waveData{ data, trackProperties, kTestSamplingRate, true }
+			, _voice{ _waveData, trackProperties, kTestSamplingRate }
 		{
 			_voice.start(kTestNote, amplitude);
 		}
@@ -83,10 +83,12 @@ TEST_CASE("wave_sawtooth_stereo_inversion")
 	data._amplitudeEnvelope._changes.emplace_back(0ms, 1.f, aulos::EnvelopeShape::Linear);
 	data._amplitudeEnvelope._changes.emplace_back(500ms, 1.f, aulos::EnvelopeShape::Linear);
 	data._asymmetryEnvelope._changes.emplace_back(0ms, 1.f, aulos::EnvelopeShape::Linear);
-	data._stereoInversion = true;
+
+	aulos::TrackProperties trackProperties;
+	trackProperties._stereoInversion = true;
 
 	constexpr auto amplitude = .1f;
-	StereoTester<aulos::LinearShaper> tester{ data, amplitude };
+	StereoTester<aulos::LinearShaper> tester{ data, trackProperties, amplitude };
 	auto block = tester.render();
 	CHECK(block.first == amplitude);
 	CHECK(block.second == -amplitude);

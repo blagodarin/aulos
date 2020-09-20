@@ -15,9 +15,9 @@ namespace aulos
 	class WaveData
 	{
 	public:
-		WaveData(const VoiceData& data, unsigned samplingRate, bool stereo)
-			: _stereoOffset{ stereo ? static_cast<int>(std::lround(static_cast<float>(samplingRate) * data._stereoDelay / 1'000)) : 0 }
-			, _stereoRadius{ stereo ? static_cast<int>(std::lround(static_cast<float>(samplingRate) * data._stereoRadius / 1'000)) : 0 }
+		WaveData(const VoiceData& data, const TrackProperties& trackProperties, unsigned samplingRate, bool stereo)
+			: _stereoOffset{ stereo ? static_cast<int>(std::lround(static_cast<float>(samplingRate) * trackProperties._stereoDelay / 1'000)) : 0 }
+			, _stereoRadius{ stereo ? static_cast<int>(std::lround(static_cast<float>(samplingRate) * trackProperties._stereoRadius / 1'000)) : 0 }
 			, _shapeParameter{ data._waveShapeParameter }
 		{
 			std::tie(_amplitudeOffset, _amplitudeSize) = addPoints(data._amplitudeEnvelope, samplingRate);

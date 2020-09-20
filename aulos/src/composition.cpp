@@ -310,27 +310,27 @@ namespace aulos
 			}
 			else if (command == "stereo_delay")
 			{
-				if (currentSection != Section::Voice)
+				if (currentSection != Section::Track)
 					throw CompositionError{ location(), "Unexpected command" };
-				currentVoice->_stereoDelay = readFloat(-1'000.f, 1'000.f);
+				currentTrackProperties->_stereoDelay = readFloat(-1'000.f, 1'000.f);
 			}
 			else if (command == "stereo_inversion")
 			{
-				if (currentSection != Section::Voice)
+				if (currentSection != Section::Track)
 					throw CompositionError{ location(), "Unexpected command" };
-				currentVoice->_stereoInversion = readUnsigned(0, 1) == 1;
+				currentTrackProperties->_stereoInversion = readUnsigned(0, 1) == 1;
 			}
 			else if (command == "stereo_pan")
 			{
-				if (currentSection != Section::Voice)
+				if (currentSection != Section::Track)
 					throw CompositionError{ location(), "Unexpected command" };
-				currentVoice->_stereoPan = readFloat(-1.f, 1.f);
+				currentTrackProperties->_stereoPan = readFloat(-1.f, 1.f);
 			}
 			else if (command == "stereo_radius")
 			{
-				if (currentSection != Section::Voice)
+				if (currentSection != Section::Track)
 					throw CompositionError{ location(), "Unexpected command" };
-				currentVoice->_stereoRadius = readFloat(-1'000.f, 1'000.f);
+				currentTrackProperties->_stereoRadius = readFloat(-1'000.f, 1'000.f);
 			}
 			else if (command == "title")
 			{

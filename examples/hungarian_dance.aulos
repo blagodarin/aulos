@@ -6,18 +6,22 @@ title "Hungarian Dance No. 5 in F# minor"
 @voice 1 "Voice"
 amplitude 10 1.00 90 0.50 900 0.00
 asymmetry 0 0.60
-stereo_delay 0.25
-stereo_inversion 0
-stereo_pan 0.00
-stereo_radius 2.00
 wave cubic 6.00
 
 @track 1 1
 polyphony chord
+stereo_delay 0.25
+stereo_inversion 0
+stereo_pan 0.00
+stereo_radius 2.00
 weight 4
 
 @track 1 2
 polyphony chord
+stereo_delay 0.25
+stereo_inversion 0
+stereo_pan 0.00
+stereo_radius 2.00
 weight 3
 
 @sequences

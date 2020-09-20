@@ -60,4 +60,5 @@ private:
 	std::vector<EnvelopeChange> _oscillationEnvelope;
 	std::shared_ptr<aulos::VoiceData> _voice;
 	std::shared_ptr<aulos::TrackProperties> _trackProperties;
+	std::vector<QWidget*> _trackWidgets;
 };

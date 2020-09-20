@@ -143,10 +143,6 @@ namespace aulos
 			saveEnvelope("asymmetry", part._voice._asymmetryEnvelope);
 			saveEnvelope("frequency", part._voice._frequencyEnvelope);
 			saveEnvelope("oscillation", part._voice._oscillationEnvelope);
-			text += "\nstereo_delay " + floatToString(part._voice._stereoDelay);
-			text += "\nstereo_inversion " + std::to_string(static_cast<int>(part._voice._stereoInversion));
-			text += "\nstereo_pan " + floatToString(part._voice._stereoPan);
-			text += "\nstereo_radius " + floatToString(part._voice._stereoRadius);
 			text += "\nwave ";
 			switch (part._voice._waveShape)
 			{
@@ -157,8 +153,8 @@ namespace aulos
 			case WaveShape::Cosine: text += "cosine"; break;
 			}
 		}
-		std::for_each(impl._parts.cbegin(), impl._parts.cend(), [&text, partIndex = 1](const Part& part) mutable {
-			std::for_each(part._tracks.cbegin(), part._tracks.cend(), [&text, partIndex, trackIndex = 1](const Track& track) mutable {
+		std::for_each(impl._parts.cbegin(), impl._parts.cend(), [&floatToString, &text, partIndex = 1](const Part& part) mutable {
+			std::for_each(part._tracks.cbegin(), part._tracks.cend(), [&floatToString, &text, partIndex, trackIndex = 1](const Track& track) mutable {
 				text += "\n\n@track " + std::to_string(partIndex) + ' ' + std::to_string(trackIndex);
 				text += "\npolyphony ";
 				switch (track._properties._polyphony)
@@ -166,6 +162,10 @@ namespace aulos
 				case Polyphony::Chord: text += "chord"; break;
 				case Polyphony::Full: text += "full"; break;
 				}
+				text += "\nstereo_delay " + floatToString(track._properties._stereoDelay);
+				text += "\nstereo_inversion " + std::to_string(static_cast<int>(track._properties._stereoInversion));
+				text += "\nstereo_pan " + floatToString(track._properties._stereoPan);
+				text += "\nstereo_radius " + floatToString(track._properties._stereoRadius);
 				text += "\nweight " + std::to_string(track._properties._weight);
 				++trackIndex;
 			});

@@ -13,28 +13,28 @@
 
 namespace
 {
-	std::unique_ptr<aulos::Voice> createVoice(const aulos::WaveData& waveData, const aulos::VoiceData& voiceData, unsigned samplingRate, bool isStereo)
+	std::unique_ptr<aulos::Voice> createVoice(const aulos::WaveData& waveData, const aulos::VoiceData& voiceData, const aulos::TrackProperties& trackProperties, unsigned samplingRate, bool isStereo)
 	{
 		if (!isStereo)
 		{
 			switch (voiceData._waveShape)
 			{
-			case aulos::WaveShape::Linear: return std::make_unique<aulos::MonoVoice<aulos::LinearShaper>>(waveData, voiceData, samplingRate);
-			case aulos::WaveShape::Quadratic: return std::make_unique<aulos::MonoVoice<aulos::QuadraticShaper>>(waveData, voiceData, samplingRate);
-			case aulos::WaveShape::Cubic: return std::make_unique<aulos::MonoVoice<aulos::CubicShaper>>(waveData, voiceData, samplingRate);
-			case aulos::WaveShape::Quintic: return std::make_unique<aulos::MonoVoice<aulos::QuinticShaper>>(waveData, voiceData, samplingRate);
-			case aulos::WaveShape::Cosine: return std::make_unique<aulos::MonoVoice<aulos::CosineShaper>>(waveData, voiceData, samplingRate);
+			case aulos::WaveShape::Linear: return std::make_unique<aulos::MonoVoice<aulos::LinearShaper>>(waveData, samplingRate);
+			case aulos::WaveShape::Quadratic: return std::make_unique<aulos::MonoVoice<aulos::QuadraticShaper>>(waveData, samplingRate);
+			case aulos::WaveShape::Cubic: return std::make_unique<aulos::MonoVoice<aulos::CubicShaper>>(waveData, samplingRate);
+			case aulos::WaveShape::Quintic: return std::make_unique<aulos::MonoVoice<aulos::QuinticShaper>>(waveData, samplingRate);
+			case aulos::WaveShape::Cosine: return std::make_unique<aulos::MonoVoice<aulos::CosineShaper>>(waveData, samplingRate);
 			}
 		}
 		else
 		{
 			switch (voiceData._waveShape)
 			{
-			case aulos::WaveShape::Linear: return std::make_unique<aulos::StereoVoice<aulos::LinearShaper>>(waveData, voiceData, samplingRate);
-			case aulos::WaveShape::Quadratic: return std::make_unique<aulos::StereoVoice<aulos::QuadraticShaper>>(waveData, voiceData, samplingRate);
-			case aulos::WaveShape::Cubic: return std::make_unique<aulos::StereoVoice<aulos::CubicShaper>>(waveData, voiceData, samplingRate);
-			case aulos::WaveShape::Quintic: return std::make_unique<aulos::StereoVoice<aulos::QuinticShaper>>(waveData, voiceData, samplingRate);
-			case aulos::WaveShape::Cosine: return std::make_unique<aulos::StereoVoice<aulos::CosineShaper>>(waveData, voiceData, samplingRate);
+			case aulos::WaveShape::Linear: return std::make_unique<aulos::StereoVoice<aulos::LinearShaper>>(waveData, trackProperties, samplingRate);
+			case aulos::WaveShape::Quadratic: return std::make_unique<aulos::StereoVoice<aulos::QuadraticShaper>>(waveData, trackProperties, samplingRate);
+			case aulos::WaveShape::Cubic: return std::make_unique<aulos::StereoVoice<aulos::CubicShaper>>(waveData, trackProperties, samplingRate);
+			case aulos::WaveShape::Quintic: return std::make_unique<aulos::StereoVoice<aulos::QuinticShaper>>(waveData, trackProperties, samplingRate);
+			case aulos::WaveShape::Cosine: return std::make_unique<aulos::StereoVoice<aulos::CosineShaper>>(waveData, trackProperties, samplingRate);
 			}
 		}
 		return {};
@@ -79,7 +79,7 @@ namespace
 	public:
 		TrackRenderer(const CompositionFormat& format, const aulos::VoiceData& voiceData, const aulos::TrackProperties& trackProperties, float weight, const std::vector<AbsoluteSound>& sounds, const std::optional<std::pair<size_t, size_t>>& loop) noexcept
 			: _format{ format }
-			, _waveData{ voiceData, _format.samplingRate(), _format.isStereo() }
+			, _waveData{ voiceData, trackProperties, _format.samplingRate(), _format.isStereo() }
 			, _polyphony{ trackProperties._polyphony }
 		{
 			setSounds(sounds);
@@ -87,7 +87,7 @@ namespace
 				setLoop(loop->first, loop->second);
 			const auto polyphony = maxPolyphony();
 			setWeight(weight / static_cast<float>(polyphony));
-			setVoices(polyphony, voiceData);
+			setVoices(polyphony, voiceData, trackProperties);
 		}
 
 		size_t render(void* buffer, size_t bufferSamples) noexcept
@@ -275,12 +275,12 @@ namespace
 			return maxPolyphony;
 		}
 
-		void setVoices(size_t maxVoices, const aulos::VoiceData& voiceData)
+		void setVoices(size_t maxVoices, const aulos::VoiceData& voiceData, const aulos::TrackProperties& trackProperties)
 		{
 			assert(_voicePool.empty() && _activeSounds.empty());
 			_voicePool.reserve(maxVoices);
 			while (_voicePool.size() < maxVoices)
-				_voicePool.emplace_back(::createVoice(_waveData, voiceData, _format.samplingRate(), _format.isStereo()));
+				_voicePool.emplace_back(::createVoice(_waveData, voiceData, trackProperties, _format.samplingRate(), _format.isStereo()));
 			_activeSounds.reserve(maxVoices);
 		}
 
