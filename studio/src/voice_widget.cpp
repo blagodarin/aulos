@@ -76,6 +76,8 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 
 	createHeader(tr("Track properties"));
 
+	layout->addItem(new QSpacerItem{ 0, 0, QSizePolicy::Fixed, QSizePolicy::Fixed }, row, 0);
+
 	_trackWeightSpin = new QSpinBox{ this };
 	_trackWeightSpin->setRange(1, 255);
 	layout->addWidget(new QLabel{ tr("Weight:"), this }, row, 1, 1, 2);
@@ -83,20 +85,18 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 	connect(_trackWeightSpin, QOverload<int>::of(&QSpinBox::valueChanged), this, &VoiceWidget::updateTrackProperties);
 	++row;
 
-	const auto trackFooter = new QFrame{ this };
-	trackFooter->setFrameShadow(QFrame::Sunken);
-	trackFooter->setFrameShape(QFrame::HLine);
-	layout->addWidget(trackFooter, row, 0, 1, 5);
-	++row;
-
-	layout->addItem(new QSpacerItem{ 0, 0, QSizePolicy::Fixed, QSizePolicy::Fixed }, row, 0);
-
 	_polyphonyCombo = new QComboBox{ this };
 	_polyphonyCombo->addItem(tr("Chord"), static_cast<int>(aulos::Polyphony::Chord));
 	_polyphonyCombo->addItem(tr("Full"), static_cast<int>(aulos::Polyphony::Full));
 	layout->addWidget(new QLabel{ tr("Polyphony:"), this }, row, 1, 1, 2);
 	layout->addWidget(_polyphonyCombo, row, 3, 1, 2);
-	connect(_polyphonyCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &VoiceWidget::updateVoice);
+	connect(_polyphonyCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &VoiceWidget::updateTrackProperties);
+	++row;
+
+	const auto trackFooter = new QFrame{ this };
+	trackFooter->setFrameShadow(QFrame::Sunken);
+	trackFooter->setFrameShape(QFrame::HLine);
+	layout->addWidget(trackFooter, row, 0, 1, 5);
 	++row;
 
 	createHeader(tr("Stereo parameters"));
@@ -276,9 +276,13 @@ void VoiceWidget::setParameters(const std::shared_ptr<aulos::VoiceData>& voice, 
 	_trackProperties.reset();
 
 	aulos::VoiceData defaultVoice;
+	aulos::TrackProperties defaultTrackProperties;
 	const auto usedVoice = voice ? voice.get() : &defaultVoice;
+	const auto usedTrackProperties = trackProperties ? trackProperties.get() : &defaultTrackProperties;
 	_trackWeightSpin->setEnabled(static_cast<bool>(trackProperties));
 	_trackWeightSpin->setValue(trackProperties ? trackProperties->_weight : 0);
+	_polyphonyCombo->setEnabled(static_cast<bool>(trackProperties));
+	_polyphonyCombo->setCurrentIndex(_polyphonyCombo->findData(static_cast<int>(usedTrackProperties->_polyphony)));
 	_waveShapeCombo->setCurrentIndex(_waveShapeCombo->findData(static_cast<int>(usedVoice->_waveShape)));
 	updateShapeParameter();
 	_waveShapeParameterSpin->setValue(usedVoice->_waveShapeParameter);
@@ -287,7 +291,6 @@ void VoiceWidget::setParameters(const std::shared_ptr<aulos::VoiceData>& voice, 
 	_stereoRadiusSpin->setValue(usedVoice->_stereoRadius);
 	_stereoPanSpin->setValue(usedVoice->_stereoPan);
 	_stereoInversionCheck->setChecked(usedVoice->_stereoInversion);
-	_polyphonyCombo->setCurrentIndex(_polyphonyCombo->findData(static_cast<int>(usedVoice->_polyphony)));
 	loadEnvelope(_amplitudeEnvelope, usedVoice->_amplitudeEnvelope);
 	loadEnvelope(_frequencyEnvelope, usedVoice->_frequencyEnvelope);
 	loadEnvelope(_asymmetryEnvelope, usedVoice->_asymmetryEnvelope);
@@ -330,6 +333,7 @@ void VoiceWidget::updateTrackProperties()
 	if (!_trackProperties)
 		return;
 	_trackProperties->_weight = _trackWeightSpin->value();
+	_trackProperties->_polyphony = static_cast<aulos::Polyphony>(_polyphonyCombo->currentData().toInt());
 	emit trackPropertiesChanged();
 }
 
@@ -353,7 +357,6 @@ void VoiceWidget::updateVoice()
 	_voice->_stereoRadius = static_cast<float>(_stereoRadiusSpin->value());
 	_voice->_stereoPan = static_cast<float>(_stereoPanSpin->value());
 	_voice->_stereoInversion = _stereoInversionCheck->isChecked();
-	_voice->_polyphony = static_cast<aulos::Polyphony>(_polyphonyCombo->currentData().toInt());
 	emit voiceChanged();
 }
 

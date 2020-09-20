@@ -7,7 +7,6 @@ title "Turkish March"
 amplitude 10 1.00 90 0.50 900 0.00
 asymmetry 0 0.20
 oscillation 0 0.10 100 0.00
-polyphony full
 stereo_delay 0.00
 stereo_inversion 0
 stereo_pan 0.00
@@ -15,9 +14,11 @@ stereo_radius 5.00
 wave quadratic 2.00
 
 @track 1 1
+polyphony full
 weight 3
 
 @track 1 2
+polyphony full
 weight 1
 
 @sequences

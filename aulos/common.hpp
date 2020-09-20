@@ -90,12 +90,12 @@ namespace aulos
 		float _stereoRadius = 0.f;
 		float _stereoPan = 0.f;
 		bool _stereoInversion = false;
-		Polyphony _polyphony = Polyphony::Chord;
 	};
 
 	struct TrackProperties
 	{
 		unsigned _weight = 1;
+		Polyphony _polyphony = Polyphony::Chord;
 	};
 
 	constexpr unsigned kMinSpeed = 1;  // Minimum composition playback speed (in steps per second).

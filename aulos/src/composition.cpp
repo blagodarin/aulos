@@ -266,6 +266,12 @@ namespace aulos
 					throw CompositionError{ location(), "Unexpected command" };
 				readEnvelope(currentVoice->_asymmetryEnvelope, 0.f, 1.f);
 			}
+			else if (command == "author")
+			{
+				if (currentSection != Section::Global)
+					throw CompositionError{ location(), "Unexpected command" };
+				_author = readString();
+			}
 			else if (command == "frequency")
 			{
 				if (currentSection != Section::Voice)
@@ -287,14 +293,20 @@ namespace aulos
 			}
 			else if (command == "polyphony")
 			{
-				if (currentSection != Section::Voice)
+				if (currentSection != Section::Track)
 					throw CompositionError{ location(), "Unexpected command" };
 				if (const auto type = readIdentifier(); type == "chord")
-					currentVoice->_polyphony = Polyphony::Chord;
+					currentTrackProperties->_polyphony = Polyphony::Chord;
 				else if (type == "full")
-					currentVoice->_polyphony = Polyphony::Full;
+					currentTrackProperties->_polyphony = Polyphony::Full;
 				else
-					throw CompositionError{ location(), "Bad voice polyphony" };
+					throw CompositionError{ location(), "Bad polyphony" };
+			}
+			else if (command == "speed")
+			{
+				if (currentSection != Section::Global)
+					throw CompositionError{ location(), "Unexpected command" };
+				_speed = readUnsigned(kMinSpeed, kMaxSpeed);
 			}
 			else if (command == "stereo_delay")
 			{
@@ -319,6 +331,12 @@ namespace aulos
 				if (currentSection != Section::Voice)
 					throw CompositionError{ location(), "Unexpected command" };
 				currentVoice->_stereoRadius = readFloat(-1'000.f, 1'000.f);
+			}
+			else if (command == "title")
+			{
+				if (currentSection != Section::Global)
+					throw CompositionError{ location(), "Unexpected command" };
+				_title = readString();
 			}
 			else if (command == "wave")
 			{
@@ -354,24 +372,6 @@ namespace aulos
 					currentVoice->_waveShapeParameter = *parameter;
 				else
 					currentVoice->_waveShapeParameter = 0;
-			}
-			else if (command == "speed")
-			{
-				if (currentSection != Section::Global)
-					throw CompositionError{ location(), "Unexpected command" };
-				_speed = readUnsigned(kMinSpeed, kMaxSpeed);
-			}
-			else if (command == "title")
-			{
-				if (currentSection != Section::Global)
-					throw CompositionError{ location(), "Unexpected command" };
-				_title = readString();
-			}
-			else if (command == "author")
-			{
-				if (currentSection != Section::Global)
-					throw CompositionError{ location(), "Unexpected command" };
-				_author = readString();
 			}
 			else if (command == "weight")
 			{
