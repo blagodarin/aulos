@@ -12,6 +12,7 @@
 #include <cassert>
 #include <limits>
 #include <numeric>
+#include <span>
 
 namespace aulos
 {
@@ -24,19 +25,12 @@ namespace aulos
 			: _delaySamples{ delaySamples }, _value{ value } {}
 	};
 
-	// MSVC 16.5.4 doesn't have std::span.
-	struct SampledPoints
-	{
-		const SampledPoint* _data;
-		unsigned _size;
-	};
-
 	class Modulator
 	{
 	public:
-		explicit constexpr Modulator(const SampledPoints& points) noexcept
-			: _points{ points._data }
-			, _size{ points._size }
+		explicit constexpr Modulator(std::span<const SampledPoint> points) noexcept
+			: _points{ points.data() }
+			, _size{ static_cast<unsigned>(points.size()) }
 		{
 		}
 

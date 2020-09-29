@@ -28,22 +28,22 @@ namespace aulos
 			_soundSamples = std::accumulate(begin, begin + _amplitudeSize, 0u, [](unsigned result, const SampledPoint& point) { return result + point._delaySamples; });
 		}
 
-		SampledPoints amplitudePoints() const noexcept
+		std::span<const SampledPoint> amplitudePoints() const noexcept
 		{
 			return { _pointBuffer.data() + _amplitudeOffset, _amplitudeSize };
 		}
 
-		SampledPoints asymmetryPoints() const noexcept
+		std::span<const SampledPoint> asymmetryPoints() const noexcept
 		{
 			return { _pointBuffer.data() + _asymmetryOffset, _asymmetrySize };
 		}
 
-		SampledPoints frequencyPoints() const noexcept
+		std::span<const SampledPoint> frequencyPoints() const noexcept
 		{
 			return { _pointBuffer.data() + _frequencyOffset, _frequencySize };
 		}
 
-		SampledPoints oscillationPoints() const noexcept
+		std::span<const SampledPoint> oscillationPoints() const noexcept
 		{
 			return { _pointBuffer.data() + _oscillationOffset, _oscillationSize };
 		}
