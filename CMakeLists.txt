@@ -27,6 +27,9 @@ option(WITH_TESTS "Build tests" OFF)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 	add_compile_options(-Werror -Wall -Wextra)
+	set(STUDIO_WARNINGS
+		-Wno-deprecated-enum-enum-conversion
+		)
 endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")

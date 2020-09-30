@@ -10,7 +10,7 @@ matrix:
       dist: bionic
       compiler: gcc
       env: GCC=10 CONFIG=Release
-      addons: &gcc10
+      addons: &gcc_addons
         apt:
           sources: &all_sources
             - ubuntu-toolchain-r-test
@@ -24,17 +24,17 @@ matrix:
       dist: bionic
       compiler: gcc
       env: GCC=10 CONFIG=Debug
-      addons: *gcc10
+      addons: *gcc_addons
 
     - os: linux
       dist: bionic
       compiler: clang
-      env: CLANG=9 CONFIG=Release
-      addons: &clang9
+      env: CLANG=10 CONFIG=Release
+      addons: &clang_addons
         apt:
           sources: *all_sources
           packages:
-            - clang-9
+            - clang-10
             - libstdc++-10-dev
             - ninja-build
             - qtbase5-dev
@@ -43,8 +43,8 @@ matrix:
     - os: linux
       dist: bionic
       compiler: clang
-      env: CLANG=9 CONFIG=Debug
-      addons: *clang9
+      env: CLANG=10 CONFIG=Debug
+      addons: *clang_addons
 
 before_install:
   - if [ -n "${CLANG}" ]; then export CXX=clang++-${CLANG}; fi
