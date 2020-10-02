@@ -235,23 +235,7 @@ namespace aulos
 			const auto readEnvelope = [&](Envelope& envelope, float minValue, float maxValue) {
 				envelope._changes.clear();
 				while (const auto duration = tryReadUnsigned(0, static_cast<unsigned>(EnvelopeChange::kMaxDuration.count())))
-				{
-					auto shape = EnvelopeShape::Linear;
-					if (const auto shapeName = tryReadIdentifier(); !shapeName.empty())
-					{
-						if (shapeName == "smooth_quadratic_2")
-							shape = EnvelopeShape::SmoothQuadratic2;
-						else if (shapeName == "smooth_quadratic_4")
-							shape = EnvelopeShape::SmoothQuadratic4;
-						else if (shapeName == "sharp_quadratic_2")
-							shape = EnvelopeShape::SharpQuadratic2;
-						else if (shapeName == "sharp_quadratic_4")
-							shape = EnvelopeShape::SharpQuadratic4;
-						else
-							throw CompositionError{ location(), "Unknown envelope shape" };
-					}
-					envelope._changes.emplace_back(std::chrono::milliseconds{ *duration }, readFloat(minValue, maxValue), shape);
-				}
+					envelope._changes.emplace_back(std::chrono::milliseconds{ *duration }, readFloat(minValue, maxValue));
 			};
 
 			if (command == "amplitude")

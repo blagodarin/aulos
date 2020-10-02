@@ -59,9 +59,9 @@ namespace
 TEST_CASE("wave_sawtooth_mono")
 {
 	aulos::VoiceData data;
-	data._amplitudeEnvelope._changes.emplace_back(0ms, 1.f, aulos::EnvelopeShape::Linear);
-	data._amplitudeEnvelope._changes.emplace_back(500ms, 1.f, aulos::EnvelopeShape::Linear);
-	data._asymmetryEnvelope._changes.emplace_back(0ms, 1.f, aulos::EnvelopeShape::Linear);
+	data._amplitudeEnvelope._changes.emplace_back(0ms, 1.f);
+	data._amplitudeEnvelope._changes.emplace_back(500ms, 1.f);
+	data._asymmetryEnvelope._changes.emplace_back(0ms, 1.f);
 
 	constexpr auto amplitude = .1f;
 	MonoTester<aulos::LinearShaper> tester{ data, amplitude };
@@ -80,9 +80,9 @@ TEST_CASE("wave_sawtooth_mono")
 TEST_CASE("wave_sawtooth_stereo_inversion")
 {
 	aulos::VoiceData data;
-	data._amplitudeEnvelope._changes.emplace_back(0ms, 1.f, aulos::EnvelopeShape::Linear);
-	data._amplitudeEnvelope._changes.emplace_back(500ms, 1.f, aulos::EnvelopeShape::Linear);
-	data._asymmetryEnvelope._changes.emplace_back(0ms, 1.f, aulos::EnvelopeShape::Linear);
+	data._amplitudeEnvelope._changes.emplace_back(0ms, 1.f);
+	data._amplitudeEnvelope._changes.emplace_back(500ms, 1.f);
+	data._asymmetryEnvelope._changes.emplace_back(0ms, 1.f);
 
 	aulos::TrackProperties trackProperties;
 	trackProperties._stereoInversion = true;
@@ -109,9 +109,9 @@ TEST_CASE("wave_sawtooth_stereo_inversion")
 TEST_CASE("wave_square_mono")
 {
 	aulos::VoiceData data;
-	data._amplitudeEnvelope._changes.emplace_back(0ms, 1.f, aulos::EnvelopeShape::Linear);
-	data._amplitudeEnvelope._changes.emplace_back(500ms, 1.f, aulos::EnvelopeShape::Linear);
-	data._oscillationEnvelope._changes.emplace_back(0ms, 1.f, aulos::EnvelopeShape::Linear);
+	data._amplitudeEnvelope._changes.emplace_back(0ms, 1.f);
+	data._amplitudeEnvelope._changes.emplace_back(500ms, 1.f);
+	data._oscillationEnvelope._changes.emplace_back(0ms, 1.f);
 
 	constexpr auto amplitude = .2f;
 	MonoTester<aulos::LinearShaper> tester{ data, amplitude };
@@ -125,8 +125,8 @@ TEST_CASE("wave_square_mono")
 TEST_CASE("wave_triangle_mono")
 {
 	aulos::VoiceData data;
-	data._amplitudeEnvelope._changes.emplace_back(0ms, 1.f, aulos::EnvelopeShape::Linear);
-	data._amplitudeEnvelope._changes.emplace_back(500ms, 1.f, aulos::EnvelopeShape::Linear);
+	data._amplitudeEnvelope._changes.emplace_back(0ms, 1.f);
+	data._amplitudeEnvelope._changes.emplace_back(500ms, 1.f);
 
 	constexpr auto amplitude = .3f;
 	MonoTester<aulos::LinearShaper> tester{ data, amplitude };
@@ -153,9 +153,9 @@ TEST_CASE("wave_triangle_mono")
 TEST_CASE("wave_triangle_asymmetric_mono")
 {
 	aulos::VoiceData data;
-	data._amplitudeEnvelope._changes.emplace_back(0ms, 1.f, aulos::EnvelopeShape::Linear);
-	data._amplitudeEnvelope._changes.emplace_back(500ms, 1.f, aulos::EnvelopeShape::Linear);
-	data._asymmetryEnvelope._changes.emplace_back(0ms, .5f, aulos::EnvelopeShape::Linear);
+	data._amplitudeEnvelope._changes.emplace_back(0ms, 1.f);
+	data._amplitudeEnvelope._changes.emplace_back(500ms, 1.f);
+	data._asymmetryEnvelope._changes.emplace_back(0ms, .5f);
 
 	constexpr auto amplitude = .4f;
 	MonoTester<aulos::LinearShaper> tester{ data, amplitude };

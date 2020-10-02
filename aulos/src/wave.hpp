@@ -7,8 +7,7 @@
 #include "modulator.hpp"
 #include "note_table.hpp"
 #include "oscillator.hpp"
-
-#include <tuple>
+#include "utils.hpp"
 
 namespace aulos
 {
@@ -19,18 +18,31 @@ namespace aulos
 			: _stereoOffset{ stereo ? static_cast<int>(std::lround(static_cast<float>(samplingRate) * trackProperties._stereoDelay / 1'000)) : 0 }
 			, _stereoRadius{ stereo ? static_cast<int>(std::lround(static_cast<float>(samplingRate) * trackProperties._stereoRadius / 1'000)) : 0 }
 			, _shapeParameter{ data._waveShapeParameter }
+			, _amplitudeSize{ static_cast<unsigned>(data._amplitudeEnvelope._changes.size()) }
+			, _frequencyOffset{ _amplitudeSize + 1 }
+			, _frequencySize{ static_cast<unsigned>(data._frequencyEnvelope._changes.size()) }
+			, _asymmetryOffset{ _frequencyOffset + _frequencySize + 1 }
+			, _asymmetrySize{ static_cast<unsigned>(data._asymmetryEnvelope._changes.size()) }
+			, _oscillationOffset{ _asymmetryOffset + _asymmetrySize + 1 }
+			, _oscillationSize{ static_cast<unsigned>(data._oscillationEnvelope._changes.size()) }
 		{
-			std::tie(_amplitudeOffset, _amplitudeSize) = addPoints(data._amplitudeEnvelope, samplingRate);
-			std::tie(_frequencyOffset, _frequencySize) = addPoints(data._frequencyEnvelope, samplingRate);
-			std::tie(_asymmetryOffset, _asymmetrySize) = addPoints(data._asymmetryEnvelope, samplingRate);
-			std::tie(_oscillationOffset, _oscillationSize) = addPoints(data._oscillationEnvelope, samplingRate);
-			const auto begin = _pointBuffer.data() + _amplitudeOffset;
-			_soundSamples = std::accumulate(begin, begin + _amplitudeSize, 0u, [](unsigned result, const SampledPoint& point) { return result + point._delaySamples; });
+			const auto addPoints = [this](const aulos::Envelope& envelope, unsigned samplingRate) {
+				for (const auto& change : envelope._changes)
+					_pointBuffer.emplace_back(static_cast<unsigned>(change._duration.count() * samplingRate / 1000), change._value);
+				_pointBuffer.emplace_back(std::numeric_limits<unsigned>::max(), envelope._changes.empty() ? 0 : _pointBuffer.back()._value);
+			};
+
+			_pointBuffer.reserve(_oscillationOffset + _oscillationSize + 1);
+			addPoints(data._amplitudeEnvelope, samplingRate);
+			addPoints(data._frequencyEnvelope, samplingRate);
+			addPoints(data._asymmetryEnvelope, samplingRate);
+			addPoints(data._oscillationEnvelope, samplingRate);
+			_soundSamples = std::accumulate(_pointBuffer.begin(), _pointBuffer.begin() + _amplitudeSize, 0u, [](unsigned result, const SampledPoint& point) { return result + point._delaySamples; });
 		}
 
 		std::span<const SampledPoint> amplitudePoints() const noexcept
 		{
-			return { _pointBuffer.data() + _amplitudeOffset, _amplitudeSize };
+			return { _pointBuffer.data(), _amplitudeSize };
 		}
 
 		std::span<const SampledPoint> asymmetryPoints() const noexcept
@@ -69,86 +81,17 @@ namespace aulos
 		}
 
 	private:
-		std::pair<unsigned, unsigned> addPoints(const aulos::Envelope& envelope, unsigned samplingRate)
-		{
-			constexpr auto split2 = [](unsigned value) {
-				const auto quotient = value / 2;
-				const auto remainder = value % 2;
-				return std::pair{ quotient, quotient + remainder };
-			};
-
-			constexpr auto split4 = [](unsigned value) {
-				const auto quotient = value / 4;
-				const auto remainder = value % 4;
-				return std::tuple{
-					quotient,
-					quotient + static_cast<unsigned>(remainder > 2),
-					quotient + static_cast<unsigned>(remainder > 1),
-					quotient + static_cast<unsigned>(remainder > 0),
-				};
-			};
-
-			const auto offset = _pointBuffer.size();
-			auto lastValue = 0.f;
-			for (const auto& change : envelope._changes)
-			{
-				const auto duration = static_cast<unsigned>(change._duration.count() * samplingRate / 1000);
-				switch (change._shape)
-				{
-				case EnvelopeShape::Linear:
-					_pointBuffer.emplace_back(duration, change._value);
-					break;
-				case EnvelopeShape::SmoothQuadratic2: {
-					const auto [t0, t1] = split2(duration);
-					_pointBuffer.emplace_back(t0, lastValue + (change._value - lastValue) / 4);
-					_pointBuffer.emplace_back(t1, change._value);
-					break;
-				}
-				case EnvelopeShape::SmoothQuadratic4: {
-					const auto [t0, t1, t2, t3] = split4(duration);
-					const auto delta = (change._value - lastValue) / 16;
-					_pointBuffer.emplace_back(t0, lastValue + delta);
-					_pointBuffer.emplace_back(t1, lastValue + delta * 4);
-					_pointBuffer.emplace_back(t2, lastValue + delta * 9);
-					_pointBuffer.emplace_back(t3, change._value);
-					break;
-				}
-				case EnvelopeShape::SharpQuadratic2: {
-					const auto [t0, t1] = split2(duration);
-					_pointBuffer.emplace_back(t0, lastValue + (change._value - lastValue) * .75f);
-					_pointBuffer.emplace_back(t1, change._value);
-					break;
-				}
-				case EnvelopeShape::SharpQuadratic4: {
-					const auto [t0, t1, t2, t3] = split4(duration);
-					const auto delta = (change._value - lastValue) / 16;
-					_pointBuffer.emplace_back(t0, lastValue + delta * 5);
-					_pointBuffer.emplace_back(t1, lastValue + delta * 12);
-					_pointBuffer.emplace_back(t2, lastValue + delta * 15);
-					_pointBuffer.emplace_back(t3, change._value);
-					break;
-				}
-				}
-				lastValue = change._value;
-			}
-			const auto size = _pointBuffer.size() - offset;
-			_pointBuffer.emplace_back(std::numeric_limits<unsigned>::max(), envelope._changes.empty() ? 0 : _pointBuffer.back()._value);
-			return { static_cast<unsigned>(offset), static_cast<unsigned>(size) };
-		}
-
-	private:
 		const int _stereoOffset;
 		const int _stereoRadius;
 		const float _shapeParameter;
-		std::vector<SampledPoint> _pointBuffer;
-		unsigned _amplitudeOffset;
-		unsigned _amplitudeSize;
-		unsigned _frequencyOffset;
-		unsigned _frequencySize;
-		unsigned _asymmetryOffset;
-		unsigned _asymmetrySize;
-		unsigned _oscillationOffset;
-		unsigned _oscillationSize;
+		const unsigned _amplitudeSize;
+		const unsigned _frequencyOffset;
+		const unsigned _frequencySize;
+		const unsigned _asymmetryOffset;
+		const unsigned _asymmetrySize;
+		const unsigned _oscillationOffset;
+		const unsigned _oscillationSize;
+		LimitedVector<SampledPoint> _pointBuffer;
 		unsigned _soundSamples;
 	};
 

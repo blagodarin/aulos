@@ -44,25 +44,15 @@ namespace aulos
 		Cosine,    // Cosine curve.
 	};
 
-	enum class EnvelopeShape
-	{
-		Linear,
-		SmoothQuadratic2,
-		SmoothQuadratic4,
-		SharpQuadratic2,
-		SharpQuadratic4,
-	};
-
 	struct EnvelopeChange
 	{
 		static constexpr auto kMaxDuration = std::chrono::milliseconds{ 60'000 };
 
 		std::chrono::milliseconds _duration{ 0 };
 		float _value = 0.f;
-		EnvelopeShape _shape = EnvelopeShape::Linear;
 
-		constexpr EnvelopeChange(const std::chrono::milliseconds& duration, float value, EnvelopeShape shape) noexcept
-			: _duration{ duration }, _value{ value }, _shape{ shape } {}
+		constexpr EnvelopeChange(const std::chrono::milliseconds& duration, float value) noexcept
+			: _duration{ duration }, _value{ value } {}
 	};
 
 	// Specifies how a value changes over time.

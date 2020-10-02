@@ -11,6 +11,7 @@
 
 #include <QCheckBox>
 #include <QComboBox>
+#include <QFormLayout>
 #include <QGridLayout>
 #include <QGroupBox>
 #include <QLabel>
@@ -19,6 +20,19 @@
 
 namespace
 {
+	template <typename Layout>
+	std::pair<QGroupBox*, Layout*> createGroup(const QString& title, QWidget* parent)
+	{
+		const auto group = new QGroupBox{ title, parent };
+		group->setFlat(true);
+		const auto layout = new Layout{ group };
+		auto margins = layout->contentsMargins();
+		margins.setLeft(0);
+		margins.setRight(0);
+		layout->setContentsMargins(margins);
+		return { group, layout };
+	}
+
 	template <typename Shaper>
 	void drawShape(QPainter& painter, const QRect& rect, float parameter)
 	{
@@ -56,7 +70,6 @@ namespace
 struct VoiceWidget::EnvelopeChange
 {
 	QCheckBox* _check = nullptr;
-	QComboBox* _shape = nullptr;
 	QSpinBox* _duration = nullptr;
 	QDoubleSpinBox* _value = nullptr;
 };
@@ -64,174 +77,114 @@ struct VoiceWidget::EnvelopeChange
 VoiceWidget::VoiceWidget(QWidget* parent)
 	: QWidget{ parent }
 {
-	const auto layout = new QGridLayout{ this };
-	int row = 0;
+	const auto layout = new QVBoxLayout{ this };
 
-	const auto createHeader = [this, layout, &row](const QString& title) {
-		const auto header = new QLabel{ title, this };
-		header->setStyleSheet("font-weight: bold");
-		layout->addWidget(header, row, 0, 1, 5);
-		++row;
-		return header;
-	};
+	const auto [trackGroup, trackLayout] = ::createGroup<QFormLayout>(tr("Track properties"), this);
+	_trackGroup = trackGroup;
+	layout->addWidget(trackGroup);
 
-	_trackWidgets.emplace_back(createHeader(tr("Track properties")));
-
-	layout->addItem(new QSpacerItem{ 0, 0, QSizePolicy::Fixed, QSizePolicy::Fixed }, row, 0);
-
-	const auto trackWeightLabel = new QLabel{ tr("Weight:"), this };
-	_trackWeightSpin = new QSpinBox{ this };
+	_trackWeightSpin = new QSpinBox{ trackGroup };
+	trackLayout->addRow(tr("Weight:"), _trackWeightSpin);
 	_trackWeightSpin->setRange(1, 255);
-	layout->addWidget(trackWeightLabel, row, 1, 1, 2);
-	layout->addWidget(_trackWeightSpin, row, 3, 1, 2);
 	connect(_trackWeightSpin, QOverload<int>::of(&QSpinBox::valueChanged), this, &VoiceWidget::updateTrackProperties);
-	_trackWidgets.emplace_back(trackWeightLabel);
-	_trackWidgets.emplace_back(_trackWeightSpin);
-	++row;
 
-	const auto polyphonyLabel = new QLabel{ tr("Polyphony:"), this };
-	_polyphonyCombo = new QComboBox{ this };
+	_polyphonyCombo = new QComboBox{ trackGroup };
+	trackLayout->addRow(tr("Polyphony:"), _polyphonyCombo);
 	_polyphonyCombo->addItem(tr("Chord"), static_cast<int>(aulos::Polyphony::Chord));
 	_polyphonyCombo->addItem(tr("Full"), static_cast<int>(aulos::Polyphony::Full));
-	layout->addWidget(polyphonyLabel, row, 1, 1, 2);
-	layout->addWidget(_polyphonyCombo, row, 3, 1, 2);
 	connect(_polyphonyCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &VoiceWidget::updateTrackProperties);
-	_trackWidgets.emplace_back(polyphonyLabel);
-	_trackWidgets.emplace_back(_polyphonyCombo);
-	++row;
 
-	const auto stereoDelayLabel = new QLabel{ tr("Stereo delay:"), this };
-	_stereoDelaySpin = new QDoubleSpinBox{ parent };
+	_stereoDelaySpin = new QDoubleSpinBox{ trackGroup };
+	trackLayout->addRow(tr("Stereo delay:"), _stereoDelaySpin);
 	_stereoDelaySpin->setDecimals(2);
 	_stereoDelaySpin->setRange(-1'000.0, 1'000.0);
 	_stereoDelaySpin->setSingleStep(0.01);
 	_stereoDelaySpin->setSuffix(tr("ms"));
 	_stereoDelaySpin->setValue(0.0);
-	layout->addWidget(stereoDelayLabel, row, 1, 1, 2);
-	layout->addWidget(_stereoDelaySpin, row, 3, 1, 2);
 	connect(_stereoDelaySpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateTrackProperties);
-	_trackWidgets.emplace_back(stereoDelayLabel);
-	_trackWidgets.emplace_back(_stereoDelaySpin);
-	++row;
 
-	const auto stereoRadiusLabel = new QLabel{ tr("Stereo radius:"), this };
-	_stereoRadiusSpin = new QDoubleSpinBox{ parent };
+	_stereoRadiusSpin = new QDoubleSpinBox{ trackGroup };
+	trackLayout->addRow(tr("Stereo radius:"), _stereoRadiusSpin);
 	_stereoRadiusSpin->setDecimals(2);
 	_stereoRadiusSpin->setRange(-1'000.0, 1'000.0);
 	_stereoRadiusSpin->setSingleStep(0.01);
 	_stereoRadiusSpin->setSuffix(tr("ms"));
 	_stereoRadiusSpin->setValue(0.0);
-	layout->addWidget(stereoRadiusLabel, row, 1, 1, 2);
-	layout->addWidget(_stereoRadiusSpin, row, 3, 1, 2);
 	connect(_stereoRadiusSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateTrackProperties);
-	_trackWidgets.emplace_back(stereoRadiusLabel);
-	_trackWidgets.emplace_back(_stereoRadiusSpin);
-	++row;
 
-	const auto stereoPanLabel = new QLabel{ tr("Stereo pan:"), this };
-	_stereoPanSpin = new QDoubleSpinBox{ parent };
+	_stereoPanSpin = new QDoubleSpinBox{ trackGroup };
+	trackLayout->addRow(tr("Stereo pan:"), _stereoPanSpin);
 	_stereoPanSpin->setDecimals(2);
 	_stereoPanSpin->setRange(-1.0, 1.0);
 	_stereoPanSpin->setSingleStep(0.01);
 	_stereoPanSpin->setValue(0.0);
-	layout->addWidget(stereoPanLabel, row, 1, 1, 2);
-	layout->addWidget(_stereoPanSpin, row, 3, 1, 2);
 	connect(_stereoPanSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateTrackProperties);
-	_trackWidgets.emplace_back(stereoPanLabel);
-	_trackWidgets.emplace_back(_stereoPanSpin);
-	++row;
 
-	_stereoInversionCheck = new QCheckBox{ tr("Invert right channel"), this };
-	layout->addWidget(_stereoInversionCheck, row, 1, 1, 4);
-	connect(_stereoInversionCheck, &QCheckBox::toggled, this, &VoiceWidget::updateVoice);
-	_trackWidgets.emplace_back(_stereoInversionCheck);
-	++row;
+	_stereoInversionCheck = new QCheckBox{ tr("Invert right channel"), trackGroup };
+	trackLayout->addRow(_stereoInversionCheck);
+	connect(_stereoInversionCheck, &QCheckBox::toggled, this, &VoiceWidget::updateTrackProperties);
 
-	const auto separator = new QFrame{ this };
-	separator->setFrameShadow(QFrame::Sunken);
-	separator->setFrameShape(QFrame::HLine);
-	layout->addWidget(separator, row, 0, 1, 5);
-	++row;
+	const auto [waveShapeGroup, waveShapeLayout] = ::createGroup<QGridLayout>(tr("Wave shape"), this);
+	layout->addWidget(waveShapeGroup);
 
-	createHeader(tr("Voice properties"));
-
-	const auto waveShapeLayout = new QGridLayout{};
-	layout->addLayout(waveShapeLayout, row, 1, 1, 4);
-	++row;
-
-	_waveShapeCombo = new QComboBox{ this };
+	_waveShapeCombo = new QComboBox{ waveShapeGroup };
+	waveShapeLayout->addWidget(_waveShapeCombo, 0, 0);
 	_waveShapeCombo->addItem(tr("Linear"), static_cast<int>(aulos::WaveShape::Linear));
 	_waveShapeCombo->addItem(tr("Quadratic"), static_cast<int>(aulos::WaveShape::Quadratic));
 	_waveShapeCombo->addItem(tr("Cubic"), static_cast<int>(aulos::WaveShape::Cubic));
 	_waveShapeCombo->addItem(tr("Quintic"), static_cast<int>(aulos::WaveShape::Quintic));
 	_waveShapeCombo->addItem(tr("Cosine"), static_cast<int>(aulos::WaveShape::Cosine));
-	waveShapeLayout->addWidget(new QLabel{ tr("Wave shape:"), this }, 0, 0);
-	waveShapeLayout->addWidget(_waveShapeCombo, 0, 1);
 	connect(_waveShapeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), [this] {
 		updateShapeParameter();
 		updateWaveImage();
 		updateVoice();
 	});
 
-	_waveShapeParameterLabel = new QLabel{ tr("Shape parameter:"), this };
-	waveShapeLayout->addWidget(_waveShapeParameterLabel, 1, 0);
-
-	_waveShapeParameterSpin = new QDoubleSpinBox{ parent };
+	_waveShapeParameterSpin = new QDoubleSpinBox{ waveShapeGroup };
+	waveShapeLayout->addWidget(_waveShapeParameterSpin, 0, 1);
 	_waveShapeParameterSpin->setDecimals(2);
 	_waveShapeParameterSpin->setRange(0.0, 0.0);
 	_waveShapeParameterSpin->setSingleStep(0.01);
 	_waveShapeParameterSpin->setValue(0.0);
-	waveShapeLayout->addWidget(_waveShapeParameterSpin, 1, 1);
 	connect(_waveShapeParameterSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [this] {
 		updateWaveImage();
 		updateVoice();
 	});
 
-	waveShapeLayout->addItem(new QSpacerItem{ 0, 0, QSizePolicy::Fixed, QSizePolicy::Fixed }, 2, 0);
+	_waveShapeImage = new QLabel{ waveShapeGroup };
+	waveShapeLayout->addWidget(_waveShapeImage, 1, 0, 1, 2);
 
-	_waveShapeImage = new QLabel{ this };
-	waveShapeLayout->addWidget(_waveShapeImage, 0, 2, 3, 1);
-
-	const auto createEnvelopeWidgets = [this, layout, &row](std::vector<EnvelopeChange>& envelope, double minimum) {
-		for (int i = 0; i < 5; ++i, ++row)
+	const auto createEnvelopeWidgets = [this, layout](const QString& title, std::vector<EnvelopeChange>& envelope, double minimum) {
+		const auto [group, groupLayout] = ::createGroup<QGridLayout>(title, this);
+		layout->addWidget(group);
+		for (int i = 0; i < 5; ++i)
 		{
 			auto& change = envelope.emplace_back();
 
-			change._check = new QCheckBox{ this };
+			change._check = new QCheckBox{ group };
 			change._check->setChecked(false);
 			change._check->setEnabled(i == 0);
-			layout->addWidget(change._check, row, 1);
+			groupLayout->addWidget(change._check, i, 1);
 			connect(change._check, &QCheckBox::toggled, this, &VoiceWidget::updateVoice);
 
-			change._shape = new QComboBox{ this };
-			change._shape->addItem(tr("Linear"), static_cast<int>(aulos::EnvelopeShape::Linear));
-			change._shape->addItem(tr("Smooth Quadratic (2 steps)"), static_cast<int>(aulos::EnvelopeShape::SmoothQuadratic2));
-			change._shape->addItem(tr("Smooth Quadratic (4 steps)"), static_cast<int>(aulos::EnvelopeShape::SmoothQuadratic4));
-			change._shape->addItem(tr("Sharp Quadratic (2 steps)"), static_cast<int>(aulos::EnvelopeShape::SharpQuadratic2));
-			change._shape->addItem(tr("Sharp Quadratic (4 steps)"), static_cast<int>(aulos::EnvelopeShape::SharpQuadratic4));
-			change._shape->setEnabled(false);
-			layout->addWidget(change._shape, row, 2);
-			connect(change._shape, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &VoiceWidget::updateVoice);
-
-			change._duration = new QSpinBox{ this };
+			change._duration = new QSpinBox{ group };
 			change._duration->setEnabled(false);
 			change._duration->setRange(0, aulos::EnvelopeChange::kMaxDuration.count());
 			change._duration->setSingleStep(1);
 			change._duration->setSuffix(tr("ms"));
 			change._duration->setValue(0);
-			layout->addWidget(change._duration, row, 3);
+			groupLayout->addWidget(change._duration, i, 2);
 			connect(change._duration, QOverload<int>::of(&QSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
 
-			change._value = new QDoubleSpinBox{ this };
+			change._value = new QDoubleSpinBox{ group };
 			change._value->setDecimals(2);
 			change._value->setEnabled(false);
 			change._value->setRange(minimum, 1.0);
 			change._value->setSingleStep(0.01);
 			change._value->setValue(0.0);
-			layout->addWidget(change._value, row, 4);
+			groupLayout->addWidget(change._value, i, 3);
 			connect(change._value, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
 
-			connect(change._check, &QCheckBox::toggled, change._shape, &QWidget::setEnabled);
 			connect(change._check, &QCheckBox::toggled, change._duration, &QWidget::setEnabled);
 			connect(change._check, &QCheckBox::toggled, change._value, &QWidget::setEnabled);
 			if (i > 0)
@@ -243,20 +196,12 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 		}
 	};
 
-	createHeader(tr("Amplitude changes"));
-	createEnvelopeWidgets(_amplitudeEnvelope, 0);
+	createEnvelopeWidgets(tr("Amplitude changes"), _amplitudeEnvelope, 0);
+	createEnvelopeWidgets(tr("Frequency changes") , _frequencyEnvelope, -1);
+	createEnvelopeWidgets(tr("Asymmetry changes"), _asymmetryEnvelope, 0);
+	createEnvelopeWidgets(tr("Oscillation changes"), _oscillationEnvelope, 0);
 
-	createHeader(tr("Frequency changes"));
-	createEnvelopeWidgets(_frequencyEnvelope, -1);
-
-	createHeader(tr("Asymmetry changes"));
-	createEnvelopeWidgets(_asymmetryEnvelope, 0);
-
-	createHeader(tr("Oscillation changes"));
-	createEnvelopeWidgets(_oscillationEnvelope, 0);
-
-	layout->addItem(new QSpacerItem{ 0, 0, QSizePolicy::Minimum, QSizePolicy::Expanding }, row, 0, 1, 5);
-	layout->setRowStretch(row, 1);
+	layout->addItem(new QSpacerItem{ 0, 0, QSizePolicy::Minimum, QSizePolicy::Expanding });
 
 	updateWaveImage();
 }
@@ -269,14 +214,12 @@ void VoiceWidget::setParameters(const std::shared_ptr<aulos::VoiceData>& voice, 
 		for (auto i = dst.rbegin(); i != dst.rend(); ++i)
 		{
 			i->_check->setChecked(false);
-			i->_shape->setCurrentIndex(i->_shape->findData(static_cast<int>(aulos::EnvelopeShape::Linear)));
 			i->_duration->setValue(0);
 			i->_value->setValue(0);
 		}
 		for (size_t i = 0; i < std::min(dst.size(), src._changes.size()); ++i)
 		{
 			dst[i]._check->setChecked(true);
-			dst[i]._shape->setCurrentIndex(dst[i]._shape->findData(static_cast<int>(src._changes[i]._shape)));
 			dst[i]._duration->setValue(src._changes[i]._duration.count());
 			dst[i]._value->setValue(src._changes[i]._value);
 		}
@@ -286,8 +229,7 @@ void VoiceWidget::setParameters(const std::shared_ptr<aulos::VoiceData>& voice, 
 	_voice.reset();
 	_trackProperties.reset();
 
-	for (const auto widget : _trackWidgets)
-		widget->setEnabled(static_cast<bool>(trackProperties));
+	_trackGroup->setEnabled(static_cast<bool>(trackProperties));
 
 	aulos::TrackProperties defaultTrackProperties;
 	const auto usedTrackProperties = trackProperties ? trackProperties.get() : &defaultTrackProperties;
@@ -317,25 +259,21 @@ void VoiceWidget::updateShapeParameter()
 {
 	if (const auto waveShape = static_cast<aulos::WaveShape>(_waveShapeCombo->currentData().toInt()); waveShape == aulos::WaveShape::Quadratic)
 	{
-		_waveShapeParameterLabel->setEnabled(true);
 		_waveShapeParameterSpin->setEnabled(true);
 		_waveShapeParameterSpin->setRange(aulos::QuadraticShaper::kMinShape, aulos::QuadraticShaper::kMaxShape);
 	}
 	else if (waveShape == aulos::WaveShape::Cubic)
 	{
-		_waveShapeParameterLabel->setEnabled(true);
 		_waveShapeParameterSpin->setEnabled(true);
 		_waveShapeParameterSpin->setRange(aulos::CubicShaper::kMinShape, aulos::CubicShaper::kMaxShape);
 	}
 	else if (waveShape == aulos::WaveShape::Quintic)
 	{
-		_waveShapeParameterLabel->setEnabled(true);
 		_waveShapeParameterSpin->setEnabled(true);
 		_waveShapeParameterSpin->setRange(aulos::QuinticShaper::kMinShape, aulos::QuinticShaper::kMaxShape);
 	}
 	else
 	{
-		_waveShapeParameterLabel->setEnabled(false);
 		_waveShapeParameterSpin->setEnabled(false);
 		_waveShapeParameterSpin->setRange(0.0, 0.0);
 	}
@@ -359,7 +297,7 @@ void VoiceWidget::updateVoice()
 	const auto storeEnvelope = [](aulos::Envelope& dst, const std::vector<EnvelopeChange>& src) {
 		dst._changes.clear();
 		for (auto i = src.begin(); i != src.end() && i->_check->isChecked(); ++i)
-			dst._changes.emplace_back(std::chrono::milliseconds{ i->_duration->value() }, static_cast<float>(i->_value->value()), static_cast<aulos::EnvelopeShape>(i->_shape->currentData().toInt()));
+			dst._changes.emplace_back(std::chrono::milliseconds{ i->_duration->value() }, static_cast<float>(i->_value->value()));
 	};
 
 	if (!_voice)

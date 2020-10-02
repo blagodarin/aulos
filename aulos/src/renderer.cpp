@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "composition.hpp"
-#include "utils.hpp"
 #include "voice.hpp"
 
 #include <algorithm>

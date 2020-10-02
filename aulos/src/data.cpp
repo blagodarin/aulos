@@ -121,18 +121,7 @@ namespace aulos
 				text += '\n';
 				text += name;
 				for (const auto& change : envelope._changes)
-				{
-					text += ' ' + std::to_string(change._duration.count());
-					switch (change._shape)
-					{
-					case EnvelopeShape::Linear: break;
-					case EnvelopeShape::SmoothQuadratic2: text += " smooth_quadratic_2"; break;
-					case EnvelopeShape::SmoothQuadratic4: text += " smooth_quadratic_4"; break;
-					case EnvelopeShape::SharpQuadratic2: text += " sharp_quadratic_2"; break;
-					case EnvelopeShape::SharpQuadratic4: text += " sharp_quadratic_4"; break;
-					}
-					text += ' ' + floatToString(change._value);
-				}
+					text += ' ' + std::to_string(change._duration.count()) + ' ' + floatToString(change._value);
 			};
 
 			const auto partIndex = static_cast<size_t>(&part - impl._parts.data() + 1);

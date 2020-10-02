@@ -55,6 +55,8 @@ namespace aulos
 		[[nodiscard]] constexpr const T* begin() const noexcept { return _data; }
 		[[nodiscard]] constexpr const T* cbegin() const noexcept { return _data; }
 		[[nodiscard]] constexpr const T* cend() const noexcept { return _data + _size; }
+		[[nodiscard]] constexpr T* data() noexcept { return _data; }
+		[[nodiscard]] constexpr const T* data() const noexcept { return _data; }
 		[[nodiscard]] constexpr bool empty() const noexcept { return !_size; }
 		[[nodiscard]] constexpr T* end() noexcept { return _data + _size; }
 		[[nodiscard]] constexpr const T* end() const noexcept { return _data + _size; }

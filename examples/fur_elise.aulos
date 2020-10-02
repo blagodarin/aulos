@@ -3,10 +3,9 @@ speed 5
 title "Fur Elise"
 
 @voice 1 "Voice"
-amplitude 10 1.00 40 1.00 950 sharp_quadratic_2 0.00
+amplitude 10 1.00 40 1.00 450 0.40 500 0.00
 asymmetry 0 0.50
 frequency 0 -0.25 10 0.00
-oscillation 0 0.02 50 smooth_quadratic_4 0.00
 wave cubic 8.00
 
 @track 1 1

@@ -11,6 +11,7 @@
 class QCheckBox;
 class QComboBox;
 class QDoubleSpinBox;
+class QGroupBox;
 class QLabel;
 class QSpinBox;
 
@@ -44,9 +45,9 @@ private:
 private:
 	struct EnvelopeChange;
 
+	QGroupBox* _trackGroup = nullptr;
 	QSpinBox* _trackWeightSpin = nullptr;
 	QComboBox* _waveShapeCombo = nullptr;
-	QLabel* _waveShapeParameterLabel = nullptr;
 	QDoubleSpinBox* _waveShapeParameterSpin = nullptr;
 	QLabel* _waveShapeImage = nullptr;
 	QDoubleSpinBox* _stereoDelaySpin = nullptr;
@@ -60,5 +61,4 @@ private:
 	std::vector<EnvelopeChange> _oscillationEnvelope;
 	std::shared_ptr<aulos::VoiceData> _voice;
 	std::shared_ptr<aulos::TrackProperties> _trackProperties;
-	std::vector<QWidget*> _trackWidgets;
 };
