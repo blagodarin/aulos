@@ -76,6 +76,7 @@ Section
 	File "$%QTDIR%\plugins\styles\qwindowsvistastyle${SUFFIX}.dll"
 
 	SetOutPath "$INSTDIR\examples"
+	File "${SOURCE_DIR}\examples\frere_jacques.aulos"
 	File "${SOURCE_DIR}\examples\fur_elise.aulos"
 	File "${SOURCE_DIR}\examples\grande_valse_brillante.aulos"
 	File "${SOURCE_DIR}\examples\hungarian_dance.aulos"
@@ -106,6 +107,7 @@ Section "Uninstall"
 	Delete "$DESKTOP\Aulos Studio.lnk"
 	Delete "$SMPROGRAMS\Aulos Studio.lnk"
 
+	Delete "$INSTDIR\examples\frere_jacques.aulos"
 	Delete "$INSTDIR\examples\fur_elise.aulos"
 	Delete "$INSTDIR\examples\grande_valse_brillante.aulos"
 	Delete "$INSTDIR\examples\hungarian_dance.aulos"
