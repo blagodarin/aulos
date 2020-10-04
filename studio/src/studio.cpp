@@ -401,6 +401,7 @@ void Studio::closeComposition()
 	_compositionPath.clear();
 	_compositionFileName.clear();
 	_speedSpin->setValue(_speedSpin->minimum());
+	_loopPlaybackCheck->setChecked(false);
 	_compositionWidget->setComposition({});
 	_player->stop();
 	_mode = Mode::Editing;
@@ -500,7 +501,6 @@ bool Studio::openComposition(const QString& path)
 	_compositionPath = path;
 	_compositionFileName = QFileInfo{ file }.fileName();
 	_speedSpin->setValue(static_cast<int>(_composition->_speed));
-	_loopPlaybackCheck->setChecked(_composition->_loopLength > 0);
 	_compositionWidget->setComposition(_composition);
 	_hasComposition = true;
 	setRecentFile(path);
