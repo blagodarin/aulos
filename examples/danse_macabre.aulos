@@ -37,7 +37,7 @@ weight 1
 
 @track 2 1
 polyphony chord
-stereo_delay 1.00
+stereo_delay 0.00
 stereo_inversion 0
 stereo_pan 0.00
 stereo_radius 5.00
@@ -45,7 +45,7 @@ weight 1
 
 @track 3 1
 polyphony chord
-stereo_delay 1.00
+stereo_delay 0.00
 stereo_inversion 0
 stereo_pan 0.00
 stereo_radius 3.00

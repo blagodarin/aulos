@@ -17,15 +17,15 @@ namespace
 {
 	constexpr size_t rowToColorIndex(size_t row)
 	{
-		switch (11 - row % 12)
+		switch (aulos::kNotesPerOctave - row % aulos::kNotesPerOctave)
 		{
-		case 0:
-		case 2:
-		case 4:
+		case 1:
+		case 3:
 		case 5:
-		case 7:
-		case 9:
-		case 11:
+		case 6:
+		case 8:
+		case 10:
+		case 12:
 			return 0; // White.
 		default:
 			return 1; // Black.
@@ -41,7 +41,7 @@ PianorollItem::PianorollItem(QGraphicsItem* parent)
 
 QRectF PianorollItem::boundingRect() const
 {
-	return { 0, 0, _stepCount * kNoteWidth, 120 * kNoteHeight };
+	return { 0, 0, _stepCount * kNoteWidth, aulos::kNoteCount * kNoteHeight };
 }
 
 void PianorollItem::setStepCount(size_t count)
@@ -56,9 +56,9 @@ void PianorollItem::mousePressEvent(QGraphicsSceneMouseEvent* e)
 	{
 		const auto pos = e->lastPos();
 		const auto row = static_cast<size_t>(std::floor(pos.y() / kNoteHeight));
-		assert(row < 120);
+		assert(row < aulos::kNoteCount);
 		const auto offset = static_cast<size_t>(std::floor(pos.x() / kNoteWidth));
-		emit newSoundRequested(offset, static_cast<aulos::Note>(119 - row));
+		emit newSoundRequested(offset, static_cast<aulos::Note>(aulos::kNoteCount - 1 - row));
 	}
 }
 
@@ -76,7 +76,7 @@ void PianorollItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* opt
 		painter->setPen(Qt::transparent);
 		painter->setBrush(kPianorollBackgroundColor[::rowToColorIndex(row)]);
 		painter->drawRect({ { option->exposedRect.left(), rowTop }, QSizeF{ option->exposedRect.width(), kNoteHeight } });
-		painter->setPen((row % 12) ? kPianorollFineGridColor : kPianorollCoarseGridColor);
+		painter->setPen((row % aulos::kNotesPerOctave) ? kPianorollFineGridColor : kPianorollCoarseGridColor);
 		painter->drawLine(QPointF{ option->exposedRect.left(), rowTop }, QPointF{ option->exposedRect.right(), rowTop });
 	}
 	for (auto step = firstStep; step < lastStep; ++step)

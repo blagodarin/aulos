@@ -24,10 +24,10 @@ private:
 	struct NoteInfo;
 	struct StyleInfo;
 
-	static const std::array<NoteInfo, 12> kNoteInfo;
+	static const std::array<NoteInfo, aulos::kNotesPerOctave> kNoteInfo;
 	static const std::array<StyleInfo, 2> kStyleInfo;
 
-	const int _octave;
+	const size_t _octave;
 	const NoteInfo& _noteInfo;
 	const StyleInfo& _styleInfo;
 };

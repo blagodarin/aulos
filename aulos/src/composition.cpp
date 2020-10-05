@@ -172,11 +172,11 @@ namespace aulos
 
 		const auto parseNote = [&](std::vector<Sound>& sequence, size_t delay, size_t baseOffset) {
 			assert(*source >= 'A' && *source <= 'G');
-			assert(baseOffset < 12);
+			assert(baseOffset < kNotesPerOctave);
 			++source;
 			if (*source == '#')
 			{
-				if (baseOffset == 11)
+				if (baseOffset == kNotesPerOctave - 1)
 					throw CompositionError{ location(), "Note overflow" };
 				++baseOffset;
 				++source;
@@ -188,9 +188,9 @@ namespace aulos
 				--baseOffset;
 				++source;
 			}
-			if (*source < '0' || *source > '9')
+			if (*source < '0' || *source > '8')
 				throw CompositionError{ location(), "Bad note" };
-			sequence.emplace_back(delay, static_cast<Note>((*source - '0') * 12 + baseOffset));
+			sequence.emplace_back(delay, static_cast<Note>((*source - '0') * kNotesPerOctave + baseOffset));
 			++source;
 		};
 

@@ -177,7 +177,7 @@ namespace aulos
 					{
 						text.append(sound._delay, ',');
 						const auto note = static_cast<unsigned>(sound._note);
-						switch (note % 12)
+						switch (note % kNotesPerOctave)
 						{
 						case 0: text += "C"; break;
 						case 1: text += "C#"; break;
@@ -192,7 +192,7 @@ namespace aulos
 						case 10: text += "A#"; break;
 						case 11: text += "B"; break;
 						}
-						text += std::to_string(note / 12);
+						text += std::to_string(note / kNotesPerOctave);
 					}
 				}
 			}

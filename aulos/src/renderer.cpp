@@ -246,7 +246,7 @@ namespace
 				assert(loopSoundCount > 0 || !_loopDelay);
 				for (size_t i = 0; i < _sounds.size(); ++i)
 				{
-					aulos::StaticVector<aulos::Note, 120> noteCounter;
+					aulos::StaticVector<aulos::Note, aulos::kNoteCount> noteCounter;
 					noteCounter.emplace_back(_sounds[i]._note);
 					const auto soundSteps = _format.samplesToSteps(_waveData.totalSamples(_sounds[i]._note));
 					size_t currentDelay = 0;

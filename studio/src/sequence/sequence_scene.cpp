@@ -18,7 +18,7 @@ SequenceScene::SequenceScene(QObject* parent)
 	: QGraphicsScene{ parent }
 {
 	setBackgroundBrush(kBackgroundColor);
-	for (int i = 0; i < 120; ++i)
+	for (size_t i = 0; i < aulos::kNoteCount; ++i)
 	{
 		const auto note = static_cast<aulos::Note>(i);
 		const auto keyItem = new KeyItem{ note };

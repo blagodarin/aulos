@@ -14,7 +14,7 @@ set(_src
 	src/composition.hpp
 	src/data.cpp
 	src/modulator.hpp
-	src/note_table.hpp
+	src/tables.hpp
 	src/oscillator.hpp
 	src/renderer.cpp
 	src/shaper.hpp

@@ -19,7 +19,7 @@ SoundItem::SoundItem(size_t offset, aulos::Note note, QGraphicsItem* parent)
 void SoundItem::setNote(aulos::Note note)
 {
 	_note = note;
-	setPos(_offset * kNoteWidth, (119 - static_cast<size_t>(_note)) * kNoteHeight);
+	setPos(_offset * kNoteWidth, (aulos::kNoteCount - 1 - static_cast<size_t>(_note)) * kNoteHeight);
 }
 
 QRectF SoundItem::boundingRect() const

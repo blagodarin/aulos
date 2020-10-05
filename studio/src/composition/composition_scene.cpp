@@ -44,7 +44,7 @@ namespace
 		bool _extra = false;
 	};
 
-	const std::array<NoteInfo, 12> kNoteInfo{
+	const std::array<NoteInfo, aulos::kNotesPerOctave> kNoteInfo{
 		NoteInfo{ 0, false }, // C
 		NoteInfo{ 0, true },  // C#
 		NoteInfo{ 1, false }, // D
@@ -535,8 +535,8 @@ std::vector<FragmentSound> CompositionScene::makeSequenceTexts(const aulos::Sequ
 	{
 		if (!sound._delay && !result.empty())
 			continue; // Show only the first (the highest) note at one position.
-		const auto& info = kNoteInfo[static_cast<size_t>(sound._note) % 12];
-		const auto octave = static_cast<size_t>(sound._note) / 12;
+		const auto& info = kNoteInfo[static_cast<size_t>(sound._note) % kNoteInfo.size()];
+		const auto octave = static_cast<size_t>(sound._note) / kNoteInfo.size();
 		result.emplace_back(sound._delay, _baseNoteNames[7 * octave + info._base]);
 		if (info._extra)
 			result.emplace_back(0, _extraNoteNames[info._base]);

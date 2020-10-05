@@ -9,6 +9,10 @@
 
 namespace aulos
 {
+	static constexpr size_t kNotesPerOctave = 12;
+	static constexpr size_t kOctaveCount = 9; // Subcontra octave (0-th) to five-lined octave (8-th).
+	static constexpr size_t kNoteCount = kOctaveCount * kNotesPerOctave;
+
 	enum class Note : uint8_t
 	{
 		// clang-format off

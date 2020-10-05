@@ -5,12 +5,18 @@
 #pragma once
 
 #include "modulator.hpp"
-#include "note_table.hpp"
 #include "oscillator.hpp"
+#include "tables.hpp"
 #include "utils.hpp"
 
 namespace aulos
 {
+	constexpr int stereoDelay(Note note, int offset, int radius) noexcept
+	{
+		constexpr int kLastNoteIndex = kNoteCount - 1;
+		return offset + radius * (2 * static_cast<int>(note) - kLastNoteIndex) / kLastNoteIndex;
+	}
+
 	class WaveData
 	{
 	public:
@@ -77,7 +83,7 @@ namespace aulos
 
 		auto totalSamples(Note note) const noexcept
 		{
-			return _soundSamples + std::abs(NoteTable::stereoDelay(note, _stereoOffset, _stereoRadius));
+			return _soundSamples + std::abs(stereoDelay(note, _stereoOffset, _stereoRadius));
 		}
 
 	private:
@@ -159,7 +165,7 @@ namespace aulos
 
 		void start(Note note, unsigned delay = 0) noexcept
 		{
-			const auto frequency = kNoteTable[note];
+			const auto frequency = kNoteFrequencies[note];
 			assert(frequency > 0);
 			assert(!_restartDelay);
 			if (_amplitudeModulator.stopped() || _startDelay > 0)

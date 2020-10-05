@@ -20,7 +20,7 @@
 
 namespace
 {
-	const std::array<char, 12> kNoteNames{ 'C', 'C', 'D', 'D', 'E', 'F', 'F', 'G', 'G', 'A', 'A', 'B' };
+	const std::array<char, aulos::kNotesPerOctave> kNoteNames{ 'C', 'C', 'D', 'D', 'E', 'F', 'F', 'G', 'G', 'A', 'A', 'B' };
 
 	QFont makeBold(QFont&& font)
 	{
@@ -49,8 +49,8 @@ namespace
 				result += sound._delay > 0 ? ' ' : '|';
 			for (size_t i = 1; i < sound._delay; ++i)
 				result += ". ";
-			const auto octave = QString::number(static_cast<uint8_t>(sound._note) / 12);
-			const auto note = static_cast<size_t>(sound._note) % 12;
+			const auto octave = QString::number(static_cast<uint8_t>(sound._note) / kNoteNames.size());
+			const auto note = static_cast<size_t>(sound._note) % kNoteNames.size();
 			result += kNoteNames[note];
 			const bool isSharpNote = note > 0 && kNoteNames[note - 1] == kNoteNames[note];
 			if (isSharpNote)

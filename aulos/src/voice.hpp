@@ -108,7 +108,7 @@ namespace aulos
 
 		void start(Note note, float amplitude) noexcept override
 		{
-			const auto noteDelay = NoteTable::stereoDelay(note, _stereoOffset, _stereoRadius);
+			const auto noteDelay = stereoDelay(note, _stereoOffset, _stereoRadius);
 			_baseAmplitude = std::clamp(amplitude, -1.f, 1.f);
 			_leftWave.start(note, static_cast<unsigned>(std::max(noteDelay, 0)));
 			_rightWave.start(note, static_cast<unsigned>(std::max(-noteDelay, 0)));
