@@ -76,17 +76,16 @@ namespace
 	struct TrackRenderer
 	{
 	public:
-		TrackRenderer(const CompositionFormat& format, const aulos::VoiceData& voiceData, const aulos::TrackProperties& trackProperties, float weight, const std::vector<AbsoluteSound>& sounds, const std::optional<std::pair<size_t, size_t>>& loop) noexcept
+		TrackRenderer(const CompositionFormat& format, const aulos::VoiceData& voiceData, const aulos::TrackProperties& trackProperties, const std::vector<AbsoluteSound>& sounds, const std::optional<std::pair<size_t, size_t>>& loop) noexcept
 			: _format{ format }
 			, _waveData{ voiceData, trackProperties, _format.samplingRate(), _format.isStereo() }
 			, _polyphony{ trackProperties._polyphony }
+			, _weight{ static_cast<float>(trackProperties._weight) }
 		{
 			setSounds(sounds);
 			if (loop)
 				setLoop(loop->first, loop->second);
-			const auto polyphony = maxPolyphony();
-			setWeight(weight / static_cast<float>(polyphony));
-			setVoices(polyphony, voiceData, trackProperties);
+			setVoices(maxPolyphony(), voiceData, trackProperties);
 		}
 
 		size_t render(void* buffer, size_t bufferSamples) noexcept
@@ -322,13 +321,6 @@ namespace
 			}
 		}
 
-		void setWeight(float weight) noexcept
-		{
-			assert(_weight == 0);
-			assert(weight > 0);
-			_weight = weight;
-		}
-
 	private:
 		struct ActiveSound
 		{
@@ -354,7 +346,7 @@ namespace
 		const CompositionFormat& _format;
 		const aulos::WaveData _waveData;
 		const aulos::Polyphony _polyphony;
-		float _weight = 0;
+		const float _weight;
 		aulos::LimitedVector<std::unique_ptr<aulos::Voice>> _voicePool;
 		aulos::LimitedVector<ActiveSound> _activeSounds;
 		aulos::LimitedVector<TrackSound> _sounds;
@@ -376,9 +368,6 @@ namespace
 			std::vector<AbsoluteSound> sounds;
 			std::vector<aulos::Note> noteCounter;
 			const auto maxSoundOffset = looping && composition._loopLength > 0 ? size_t{ composition._loopOffset } + composition._loopLength - 1 : std::numeric_limits<size_t>::max();
-			const auto totalWeight = static_cast<float>(std::accumulate(composition._parts.cbegin(), composition._parts.cend(), 0u, [](unsigned weight, const aulos::Part& part) {
-				return std::accumulate(part._tracks.cbegin(), part._tracks.cend(), weight, [](unsigned partWeight, const aulos::Track& track) { return partWeight + track._properties._weight; });
-			}));
 			_tracks.reserve(std::accumulate(composition._parts.cbegin(), composition._parts.cend(), size_t{}, [](size_t count, const aulos::Part& part) { return count + part._tracks.size(); }));
 			for (const auto& part : composition._parts)
 			{
@@ -404,7 +393,7 @@ namespace
 						}
 					}
 					if (!sounds.empty())
-						_tracks.emplace_back(_format, part._voice, track._properties, static_cast<float>(track._properties._weight) / totalWeight, sounds, looping && composition._loopLength > 0 ? std::optional{ std::pair{ composition._loopOffset, composition._loopLength } } : std::nullopt);
+						_tracks.emplace_back(_format, part._voice, track._properties, sounds, looping && composition._loopLength > 0 ? std::optional{ std::pair{ composition._loopOffset, composition._loopLength } } : std::nullopt);
 				}
 			}
 			_loopLength = composition._loopLength > 0 ? composition._loopLength : _format.samplesToSteps(totalSamples());
@@ -436,7 +425,6 @@ namespace
 
 		void restart(float gain) noexcept override
 		{
-			assert(gain >= 1);
 			for (auto& track : _tracks)
 				track.restart(gain);
 		}

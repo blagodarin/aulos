@@ -14,10 +14,10 @@ set(_src
 	src/composition.hpp
 	src/data.cpp
 	src/modulator.hpp
-	src/tables.hpp
 	src/oscillator.hpp
 	src/renderer.cpp
 	src/shaper.hpp
+	src/tables.hpp
 	src/utils.hpp
 	src/voice.hpp
 	src/wave.hpp

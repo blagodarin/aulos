@@ -13,7 +13,7 @@ polyphony chord
 stereo_delay 0.00
 stereo_inversion 0
 stereo_pan 0.00
-stereo_radius 2.00
+stereo_radius 3.00
 weight 4
 
 @track 1 2
@@ -21,7 +21,7 @@ polyphony chord
 stereo_delay 0.00
 stereo_inversion 0
 stereo_pan 0.00
-stereo_radius 2.00
+stereo_radius 3.00
 weight 3
 
 @sequences
