@@ -34,11 +34,16 @@ namespace aulos
 		std::vector<Track> _tracks;
 	};
 
+	// Gain divisor is represented as 8.8 fixed point value.
+	static constexpr unsigned kMinGainDivisor = 256 * 1;
+	static constexpr unsigned kMaxGainDivisor = 256 * 255;
+
 	struct CompositionImpl final : public Composition
 	{
 		unsigned _speed = kMinSpeed;
 		unsigned _loopOffset = 0;
 		unsigned _loopLength = 0;
+		unsigned _gainDivisor = kMinGainDivisor;
 		std::vector<Part> _parts;
 		std::string _title;
 		std::string _author;

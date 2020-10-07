@@ -41,26 +41,34 @@ namespace
 	constexpr int kMaxRecentFiles = 10;
 	const auto kRecentFileKeyBase = QStringLiteral("RecentFile%1");
 
-	float compositionGain(const aulos::Composition& composition, bool looping)
+	std::unique_ptr<aulos::Composition> packComposition(aulos::CompositionData& data, bool looping)
 	{
-		const auto renderer = aulos::Renderer::create(composition, aulos::Renderer::kMaxSamplingRate, 1, looping);
-		assert(renderer);
-		constexpr size_t bufferSamples = aulos::Renderer::kMaxSamplingRate;
-		const auto buffer = std::make_unique<float[]>(bufferSamples);
-		float minimum = 0.f;
-		float maximum = 0.f;
-		for (auto remainingSamples = renderer->totalSamples(); remainingSamples > 0;)
-		{
-			const auto samplesToRender = std::min(bufferSamples, remainingSamples);
-			const auto samplesRendered = renderer->render(buffer.get(), samplesToRender * sizeof(float)) / sizeof(float);
-			assert(samplesRendered == samplesToRender);
-			const auto minmax = std::minmax_element(buffer.get(), buffer.get() + samplesRendered);
-			minimum = std::min(minimum, *minmax.first);
-			maximum = std::max(maximum, *minmax.second);
-			remainingSamples -= samplesRendered;
-		}
-		const auto peak = std::max(-minimum, maximum);
-		return peak > 0 ? 1 / peak : 1;
+		const auto maxAmplitude = [looping](const aulos::Composition& composition) {
+			const auto renderer = aulos::Renderer::create(composition, aulos::Renderer::kMaxSamplingRate, 1, looping);
+			assert(renderer);
+			constexpr size_t bufferSamples = aulos::Renderer::kMaxSamplingRate;
+			const auto buffer = std::make_unique<float[]>(bufferSamples);
+			float minimum = 0.f;
+			float maximum = 0.f;
+			for (auto remainingSamples = renderer->totalSamples(); remainingSamples > 0;)
+			{
+				const auto samplesToRender = std::min(bufferSamples, remainingSamples);
+				const auto samplesRendered = renderer->render(buffer.get(), samplesToRender * sizeof(float)) / sizeof(float);
+				assert(samplesRendered == samplesToRender);
+				const auto minmax = std::minmax_element(buffer.get(), buffer.get() + samplesRendered);
+				minimum = std::min(minimum, *minmax.first);
+				maximum = std::max(maximum, *minmax.second);
+				remainingSamples -= samplesRendered;
+			}
+			return std::max(-minimum, maximum);
+		};
+
+		data._gainDivisor = 1;
+		auto composition = data.pack();
+		if (!composition)
+			return {};
+		data._gainDivisor = maxAmplitude(*composition);
+		return data.pack();
 	}
 
 	QStringList loadRecentFileList()
@@ -205,7 +213,7 @@ Studio::Studio()
 
 	const auto playbackMenu = menuBar()->addMenu(tr("&Playback"));
 	_playAction = playbackMenu->addAction(qApp->style()->standardIcon(QStyle::SP_MediaPlay), tr("&Play"), [this] {
-		const auto composition = _composition->pack();
+		const auto composition = ::packComposition(*_composition, _loopPlaybackCheck->isChecked());
 		if (!composition)
 			return;
 		assert(_mode == Mode::Editing);
@@ -214,7 +222,6 @@ Studio::Studio()
 		const auto channels = _channelsCombo->currentData().toUInt();
 		auto renderer = aulos::Renderer::create(*composition, samplingRate, channels, _loopPlaybackCheck->isChecked());
 		assert(renderer);
-		renderer->restart(::compositionGain(*composition, _loopPlaybackCheck->isChecked()));
 		const auto skippedSamples = renderer->skipSamples(_compositionWidget->startOffset() * samplingRate / _composition->_speed);
 		_playbackStartUs = skippedSamples * 1'000'000 / samplingRate;
 		const auto loopRange = renderer->loopRange();
@@ -424,7 +431,7 @@ void Studio::createEmptyComposition()
 
 void Studio::exportComposition()
 {
-	const auto composition = _composition->pack();
+	const auto composition = ::packComposition(*_composition, false);
 	if (!composition)
 		return;
 
@@ -440,7 +447,6 @@ void Studio::exportComposition()
 	const auto channels = _channelsCombo->currentData().toUInt();
 	const auto renderer = aulos::Renderer::create(*composition, samplingRate, channels, false);
 	assert(renderer);
-	renderer->restart(::compositionGain(*composition, false));
 
 	const auto bufferLength = renderer->totalSamples() * channels;
 	const auto bufferSize = bufferLength * sizeof(float);
@@ -519,7 +525,7 @@ bool Studio::saveComposition(const QString& path) const
 {
 	assert(_hasComposition);
 	assert(!path.isEmpty());
-	const auto composition = _composition->pack();
+	const auto composition = ::packComposition(*_composition, true);
 	assert(composition);
 	const auto buffer = aulos::serialize(*composition);
 	QFile file{ path };

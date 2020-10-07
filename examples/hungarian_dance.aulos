@@ -1,4 +1,5 @@
 author "Johannes Brahms"
+gain 3203
 loop 0 512
 speed 9
 title "Hungarian Dance No. 5 in F# minor"

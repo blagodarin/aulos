@@ -187,7 +187,7 @@ namespace
 			return trackOffset;
 		}
 
-		void restart(float gain) noexcept
+		void restart(float gainDivisor) noexcept
 		{
 			for (auto& activeVoice : _activeSounds)
 			{
@@ -197,7 +197,7 @@ namespace
 			_activeSounds.clear();
 			_nextSound = _sounds.cbegin();
 			_strideSamplesRemaining = _format.stepsToSamples(_nextSound->_delaySteps);
-			_gain = _weight * gain;
+			_gain = _weight / gainDivisor;
 		}
 
 		void setWholeCompositionLoop(size_t loopLength) noexcept
@@ -363,6 +363,7 @@ namespace
 	public:
 		CompositionRenderer(const aulos::CompositionImpl& composition, unsigned samplingRate, unsigned channels, bool looping)
 			: _format{ samplingRate, channels, composition._speed }
+			, _gainDivisor{ static_cast<float>(composition._gainDivisor) / 256.f }
 			, _loopOffset{ composition._loopLength > 0 ? composition._loopOffset : 0 }
 		{
 			std::vector<AbsoluteSound> sounds;
@@ -400,7 +401,7 @@ namespace
 			if (looping && !composition._loopLength)
 				for (auto& track : _tracks)
 					track.setWholeCompositionLoop(_loopLength);
-			restart(1);
+			restart();
 		}
 
 		std::pair<size_t, size_t> loopRange() const noexcept override
@@ -423,10 +424,10 @@ namespace
 			return offset * _format.blockBytes();
 		}
 
-		void restart(float gain) noexcept override
+		void restart() noexcept override
 		{
 			for (auto& track : _tracks)
-				track.restart(gain);
+				track.restart(_gainDivisor);
 		}
 
 		unsigned samplingRate() const noexcept override
@@ -459,6 +460,7 @@ namespace
 
 	public:
 		CompositionFormat _format;
+		const float _gainDivisor;
 		const size_t _loopOffset;
 		size_t _loopLength = 0;
 		aulos::LimitedVector<TrackRenderer> _tracks;

@@ -1,4 +1,5 @@
 author "Wolfgang Amadeus Mozart"
+gain 3115
 loop 0 528
 speed 11
 title "Turkish March"
@@ -15,7 +16,7 @@ stereo_delay 0.00
 stereo_inversion 0
 stereo_pan 0.00
 stereo_radius 5.00
-weight 2
+weight 3
 
 @track 1 2
 polyphony full
@@ -23,7 +24,7 @@ stereo_delay 0.00
 stereo_inversion 0
 stereo_pan 0.00
 stereo_radius 5.00
-weight 1
+weight 2
 
 @sequences
 1 1 1 B4,A4,G#4,A4,C5

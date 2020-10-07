@@ -17,6 +17,7 @@ namespace aulos
 		_speed = packed._speed;
 		_loopOffset = packed._loopOffset;
 		_loopLength = packed._loopLength;
+		_gainDivisor = static_cast<float>(packed._gainDivisor) / 256.f;
 		_parts.reserve(packed._parts.size());
 		for (const auto& packedPart : packed._parts)
 		{
@@ -56,6 +57,7 @@ namespace aulos
 		packed->_speed = _speed;
 		packed->_loopOffset = _loopOffset;
 		packed->_loopLength = _loopLength;
+		packed->_gainDivisor = std::clamp(static_cast<unsigned>(std::ceil(_gainDivisor * 256)), kMinGainDivisor, kMaxGainDivisor);
 		packed->_parts.reserve(_parts.size());
 		std::vector<std::shared_ptr<SequenceData>> currentTrackSequences;
 		for (const auto& partData : _parts)
@@ -108,6 +110,7 @@ namespace aulos
 		std::string text;
 		if (!impl._author.empty())
 			text += "\nauthor \"" + impl._author + '"';
+		text += "\ngain " + std::to_string(impl._gainDivisor);
 		if (impl._loopLength > 0)
 			text += "\nloop " + std::to_string(impl._loopOffset) + " " + std::to_string(impl._loopLength);
 		text += "\nspeed " + std::to_string(impl._speed);

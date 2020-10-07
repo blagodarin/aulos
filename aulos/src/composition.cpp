@@ -262,6 +262,12 @@ namespace aulos
 					throw CompositionError{ location(), "Unexpected command" };
 				readEnvelope(currentVoice->_frequencyEnvelope, -1.f, 1.f);
 			}
+			else if (command == "gain")
+			{
+				if (currentSection != Section::Global)
+					throw CompositionError{ location(), "Unexpected command" };
+				_gainDivisor = readUnsigned(kMinGainDivisor, kMaxGainDivisor);
+			}
 			else if (command == "loop")
 			{
 				if (currentSection != Section::Global)
