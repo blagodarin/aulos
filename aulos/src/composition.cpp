@@ -266,7 +266,7 @@ namespace aulos
 			{
 				if (currentSection != Section::Global)
 					throw CompositionError{ location(), "Unexpected command" };
-				_gainDivisor = readUnsigned(kMinGainDivisor, kMaxGainDivisor);
+				_gainDivisor = Fixed12u4::load(static_cast<uint16_t>(readUnsigned(0, static_cast<unsigned>(std::numeric_limits<uint16_t>::max()))));
 			}
 			else if (command == "loop")
 			{

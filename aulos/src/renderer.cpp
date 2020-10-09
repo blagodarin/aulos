@@ -363,7 +363,7 @@ namespace
 	public:
 		CompositionRenderer(const aulos::CompositionImpl& composition, unsigned samplingRate, unsigned channels, bool looping)
 			: _format{ samplingRate, channels, composition._speed }
-			, _gainDivisor{ static_cast<float>(composition._gainDivisor) / 256.f }
+			, _gainDivisor{ static_cast<float>(composition._gainDivisor) }
 			, _loopOffset{ composition._loopLength > 0 ? composition._loopOffset : 0 }
 		{
 			std::vector<AbsoluteSound> sounds;

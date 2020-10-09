@@ -7,6 +7,7 @@
 #include <aulos/composition.hpp>
 #include <aulos/common.hpp>
 
+#include <cmath>
 #include <string>
 
 namespace aulos
@@ -34,16 +35,36 @@ namespace aulos
 		std::vector<Track> _tracks;
 	};
 
-	// Gain divisor is represented as 8.8 fixed point value.
-	static constexpr unsigned kMinGainDivisor = 256 * 1;
-	static constexpr unsigned kMaxGainDivisor = 256 * 255;
+	template <typename T, unsigned kFractionBits>
+	class Fixed
+	{
+	public:
+		constexpr Fixed() noexcept = default;
+		constexpr explicit Fixed(float value) noexcept
+			: _value{ static_cast<T>(value / kOne) } {}
+
+		constexpr explicit operator float() const noexcept { return static_cast<float>(_value) / kOne; }
+
+		constexpr T store() const noexcept { return _value; }
+
+		static Fixed ceil(float value) noexcept { return Fixed{ static_cast<T>(std::ceil(value * kOne)) }; }
+		static constexpr Fixed load(T value) noexcept { return Fixed{ value }; }
+
+	private:
+		T _value = 0;
+		static constexpr T kOne = 1 << kFractionBits;
+		constexpr explicit Fixed(T value) noexcept
+			: _value{ value } {}
+	};
+
+	using Fixed12u4 = Fixed<uint16_t, 4>;
 
 	struct CompositionImpl final : public Composition
 	{
 		unsigned _speed = kMinSpeed;
 		unsigned _loopOffset = 0;
 		unsigned _loopLength = 0;
-		unsigned _gainDivisor = kMinGainDivisor;
+		Fixed12u4 _gainDivisor{ 1.f };
 		std::vector<Part> _parts;
 		std::string _title;
 		std::string _author;
