@@ -66,6 +66,7 @@ script:
   - popd
 
 after_success:
+  - ${HOME}/aulos.build/bin/benchmark ${TRAVIS_BUILD_DIR}/examples/czardas.aulos
   - ${HOME}/aulos.build/bin/benchmark ${TRAVIS_BUILD_DIR}/examples/frere_jacques.aulos
   - ${HOME}/aulos.build/bin/benchmark ${TRAVIS_BUILD_DIR}/examples/fur_elise.aulos
   - ${HOME}/aulos.build/bin/benchmark ${TRAVIS_BUILD_DIR}/examples/grande_valse_brillante.aulos

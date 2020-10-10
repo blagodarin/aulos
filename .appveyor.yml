@@ -51,6 +51,7 @@ test_script:
   - ctest --output-on-failure %EXTRA_TEST_FLAGS%
   - if "%CMAKE_GENERATOR%"=="Ninja" cd %BUILD_DIR%\bin
   - if "%CMAKE_GENERATOR%"=="Visual Studio 16 2019" cd %BUILD_DIR%\bin\%CONFIG%
+  - benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\czardas.aulos
   - benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\frere_jacques.aulos
   - benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\fur_elise.aulos
   - benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\grande_valse_brillante.aulos
