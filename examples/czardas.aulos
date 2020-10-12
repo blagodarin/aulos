@@ -1,5 +1,5 @@
 author "Vittorio Monti"
-gain 220
+gain 114
 loop 0 256
 speed 10
 title "Csárdás"
@@ -10,8 +10,8 @@ asymmetry 40 0.60 460 0.30
 wave quintic -1.00
 
 @voice 2 "Bass"
-amplitude 10 1.00 90 0.25 900 0.00
-asymmetry 100 0.50 400 0.00
+amplitude 20 1.00 80 0.10 900 0.00
+asymmetry 20 0.70 980 0.50
 wave cosine
 
 @track 1 1
@@ -19,16 +19,16 @@ polyphony chord
 stereo_delay -0.50
 stereo_inversion 0
 stereo_pan 0.00
-stereo_radius 1.00
+stereo_radius 2.00
 weight 1
 
 @track 2 1
-polyphony full
+polyphony chord
 stereo_delay 0.50
 stereo_inversion 0
 stereo_pan 0.00
 stereo_radius 3.00
-weight 4
+weight 2
 
 @sequences
 1 1 1 D5D4,,D6D5,,,,A#5A#4,,,,A5A4,,,,F5F4,,E5E4,,D5D4,,,,C#5C#4,,D5D4
@@ -58,7 +58,7 @@ weight 4
 2 1 8 F3,,C4A3,,C3,,C4A3F3,,A2,,C4A3F3,,F2,,C4A3F3
 2 1 9 C#3,,A3G3E3,,A2,,A3G3E3
 2 1 10 D3,,A3F3,,A2,,A3F3
-2 1 11 G2,,E4D4A#3G3,,E3,,E4D4A#3G3,,G3,,E4D4A#3,,G2,,E4D4A#3G3
+2 1 11 G2,,E4D4A#3,,E3,,E4D4A#3,,G3,,E4D4A#3,,G2,,E4D4A#3
 2 1 12 A2,,D4A3F3,,D3,,D4A3F3,,F3,,D4A3,,A2,,D4A3F3
 2 1 13 C#3,,A3G3,,A2,,C#4A3G3,,E3,,C#4A3G3,,A2,,E4A3G3
 2 1 14 D3,,D4A3F3,,A2,,E4A3G3,,D3,,D4A3F3,,A2,,D4A3F3
