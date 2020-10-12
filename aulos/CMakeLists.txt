@@ -18,13 +18,19 @@ set(_src
 	src/renderer.cpp
 	src/shaper.hpp
 	src/tables.hpp
-	src/utils.hpp
 	src/voice.hpp
 	src/wave.hpp
 	)
 source_group("src" FILES ${_src})
 
-add_library(aulos STATIC ${_include} ${_src})
+set(_src_utils
+	src/utils/fixed.hpp
+	src/utils/limited_vector.hpp
+	src/utils/static_vector.hpp
+	)
+source_group("src\\utils" FILES ${_src_utils})
+
+add_library(aulos STATIC ${_include} ${_src} ${_src_utils})
 target_compile_options(aulos PRIVATE ${MAX_WARNINGS})
 target_include_directories(aulos PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 

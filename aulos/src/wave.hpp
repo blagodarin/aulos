@@ -7,7 +7,7 @@
 #include "modulator.hpp"
 #include "oscillator.hpp"
 #include "tables.hpp"
-#include "utils.hpp"
+#include "utils/limited_vector.hpp"
 
 namespace aulos
 {
