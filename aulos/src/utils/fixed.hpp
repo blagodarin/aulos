@@ -18,12 +18,12 @@ namespace aulos
 		constexpr explicit Fixed(float value) noexcept
 			: _value{ static_cast<T>(value * kOne) } {}
 
-		constexpr explicit operator float() const noexcept { return static_cast<float>(_value) / kOne; }
+		[[nodiscard]] constexpr explicit operator float() const noexcept { return static_cast<float>(_value) / kOne; }
 
-		constexpr T store() const noexcept { return _value; }
+		[[nodiscard]] constexpr T store() const noexcept { return _value; }
 
-		static Fixed ceil(float value) noexcept { return Fixed{ static_cast<T>(std::ceil(value * kOne)) }; }
-		static constexpr Fixed load(T value) noexcept { return Fixed{ value }; }
+		[[nodiscard]] static Fixed ceil(float value) noexcept { return Fixed{ static_cast<T>(std::ceil(value * kOne)) }; }
+		[[nodiscard]] static constexpr Fixed load(T value) noexcept { return Fixed{ value }; }
 
 	private:
 		T _value = 0;

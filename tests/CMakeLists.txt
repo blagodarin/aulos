@@ -6,6 +6,7 @@ set(_src
 	src/loop.cpp
 	src/main.cpp
 	src/shaper.cpp
+	src/utils.cpp
 	src/voice.cpp
 	)
 source_group("src" FILES ${_src})
