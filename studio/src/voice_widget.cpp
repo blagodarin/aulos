@@ -8,13 +8,13 @@
 #include <aulos/src/shaper.hpp>
 
 #include <cassert>
+#include <optional>
 
 #include <QCheckBox>
 #include <QComboBox>
 #include <QFormLayout>
 #include <QGridLayout>
 #include <QGroupBox>
-#include <QLabel>
 #include <QPainter>
 #include <QSpinBox>
 
@@ -32,14 +32,72 @@ namespace
 		layout->setContentsMargins(margins);
 		return { group, layout };
 	}
+}
+
+class WaveShapeWidget : public QWidget
+{
+public:
+	WaveShapeWidget(QWidget* parent)
+		: QWidget{ parent }
+	{
+		setFixedHeight(kHeight);
+		setMinimumWidth(kMinWidth);
+	}
+
+	void setShape(aulos::WaveShape shape, float parameter)
+	{
+		_shape = shape;
+		_parameter = parameter;
+		update();
+	}
+
+protected:
+	void paintEvent(QPaintEvent*) override
+	{
+		const auto w = width();
+		const auto h = height();
+		QPainter painter{ this };
+		painter.setPen(Qt::black);
+		painter.setBrush(Qt::white);
+		painter.drawRect(0, 0, w - 1, h - 1);
+		painter.setPen(QPen{ Qt::lightGray, 0, Qt::DotLine });
+		painter.drawLine(1, h / 2, w - 2, h / 2);
+		constexpr auto deltaX = kUnitSize - 1;
+		std::optional<int> lastY;
+		for (auto x = 1, deltaY = kUnitSize - 1; x < w - 1; x += deltaX, deltaY = -deltaY)
+		{
+			if (lastY)
+			{
+				painter.setPen(QPen{ Qt::lightGray, 0, Qt::DotLine });
+				painter.drawLine(x, 1, x, h - 2);
+			}
+			const auto firstY = deltaY > 0 ? 1 : h - 2;
+			const auto endX = std::min(x + deltaX, w - 1);
+			painter.setPen(Qt::red);
+			switch (_shape)
+			{
+			case aulos::WaveShape::Linear: drawShape<aulos::LinearShaper>(painter, x, firstY, deltaX, deltaY, endX, lastY, _parameter); break;
+			case aulos::WaveShape::Quadratic: drawShape<aulos::QuadraticShaper>(painter, x, firstY, deltaX, deltaY, endX, lastY, _parameter); break;
+			case aulos::WaveShape::Cubic: drawShape<aulos::CubicShaper>(painter, x, firstY, deltaX, deltaY, endX, lastY, _parameter); break;
+			case aulos::WaveShape::Quintic: drawShape<aulos::QuinticShaper>(painter, x, firstY, deltaX, deltaY, endX, lastY, _parameter); break;
+			case aulos::WaveShape::Cosine: drawShape<aulos::CosineShaper>(painter, x, firstY, deltaX, deltaY, endX, lastY, _parameter); break;
+			}
+		}
+	}
+
+private:
+	static constexpr int kSizeParameter = 25;
+	static constexpr int kUnitSize = 2 * kSizeParameter + 1;
+	static constexpr int kHeight = kUnitSize + 2; // Unit height plus top and bottom borders.
+	static constexpr int kMinWidth = 2 * kUnitSize + 3; // Full period with two starting points plus left and right borders.
 
 	template <typename Shaper>
-	void drawShape(QPainter& painter, const QRect& rect, float parameter)
+	static void drawShape(QPainter& painter, int firstX, int firstY, int deltaX, int deltaY, int endX, std::optional<int>& lastY, float parameter)
 	{
-		auto drawPoint = [&painter, &rect, lastY = 0](int x, int y) mutable {
-			if (x > rect.left())
+		auto drawPoint = [&painter, &lastY](int x, int y) mutable {
+			if (lastY)
 			{
-				auto y1 = lastY;
+				auto y1 = *lastY;
 				auto y2 = y;
 				const auto step = y1 < y2 ? 1 : -1;
 				while (std::abs(y2 - y1) > 1)
@@ -56,16 +114,17 @@ namespace
 				}
 			}
 			painter.drawPoint(x, y);
-			lastY = y;
+			lastY.emplace(y);
 		};
-		int x = rect.left();
-		for (Shaper shaper{ { static_cast<float>(rect.top()), static_cast<float>(rect.height() - 1), static_cast<float>(rect.width() / 2), parameter, 0 } }; x < rect.left() + rect.width() / 2; ++x)
+		Shaper shaper{ { static_cast<float>(firstY), static_cast<float>(deltaY), static_cast<float>(deltaX), parameter, 0 } };
+		for (int x = firstX; x < endX; ++x)
 			drawPoint(x, std::lround(shaper.advance()));
-		for (Shaper shaper{ { static_cast<float>(rect.bottom()), static_cast<float>(1 - rect.height()), static_cast<float>(rect.width() / 2), parameter, 0 } }; x < rect.right(); ++x)
-			drawPoint(x, std::lround(shaper.advance()));
-		drawPoint(x, rect.top());
 	}
-}
+
+private:
+	aulos::WaveShape _shape = aulos::WaveShape::Linear;
+	float _parameter = 0.f;
+};
 
 struct VoiceWidget::EnvelopeChange
 {
@@ -151,8 +210,8 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 		updateVoice();
 	});
 
-	_waveShapeImage = new QLabel{ waveShapeGroup };
-	waveShapeLayout->addWidget(_waveShapeImage, 1, 0, 1, 2);
+	_waveShapeWidget = new WaveShapeWidget{ waveShapeGroup };
+	waveShapeLayout->addWidget(_waveShapeWidget, 1, 0, 1, 2);
 
 	const auto createEnvelopeWidgets = [this, layout](const QString& title, std::vector<EnvelopeChange>& envelope, double minimum) {
 		const auto [group, groupLayout] = ::createGroup<QGridLayout>(title, this);
@@ -313,29 +372,5 @@ void VoiceWidget::updateVoice()
 
 void VoiceWidget::updateWaveImage()
 {
-	constexpr int size = 25;
-	constexpr int width = 1 + (size * 4 + 1) + 1;
-	constexpr int height = 1 + (size + 1 + size) + 1;
-	QImage image(width, height, QImage::Format_ARGB32);
-	{
-		QPainter painter{ &image };
-		painter.setPen(Qt::black);
-		painter.setBrush(Qt::white);
-		painter.drawRect(0, 0, width - 1, height - 1);
-		painter.setPen(QPen{ Qt::lightGray, 0, Qt::DotLine });
-		painter.drawLine(1, height / 2, width - 2, height / 2);
-		painter.drawLine(width / 2, 1, width / 2, height - 2);
-		painter.setPen(Qt::red);
-		const auto rect = image.rect().adjusted(1, 1, -1, -1);
-		const auto parameter = static_cast<float>(_waveShapeParameterSpin->value());
-		switch (static_cast<aulos::WaveShape>(_waveShapeCombo->currentData().toInt()))
-		{
-		case aulos::WaveShape::Linear: ::drawShape<aulos::LinearShaper>(painter, rect, parameter); break;
-		case aulos::WaveShape::Quadratic: ::drawShape<aulos::QuadraticShaper>(painter, rect, parameter); break;
-		case aulos::WaveShape::Cubic: ::drawShape<aulos::CubicShaper>(painter, rect, parameter); break;
-		case aulos::WaveShape::Quintic: ::drawShape<aulos::QuinticShaper>(painter, rect, parameter); break;
-		case aulos::WaveShape::Cosine: ::drawShape<aulos::CosineShaper>(painter, rect, parameter); break;
-		}
-	}
-	_waveShapeImage->setPixmap(QPixmap::fromImage(std::move(image)));
+	_waveShapeWidget->setShape(static_cast<aulos::WaveShape>(_waveShapeCombo->currentData().toInt()), static_cast<float>(_waveShapeParameterSpin->value()));
 }

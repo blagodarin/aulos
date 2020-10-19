@@ -12,7 +12,6 @@ class QCheckBox;
 class QComboBox;
 class QDoubleSpinBox;
 class QGroupBox;
-class QLabel;
 class QSpinBox;
 
 namespace aulos
@@ -20,6 +19,8 @@ namespace aulos
 	struct TrackProperties;
 	struct VoiceData;
 }
+
+class WaveShapeWidget;
 
 class VoiceWidget final : public QWidget
 {
@@ -49,7 +50,7 @@ private:
 	QSpinBox* _trackWeightSpin = nullptr;
 	QComboBox* _waveShapeCombo = nullptr;
 	QDoubleSpinBox* _waveShapeParameterSpin = nullptr;
-	QLabel* _waveShapeImage = nullptr;
+	WaveShapeWidget* _waveShapeWidget = nullptr;
 	QDoubleSpinBox* _stereoDelaySpin = nullptr;
 	QDoubleSpinBox* _stereoRadiusSpin = nullptr;
 	QDoubleSpinBox* _stereoPanSpin = nullptr;
