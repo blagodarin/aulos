@@ -56,6 +56,7 @@ test_script:
   - benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\fur_elise.aulos
   - benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\grande_valse_brillante.aulos
   - benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\hungarian_dance.aulos
+  - benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\prelude_in_c_minor.aulos
   - benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\prelude_in_g_minor.aulos
   - benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\turkish_march.aulos
 

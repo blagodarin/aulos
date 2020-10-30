@@ -71,6 +71,7 @@ after_success:
   - ${HOME}/aulos.build/bin/benchmark ${TRAVIS_BUILD_DIR}/examples/fur_elise.aulos
   - ${HOME}/aulos.build/bin/benchmark ${TRAVIS_BUILD_DIR}/examples/grande_valse_brillante.aulos
   - ${HOME}/aulos.build/bin/benchmark ${TRAVIS_BUILD_DIR}/examples/hungarian_dance.aulos
+  - ${HOME}/aulos.build/bin/benchmark ${TRAVIS_BUILD_DIR}/examples/prelude_in_c_minor.aulos
   - ${HOME}/aulos.build/bin/benchmark ${TRAVIS_BUILD_DIR}/examples/prelude_in_g_minor.aulos
   - ${HOME}/aulos.build/bin/benchmark ${TRAVIS_BUILD_DIR}/examples/turkish_march.aulos
 
