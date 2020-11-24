@@ -65,17 +65,43 @@ namespace aulos
 		WaveState _wave;
 	};
 
+	struct CircularAcoustics
+	{
+		const float _headRadius = 0.f;   // In samples.
+		const float _sourceRadius = 0.f; // In head radiuses.
+		const float _sourceSize = 0.f;   // In right angles.
+		const float _sourceOffset = 0.f; // In right angles, zero is forward, positive is right.
+
+		constexpr CircularAcoustics() noexcept = default;
+
+		constexpr CircularAcoustics(const TrackProperties& trackProperties, unsigned samplingRate) noexcept
+			: _headRadius{ static_cast<float>(samplingRate) * trackProperties._headRadius / 1'000 }
+			, _sourceRadius{ trackProperties._sourceRadius }
+			, _sourceSize{ trackProperties._sourceSize }
+			, _sourceOffset{ trackProperties._sourceOffset }
+		{}
+
+		int stereoDelay(Note note) const noexcept
+		{
+			constexpr int kLastNoteIndex = kNoteCount - 1;
+			const auto noteAngle = static_cast<float>(2 * static_cast<int>(note) - kLastNoteIndex) / (2 * kLastNoteIndex);  // [-0.5, 0.5]
+			const auto doubleSin = 2 * std::sin((noteAngle * _sourceSize + _sourceOffset) * std::numbers::pi_v<float> / 2); // [-2.0, 2.0]
+			const auto leftDelay = std::sqrt(1 + _sourceRadius * (_sourceRadius + doubleSin));
+			const auto rightDelay = std::sqrt(1 + _sourceRadius * (_sourceRadius - doubleSin));
+			return static_cast<int>(_headRadius * (leftDelay - rightDelay));
+		}
+	};
+
 	template <typename Shaper>
 	class StereoVoice final : public Voice
 	{
 	public:
-		StereoVoice(const WaveData& waveData, const TrackProperties& trackProperties, unsigned samplingRate) noexcept
+		StereoVoice(const WaveData& waveData, const CircularAcoustics& acoustics, const TrackProperties& trackProperties, unsigned samplingRate) noexcept
 			: _leftWave{ waveData, samplingRate }
 			, _rightWave{ waveData, samplingRate }
 			, _leftAmplitude{ std::min(1.f - trackProperties._stereoPan, 1.f) }
 			, _rightAmplitude{ std::copysign(std::min(1.f + trackProperties._stereoPan, 1.f), trackProperties._stereoInversion ? -1.f : 1.f) }
-			, _stereoOffset{ waveData.stereoOffset() }
-			, _stereoRadius{ waveData.stereoRadius() }
+			, _acoustics{ acoustics }
 		{
 		}
 
@@ -108,7 +134,7 @@ namespace aulos
 
 		void start(Note note, float amplitude) noexcept override
 		{
-			const auto noteDelay = stereoDelay(note, _stereoOffset, _stereoRadius);
+			const auto noteDelay = _acoustics.stereoDelay(note);
 			_baseAmplitude = amplitude;
 			_leftWave.start(note, static_cast<unsigned>(std::max(noteDelay, 0)));
 			_rightWave.start(note, static_cast<unsigned>(std::max(-noteDelay, 0)));
@@ -125,7 +151,6 @@ namespace aulos
 		WaveState _rightWave;
 		const float _leftAmplitude;
 		const float _rightAmplitude;
-		const int _stereoOffset;
-		const int _stereoRadius;
+		const CircularAcoustics& _acoustics;
 	};
 }

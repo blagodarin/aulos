@@ -20,7 +20,7 @@ namespace
 		aulos::MonoVoice<Shaper> _voice;
 
 		MonoTester(const aulos::VoiceData& data, float amplitude)
-			: _waveData{ data, {}, kTestSamplingRate, false }
+			: _waveData{ data, kTestSamplingRate }
 			, _voice{ _waveData, kTestSamplingRate }
 		{
 			_voice.start(kTestNote, amplitude);
@@ -38,11 +38,13 @@ namespace
 	struct StereoTester
 	{
 		const aulos::WaveData _waveData;
+		const aulos::CircularAcoustics _acoustics;
 		aulos::StereoVoice<Shaper> _voice;
 
 		StereoTester(const aulos::VoiceData& data, const aulos::TrackProperties& trackProperties, float amplitude)
-			: _waveData{ data, trackProperties, kTestSamplingRate, true }
-			, _voice{ _waveData, trackProperties, kTestSamplingRate }
+			: _waveData{ data, kTestSamplingRate }
+			, _acoustics{ trackProperties, kTestSamplingRate }
+			, _voice{ _waveData, _acoustics, trackProperties, kTestSamplingRate }
 		{
 			_voice.start(kTestNote, amplitude);
 		}

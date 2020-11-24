@@ -11,19 +11,11 @@
 
 namespace aulos
 {
-	constexpr int stereoDelay(Note note, int offset, int radius) noexcept
-	{
-		constexpr int kLastNoteIndex = kNoteCount - 1;
-		return offset + radius * (2 * static_cast<int>(note) - kLastNoteIndex) / kLastNoteIndex;
-	}
-
 	class WaveData
 	{
 	public:
-		WaveData(const VoiceData& data, const TrackProperties& trackProperties, unsigned samplingRate, bool stereo)
-			: _stereoOffset{ stereo ? static_cast<int>(std::lround(static_cast<float>(samplingRate) * trackProperties._stereoDelay / 1'000)) : 0 }
-			, _stereoRadius{ stereo ? static_cast<int>(std::lround(static_cast<float>(samplingRate) * trackProperties._stereoRadius / 1'000)) : 0 }
-			, _shapeParameter{ data._waveShapeParameter }
+		WaveData(const VoiceData& data, unsigned samplingRate)
+			: _shapeParameter{ data._waveShapeParameter }
 			, _amplitudeSize{ static_cast<unsigned>(data._amplitudeEnvelope._changes.size()) }
 			, _frequencyOffset{ _amplitudeSize + 1 }
 			, _frequencySize{ static_cast<unsigned>(data._frequencyEnvelope._changes.size()) }
@@ -71,24 +63,12 @@ namespace aulos
 			return _shapeParameter;
 		}
 
-		constexpr auto stereoOffset() const noexcept
+		constexpr auto soundSamples() const noexcept
 		{
-			return _stereoOffset;
-		}
-
-		constexpr auto stereoRadius() const noexcept
-		{
-			return _stereoRadius;
-		}
-
-		auto totalSamples(Note note) const noexcept
-		{
-			return _soundSamples + std::abs(stereoDelay(note, _stereoOffset, _stereoRadius));
+			return _soundSamples;
 		}
 
 	private:
-		const int _stereoOffset;
-		const int _stereoRadius;
 		const float _shapeParameter;
 		const unsigned _amplitudeSize;
 		const unsigned _frequencyOffset;
