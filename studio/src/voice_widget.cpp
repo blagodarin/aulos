@@ -134,11 +134,15 @@ struct VoiceWidget::EnvelopeChange
 };
 
 VoiceWidget::VoiceWidget(QWidget* parent)
-	: QWidget{ parent }
+	: QScrollArea{ parent }
 {
-	const auto layout = new QVBoxLayout{ this };
+	setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+	setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
 
-	const auto [trackGroup, trackLayout] = ::createGroup<QFormLayout>(tr("Track properties"), this);
+	const auto widget = new QWidget{ this };
+	const auto layout = new QVBoxLayout{ widget };
+
+	const auto [trackGroup, trackLayout] = ::createGroup<QFormLayout>(tr("Track properties"), widget);
 	_trackGroup = trackGroup;
 	layout->addWidget(trackGroup);
 
@@ -183,7 +187,7 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 	trackLayout->addRow(_stereoInversionCheck);
 	connect(_stereoInversionCheck, &QCheckBox::toggled, this, &VoiceWidget::updateTrackProperties);
 
-	const auto [waveShapeGroup, waveShapeLayout] = ::createGroup<QGridLayout>(tr("Wave shape"), this);
+	const auto [waveShapeGroup, waveShapeLayout] = ::createGroup<QGridLayout>(tr("Wave shape"), widget);
 	layout->addWidget(waveShapeGroup);
 
 	_waveShapeCombo = new QComboBox{ waveShapeGroup };
@@ -213,8 +217,8 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 	_waveShapeWidget = new WaveShapeWidget{ waveShapeGroup };
 	waveShapeLayout->addWidget(_waveShapeWidget, 1, 0, 1, 2);
 
-	const auto createEnvelopeWidgets = [this, layout](const QString& title, std::vector<EnvelopeChange>& envelope, double minimum) {
-		const auto [group, groupLayout] = ::createGroup<QGridLayout>(title, this);
+	const auto createEnvelopeWidgets = [this, widget, layout](const QString& title, std::vector<EnvelopeChange>& envelope, double minimum) {
+		const auto [group, groupLayout] = ::createGroup<QGridLayout>(title, widget);
 		layout->addWidget(group);
 		for (int i = 0; i < 5; ++i)
 		{
@@ -262,6 +266,7 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 
 	layout->addItem(new QSpacerItem{ 0, 0, QSizePolicy::Minimum, QSizePolicy::Expanding });
 
+	setWidget(widget); // Must be called after the widget's layout is filled.
 	updateWaveImage();
 }
 

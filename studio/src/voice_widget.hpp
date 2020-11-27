@@ -6,7 +6,7 @@
 
 #include <memory>
 
-#include <QWidget>
+#include <QScrollArea>
 
 class QCheckBox;
 class QComboBox;
@@ -22,7 +22,7 @@ namespace aulos
 
 class WaveShapeWidget;
 
-class VoiceWidget final : public QWidget
+class VoiceWidget final : public QScrollArea
 {
 	Q_OBJECT
 
