@@ -23,7 +23,7 @@ namespace
 			: _waveData{ data, kTestSamplingRate }
 			, _voice{ _waveData, kTestSamplingRate }
 		{
-			_voice.start(kTestNote, amplitude);
+			_voice.start(kTestNote, amplitude, 0);
 		}
 
 		auto render()
@@ -38,15 +38,13 @@ namespace
 	struct StereoTester
 	{
 		const aulos::WaveData _waveData;
-		const aulos::CircularAcoustics _acoustics;
 		aulos::StereoVoice<Shaper> _voice;
 
 		StereoTester(const aulos::VoiceData& data, const aulos::TrackProperties& trackProperties, float amplitude)
 			: _waveData{ data, kTestSamplingRate }
-			, _acoustics{ trackProperties, kTestSamplingRate }
-			, _voice{ _waveData, _acoustics, trackProperties, kTestSamplingRate }
+			, _voice{ _waveData, trackProperties, kTestSamplingRate }
 		{
-			_voice.start(kTestNote, amplitude);
+			_voice.start(kTestNote, amplitude, 0);
 		}
 
 		auto render()

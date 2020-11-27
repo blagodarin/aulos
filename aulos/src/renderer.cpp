@@ -2,6 +2,7 @@
 // Copyright (C) Sergei Blagodarin.
 // SPDX-License-Identifier: Apache-2.0
 
+#include "acoustics.hpp"
 #include "composition.hpp"
 #include "utils/limited_vector.hpp"
 #include "utils/static_vector.hpp"
@@ -14,7 +15,7 @@
 
 namespace
 {
-	std::unique_ptr<aulos::Voice> createVoice(const aulos::WaveData& waveData, const aulos::VoiceData& voiceData, const aulos::CircularAcoustics& acoustics, const aulos::TrackProperties& trackProperties, unsigned samplingRate, bool isStereo)
+	std::unique_ptr<aulos::Voice> createVoice(const aulos::WaveData& waveData, const aulos::VoiceData& voiceData, const aulos::TrackProperties& trackProperties, unsigned samplingRate, bool isStereo)
 	{
 		if (!isStereo)
 		{
@@ -31,11 +32,11 @@ namespace
 		{
 			switch (voiceData._waveShape)
 			{
-			case aulos::WaveShape::Linear: return std::make_unique<aulos::StereoVoice<aulos::LinearShaper>>(waveData, acoustics, trackProperties, samplingRate);
-			case aulos::WaveShape::Quadratic: return std::make_unique<aulos::StereoVoice<aulos::QuadraticShaper>>(waveData, acoustics, trackProperties, samplingRate);
-			case aulos::WaveShape::Cubic: return std::make_unique<aulos::StereoVoice<aulos::CubicShaper>>(waveData, acoustics, trackProperties, samplingRate);
-			case aulos::WaveShape::Quintic: return std::make_unique<aulos::StereoVoice<aulos::QuinticShaper>>(waveData, acoustics, trackProperties, samplingRate);
-			case aulos::WaveShape::Cosine: return std::make_unique<aulos::StereoVoice<aulos::CosineShaper>>(waveData, acoustics, trackProperties, samplingRate);
+			case aulos::WaveShape::Linear: return std::make_unique<aulos::StereoVoice<aulos::LinearShaper>>(waveData, trackProperties, samplingRate);
+			case aulos::WaveShape::Quadratic: return std::make_unique<aulos::StereoVoice<aulos::QuadraticShaper>>(waveData, trackProperties, samplingRate);
+			case aulos::WaveShape::Cubic: return std::make_unique<aulos::StereoVoice<aulos::CubicShaper>>(waveData, trackProperties, samplingRate);
+			case aulos::WaveShape::Quintic: return std::make_unique<aulos::StereoVoice<aulos::QuinticShaper>>(waveData, trackProperties, samplingRate);
+			case aulos::WaveShape::Cosine: return std::make_unique<aulos::StereoVoice<aulos::CosineShaper>>(waveData, trackProperties, samplingRate);
 			}
 		}
 		return {};
@@ -144,8 +145,9 @@ namespace
 							break;
 						}
 						assert(!i->_noteSamples || i->_noteSamplesRemaining < i->_noteSamples);
-						i->_voice->start(i->_note, _gain);
-						i->_noteSamples = _waveData.soundSamples() + std::abs(_acoustics.stereoDelay(i->_note));
+						const auto delaySamples = _acoustics.stereoDelay(i->_note);
+						i->_voice->start(i->_note, _gain, delaySamples);
+						i->_noteSamples = _waveData.soundSamples() + std::abs(delaySamples);
 						i->_noteSamplesRemaining = i->_noteSamples;
 					});
 					_nextSound = chordEnd;
@@ -281,7 +283,7 @@ namespace
 			assert(_voicePool.empty() && _activeSounds.empty());
 			_voicePool.reserve(maxVoices);
 			while (_voicePool.size() < maxVoices)
-				_voicePool.emplace_back(::createVoice(_waveData, voiceData, _acoustics, trackProperties, _format.samplingRate(), _format.isStereo()));
+				_voicePool.emplace_back(::createVoice(_waveData, voiceData, trackProperties, _format.samplingRate(), _format.isStereo()));
 			_activeSounds.reserve(maxVoices);
 		}
 

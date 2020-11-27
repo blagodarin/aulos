@@ -10,6 +10,7 @@ set(_include
 source_group("include" FILES ${_include})
 
 set(_src
+	src/acoustics.hpp
 	src/composition.cpp
 	src/composition.hpp
 	src/data.cpp
