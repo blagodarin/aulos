@@ -48,14 +48,16 @@ private:
 
 	QGroupBox* _trackGroup = nullptr;
 	QSpinBox* _trackWeightSpin = nullptr;
+	QComboBox* _polyphonyCombo = nullptr;
+	QDoubleSpinBox* _headDelaySpin = nullptr;
+	QDoubleSpinBox* _sourceDistanceSpin = nullptr;
+	QSpinBox* _sourceWidthSpin = nullptr;
+	QSpinBox* _sourceOffsetSpin = nullptr;
+	QDoubleSpinBox* _stereoPanSpin = nullptr;
+	QCheckBox* _stereoInversionCheck = nullptr;
 	QComboBox* _waveShapeCombo = nullptr;
 	QDoubleSpinBox* _waveShapeParameterSpin = nullptr;
 	WaveShapeWidget* _waveShapeWidget = nullptr;
-	QDoubleSpinBox* _stereoDelaySpin = nullptr;
-	QDoubleSpinBox* _stereoRadiusSpin = nullptr;
-	QDoubleSpinBox* _stereoPanSpin = nullptr;
-	QCheckBox* _stereoInversionCheck = nullptr;
-	QComboBox* _polyphonyCombo = nullptr;
 	std::vector<EnvelopeChange> _amplitudeEnvelope;
 	std::vector<EnvelopeChange> _frequencyEnvelope;
 	std::vector<EnvelopeChange> _asymmetryEnvelope;
