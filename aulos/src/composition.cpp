@@ -96,6 +96,32 @@ namespace aulos
 			return result;
 		};
 
+		const auto tryReadInt = [&](int min, int max) -> std::optional<int> {
+			const auto begin = source;
+			const auto isNegative = *source == '-';
+			if (isNegative)
+				++source;
+			if (*source < '0' || *source > '9')
+				return {};
+			do
+				++source;
+			while (*source >= '0' && *source <= '9');
+			int result;
+			if (std::from_chars(begin, source, result).ec != std::errc{})
+				throw CompositionError{ { line, begin - lineBase }, "Number expected" };
+			if (result < min || result > max)
+				throw CompositionError{ { line, begin - lineBase }, "Number is out of range" };
+			skipSpaces();
+			return result;
+		};
+
+		const auto readInt = [&](int min, int max) {
+			const auto result = tryReadInt(min, max);
+			if (!result)
+				throw CompositionError{ location(), "Number expected" };
+			return *result;
+		};
+
 		const auto tryReadUnsigned = [&](unsigned min, unsigned max) -> std::optional<unsigned> {
 			if (*source < '0' || *source > '9')
 				return {};
@@ -298,11 +324,29 @@ namespace aulos
 					throw CompositionError{ location(), "Unexpected command" };
 				_speed = readUnsigned(kMinSpeed, kMaxSpeed);
 			}
+			else if (command == "stereo_angle")
+			{
+				if (currentSection != Section::Track)
+					throw CompositionError{ location(), "Unexpected command" };
+				currentTrackProperties->_sourceOffset = readInt(-90, 90);
+			}
+			else if (command == "stereo_angular_size")
+			{
+				if (currentSection != Section::Track)
+					throw CompositionError{ location(), "Unexpected command" };
+				currentTrackProperties->_sourceWidth = readUnsigned(0, 360);
+			}
 			else if (command == "stereo_delay")
 			{
 				if (currentSection != Section::Track)
 					throw CompositionError{ location(), "Unexpected command" };
-				currentTrackProperties->_stereoDelay = readFloat(-1'000.f, 1'000.f);
+				currentTrackProperties->_headDelay = readFloat(0.f, 1'000.f);
+			}
+			else if (command == "stereo_distance")
+			{
+				if (currentSection != Section::Track)
+					throw CompositionError{ location(), "Unexpected command" };
+				currentTrackProperties->_sourceDistance = readFloat(0.f, 64.f);
 			}
 			else if (command == "stereo_inversion")
 			{
@@ -315,12 +359,6 @@ namespace aulos
 				if (currentSection != Section::Track)
 					throw CompositionError{ location(), "Unexpected command" };
 				currentTrackProperties->_stereoPan = readFloat(-1.f, 1.f);
-			}
-			else if (command == "stereo_radius")
-			{
-				if (currentSection != Section::Track)
-					throw CompositionError{ location(), "Unexpected command" };
-				currentTrackProperties->_stereoRadius = readFloat(-1'000.f, 1'000.f);
 			}
 			else if (command == "title")
 			{

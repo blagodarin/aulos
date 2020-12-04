@@ -154,10 +154,12 @@ namespace aulos
 				case Polyphony::Chord: text += "chord"; break;
 				case Polyphony::Full: text += "full"; break;
 				}
-				text += "\nstereo_delay " + floatToString(track._properties._stereoDelay);
+				text += "\nstereo_angle " + std::to_string(track._properties._sourceOffset);
+				text += "\nstereo_angular_size " + std::to_string(track._properties._sourceWidth);
+				text += "\nstereo_delay " + floatToString(track._properties._headDelay);
+				text += "\nstereo_distance " + floatToString(track._properties._sourceDistance);
 				text += "\nstereo_inversion " + std::to_string(static_cast<int>(track._properties._stereoInversion));
 				text += "\nstereo_pan " + floatToString(track._properties._stereoPan);
-				text += "\nstereo_radius " + floatToString(track._properties._stereoRadius);
 				text += "\nweight " + std::to_string(track._properties._weight);
 				++trackIndex;
 			});

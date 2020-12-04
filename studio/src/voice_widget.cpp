@@ -313,8 +313,8 @@ void VoiceWidget::setParameters(const std::shared_ptr<aulos::VoiceData>& voice, 
 	_polyphonyCombo->setCurrentIndex(_polyphonyCombo->findData(static_cast<int>(usedTrackProperties->_polyphony)));
 	_headDelaySpin->setValue(usedTrackProperties->_headDelay);
 	_sourceDistanceSpin->setValue(usedTrackProperties->_sourceDistance);
-	_sourceWidthSpin->setValue(std::lround(usedTrackProperties->_sourceWidth * 90));
-	_sourceOffsetSpin->setValue(std::lround(usedTrackProperties->_sourceOffset * 90));
+	_sourceWidthSpin->setValue(usedTrackProperties->_sourceWidth);
+	_sourceOffsetSpin->setValue(usedTrackProperties->_sourceOffset);
 	_stereoPanSpin->setValue(usedTrackProperties->_stereoPan);
 	_stereoInversionCheck->setChecked(usedTrackProperties->_stereoInversion);
 
@@ -365,8 +365,8 @@ void VoiceWidget::updateTrackProperties()
 	_trackProperties->_polyphony = static_cast<aulos::Polyphony>(_polyphonyCombo->currentData().toInt());
 	_trackProperties->_headDelay = static_cast<float>(_headDelaySpin->value());
 	_trackProperties->_sourceDistance = static_cast<float>(_sourceDistanceSpin->value());
-	_trackProperties->_sourceWidth = _sourceWidthSpin->value() / 90.f;
-	_trackProperties->_sourceOffset = _sourceOffsetSpin->value() / 90.f;
+	_trackProperties->_sourceWidth = _sourceWidthSpin->value();
+	_trackProperties->_sourceOffset = _sourceOffsetSpin->value();
 	_trackProperties->_stereoPan = static_cast<float>(_stereoPanSpin->value());
 	_trackProperties->_stereoInversion = _stereoInversionCheck->isChecked();
 	emit trackPropertiesChanged();

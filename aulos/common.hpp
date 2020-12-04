@@ -91,8 +91,8 @@ namespace aulos
 		bool _stereoInversion = false;
 		float _headDelay = 2.f;      // In milliseconds.
 		float _sourceDistance = 2.f; // In head radiuses.
-		float _sourceWidth = 2.f;    // In right angles.
-		float _sourceOffset = 0.f;   // In right angles, zero is forward, positive is right.
+		unsigned _sourceWidth = 180; // In degrees.
+		int _sourceOffset = 0;       // In degrees, zero is forward, positive is right.
 	};
 
 	constexpr unsigned kMinSpeed = 1;  // Minimum composition playback speed (in steps per second).

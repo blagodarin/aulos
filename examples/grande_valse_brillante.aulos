@@ -12,18 +12,22 @@ wave quintic 1.00
 
 @track 1 1
 polyphony chord
-stereo_delay 10.00
+stereo_angle 0
+stereo_angular_size 180
+stereo_delay 2.00
+stereo_distance 2.00
 stereo_inversion 1
 stereo_pan 0.00
-stereo_radius 0.00
 weight 3
 
 @track 1 2
 polyphony chord
-stereo_delay -10.00
+stereo_angle 0
+stereo_angular_size 180
+stereo_delay 2.00
+stereo_distance 2.00
 stereo_inversion 0
 stereo_pan 0.00
-stereo_radius 0.00
 weight 2
 
 @sequences
