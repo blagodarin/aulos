@@ -83,6 +83,7 @@ Section
 	File "${SOURCE_DIR}\examples\hungarian_dance.aulos"
 	File "${SOURCE_DIR}\examples\prelude_in_c_minor.aulos"
 	File "${SOURCE_DIR}\examples\prelude_in_g_minor.aulos"
+	File "${SOURCE_DIR}\examples\synth_1.aulos"
 	File "${SOURCE_DIR}\examples\turkish_march.aulos"
 
 	SetShellVarContext all
@@ -116,6 +117,7 @@ Section "Uninstall"
 	Delete "$INSTDIR\examples\hungarian_dance.aulos"
 	Delete "$INSTDIR\examples\prelude_in_c_minor.aulos"
 	Delete "$INSTDIR\examples\prelude_in_g_minor.aulos"
+	Delete "$INSTDIR\examples\synth_1.aulos"
 	Delete "$INSTDIR\examples\turkish_march.aulos"
 	RMDir "$INSTDIR\examples"
 

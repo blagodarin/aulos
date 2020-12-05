@@ -73,6 +73,7 @@ after_success:
   - ${HOME}/aulos.build/bin/benchmark ${TRAVIS_BUILD_DIR}/examples/hungarian_dance.aulos
   - ${HOME}/aulos.build/bin/benchmark ${TRAVIS_BUILD_DIR}/examples/prelude_in_c_minor.aulos
   - ${HOME}/aulos.build/bin/benchmark ${TRAVIS_BUILD_DIR}/examples/prelude_in_g_minor.aulos
+  - ${HOME}/aulos.build/bin/benchmark ${TRAVIS_BUILD_DIR}/examples/synth_1.aulos
   - ${HOME}/aulos.build/bin/benchmark ${TRAVIS_BUILD_DIR}/examples/turkish_march.aulos
 
 notifications:
