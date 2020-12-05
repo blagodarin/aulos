@@ -69,11 +69,9 @@ namespace aulos
 	class StereoVoice final : public Voice
 	{
 	public:
-		StereoVoice(const WaveData& waveData, const TrackProperties& trackProperties, unsigned samplingRate) noexcept
+		StereoVoice(const WaveData& waveData, unsigned samplingRate) noexcept
 			: _leftWave{ waveData, samplingRate }
 			, _rightWave{ waveData, samplingRate }
-			, _leftAmplitude{ std::min(1.f - trackProperties._stereoPan, 1.f) }
-			, _rightAmplitude{ std::copysign(std::min(1.f + trackProperties._stereoPan, 1.f), trackProperties._stereoInversion ? -1.f : 1.f) }
 		{
 		}
 
@@ -83,14 +81,14 @@ namespace aulos
 			do
 			{
 				assert(!(_leftWave.stopped() && _rightWave.stopped()));
-				Shaper leftWaveShaper{ _leftWave.waveShaperData(_baseAmplitude * _leftAmplitude) };
+				Shaper leftWaveShaper{ _leftWave.waveShaperData(_baseAmplitude) };
 				LinearShaper leftAmplitudeShaper{ _leftWave.amplitudeShaperData() };
 				auto leftSamples = _leftWave.advance(samples);
 				assert(leftSamples > 0);
 				samples -= leftSamples;
 				do
 				{
-					Shaper rightWaveShaper{ _rightWave.waveShaperData(_baseAmplitude * _rightAmplitude) };
+					Shaper rightWaveShaper{ _rightWave.waveShaperData(_baseAmplitude) };
 					LinearShaper rightAmplitudeShaper{ _rightWave.amplitudeShaperData() };
 					auto rightSamples = _rightWave.advance(leftSamples);
 					assert(rightSamples > 0);
@@ -120,7 +118,5 @@ namespace aulos
 	private:
 		WaveState _leftWave;
 		WaveState _rightWave;
-		const float _leftAmplitude;
-		const float _rightAmplitude;
 	};
 }

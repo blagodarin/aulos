@@ -40,9 +40,9 @@ namespace
 		const aulos::WaveData _waveData;
 		aulos::StereoVoice<Shaper> _voice;
 
-		StereoTester(const aulos::VoiceData& data, const aulos::TrackProperties& trackProperties, float amplitude)
+		StereoTester(const aulos::VoiceData& data, float amplitude)
 			: _waveData{ data, kTestSamplingRate }
-			, _voice{ _waveData, trackProperties, kTestSamplingRate }
+			, _voice{ _waveData, kTestSamplingRate }
 		{
 			_voice.start(kTestNote, amplitude, 0);
 		}
@@ -77,33 +77,30 @@ TEST_CASE("wave_sawtooth_mono")
 	CHECK(tester.render() == amplitude);
 }
 
-TEST_CASE("wave_sawtooth_stereo_inversion")
+TEST_CASE("wave_sawtooth_stereo")
 {
 	aulos::VoiceData data;
 	data._amplitudeEnvelope._changes.emplace_back(0ms, 1.f);
 	data._amplitudeEnvelope._changes.emplace_back(500ms, 1.f);
 	data._asymmetryEnvelope._changes.emplace_back(0ms, 1.f);
 
-	aulos::TrackProperties trackProperties;
-	trackProperties._stereoInversion = true;
-
 	constexpr auto amplitude = .1f;
-	StereoTester<aulos::LinearShaper> tester{ data, trackProperties, amplitude };
+	StereoTester<aulos::LinearShaper> tester{ data, amplitude };
 	auto block = tester.render();
 	CHECK(block.first == amplitude);
-	CHECK(block.second == -amplitude);
+	CHECK(block.second == amplitude);
 	for (int i = 1; i < 100; ++i)
 	{
 		const auto nextBlock = tester.render();
 		CHECK(nextBlock.first > -amplitude);
 		CHECK(block.first > nextBlock.first);
-		CHECK(nextBlock.second < amplitude);
-		CHECK(block.second < nextBlock.second);
+		CHECK(nextBlock.second > -amplitude);
+		CHECK(block.second > nextBlock.second);
 		block = nextBlock;
 	}
 	block = tester.render();
 	CHECK(block.first == amplitude);
-	CHECK(block.second == -amplitude);
+	CHECK(block.second == amplitude);
 }
 
 TEST_CASE("wave_square_mono")

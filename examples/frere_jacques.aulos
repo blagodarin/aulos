@@ -14,8 +14,6 @@ stereo_angle -90
 stereo_angular_size 0
 stereo_delay 2.00
 stereo_distance 2.00
-stereo_inversion 0
-stereo_pan 0.00
 weight 32
 
 @track 1 2
@@ -24,8 +22,6 @@ stereo_angle -60
 stereo_angular_size 0
 stereo_delay 2.00
 stereo_distance 2.00
-stereo_inversion 0
-stereo_pan 0.00
 weight 16
 
 @track 1 3
@@ -34,8 +30,6 @@ stereo_angle -30
 stereo_angular_size 0
 stereo_delay 2.00
 stereo_distance 2.00
-stereo_inversion 0
-stereo_pan 0.00
 weight 8
 
 @track 1 4
@@ -44,8 +38,6 @@ stereo_angle 30
 stereo_angular_size 0
 stereo_delay 2.00
 stereo_distance 2.00
-stereo_inversion 0
-stereo_pan 0.00
 weight 4
 
 @track 1 5
@@ -54,8 +46,6 @@ stereo_angle 60
 stereo_angular_size 0
 stereo_delay 2.00
 stereo_distance 2.00
-stereo_inversion 0
-stereo_pan 0.00
 weight 2
 
 @track 1 6
@@ -64,8 +54,6 @@ stereo_angle 90
 stereo_angular_size 0
 stereo_delay 2.00
 stereo_distance 2.00
-stereo_inversion 0
-stereo_pan 0.00
 weight 1
 
 @sequences

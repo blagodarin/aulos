@@ -85,10 +85,6 @@ namespace aulos
 	{
 		unsigned _weight = 1;
 		Polyphony _polyphony = Polyphony::Chord;
-		float _stereoDelay = 0.f;
-		float _stereoRadius = 0.f;
-		float _stereoPan = 0.f;
-		bool _stereoInversion = false;
 		float _headDelay = 2.f;      // In milliseconds.
 		float _sourceDistance = 2.f; // In head radiuses.
 		unsigned _sourceWidth = 180; // In degrees.

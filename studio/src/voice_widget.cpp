@@ -187,18 +187,6 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 	_sourceOffsetSpin->setValue(0);
 	connect(_sourceOffsetSpin, QOverload<int>::of(&QSpinBox::valueChanged), this, &VoiceWidget::updateTrackProperties);
 
-	_stereoPanSpin = new QDoubleSpinBox{ trackGroup };
-	trackLayout->addRow(tr("Stereo pan:"), _stereoPanSpin);
-	_stereoPanSpin->setDecimals(2);
-	_stereoPanSpin->setRange(-1.0, 1.0);
-	_stereoPanSpin->setSingleStep(0.01);
-	_stereoPanSpin->setValue(0.0);
-	connect(_stereoPanSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateTrackProperties);
-
-	_stereoInversionCheck = new QCheckBox{ tr("Invert right channel"), trackGroup };
-	trackLayout->addRow(_stereoInversionCheck);
-	connect(_stereoInversionCheck, &QCheckBox::toggled, this, &VoiceWidget::updateTrackProperties);
-
 	const auto [waveShapeGroup, waveShapeLayout] = ::createGroup<QGridLayout>(tr("Wave shape"), widget);
 	layout->addWidget(waveShapeGroup);
 
@@ -315,8 +303,6 @@ void VoiceWidget::setParameters(const std::shared_ptr<aulos::VoiceData>& voice, 
 	_sourceDistanceSpin->setValue(usedTrackProperties->_sourceDistance);
 	_sourceWidthSpin->setValue(usedTrackProperties->_sourceWidth);
 	_sourceOffsetSpin->setValue(usedTrackProperties->_sourceOffset);
-	_stereoPanSpin->setValue(usedTrackProperties->_stereoPan);
-	_stereoInversionCheck->setChecked(usedTrackProperties->_stereoInversion);
 
 	aulos::VoiceData defaultVoice;
 	const auto usedVoice = voice ? voice.get() : &defaultVoice;
@@ -367,8 +353,6 @@ void VoiceWidget::updateTrackProperties()
 	_trackProperties->_sourceDistance = static_cast<float>(_sourceDistanceSpin->value());
 	_trackProperties->_sourceWidth = _sourceWidthSpin->value();
 	_trackProperties->_sourceOffset = _sourceOffsetSpin->value();
-	_trackProperties->_stereoPan = static_cast<float>(_stereoPanSpin->value());
-	_trackProperties->_stereoInversion = _stereoInversionCheck->isChecked();
 	emit trackPropertiesChanged();
 }
 

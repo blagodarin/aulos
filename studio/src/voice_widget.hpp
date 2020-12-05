@@ -53,8 +53,6 @@ private:
 	QDoubleSpinBox* _sourceDistanceSpin = nullptr;
 	QSpinBox* _sourceWidthSpin = nullptr;
 	QSpinBox* _sourceOffsetSpin = nullptr;
-	QDoubleSpinBox* _stereoPanSpin = nullptr;
-	QCheckBox* _stereoInversionCheck = nullptr;
 	QComboBox* _waveShapeCombo = nullptr;
 	QDoubleSpinBox* _waveShapeParameterSpin = nullptr;
 	WaveShapeWidget* _waveShapeWidget = nullptr;

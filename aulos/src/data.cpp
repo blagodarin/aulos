@@ -158,8 +158,6 @@ namespace aulos
 				text += "\nstereo_angular_size " + std::to_string(track._properties._sourceWidth);
 				text += "\nstereo_delay " + floatToString(track._properties._headDelay);
 				text += "\nstereo_distance " + floatToString(track._properties._sourceDistance);
-				text += "\nstereo_inversion " + std::to_string(static_cast<int>(track._properties._stereoInversion));
-				text += "\nstereo_pan " + floatToString(track._properties._stereoPan);
 				text += "\nweight " + std::to_string(track._properties._weight);
 				++trackIndex;
 			});

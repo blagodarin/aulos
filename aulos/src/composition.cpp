@@ -348,18 +348,6 @@ namespace aulos
 					throw CompositionError{ location(), "Unexpected command" };
 				currentTrackProperties->_sourceDistance = readFloat(0.f, 64.f);
 			}
-			else if (command == "stereo_inversion")
-			{
-				if (currentSection != Section::Track)
-					throw CompositionError{ location(), "Unexpected command" };
-				currentTrackProperties->_stereoInversion = readUnsigned(0, 1) == 1;
-			}
-			else if (command == "stereo_pan")
-			{
-				if (currentSection != Section::Track)
-					throw CompositionError{ location(), "Unexpected command" };
-				currentTrackProperties->_stereoPan = readFloat(-1.f, 1.f);
-			}
 			else if (command == "title")
 			{
 				if (currentSection != Section::Global)
