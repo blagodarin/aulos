@@ -12,22 +12,34 @@ const QColor kPressBrushColor{ "#888" };
 
 extern const Colors kCursorColors{ "#fff", "#000" };
 
-const std::array<Colors, 6> kFragmentColors{
-	Colors{ "#e77", "#400" },
-	Colors{ "#ee7", "#440" },
-	Colors{ "#7e7", "#040" },
-	Colors{ "#7ee", "#044" },
-	Colors{ "#77e", "#004" },
-	Colors{ "#e7e", "#404" },
+const std::array<Colors, 12> kFragmentColors{
+	Colors{ "#c00", "#200" },
+	Colors{ "#c60", "#210" },
+	Colors{ "#cc0", "#220" },
+	Colors{ "#6c0", "#120" },
+	Colors{ "#0c0", "#020" },
+	Colors{ "#0c6", "#021" },
+	Colors{ "#0cc", "#022" },
+	Colors{ "#06c", "#012" },
+	Colors{ "#00c", "#002" },
+	Colors{ "#60c", "#102" },
+	Colors{ "#c0c", "#202" },
+	Colors{ "#c06", "#201" },
 };
 
-const std::array<Colors, 6> kFragmentHighlightColors{
-	Colors{ "#400", "#f00" },
-	Colors{ "#440", "#ff0" },
-	Colors{ "#040", "#0f0" },
-	Colors{ "#044", "#0ff" },
-	Colors{ "#004", "#00f" },
-	Colors{ "#404", "#f0f" },
+const std::array<Colors, 12> kFragmentHighlightColors{
+	Colors{ "#400", "#f55" },
+	Colors{ "#420", "#fa5" },
+	Colors{ "#440", "#ff5" },
+	Colors{ "#240", "#af5" },
+	Colors{ "#040", "#5f5" },
+	Colors{ "#042", "#5fa" },
+	Colors{ "#044", "#5ff" },
+	Colors{ "#024", "#5af" },
+	Colors{ "#004", "#55f" },
+	Colors{ "#204", "#a5f" },
+	Colors{ "#404", "#f5f" },
+	Colors{ "#402", "#f5a" },
 };
 
 const Colors kLoopItemColors{ Qt::darkCyan, Qt::transparent };

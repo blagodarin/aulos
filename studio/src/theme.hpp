@@ -47,8 +47,8 @@ struct Colors
 };
 
 extern const Colors kCursorColors;
-extern const std::array<Colors, 6> kFragmentColors;
-extern const std::array<Colors, 6> kFragmentHighlightColors;
+extern const std::array<Colors, 12> kFragmentColors;
+extern const std::array<Colors, 12> kFragmentHighlightColors;
 extern const Colors kLoopItemColors;
 extern const std::array<Colors, 2> kTimelineColors;
 extern const Colors kTimelineOffsetMarkColors;
