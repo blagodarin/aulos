@@ -36,6 +36,5 @@ namespace aulos
 		virtual void restart() noexcept = 0;
 		[[nodiscard]] virtual unsigned samplingRate() const noexcept = 0;
 		[[nodiscard]] virtual size_t skipSamples(size_t samples) noexcept = 0;
-		[[nodiscard]] virtual size_t totalSamples() const noexcept = 0;
 	};
 }

@@ -214,11 +214,6 @@ namespace
 			_loopDelay = loopLength - loopDistance;
 		}
 
-		size_t totalSamples() const noexcept
-		{
-			return _format.stepsToSamples(_lastSoundOffset) + lastChordSamples();
-		}
-
 	private:
 		unsigned lastChordSamples() const noexcept
 		{
@@ -371,6 +366,7 @@ namespace
 			: _format{ samplingRate, channels, composition._speed }
 			, _gainDivisor{ static_cast<float>(composition._gainDivisor) }
 			, _loopOffset{ composition._loopLength > 0 ? composition._loopOffset : 0 }
+			, _loopLength{ composition._loopLength }
 		{
 			std::vector<AbsoluteSound> sounds;
 			std::vector<aulos::Note> noteCounter;
@@ -403,7 +399,6 @@ namespace
 						_tracks.emplace_back(_format, part._voice, track._properties, sounds, looping && composition._loopLength > 0 ? std::optional{ std::pair{ composition._loopOffset, composition._loopLength } } : std::nullopt);
 				}
 			}
-			_loopLength = composition._loopLength > 0 ? composition._loopLength : _format.samplesToSteps(totalSamples());
 			if (looping && !composition._loopLength)
 				for (auto& track : _tracks)
 					track.setWholeCompositionLoop(_loopLength);
@@ -459,16 +454,11 @@ namespace
 			return offset;
 		}
 
-		size_t totalSamples() const noexcept override
-		{
-			return std::accumulate(_tracks.cbegin(), _tracks.cend(), size_t{ 0 }, [](size_t samples, const TrackRenderer& track) { return std::max(samples, track.totalSamples()); });
-		}
-
 	public:
 		CompositionFormat _format;
 		const float _gainDivisor;
 		const size_t _loopOffset;
-		size_t _loopLength = 0;
+		const size_t _loopLength;
 		aulos::LimitedVector<TrackRenderer> _tracks;
 	};
 }

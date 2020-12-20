@@ -38,27 +38,26 @@
 
 namespace
 {
+	constexpr size_t kBufferSize = 8192;
 	constexpr int kMaxRecentFiles = 10;
 	const auto kRecentFileKeyBase = QStringLiteral("RecentFile%1");
 
-	std::unique_ptr<aulos::Composition> packComposition(aulos::CompositionData& data, bool looping)
+	std::unique_ptr<aulos::Composition> packComposition(aulos::CompositionData& data)
 	{
-		const auto maxAmplitude = [looping](const aulos::Composition& composition) {
-			const auto renderer = aulos::Renderer::create(composition, aulos::Renderer::kMaxSamplingRate, 1, looping);
+		const auto maxAmplitude = [](const aulos::Composition& composition) {
+			// TODO: Implement gain calculation with looping.
+			const auto renderer = aulos::Renderer::create(composition, aulos::Renderer::kMaxSamplingRate, 1, false);
 			assert(renderer);
-			constexpr size_t bufferSamples = aulos::Renderer::kMaxSamplingRate;
-			const auto buffer = std::make_unique<float[]>(bufferSamples);
 			float minimum = 0.f;
 			float maximum = 0.f;
-			for (auto remainingSamples = renderer->totalSamples(); remainingSamples > 0;)
+			for (std::array<float, kBufferSize / sizeof(float)> buffer;;)
 			{
-				const auto samplesToRender = std::min(bufferSamples, remainingSamples);
-				const auto samplesRendered = renderer->render(buffer.get(), samplesToRender * sizeof(float)) / sizeof(float);
-				assert(samplesRendered == samplesToRender);
-				const auto minmax = std::minmax_element(buffer.get(), buffer.get() + samplesRendered);
+				const auto samplesRendered = renderer->render(buffer.data(), buffer.size() * sizeof(float)) / sizeof(float);
+				if (!samplesRendered)
+					break;
+				const auto minmax = std::minmax_element(buffer.cbegin(), buffer.cbegin() + samplesRendered);
 				minimum = std::min(minimum, *minmax.first);
 				maximum = std::max(maximum, *minmax.second);
-				remainingSamples -= samplesRendered;
 			}
 			return std::max(-minimum, maximum);
 		};
@@ -213,7 +212,7 @@ Studio::Studio()
 
 	const auto playbackMenu = menuBar()->addMenu(tr("&Playback"));
 	_playAction = playbackMenu->addAction(qApp->style()->standardIcon(QStyle::SP_MediaPlay), tr("&Play"), [this] {
-		const auto composition = ::packComposition(*_composition, _loopPlaybackCheck->isChecked());
+		const auto composition = ::packComposition(*_composition);
 		if (!composition)
 			return;
 		assert(_mode == Mode::Editing);
@@ -431,7 +430,7 @@ void Studio::createEmptyComposition()
 
 void Studio::exportComposition()
 {
-	const auto composition = ::packComposition(*_composition, false);
+	const auto composition = ::packComposition(*_composition);
 	if (!composition)
 		return;
 
@@ -448,18 +447,13 @@ void Studio::exportComposition()
 	const auto renderer = aulos::Renderer::create(*composition, samplingRate, channels, false);
 	assert(renderer);
 
-	const auto bufferLength = renderer->totalSamples() * channels;
-	const auto bufferSize = bufferLength * sizeof(float);
-	const auto buffer = std::make_unique<float[]>(bufferLength);
-	[[maybe_unused]] auto renderedBytes = renderer->render(buffer.get(), bufferSize);
-	assert(renderedBytes == bufferSize);
-
 	constexpr size_t chunkHeaderSize = 8;
 	constexpr size_t fmtChunkSize = 16;
 	constexpr auto totalHeadersSize = chunkHeaderSize + 4 + chunkHeaderSize + fmtChunkSize + chunkHeaderSize;
 
 	file.write("RIFF");
-	::writeValue<uint32_t>(file, static_cast<uint32_t>(totalHeadersSize + bufferSize));
+	const auto riffSizePos = file.pos();
+	::writeValue<uint32_t>(file, static_cast<uint32_t>(totalHeadersSize));
 	assert(file.pos() == chunkHeaderSize);
 	file.write("WAVE");
 	file.write("fmt ");
@@ -471,9 +465,26 @@ void Studio::exportComposition()
 	::writeValue<uint16_t>(file, static_cast<uint16_t>(channels * sizeof(float))); // Bytes per frame.
 	::writeValue<uint16_t>(file, sizeof(float) * 8);                               // Bits per sample.
 	file.write("data");
-	::writeValue<uint32_t>(file, static_cast<uint32_t>(bufferSize));
+	const auto dataSizePos = file.pos();
+	::writeValue<uint32_t>(file, 0);
 	assert(file.pos() == totalHeadersSize);
-	file.write(QByteArray::fromRawData(reinterpret_cast<char*>(buffer.get()), static_cast<int>(bufferSize)));
+
+	size_t dataSize = 0;
+	for (std::array<char, kBufferSize> buffer;;)
+	{
+		auto renderedBytes = renderer->render(buffer.data(), buffer.size());
+		if (!renderedBytes)
+			break;
+		file.write(buffer.data(), static_cast<qint64>(renderedBytes));
+		dataSize += renderedBytes;
+	}
+
+	file.seek(riffSizePos);
+	::writeValue<uint32_t>(file, static_cast<uint32_t>(totalHeadersSize + dataSize));
+
+	file.seek(dataSizePos);
+	::writeValue<uint32_t>(file, static_cast<uint32_t>(dataSize));
+
 	file.commit();
 }
 
@@ -525,7 +536,7 @@ bool Studio::saveComposition(const QString& path) const
 {
 	assert(_hasComposition);
 	assert(!path.isEmpty());
-	const auto composition = ::packComposition(*_composition, true);
+	const auto composition = ::packComposition(*_composition);
 	assert(composition);
 	const auto buffer = aulos::serialize(*composition);
 	QFile file{ path };
@@ -604,7 +615,9 @@ void Studio::updateStatus()
 	_speedSpin->setEnabled(_hasComposition && _mode == Mode::Editing);
 	_channelsCombo->setEnabled(_hasComposition && _mode == Mode::Editing);
 	_samplingRateCombo->setEnabled(_hasComposition && _mode == Mode::Editing);
-	_loopPlaybackCheck->setEnabled(_hasComposition && _mode == Mode::Editing);
+	_loopPlaybackCheck->setEnabled(_hasComposition && _mode == Mode::Editing && _composition->_loopLength > 0);
+	if (_hasComposition && !_composition->_loopLength)
+		_loopPlaybackCheck->setChecked(false);
 	_compositionWidget->setInteractive(_hasComposition && _mode == Mode::Editing);
 	_voiceWidget->setEnabled(_hasComposition && _mode == Mode::Editing && _voiceWidget->voice());
 	_sequenceWidget->setInteractive(_hasComposition && _mode == Mode::Editing && _voiceWidget->voice());

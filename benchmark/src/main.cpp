@@ -128,14 +128,24 @@ int main(int argc, char** argv)
 		[&renderer, &composition] { renderer = aulos::Renderer::create(*composition, samplingRate, 2); },
 		[&renderer] { renderer.reset(); });
 
-	const auto compositionSize = renderer->totalSamples() * sizeof(float) * 2;
-	const auto compositionDuration = static_cast<double>(renderer->totalSamples()) * double{ Measurement::Duration::period::den } / samplingRate;
-
 	static constexpr size_t bufferSize = 65'536;
 	const auto buffer = std::make_unique<std::byte[]>(bufferSize);
+
+	size_t compositionBytes = 0;
+	for (;;)
+	{
+		const auto bytesRendered = renderer->render(buffer.get(), bufferSize);
+		if (!bytesRendered)
+			break;
+		compositionBytes += bytesRendered;
+	}
+	renderer->restart();
+
+	const auto compositionDuration = static_cast<double>(compositionBytes / (sizeof(float) * 2)) * double{ Measurement::Duration::period::den } / samplingRate;
+
 	const auto baseline = ::measure(
-		[bufferData = buffer.get(), compositionSize] {
-			for (auto remainingBytes = compositionSize; remainingBytes > 0;)
+		[bufferData = buffer.get(), compositionBytes] {
+			for (auto remainingBytes = compositionBytes; remainingBytes > 0;)
 			{
 				const auto iterationBytes = std::min(remainingBytes, bufferSize);
 				std::memset(bufferData, static_cast<int>(remainingBytes / bufferSize), iterationBytes);
@@ -153,8 +163,8 @@ int main(int argc, char** argv)
 	std::cout << "PrepareTime: " << ::printTime(preparation.average()) << " [N=" << preparation._iterations << ", min=" << ::printTime(preparation._minDuration) << ", max=" << ::printTime(preparation._maxDuration) << "]\n";
 	std::cout << "RenderTime: " << ::printTime(rendering.average()) << " [N=" << rendering._iterations << ", min=" << ::printTime(rendering._minDuration) << ", max=" << ::printTime(rendering._maxDuration) << "]\n";
 	std::cout << "RenderSpeed: " << compositionDuration / static_cast<double>(rendering.average().count()) << "x ("
-			  << std::to_string(static_cast<double>(compositionSize) * std::ldexp(1'000'000'000, -20) / static_cast<double>(rendering.average().count())) << " MiB/s, "
-			  << std::to_string(static_cast<double>(compositionSize) * 8. / static_cast<double>(rendering.average().count())) << " Gbit/s, "
+			  << std::to_string(static_cast<double>(compositionBytes) * std::ldexp(1'000'000'000, -20) / static_cast<double>(rendering.average().count())) << " MiB/s, "
+			  << std::to_string(static_cast<double>(compositionBytes) * 8. / static_cast<double>(rendering.average().count())) << " Gbit/s, "
 			  << std::to_string(static_cast<double>(rendering.average().count()) / static_cast<double>(baseline.average().count())) << " memsets)\n";
 	return 0;
 }
