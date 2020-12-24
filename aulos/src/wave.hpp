@@ -94,37 +94,32 @@ namespace aulos
 		{
 		}
 
-		unsigned advance(unsigned maxSamples) noexcept
+		void advance(unsigned samples) noexcept
 		{
-			assert(maxSamples > 0);
+			assert(samples > 0 && samples <= maxAdvance());
 			if (_startDelay > 0)
 			{
 				assert(!_restartDelay);
-				if (_startDelay < maxSamples)
-					return std::exchange(_startDelay, 0u);
-				_startDelay -= maxSamples;
-				return maxSamples;
+				assert(samples <= _startDelay);
+				_startDelay -= samples;
+				return;
 			}
-			auto samples = std::min(_amplitudeModulator.maxContinuousAdvance(), _oscillator.maxAdvance());
-			if (_restartDelay > 0 && samples > _restartDelay)
-				samples = _restartDelay;
-			if (samples > maxSamples)
-				samples = maxSamples;
-			assert(_frequency > 0);
-			_amplitudeModulator.advance(samples);
-			_frequencyModulator.advance(samples);
-			_asymmetryModulator.advance(samples);
-			_oscillationModulator.advance(samples);
-			_oscillator.advance(static_cast<float>(samples), _frequency * std::pow(2.f, _frequencyModulator.currentValue<LinearShaper>()), _asymmetryModulator.currentValue<LinearShaper>());
+			assert(!_restartDelay || samples <= _restartDelay);
+			if (!_amplitudeModulator.stopped())
+			{
+				_amplitudeModulator.advance(samples);
+				_frequencyModulator.advance(samples);
+				_asymmetryModulator.advance(samples);
+				_oscillationModulator.advance(samples);
+				_oscillator.advance(static_cast<float>(samples), _frequency * std::pow(2.f, _frequencyModulator.currentValue<LinearShaper>()), _asymmetryModulator.currentValue<LinearShaper>());
+			}
 			if (_restartDelay > 0)
 			{
 				assert(!_startDelay);
-				assert(_restartDelay >= samples);
 				_restartDelay -= samples;
 				if (!_restartDelay)
 					startWave(_restartFrequency, true);
 			}
-			return samples;
 		}
 
 		constexpr ShaperData amplitudeShaperData() const noexcept
@@ -135,6 +130,18 @@ namespace aulos
 				return _amplitudeModulator.shaperData();
 			assert(!_amplitudeModulator.currentOffset());
 			return { _amplitudeModulator.currentBaseValue() };
+		}
+
+		unsigned maxAdvance() const noexcept
+		{
+			if (_startDelay > 0)
+				return _startDelay;
+			const auto maxWaveAdvance = _amplitudeModulator.stopped()
+				? std::numeric_limits<unsigned>::max()
+				: std::min(_amplitudeModulator.maxContinuousAdvance(), _oscillator.maxAdvance());
+			if (_restartDelay > 0)
+				return std::min(maxWaveAdvance, _restartDelay);
+			return maxWaveAdvance;
 		}
 
 		ShaperData waveShaperData(float amplitude) const noexcept
@@ -178,6 +185,7 @@ namespace aulos
 	private:
 		void startWave(float frequency, bool fromCurrent) noexcept
 		{
+			assert(frequency > 0);
 			_amplitudeModulator.start(fromCurrent ? _amplitudeModulator.currentValue<LinearShaper>() : 0);
 			_frequencyModulator.start(0);
 			_asymmetryModulator.start(0);

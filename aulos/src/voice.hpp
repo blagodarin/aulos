@@ -16,7 +16,7 @@ namespace aulos
 		Voice() noexcept = default;
 		virtual ~Voice() noexcept = default;
 
-		virtual void render(float* buffer, unsigned samples) noexcept = 0;
+		virtual unsigned render(float* buffer, unsigned maxSamples) noexcept = 0;
 		virtual void start(Note, float amplitude, int delay) noexcept = 0;
 		virtual void stop() noexcept = 0;
 
@@ -33,21 +33,26 @@ namespace aulos
 		{
 		}
 
-		void render(float* buffer, unsigned samples) noexcept override
+		unsigned render(float* buffer, unsigned maxSamples) noexcept override
 		{
-			assert(samples > 0);
+			assert(maxSamples > 0);
+			auto remainingSamples = maxSamples;
 			do
 			{
-				assert(!_wave.stopped());
+				const auto maxAdvance = _wave.maxAdvance();
+				assert(maxAdvance > 0);
+				if (maxAdvance == std::numeric_limits<unsigned>::max())
+					break;
+				auto strideSamples = std::min(remainingSamples, maxAdvance);
+				remainingSamples -= strideSamples;
 				Shaper waveShaper{ _wave.waveShaperData(_baseAmplitude) };
 				LinearShaper amplitudeShaper{ _wave.amplitudeShaperData() };
-				auto nextSamples = _wave.advance(samples);
-				assert(nextSamples > 0);
-				samples -= nextSamples;
+				_wave.advance(strideSamples);
 				do
 					*buffer++ += waveShaper.advance() * amplitudeShaper.advance();
-				while (--nextSamples > 0);
-			} while (samples > 0);
+				while (--strideSamples > 0);
+			} while (remainingSamples > 0);
+			return maxSamples - remainingSamples;
 		}
 
 		void start(Note note, float amplitude, int) noexcept override
@@ -75,31 +80,31 @@ namespace aulos
 		{
 		}
 
-		void render(float* buffer, unsigned samples) noexcept override
+		unsigned render(float* buffer, unsigned maxSamples) noexcept override
 		{
-			assert(samples > 0);
+			assert(maxSamples > 0);
+			auto remainingSamples = maxSamples;
 			do
 			{
-				assert(!(_leftWave.stopped() && _rightWave.stopped()));
+				const auto maxAdvance = std::min(_leftWave.maxAdvance(), _rightWave.maxAdvance());
+				assert(maxAdvance > 0);
+				if (maxAdvance == std::numeric_limits<unsigned>::max())
+					break;
+				auto strideSamples = std::min(remainingSamples, maxAdvance);
+				remainingSamples -= strideSamples;
 				Shaper leftWaveShaper{ _leftWave.waveShaperData(_baseAmplitude) };
 				LinearShaper leftAmplitudeShaper{ _leftWave.amplitudeShaperData() };
-				auto leftSamples = _leftWave.advance(samples);
-				assert(leftSamples > 0);
-				samples -= leftSamples;
+				_leftWave.advance(strideSamples);
+				Shaper rightWaveShaper{ _rightWave.waveShaperData(_baseAmplitude) };
+				LinearShaper rightAmplitudeShaper{ _rightWave.amplitudeShaperData() };
+				_rightWave.advance(strideSamples);
 				do
 				{
-					Shaper rightWaveShaper{ _rightWave.waveShaperData(_baseAmplitude) };
-					LinearShaper rightAmplitudeShaper{ _rightWave.amplitudeShaperData() };
-					auto rightSamples = _rightWave.advance(leftSamples);
-					assert(rightSamples > 0);
-					leftSamples -= rightSamples;
-					do
-					{
-						*buffer++ += leftWaveShaper.advance() * leftAmplitudeShaper.advance();
-						*buffer++ += rightWaveShaper.advance() * rightAmplitudeShaper.advance();
-					} while (--rightSamples > 0);
-				} while (leftSamples > 0);
-			} while (samples > 0);
+					*buffer++ += leftWaveShaper.advance() * leftAmplitudeShaper.advance();
+					*buffer++ += rightWaveShaper.advance() * rightAmplitudeShaper.advance();
+				} while (--strideSamples > 0);
+			} while (remainingSamples > 0);
+			return maxSamples - remainingSamples;
 		}
 
 		void start(Note note, float amplitude, int delay) noexcept override
