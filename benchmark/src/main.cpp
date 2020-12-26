@@ -125,37 +125,37 @@ int main(int argc, char** argv)
 	static constexpr unsigned samplingRate = 48'000;
 	std::unique_ptr<aulos::Renderer> renderer;
 	const auto preparation = ::measure<10'000>(
-		[&renderer, &composition] { renderer = aulos::Renderer::create(*composition, samplingRate, 2); },
+		[&renderer, &composition] { renderer = aulos::Renderer::create(*composition, samplingRate, aulos::ChannelLayout::Stereo); },
 		[&renderer] { renderer.reset(); });
 
-	static constexpr size_t bufferSize = 65'536;
-	const auto buffer = std::make_unique<std::byte[]>(bufferSize);
+	static constexpr size_t bufferFrames = samplingRate;
+	const auto buffer = std::make_unique<float[]>(bufferFrames * 2);
 
-	size_t compositionBytes = 0;
+	size_t compositionFrames = 0;
 	for (;;)
 	{
-		const auto bytesRendered = renderer->render(buffer.get(), bufferSize);
-		if (!bytesRendered)
+		const auto framesRendered = renderer->render(buffer.get(), bufferFrames);
+		if (!framesRendered)
 			break;
-		compositionBytes += bytesRendered;
+		compositionFrames += compositionFrames;
 	}
 	renderer->restart();
 
-	const auto compositionDuration = static_cast<double>(compositionBytes / (sizeof(float) * 2)) * double{ Measurement::Duration::period::den } / samplingRate;
+	const auto compositionDuration = static_cast<double>(compositionFrames) * double{ Measurement::Duration::period::den } / samplingRate;
 
 	const auto baseline = ::measure(
-		[bufferData = buffer.get(), compositionBytes] {
-			for (auto remainingBytes = compositionBytes; remainingBytes > 0;)
+		[bufferData = buffer.get(), compositionFrames] {
+			for (auto remainingFrames = compositionFrames; remainingFrames > 0;)
 			{
-				const auto iterationBytes = std::min(remainingBytes, bufferSize);
-				std::memset(bufferData, static_cast<int>(remainingBytes / bufferSize), iterationBytes);
-				remainingBytes -= iterationBytes;
+				const auto iterationFrames = std::min(remainingFrames, bufferFrames);
+				std::memset(bufferData, static_cast<int>(remainingFrames / bufferFrames), iterationFrames * 2 * sizeof(float));
+				remainingFrames -= iterationFrames;
 			}
 		},
 		[] {},
 		std::chrono::seconds{ 5 });
 	const auto rendering = ::measure(
-		[&renderer, bufferData = buffer.get()] { while (renderer->render(bufferData, bufferSize) > 0) ; },
+		[&renderer, bufferData = buffer.get()] { while (renderer->render(bufferData, bufferFrames) > 0) ; },
 		[&renderer] { renderer->restart(); },
 		std::chrono::seconds{ 5 });
 
@@ -163,8 +163,8 @@ int main(int argc, char** argv)
 	std::cout << "PrepareTime: " << ::printTime(preparation.average()) << " [N=" << preparation._iterations << ", min=" << ::printTime(preparation._minDuration) << ", max=" << ::printTime(preparation._maxDuration) << "]\n";
 	std::cout << "RenderTime: " << ::printTime(rendering.average()) << " [N=" << rendering._iterations << ", min=" << ::printTime(rendering._minDuration) << ", max=" << ::printTime(rendering._maxDuration) << "]\n";
 	std::cout << "RenderSpeed: " << compositionDuration / static_cast<double>(rendering.average().count()) << "x ("
-			  << std::to_string(static_cast<double>(compositionBytes) * std::ldexp(1'000'000'000, -20) / static_cast<double>(rendering.average().count())) << " MiB/s, "
-			  << std::to_string(static_cast<double>(compositionBytes) * 8. / static_cast<double>(rendering.average().count())) << " Gbit/s, "
+			  << std::to_string(static_cast<double>(compositionFrames * 2 * sizeof(float)) * std::ldexp(1'000'000'000, -20) / static_cast<double>(rendering.average().count())) << " MiB/s, "
+			  << std::to_string(static_cast<double>(compositionFrames * 2 * sizeof(float)) * 8. / static_cast<double>(rendering.average().count())) << " Gbit/s, "
 			  << std::to_string(static_cast<double>(rendering.average().count()) / static_cast<double>(baseline.average().count())) << " memsets)\n";
 	return 0;
 }

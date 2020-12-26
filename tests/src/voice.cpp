@@ -11,7 +11,7 @@ using namespace std::chrono_literals;
 namespace
 {
 	constexpr auto kTestSamplingRate = 44'000u;
-	constexpr auto kTestNote = aulos::Note::A4; // A4 note frequency is exactly 440 Hz, so the period should be exactly 100 samples.
+	constexpr auto kTestNote = aulos::Note::A4; // A4 note frequency is exactly 440 Hz, so the period should be exactly 100 frames.
 
 	template <typename Shaper>
 	struct MonoTester
@@ -49,9 +49,9 @@ namespace
 
 		auto render()
 		{
-			std::pair<float, float> block{ 0.f, 0.f };
-			_voice.render(&block.first, 1);
-			return block;
+			std::pair<float, float> frame{ 0.f, 0.f };
+			_voice.render(&frame.first, 1);
+			return frame;
 		}
 	};
 }
@@ -86,21 +86,21 @@ TEST_CASE("wave_sawtooth_stereo")
 
 	constexpr auto amplitude = .1f;
 	StereoTester<aulos::LinearShaper> tester{ data, amplitude };
-	auto block = tester.render();
-	CHECK(block.first == amplitude);
-	CHECK(block.second == amplitude);
+	auto frame = tester.render();
+	CHECK(frame.first == amplitude);
+	CHECK(frame.second == amplitude);
 	for (int i = 1; i < 100; ++i)
 	{
-		const auto nextBlock = tester.render();
-		CHECK(nextBlock.first > -amplitude);
-		CHECK(block.first > nextBlock.first);
-		CHECK(nextBlock.second > -amplitude);
-		CHECK(block.second > nextBlock.second);
-		block = nextBlock;
+		const auto nextFrame = tester.render();
+		CHECK(nextFrame.first > -amplitude);
+		CHECK(frame.first > nextFrame.first);
+		CHECK(nextFrame.second > -amplitude);
+		CHECK(frame.second > nextFrame.second);
+		frame = nextFrame;
 	}
-	block = tester.render();
-	CHECK(block.first == amplitude);
-	CHECK(block.second == amplitude);
+	frame = tester.render();
+	CHECK(frame.first == amplitude);
+	CHECK(frame.second == amplitude);
 }
 
 TEST_CASE("wave_square_mono")

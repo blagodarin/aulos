@@ -490,10 +490,10 @@ namespace aulos
 		}
 	}
 
-	std::unique_ptr<Composition> Composition::create(const char* textSource)
+	std::unique_ptr<Composition> Composition::create(const char* textData)
 	{
 		auto composition = std::make_unique<CompositionImpl>();
-		composition->load(textSource);
+		composition->load(textData);
 		return composition;
 	}
 }

@@ -82,7 +82,7 @@ private:
 	QAction* _playAction;
 	QAction* _stopAction;
 	QSpinBox* _speedSpin;
-	QComboBox* _channelsCombo;
+	QComboBox* _channelLayoutCombo;
 	QComboBox* _samplingRateCombo;
 	QCheckBox* _loopPlaybackCheck;
 	CompositionWidget* _compositionWidget;

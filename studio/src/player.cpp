@@ -13,9 +13,9 @@
 class AudioSource final : public QIODevice
 {
 public:
-	AudioSource(std::unique_ptr<aulos::Renderer>&& renderer, size_t minBufferBytes)
+	AudioSource(std::unique_ptr<aulos::Renderer>&& renderer, size_t minBufferFrames)
 		: _renderer{ std::move(renderer) }
-		, _minRemainingBytes{ minBufferBytes }
+		, _minRemainingFrames{ minBufferFrames }
 	{
 		open(QIODevice::ReadOnly | QIODevice::Unbuffered);
 	}
@@ -28,17 +28,17 @@ public:
 private:
 	qint64 readData(char* data, qint64 maxSize) override
 	{
-		const auto bufferBytes = static_cast<size_t>(maxSize);
-		auto renderedBytes = _renderer->render(data, bufferBytes);
-		assert(renderedBytes <= bufferBytes);
-		_minRemainingBytes -= std::min(_minRemainingBytes, renderedBytes);
-		if (renderedBytes < bufferBytes && _minRemainingBytes > 0)
+		const auto maxFrames = maxSize / _renderer->bytesPerFrame();
+		auto renderedFrames = _renderer->render(reinterpret_cast<float*>(data), maxFrames);
+		assert(renderedFrames <= maxFrames);
+		_minRemainingFrames -= std::min(_minRemainingFrames, renderedFrames);
+		if (renderedFrames < maxFrames && _minRemainingFrames > 0)
 		{
-			const auto paddingBytes = std::min(bufferBytes - renderedBytes, _minRemainingBytes);
-			renderedBytes += paddingBytes;
-			_minRemainingBytes -= paddingBytes;
+			const auto paddingFrames = std::min(maxFrames - renderedFrames, _minRemainingFrames);
+			renderedFrames += paddingFrames;
+			_minRemainingFrames -= paddingFrames;
 		}
-		return renderedBytes;
+		return renderedFrames * _renderer->bytesPerFrame();
 	}
 
 	qint64 writeData(const char*, qint64) override
@@ -48,7 +48,7 @@ private:
 
 private:
 	std::unique_ptr<aulos::Renderer> _renderer;
-	size_t _minRemainingBytes;
+	size_t _minRemainingFrames;
 };
 
 Player::Player(QObject* parent)
@@ -58,12 +58,16 @@ Player::Player(QObject* parent)
 
 Player::~Player() = default;
 
-void Player::start(std::unique_ptr<aulos::Renderer>&& renderer, size_t minBufferBytes)
+void Player::start(std::unique_ptr<aulos::Renderer>&& renderer, size_t minBufferFrames)
 {
 	stop();
 	QAudioFormat format;
 	format.setByteOrder(QAudioFormat::LittleEndian);
-	format.setChannelCount(renderer->channels());
+	switch (renderer->channelLayout())
+	{
+	case aulos::ChannelLayout::Mono: format.setChannelCount(1); break;
+	case aulos::ChannelLayout::Stereo: format.setChannelCount(2); break;
+	}
 	format.setCodec("audio/pcm");
 	format.setSampleRate(renderer->samplingRate());
 	format.setSampleSize(32);
@@ -80,7 +84,7 @@ void Player::start(std::unique_ptr<aulos::Renderer>&& renderer, size_t minBuffer
 			emit stateChanged();
 		}
 	});
-	_source = std::make_unique<AudioSource>(std::move(renderer), minBufferBytes);
+	_source = std::make_unique<AudioSource>(std::move(renderer), minBufferFrames);
 	_output->start(_source.get());
 	emit timeAdvanced(0);
 }
