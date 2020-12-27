@@ -4,8 +4,6 @@
 
 #pragma once
 
-#include <aulos/common.hpp>
-
 #include "shaper.hpp"
 
 #include <array>
