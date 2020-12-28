@@ -10,6 +10,7 @@
 #include <cassert>
 #include <limits>
 #include <numeric>
+#include <optional>
 #include <span>
 
 namespace aulos
@@ -30,6 +31,8 @@ namespace aulos
 			: _points{ points.data() }
 			, _size{ static_cast<unsigned>(points.size()) }
 		{
+			assert(_size >= 1);
+			assert(_points->_delaySamples == 0);
 		}
 
 		constexpr void advance(unsigned samples) noexcept
@@ -74,10 +77,10 @@ namespace aulos
 			return _points[_nextIndex]._delaySamples - _offsetSamples;
 		}
 
-		void start(float initialValue) noexcept
+		void start(const std::optional<float>& initialValue) noexcept
 		{
-			_lastPointValue = initialValue;
-			_nextIndex = 0;
+			_lastPointValue = initialValue ? *initialValue : _points->_value;
+			_nextIndex = 1;
 			while (_nextIndex < _size && !_points[_nextIndex]._delaySamples)
 				_lastPointValue = _points[_nextIndex++]._value;
 			_offsetSamples = 0;

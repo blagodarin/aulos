@@ -11,25 +11,39 @@
 
 namespace aulos
 {
+	enum class Transformation
+	{
+		None,
+		Exp2,
+	};
+
+	template <Transformation>
+	float transform(float) noexcept = delete;
+
+	template <>
+	constexpr float transform<Transformation::None>(float value) noexcept { return value; }
+
+	template <>
+	inline float transform<Transformation::Exp2>(float value) noexcept { return std::exp2(value); }
+
 	class WaveData
 	{
 	public:
 		WaveData(const VoiceData& data, unsigned samplingRate)
 			: _shapeParameter{ data._waveShapeParameter }
-			, _amplitudeSize{ static_cast<unsigned>(data._amplitudeEnvelope._changes.size()) }
+			, _amplitudeSize{ 1 + static_cast<unsigned>(data._amplitudeEnvelope._changes.size()) }
 			, _frequencyOffset{ _amplitudeSize + 1 }
-			, _frequencySize{ static_cast<unsigned>(data._frequencyEnvelope._changes.size()) }
+			, _frequencySize{ 1 + static_cast<unsigned>(data._frequencyEnvelope._changes.size()) }
 			, _asymmetryOffset{ _frequencyOffset + _frequencySize + 1 }
-			, _asymmetrySize{ static_cast<unsigned>(data._asymmetryEnvelope._changes.size()) }
+			, _asymmetrySize{ 1 + static_cast<unsigned>(data._asymmetryEnvelope._changes.size()) }
 			, _oscillationOffset{ _asymmetryOffset + _asymmetrySize + 1 }
-			, _oscillationSize{ static_cast<unsigned>(data._oscillationEnvelope._changes.size()) }
+			, _oscillationSize{ 1 + static_cast<unsigned>(data._oscillationEnvelope._changes.size()) }
 		{
 			_pointBuffer.reserve(size_t{ _oscillationOffset } + _oscillationSize + 1);
-			addPoints<Modulation::Linear>(data._amplitudeEnvelope, samplingRate);
-			addPoints<Modulation::Exponential>(data._frequencyEnvelope, samplingRate);
-			addPoints<Modulation::Linear>(data._asymmetryEnvelope, samplingRate);
-			addPoints<Modulation::Linear>(data._oscillationEnvelope, samplingRate);
-			_soundSamples = std::accumulate(_pointBuffer.begin(), _pointBuffer.begin() + _amplitudeSize, 0u, [](unsigned result, const SampledPoint& point) { return result + point._delaySamples; });
+			addPoints<Transformation::None>(data._amplitudeEnvelope, samplingRate);
+			addPoints<Transformation::Exp2>(data._frequencyEnvelope, samplingRate);
+			addPoints<Transformation::None>(data._asymmetryEnvelope, samplingRate);
+			addPoints<Transformation::None>(data._oscillationEnvelope, samplingRate);
 		}
 
 		std::span<const SampledPoint> amplitudePoints() const noexcept
@@ -57,33 +71,14 @@ namespace aulos
 			return _shapeParameter;
 		}
 
-		constexpr auto soundSamples() const noexcept
-		{
-			return _soundSamples;
-		}
-
 	private:
-		enum class Modulation
-		{
-			Linear,
-			Exponential,
-		};
-
-		template <Modulation>
-		float transform(float) const noexcept;
-
-		template <>
-		constexpr float transform<Modulation::Linear>(float value) const noexcept { return value; }
-
-		template <>
-		float transform<Modulation::Exponential>(float value) const noexcept { return std::pow(2.f, value); }
-
-		template <Modulation modulation>
+		template <Transformation transformation>
 		void addPoints(const aulos::Envelope& envelope, unsigned samplingRate)
 		{
+			_pointBuffer.emplace_back(0u, transform<transformation>(0));
 			for (const auto& change : envelope._changes)
-				_pointBuffer.emplace_back(static_cast<unsigned>(change._duration.count() * samplingRate / 1000), transform<modulation>(change._value));
-			_pointBuffer.emplace_back(std::numeric_limits<unsigned>::max(), envelope._changes.empty() ? transform<modulation>(0) : _pointBuffer.back()._value);
+				_pointBuffer.emplace_back(static_cast<unsigned>(change._duration.count() * samplingRate / 1000), transform<transformation>(change._value));
+			_pointBuffer.emplace_back(std::numeric_limits<unsigned>::max(), _pointBuffer.back()._value);
 		}
 
 	private:
@@ -96,7 +91,6 @@ namespace aulos
 		const unsigned _oscillationOffset;
 		const unsigned _oscillationSize;
 		LimitedVector<SampledPoint> _pointBuffer;
-		unsigned _soundSamples;
 	};
 
 	class WaveState
@@ -204,10 +198,10 @@ namespace aulos
 		void startWave(float frequency, bool fromCurrent) noexcept
 		{
 			assert(frequency > 0);
-			_amplitudeModulator.start(fromCurrent ? _amplitudeModulator.currentValue<LinearShaper>() : 0);
-			_frequencyModulator.start(1); // TODO: Get initial value from the modulator.
-			_asymmetryModulator.start(0);
-			_oscillationModulator.start(0);
+			_amplitudeModulator.start(fromCurrent ? std::optional{ _amplitudeModulator.currentValue<LinearShaper>() } : std::nullopt);
+			_frequencyModulator.start({});
+			_asymmetryModulator.start({});
+			_oscillationModulator.start({});
 			_oscillator.start(frequency * _frequencyModulator.currentBaseValue(), _asymmetryModulator.currentBaseValue(), fromCurrent);
 			_frequency = frequency;
 		}

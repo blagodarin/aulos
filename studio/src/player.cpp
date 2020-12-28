@@ -28,7 +28,7 @@ public:
 private:
 	qint64 readData(char* data, qint64 maxSize) override
 	{
-		const auto maxFrames = maxSize / _renderer->bytesPerFrame();
+		const auto maxFrames = static_cast<size_t>(maxSize) / _renderer->bytesPerFrame();
 		auto renderedFrames = _renderer->render(reinterpret_cast<float*>(data), maxFrames);
 		assert(renderedFrames <= maxFrames);
 		_minRemainingFrames -= std::min(_minRemainingFrames, renderedFrames);
