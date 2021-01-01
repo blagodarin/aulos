@@ -137,7 +137,7 @@ int main(int argc, char** argv)
 		const auto framesRendered = renderer->render(buffer.get(), bufferFrames);
 		if (!framesRendered)
 			break;
-		compositionFrames += compositionFrames;
+		compositionFrames += framesRendered;
 	}
 	renderer->restart();
 
