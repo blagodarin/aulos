@@ -5,7 +5,7 @@
 #pragma once
 
 #include "modulator.hpp"
-#include "oscillator.hpp"
+#include "period.hpp"
 #include "tables.hpp"
 #include "utils/limited_vector.hpp"
 
@@ -97,12 +97,12 @@ namespace aulos
 	{
 	public:
 		WaveState(const WaveData& data, unsigned samplingRate) noexcept
-			: _shapeParameter{ data.shapeParameter() }
+			: _samplingRate{ static_cast<float>(samplingRate) }
+			, _shapeParameter{ data.shapeParameter() }
 			, _amplitudeModulator{ data.amplitudePoints() }
 			, _frequencyModulator{ data.frequencyPoints() }
 			, _asymmetryModulator{ data.asymmetryPoints() }
 			, _oscillationModulator{ data.oscillationPoints() }
-			, _oscillator{ samplingRate }
 		{
 		}
 
@@ -117,13 +117,18 @@ namespace aulos
 				return;
 			}
 			assert(!_restartDelay || samples <= _restartDelay);
-			if (!_amplitudeModulator.stopped())
+			if (!_amplitudeModulator.stopped()) // TODO: Run benchmark with and without this check.
 			{
 				_amplitudeModulator.advance(samples);
 				_frequencyModulator.advance(samples);
 				_asymmetryModulator.advance(samples);
 				_oscillationModulator.advance(samples);
-				_oscillator.advance(static_cast<float>(samples), _frequency * _frequencyModulator.currentValue<LinearShaper>(), _asymmetryModulator.currentValue<LinearShaper>());
+				if (!_period.advance(static_cast<float>(samples)))
+				{
+					const auto nextFrequency = _frequency * _frequencyModulator.currentValue<LinearShaper>();
+					assert(nextFrequency > 0);
+					_period.restart(_samplingRate / nextFrequency, _asymmetryModulator.currentValue<LinearShaper>());
+				}
 			}
 			if (_restartDelay > 0)
 			{
@@ -150,7 +155,7 @@ namespace aulos
 				return _startDelay;
 			const auto maxWaveAdvance = _amplitudeModulator.stopped()
 				? std::numeric_limits<unsigned>::max()
-				: std::min(_amplitudeModulator.maxContinuousAdvance(), _oscillator.maxAdvance());
+				: std::min(_amplitudeModulator.maxContinuousAdvance(), _period.maxAdvance());
 			if (_restartDelay > 0)
 				return std::min(maxWaveAdvance, _restartDelay);
 			return maxWaveAdvance;
@@ -158,8 +163,14 @@ namespace aulos
 
 		ShaperData waveShaperData(float amplitude) const noexcept
 		{
-			const auto orientedAmplitude = amplitude * _oscillator.stageSign();
-			return { orientedAmplitude, -2 * orientedAmplitude * (1 - _oscillationModulator.currentValue<LinearShaper>()), _oscillator.stageLength(), _shapeParameter, _oscillator.stageOffset() };
+			const auto orientedAmplitude = amplitude * _period.currentPartSign();
+			return {
+				orientedAmplitude,
+				-2 * orientedAmplitude * (1 - _oscillationModulator.currentValue<LinearShaper>()),
+				_period.currentPartLength(),
+				_shapeParameter,
+				_period.currentPartOffset()
+			};
 		}
 
 		void start(Note note, unsigned delay = 0) noexcept
@@ -202,17 +213,20 @@ namespace aulos
 			_frequencyModulator.start({});
 			_asymmetryModulator.start({});
 			_oscillationModulator.start({});
-			_oscillator.start(frequency * _frequencyModulator.currentBaseValue(), _asymmetryModulator.currentBaseValue(), fromCurrent);
 			_frequency = frequency;
+			const auto nextFrequency = _frequency * _frequencyModulator.currentBaseValue();
+			assert(nextFrequency > 0);
+			_period.start(_samplingRate / nextFrequency, _asymmetryModulator.currentBaseValue(), fromCurrent);
 		}
 
 	private:
+		const float _samplingRate;
 		const float _shapeParameter;
 		Modulator _amplitudeModulator;
 		Modulator _frequencyModulator;
 		Modulator _asymmetryModulator;
 		Modulator _oscillationModulator;
-		Oscillator _oscillator;
+		WavePeriod _period;
 		float _frequency = 0;
 		unsigned _startDelay = 0;
 		unsigned _restartDelay = 0;

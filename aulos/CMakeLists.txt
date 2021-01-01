@@ -15,7 +15,7 @@ set(_src
 	src/composition.hpp
 	src/data.cpp
 	src/modulator.hpp
-	src/oscillator.hpp
+	src/period.hpp
 	src/renderer.cpp
 	src/shaper.hpp
 	src/tables.hpp
