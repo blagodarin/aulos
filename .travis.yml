@@ -58,23 +58,23 @@ install:
 
 script:
   - if [ "${CONFIG}" = "Debug" ]; then CMAKE_OPTIONS="-DUSE_SANITIZERS=ON"; fi
-  - cmake -H. -B"${HOME}/aulos.build" -G"Ninja" -DCMAKE_BUILD_TYPE=${CONFIG} -DCMAKE_INSTALL_PREFIX="${HOME}/aulos.install" -DCMAKE_RUNTIME_OUTPUT_DIRECTORY="${HOME}/aulos.build/bin" -DWITH_BENCHMARK=ON -DWITH_STUDIO=ON -DWITH_TESTS=ON ${CMAKE_OPTIONS}
-  - pushd "${HOME}/aulos.build"
+  - mkdir "${HOME}/aulos.build" && pushd "${HOME}/aulos.build"
+  - cmake ${TRAVIS_BUILD_DIR} -G Ninja -DCMAKE_BUILD_TYPE=${CONFIG} -DCMAKE_INSTALL_PREFIX="${HOME}/aulos.install" -DWITH_BENCHMARK=ON -DWITH_STUDIO=ON -DWITH_TESTS=ON ${CMAKE_OPTIONS}
   - TERM=dumb cmake --build .
   - ctest --output-on-failure
   - TERM=dumb cmake --build . --target install
   - popd
 
 after_success:
-  - ${HOME}/aulos.build/bin/benchmark ${TRAVIS_BUILD_DIR}/examples/czardas.aulos
-  - ${HOME}/aulos.build/bin/benchmark ${TRAVIS_BUILD_DIR}/examples/frere_jacques.aulos
-  - ${HOME}/aulos.build/bin/benchmark ${TRAVIS_BUILD_DIR}/examples/fur_elise.aulos
-  - ${HOME}/aulos.build/bin/benchmark ${TRAVIS_BUILD_DIR}/examples/grande_valse_brillante.aulos
-  - ${HOME}/aulos.build/bin/benchmark ${TRAVIS_BUILD_DIR}/examples/hungarian_dance.aulos
-  - ${HOME}/aulos.build/bin/benchmark ${TRAVIS_BUILD_DIR}/examples/prelude_in_c_minor.aulos
-  - ${HOME}/aulos.build/bin/benchmark ${TRAVIS_BUILD_DIR}/examples/prelude_in_g_minor.aulos
-  - ${HOME}/aulos.build/bin/benchmark ${TRAVIS_BUILD_DIR}/examples/synth_1.aulos
-  - ${HOME}/aulos.build/bin/benchmark ${TRAVIS_BUILD_DIR}/examples/turkish_march.aulos
+  - ${HOME}/aulos.install/bin/aulos_benchmark ${TRAVIS_BUILD_DIR}/examples/czardas.aulos
+  - ${HOME}/aulos.install/bin/aulos_benchmark ${TRAVIS_BUILD_DIR}/examples/frere_jacques.aulos
+  - ${HOME}/aulos.install/bin/aulos_benchmark ${TRAVIS_BUILD_DIR}/examples/fur_elise.aulos
+  - ${HOME}/aulos.install/bin/aulos_benchmark ${TRAVIS_BUILD_DIR}/examples/grande_valse_brillante.aulos
+  - ${HOME}/aulos.install/bin/aulos_benchmark ${TRAVIS_BUILD_DIR}/examples/hungarian_dance.aulos
+  - ${HOME}/aulos.install/bin/aulos_benchmark ${TRAVIS_BUILD_DIR}/examples/prelude_in_c_minor.aulos
+  - ${HOME}/aulos.install/bin/aulos_benchmark ${TRAVIS_BUILD_DIR}/examples/prelude_in_g_minor.aulos
+  - ${HOME}/aulos.install/bin/aulos_benchmark ${TRAVIS_BUILD_DIR}/examples/synth_1.aulos
+  - ${HOME}/aulos.install/bin/aulos_benchmark ${TRAVIS_BUILD_DIR}/examples/turkish_march.aulos
 
 notifications:
   email: false

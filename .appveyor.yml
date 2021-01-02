@@ -6,19 +6,19 @@ environment:
   matrix:
     - CONFIG: Release
       ARCH: amd64
-      QTDIR: C:\Qt\5.13.2\msvc2017_64
+      GENERATOR: Ninja
       INSTALLER: ON
     - CONFIG: Debug
       ARCH: amd64
-      QTDIR: C:\Qt\5.13.2\msvc2017_64
+      GENERATOR: MSVS
       INSTALLER: OFF
-    - CONFIG: Release
+    - CONFIG: RelWithDebInfo
       ARCH: x86
-      QTDIR: C:\Qt\5.13.2\msvc2017
+      GENERATOR: MSVS
       INSTALLER: OFF
     - CONFIG: Debug
       ARCH: x86
-      QTDIR: C:\Qt\5.13.2\msvc2017
+      GENERATOR: Ninja
       INSTALLER: OFF
 
 cache:
@@ -26,40 +26,37 @@ cache:
   - _build\vc_redist.x64.exe
 
 install:
-  - cmake --version
-  - if "%CONFIG%"=="Release" (set CMAKE_GENERATOR=Ninja) else (set CMAKE_GENERATOR=Visual Studio 16 2019)
-  - if "%CMAKE_GENERATOR%"=="Ninja" call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat" %ARCH%
-  - if "%CMAKE_GENERATOR%"=="Ninja" cinst ninja
-  - if "%CMAKE_GENERATOR%"=="Ninja" set EXTRA_CMAKE_FLAGS=-DCMAKE_BUILD_TYPE=%CONFIG%
-  - if "%CMAKE_GENERATOR%"=="Visual Studio 16 2019" if "%ARCH%"=="x86" (set CMAKE_GENERATOR_PLATFORM=Win32) else (set CMAKE_GENERATOR_PLATFORM=x64)
-  - if "%CMAKE_GENERATOR%"=="Visual Studio 16 2019" set EXTRA_BUILD_FLAGS=-- /nologo "/verbosity:minimal"
-  - if "%CMAKE_GENERATOR%"=="Visual Studio 16 2019" set EXTRA_TEST_FLAGS=--build-config %CONFIG%
-  - set CMAKE_CONFIG_TYPE=%CONFIG%
+  - if "%ARCH%"=="amd64" (set QTDIR=C:\Qt\5.15.2\msvc2019_64) else (set QTDIR=C:\Qt\5.15.2\msvc2019)
+  - if "%GENERATOR%"=="MSVS" (set CMAKE_GENERATOR=Visual Studio 16 2019) else (set CMAKE_GENERATOR=%GENERATOR%)
+  - if "%GENERATOR%"=="Ninja" call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat" %ARCH%
+  - if "%GENERATOR%"=="Ninja" cinst ninja
+  - if "%GENERATOR%"=="Ninja" set EXTRA_CMAKE_FLAGS=-DCMAKE_BUILD_TYPE=%CONFIG%
+  - if "%GENERATOR%"=="MSVS" if "%ARCH%"=="amd64" (set CMAKE_GENERATOR_PLATFORM=x64) else (set CMAKE_GENERATOR_PLATFORM=Win32)
+  - if "%GENERATOR%"=="MSVS" set EXTRA_BUILD_FLAGS=--config %CONFIG% -- /nologo "/verbosity:minimal"
+  - if "%GENERATOR%"=="MSVS" set EXTRA_TEST_FLAGS=--build-config %CONFIG%
 
 build_script:
   - set BUILD_DIR=%APPVEYOR_BUILD_FOLDER%\_build
   - set INSTALL_DIR=%APPVEYOR_BUILD_FOLDER%\_install
-  - if not exist %BUILD_DIR% mkdir %BUILD_DIR%
-  - cd %BUILD_DIR%
-  - cmake %APPVEYOR_BUILD_FOLDER% %EXTRA_CMAKE_FLAGS% -DCMAKE_INSTALL_PREFIX=%INSTALL_DIR% -DCMAKE_PREFIX_PATH=%QTDIR% -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=%BUILD_DIR%\bin -DPUBLIC_BUILD=%APPVEYOR_REPO_TAG% -DWITH_BENCHMARK=ON -DWITH_STUDIO=ON -DWITH_STUDIO_INSTALLER=ON -DWITH_TESTS=ON
-  - cmake --build . %EXTRA_BUILD_FLAGS%
-  - cmake --build . --target install %EXTRA_BUILD_FLAGS%
-  - cmake --build . --target studio_installer %EXTRA_BUILD_FLAGS%
-  - if "%INSTALLER%"=="ON" xcopy AulosStudio-*.exe %APPVEYOR_BUILD_FOLDER%
+  - cmake -S %APPVEYOR_BUILD_FOLDER% -B %BUILD_DIR% %EXTRA_CMAKE_FLAGS% -DCMAKE_INSTALL_PREFIX=%INSTALL_DIR% -DCMAKE_PREFIX_PATH=%QTDIR% -DPUBLIC_BUILD=%APPVEYOR_REPO_TAG% -DWITH_BENCHMARK=ON -DWITH_STUDIO=ON -DWITH_STUDIO_INSTALLER=ON -DWITH_TESTS=ON
+  - cmake --build %BUILD_DIR% %EXTRA_BUILD_FLAGS%
+  - cmake --build %BUILD_DIR% --target install %EXTRA_BUILD_FLAGS%
+  - cmake --build %BUILD_DIR% --target studio_installer %EXTRA_BUILD_FLAGS%
+  - if "%INSTALLER%"=="ON" xcopy %BUILD_DIR%\AulosStudio-*.exe %APPVEYOR_BUILD_FOLDER%
 
 test_script:
+  - cd %BUILD_DIR%
   - ctest --output-on-failure %EXTRA_TEST_FLAGS%
-  - if "%CMAKE_GENERATOR%"=="Ninja" cd %BUILD_DIR%\bin
-  - if "%CMAKE_GENERATOR%"=="Visual Studio 16 2019" cd %BUILD_DIR%\bin\%CONFIG%
-  - benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\czardas.aulos
-  - benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\frere_jacques.aulos
-  - benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\fur_elise.aulos
-  - benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\grande_valse_brillante.aulos
-  - benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\hungarian_dance.aulos
-  - benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\prelude_in_c_minor.aulos
-  - benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\prelude_in_g_minor.aulos
-  - benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\synth_1.aulos
-  - benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\turkish_march.aulos
+  - cd %INSTALL_DIR%\bin
+  - aulos_benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\czardas.aulos
+  - aulos_benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\frere_jacques.aulos
+  - aulos_benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\fur_elise.aulos
+  - aulos_benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\grande_valse_brillante.aulos
+  - aulos_benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\hungarian_dance.aulos
+  - aulos_benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\prelude_in_c_minor.aulos
+  - aulos_benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\prelude_in_g_minor.aulos
+  - aulos_benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\synth_1.aulos
+  - aulos_benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\turkish_march.aulos
 
 artifacts:
   - path: AulosStudio-*.exe

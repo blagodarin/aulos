@@ -10,3 +10,6 @@ source_group("src" FILES ${_src})
 add_executable(benchmark ${_src})
 target_compile_options(benchmark PRIVATE ${MAX_WARNINGS})
 target_link_libraries(benchmark PRIVATE aulos)
+set_property(TARGET benchmark PROPERTY OUTPUT_NAME aulos_benchmark)
+
+install_target(benchmark)

@@ -72,10 +72,6 @@ set(_src_sequence
 source_group("src\\sequence" FILES ${_src_sequence})
 
 add_executable(studio WIN32 ${_res} ${_src} ${_src_composition} ${_src_sequence})
-if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-	# MSVC 16.6 has removed std::result_of which is required by Qt 5.12.
-	target_compile_definitions(studio PRIVATE _HAS_DEPRECATED_RESULT_OF)
-endif()
 target_compile_options(studio PRIVATE ${STUDIO_WARNINGS})
 target_include_directories(studio PRIVATE ${PROJECT_BINARY_DIR})
 target_link_libraries(studio PRIVATE aulos Qt5::Multimedia Qt5::Widgets)
@@ -84,7 +80,6 @@ if(WIN32)
 else()
 	set_property(TARGET studio PROPERTY OUTPUT_NAME aulos_studio)
 endif()
-fix_target_options(studio)
 
 install_target(studio)
 
