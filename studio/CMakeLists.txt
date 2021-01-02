@@ -2,19 +2,13 @@
 # Copyright (C) Sergei Blagodarin.
 # SPDX-License-Identifier: Apache-2.0
 
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-set(CMAKE_AUTOUIC ON)
-
-set(_res
+source_group("qt" REGULAR_EXPRESSION "qrc_.+\\.cpp\\.rule")
+source_group("res" REGULAR_EXPRESSION "/res/")
+source_group("src" REGULAR_EXPRESSION "/src/")
+source_group("src\\composition" REGULAR_EXPRESSION "/src/composition/")
+source_group("src\\sequence" REGULAR_EXPRESSION "/src/sequence/")
+add_executable(studio WIN32
 	res/studio.qrc
-	)
-if(WIN32)
-	list(APPEND _res res/studio.rc)
-endif()
-source_group("res" FILES ${_res})
-
-set(_src
 	src/button_item.cpp
 	src/button_item.hpp
 	src/elusive_item.cpp
@@ -30,10 +24,6 @@ set(_src
 	src/theme.hpp
 	src/voice_widget.cpp
 	src/voice_widget.hpp
-	)
-source_group("src" FILES ${_src})
-
-set(_src_composition
 	src/composition/add_voice_item.cpp
 	src/composition/add_voice_item.hpp
 	src/composition/composition_scene.cpp
@@ -54,10 +44,6 @@ set(_src_composition
 	src/composition/voice_editor.hpp
 	src/composition/voice_item.cpp
 	src/composition/voice_item.hpp
-	)
-source_group("src\\composition" FILES ${_src_composition})
-
-set(_src_sequence
 	src/sequence/key_item.cpp
 	src/sequence/key_item.hpp
 	src/sequence/pianoroll_item.cpp
@@ -69,20 +55,15 @@ set(_src_sequence
 	src/sequence/sound_item.cpp
 	src/sequence/sound_item.hpp
 	)
-source_group("src\\sequence" FILES ${_src_sequence})
-
-add_executable(studio WIN32 ${_res} ${_src} ${_src_composition} ${_src_sequence})
 target_compile_options(studio PRIVATE ${STUDIO_WARNINGS})
 target_include_directories(studio PRIVATE ${PROJECT_BINARY_DIR})
 target_link_libraries(studio PRIVATE aulos Qt5::Multimedia Qt5::Widgets)
+set_target_properties(studio PROPERTIES AUTOMOC ON AUTORCC ON AUTOUIC ON)
 if(WIN32)
+	target_sources(studio PRIVATE res/studio.rc)
 	set_property(TARGET studio PROPERTY OUTPUT_NAME AulosStudio)
 else()
 	set_property(TARGET studio PROPERTY OUTPUT_NAME aulos_studio)
 endif()
 
 install_target(studio)
-
-if(WITH_STUDIO_INSTALLER)
-	add_subdirectory(installer)
-endif()
