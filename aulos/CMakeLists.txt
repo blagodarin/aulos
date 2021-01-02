@@ -34,9 +34,7 @@ source_group("src\\utils" FILES ${_src_utils})
 add_library(aulos STATIC ${_include} ${_src} ${_src_utils})
 target_compile_options(aulos PRIVATE ${MAX_WARNINGS})
 target_include_directories(aulos PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+fix_target_options(aulos)
 
 install(FILES ${_include} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aulos)
-install(TARGETS aulos EXPORT AulosTargets
-	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install_target(aulos EXPORT AulosTargets)

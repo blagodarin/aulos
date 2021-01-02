@@ -84,8 +84,9 @@ if(WIN32)
 else()
 	set_property(TARGET studio PROPERTY OUTPUT_NAME aulos_studio)
 endif()
+fix_target_options(studio)
 
-install(TARGETS studio RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install_target(studio)
 
 if(WITH_STUDIO_INSTALLER)
 	add_subdirectory(installer)

@@ -100,6 +100,54 @@ function(download_file _url)
 	endif()
 endfunction()
 
+function(fix_target_options _target)
+	if(NOT TARGET ${_target})
+		message(SEND_ERROR "'${_target}' is not a target")
+		return()
+	endif()
+	get_target_property(target_debug_postfix ${_target} DEBUG_POSTFIX)
+	get_target_property(target_output_name ${_target} OUTPUT_NAME)
+	get_target_property(target_type ${_target} TYPE)
+	if(NOT target_debug_postfix)
+		set(target_debug_postfix "")
+	endif()
+	if(NOT target_output_name)
+		set(target_output_name ${_target})
+	endif()
+	set_target_properties(${_target} PROPERTIES
+		PDB_NAME "${target_output_name}"
+		PDB_NAME_DEBUG "${target_output_name}${target_debug_postfix}"
+		)
+	if(target_type STREQUAL STATIC_LIBRARY)
+		set_target_properties(${_target} PROPERTIES
+			COMPILE_PDB_NAME "${target_output_name}"
+			COMPILE_PDB_NAME_DEBUG "${target_output_name}${target_debug_postfix}"
+			)
+	endif()
+endfunction()
+
+function(install_target _target)
+	cmake_parse_arguments(arg "" "EXPORT" "" ${ARGN})
+	if(arg_EXPORT)
+		set(keyword_EXPORT "EXPORT")
+	else()
+		set(keyword_EXPORT "")
+	endif()
+	install(TARGETS ${_target} ${keyword_EXPORT} ${arg_EXPORT}
+		ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+		LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+		RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+		)
+	if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+		get_target_property(target_type ${_target} TYPE)
+		if(target_type STREQUAL STATIC_LIBRARY)
+			install(FILES "$<TARGET_FILE_DIR:${_target}>/$<$<NOT:$<CONFIG:Debug>>:$<TARGET_PROPERTY:${_target},COMPILE_PDB_NAME>>$<$<CONFIG:Debug>:$<TARGET_PROPERTY:${_target},COMPILE_PDB_NAME_DEBUG>>.pdb" DESTINATION ${CMAKE_INSTALL_LIBDIR} OPTIONAL)
+		else()
+			install(FILES "$<TARGET_PDB_FILE:${_target}>" DESTINATION ${CMAKE_INSTALL_BINDIR} OPTIONAL)
+		endif()
+	endif()
+endfunction()
+
 add_subdirectory(aulos)
 
 if(WITH_TESTS)
