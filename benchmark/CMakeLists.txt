@@ -7,11 +7,10 @@ add_executable(benchmark
 	src/main.cpp
 	)
 target_compile_options(benchmark PRIVATE ${MAX_WARNINGS})
-target_link_libraries(benchmark PRIVATE aulos_static)
+target_link_libraries(benchmark PRIVATE aulos_standalone)
 set_target_properties(benchmark PROPERTIES
 	MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
 	OUTPUT_NAME aulos_benchmark
-	POSITION_INDEPENDENT_CODE ON
+	POSITION_INDEPENDENT_CODE OFF
 	)
-
 install_target(benchmark)

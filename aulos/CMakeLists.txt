@@ -34,15 +34,17 @@ source_group("src\\utils" REGULAR_EXPRESSION "/src/utils/")
 add_library(aulos STATIC ${HEADERS} ${SOURCES})
 target_compile_options(aulos PRIVATE ${MAX_WARNINGS})
 target_include_directories(aulos PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+set_property(TARGET aulos PROPERTY POSITION_INDEPENDENT_CODE ON)
+install_target(aulos EXPORT AulosTargets)
 
-add_library(aulos_static STATIC ${HEADERS} ${SOURCES})
-target_compile_options(aulos_static PRIVATE ${MAX_WARNINGS})
-target_include_directories(aulos_static PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-set_target_properties(aulos_static PROPERTIES
-	MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
-	POSITION_INDEPENDENT_CODE ON
-	)
+if(WITH_STANDALONE OR WITH_BENCHMARK)
+	add_library(aulos_standalone STATIC ${HEADERS} ${SOURCES})
+	target_compile_options(aulos_standalone PRIVATE ${MAX_WARNINGS})
+	target_include_directories(aulos_standalone PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+	set_target_properties(aulos_standalone PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" POSITION_INDEPENDENT_CODE OFF)
+	if(WITH_STANDALONE)
+		install_target(aulos_standalone EXPORT AulosTargets)
+	endif()
+endif()
 
 install(FILES ${HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aulos)
-install_target(aulos EXPORT AulosTargets)
-install_target(aulos_static EXPORT AulosTargets)

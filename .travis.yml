@@ -59,7 +59,7 @@ install:
 script:
   - if [ "${CONFIG}" = "Debug" ]; then CMAKE_OPTIONS="-DUSE_SANITIZERS=ON"; fi
   - mkdir "${HOME}/aulos.build" && pushd "${HOME}/aulos.build"
-  - cmake ${TRAVIS_BUILD_DIR} -G Ninja -DCMAKE_BUILD_TYPE=${CONFIG} -DCMAKE_INSTALL_PREFIX="${HOME}/aulos.install" -DWITH_BENCHMARK=ON -DWITH_STUDIO=ON -DWITH_TESTS=ON ${CMAKE_OPTIONS}
+  - cmake ${TRAVIS_BUILD_DIR} -G Ninja -DCMAKE_BUILD_TYPE=${CONFIG} -DCMAKE_INSTALL_PREFIX="${HOME}/aulos.install" -DWITH_BENCHMARK=ON -DWITH_STANDALONE=ON -DWITH_STUDIO=ON -DWITH_TESTS=ON ${CMAKE_OPTIONS}
   - TERM=dumb cmake --build .
   - ctest --output-on-failure
   - TERM=dumb cmake --build . --target install
