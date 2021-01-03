@@ -4,8 +4,7 @@
 
 #pragma once
 
-#include <cassert>
-#include <cmath>
+#include "shaper.hpp"
 
 namespace aulos
 {
@@ -34,9 +33,9 @@ namespace aulos
 				return true;
 			if (_nextLength == 0)
 				return false;
-			assert(_currentSign == 1);
+			assert(_currentAmplitude > 0);
 			_currentLength = _nextLength;
-			_currentSign = -1;
+			_currentAmplitude = -_currentAmplitude;
 			_nextLength = 0;
 			_currentRemaining += _currentLength;
 			return _currentRemaining > 0;
@@ -47,20 +46,21 @@ namespace aulos
 			return static_cast<unsigned>(std::ceil(_currentRemaining));
 		}
 
-		constexpr void restart(float periodLength, float asymmetry) noexcept
+		void restart(float periodLength, float asymmetry) noexcept
 		{
 			assert(periodLength > 0);
 			assert(asymmetry >= 0 && asymmetry <= 1);
 			assert(_currentRemaining > -1 && _currentRemaining <= 0 && _nextLength == 0);
 			const auto firstPartLength = periodLength * (1 + asymmetry) / 2;
 			const auto secondPartLength = periodLength - firstPartLength;
+			const auto amplitude = std::abs(_currentAmplitude);
 			for (;;)
 			{
 				_currentRemaining += firstPartLength;
 				if (_currentRemaining > 0)
 				{
 					_currentLength = firstPartLength;
-					_currentSign = 1;
+					_currentAmplitude = amplitude;
 					_nextLength = secondPartLength;
 					break;
 				}
@@ -68,38 +68,36 @@ namespace aulos
 				if (_currentRemaining > 0)
 				{
 					_currentLength = secondPartLength;
-					_currentSign = -1;
+					_currentAmplitude = -amplitude;
 					_nextLength = 0;
 					break;
 				}
 			}
 		}
 
-		constexpr auto currentPartLength() const noexcept
+		constexpr ShaperData currentShaperData(float oscillation, float shapeParameter) const noexcept
 		{
-			return _currentLength;
+			assert(oscillation >= 0 && oscillation <= 1);
+			return {
+				_currentAmplitude,
+				-2 * _currentAmplitude * (1 - oscillation),
+				_currentLength,
+				shapeParameter,
+				_currentLength - _currentRemaining,
+			};
 		}
 
-		constexpr auto currentPartOffset() const noexcept
-		{
-			return _currentLength - _currentRemaining;
-		}
-
-		constexpr auto currentPartSign() const noexcept
-		{
-			return _currentSign;
-		}
-
-		constexpr void start(float periodLength, float asymmetry, bool fromCurrent) noexcept
+		constexpr void start(float periodLength, float amplitude, float asymmetry, bool fromCurrent) noexcept
 		{
 			assert(periodLength > 0);
+			assert(amplitude > 0);
 			assert(asymmetry >= 0 && asymmetry <= 1);
 			const auto firstPartLength = periodLength * (1 + asymmetry) / 2;
 			const auto secondPartLength = periodLength - firstPartLength;
 			if (!fromCurrent)
 			{
 				_currentLength = firstPartLength;
-				_currentSign = 1;
+				_currentAmplitude = amplitude;
 				_nextLength = secondPartLength;
 				_currentRemaining = _currentLength;
 			}
@@ -107,15 +105,17 @@ namespace aulos
 			{
 				assert(_currentRemaining > 0);
 				const auto remainingRatio = _currentRemaining / _currentLength;
-				if (_currentSign > 0)
+				if (_currentAmplitude > 0)
 				{
 					_currentLength = firstPartLength;
+					_currentAmplitude = amplitude;
 					_nextLength = secondPartLength;
 				}
 				else
 				{
 					assert(_nextLength == 0);
 					_currentLength = secondPartLength;
+					_currentAmplitude = -amplitude;
 				}
 				_currentRemaining = _currentLength * remainingRatio;
 			}
@@ -123,7 +123,7 @@ namespace aulos
 
 	private:
 		float _currentLength = 0;
-		float _currentSign = 1;
+		float _currentAmplitude = 1;
 		float _nextLength = 0;
 		float _currentRemaining = 0;
 	};

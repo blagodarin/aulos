@@ -7,6 +7,7 @@
 #include "wave.hpp"
 
 #include <algorithm>
+#include <cassert>
 
 namespace aulos
 {
@@ -17,11 +18,8 @@ namespace aulos
 		virtual ~Voice() noexcept = default;
 
 		virtual unsigned render(float* buffer, unsigned maxFrames) noexcept = 0;
-		virtual void start(Note, float amplitude, int delay) noexcept = 0;
+		virtual void start(float frequency, float amplitude, int delay) noexcept = 0;
 		virtual void stop() noexcept = 0;
-
-	protected:
-		float _baseAmplitude = 0.f;
 	};
 
 	template <typename Shaper>
@@ -45,7 +43,7 @@ namespace aulos
 					break;
 				auto strideFrames = std::min(remainingFrames, maxAdvance);
 				remainingFrames -= strideFrames;
-				Shaper waveShaper{ _wave.waveShaperData(_baseAmplitude) };
+				Shaper waveShaper{ _wave.waveShaperData() };
 				LinearShaper amplitudeShaper{ _wave.amplitudeShaperData() };
 				_wave.advance(strideFrames);
 				do
@@ -55,10 +53,9 @@ namespace aulos
 			return maxFrames - remainingFrames;
 		}
 
-		void start(Note note, float amplitude, int) noexcept override
+		void start(float frequency, float amplitude, int) noexcept override
 		{
-			_baseAmplitude = amplitude;
-			_wave.start(note);
+			_wave.start(frequency, amplitude, 0);
 		}
 
 		void stop() noexcept override
@@ -92,10 +89,10 @@ namespace aulos
 					break;
 				auto strideFrames = std::min(remainingFrames, maxAdvance);
 				remainingFrames -= strideFrames;
-				Shaper leftWaveShaper{ _leftWave.waveShaperData(_baseAmplitude) };
+				Shaper leftWaveShaper{ _leftWave.waveShaperData() };
 				LinearShaper leftAmplitudeShaper{ _leftWave.amplitudeShaperData() };
 				_leftWave.advance(strideFrames);
-				Shaper rightWaveShaper{ _rightWave.waveShaperData(_baseAmplitude) };
+				Shaper rightWaveShaper{ _rightWave.waveShaperData() };
 				LinearShaper rightAmplitudeShaper{ _rightWave.amplitudeShaperData() };
 				_rightWave.advance(strideFrames);
 				do
@@ -107,11 +104,10 @@ namespace aulos
 			return maxFrames - remainingFrames;
 		}
 
-		void start(Note note, float amplitude, int delay) noexcept override
+		void start(float frequency, float amplitude, int delay) noexcept override
 		{
-			_baseAmplitude = amplitude;
-			_leftWave.start(note, static_cast<unsigned>(std::max(delay, 0)));
-			_rightWave.start(note, static_cast<unsigned>(std::max(-delay, 0)));
+			_leftWave.start(frequency, amplitude, static_cast<unsigned>(std::max(delay, 0)));
+			_rightWave.start(frequency, amplitude, static_cast<unsigned>(std::max(-delay, 0)));
 		}
 
 		void stop() noexcept override

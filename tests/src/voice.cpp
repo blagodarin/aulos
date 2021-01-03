@@ -11,7 +11,8 @@ using namespace std::chrono_literals;
 namespace
 {
 	constexpr auto kTestSamplingRate = 44'000u;
-	constexpr auto kTestNote = aulos::Note::A4; // A4 note frequency is exactly 440 Hz, so the period should be exactly 100 frames.
+	constexpr auto kTestNoteFrequency = 440;
+	constexpr auto kPeriodSamples = kTestSamplingRate / kTestNoteFrequency;
 
 	template <typename Shaper>
 	struct MonoTester
@@ -23,7 +24,7 @@ namespace
 			: _waveData{ data, kTestSamplingRate }
 			, _voice{ _waveData, kTestSamplingRate }
 		{
-			_voice.start(kTestNote, amplitude, 0);
+			_voice.start(kTestNoteFrequency, amplitude, 0);
 		}
 
 		auto render()
@@ -44,7 +45,7 @@ namespace
 			: _waveData{ data, kTestSamplingRate }
 			, _voice{ _waveData, kTestSamplingRate }
 		{
-			_voice.start(kTestNote, amplitude, 0);
+			_voice.start(kTestNoteFrequency, amplitude, 0);
 		}
 
 		auto render()
@@ -67,7 +68,7 @@ TEST_CASE("wave_sawtooth_mono")
 	MonoTester<aulos::LinearShaper> tester{ data, amplitude };
 	auto sample = tester.render();
 	CHECK(sample == amplitude);
-	for (int i = 1; i < 100; ++i)
+	for (unsigned i = 1; i < kPeriodSamples; ++i)
 	{
 		const auto nextSample = tester.render();
 		CHECK(nextSample > -amplitude);
@@ -89,7 +90,7 @@ TEST_CASE("wave_sawtooth_stereo")
 	auto frame = tester.render();
 	CHECK(frame.first == amplitude);
 	CHECK(frame.second == amplitude);
-	for (int i = 1; i < 100; ++i)
+	for (unsigned i = 1; i < kPeriodSamples; ++i)
 	{
 		const auto nextFrame = tester.render();
 		CHECK(nextFrame.first > -amplitude);
@@ -112,9 +113,9 @@ TEST_CASE("wave_square_mono")
 
 	constexpr auto amplitude = .2f;
 	MonoTester<aulos::LinearShaper> tester{ data, amplitude };
-	for (int i = 0; i < 50; ++i)
+	for (unsigned i = 0; i < kPeriodSamples / 2; ++i)
 		CHECK(tester.render() == amplitude);
-	for (int i = 0; i < 50; ++i)
+	for (unsigned i = 0; i < kPeriodSamples / 2; ++i)
 		CHECK(tester.render() == -amplitude);
 	CHECK(tester.render() == amplitude);
 }
@@ -129,7 +130,7 @@ TEST_CASE("wave_triangle_mono")
 	MonoTester<aulos::LinearShaper> tester{ data, amplitude };
 	auto sample = tester.render();
 	CHECK(sample == amplitude);
-	for (int i = 1; i < 50; ++i)
+	for (unsigned i = 1; i < kPeriodSamples / 2; ++i)
 	{
 		const auto nextSample = tester.render();
 		CHECK(nextSample > -amplitude);
@@ -138,7 +139,7 @@ TEST_CASE("wave_triangle_mono")
 	}
 	sample = tester.render();
 	CHECK(sample == -amplitude);
-	for (int i = 1; i < 25; ++i)
+	for (unsigned i = 1; i < kPeriodSamples / 4; ++i)
 	{
 		const auto nextSample = tester.render();
 		CHECK(nextSample < 0.f);
@@ -158,7 +159,7 @@ TEST_CASE("wave_triangle_asymmetric_mono")
 	MonoTester<aulos::LinearShaper> tester{ data, amplitude };
 	auto sample = tester.render();
 	CHECK(sample == amplitude);
-	for (int i = 1; i < 75; ++i)
+	for (unsigned i = 1; i < kPeriodSamples * 3 / 4; ++i)
 	{
 		const auto nextSample = tester.render();
 		CHECK(nextSample > -amplitude);
@@ -167,7 +168,7 @@ TEST_CASE("wave_triangle_asymmetric_mono")
 	}
 	sample = tester.render();
 	CHECK(sample == -amplitude);
-	for (int i = 1; i < 25; ++i)
+	for (unsigned i = 1; i < kPeriodSamples / 4; ++i)
 	{
 		const auto nextSample = tester.render();
 		CHECK(nextSample < amplitude);

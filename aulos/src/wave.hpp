@@ -4,9 +4,9 @@
 
 #pragma once
 
+#include <aulos/common.hpp>
 #include "modulator.hpp"
 #include "period.hpp"
-#include "tables.hpp"
 #include "utils/limited_vector.hpp"
 
 namespace aulos
@@ -135,7 +135,7 @@ namespace aulos
 				assert(!_startDelay);
 				_restartDelay -= samples;
 				if (!_restartDelay)
-					startWave(_restartFrequency, true);
+					startWave(_restartFrequency, _restartAmplitude, true);
 			}
 		}
 
@@ -161,37 +161,29 @@ namespace aulos
 			return maxWaveAdvance;
 		}
 
-		ShaperData waveShaperData(float amplitude) const noexcept
+		ShaperData waveShaperData() const noexcept
 		{
-			const auto orientedAmplitude = amplitude * _period.currentPartSign();
-			return {
-				orientedAmplitude,
-				-2 * orientedAmplitude * (1 - _oscillationModulator.currentValue<LinearShaper>()),
-				_period.currentPartLength(),
-				_shapeParameter,
-				_period.currentPartOffset()
-			};
+			return _period.currentShaperData(_oscillationModulator.currentValue<LinearShaper>(), _shapeParameter);
 		}
 
-		void start(Note note, unsigned delay = 0) noexcept
+		void start(float frequency, float amplitude, unsigned delay) noexcept
 		{
-			const auto frequency = kNoteFrequencies[note];
-			assert(frequency > 0);
 			assert(!_restartDelay);
 			if (_amplitudeModulator.stopped() || _startDelay > 0)
 			{
-				startWave(frequency, false);
+				startWave(frequency, amplitude, false);
 				_startDelay = delay;
 			}
 			else if (!delay)
 			{
-				startWave(frequency, true);
+				startWave(frequency, amplitude, true);
 				_startDelay = delay;
 			}
 			else
 			{
 				_restartDelay = delay;
 				_restartFrequency = frequency;
+				_restartAmplitude = amplitude;
 			}
 		}
 
@@ -206,7 +198,7 @@ namespace aulos
 		}
 
 	private:
-		void startWave(float frequency, bool fromCurrent) noexcept
+		void startWave(float frequency, float amplitude, bool fromCurrent) noexcept
 		{
 			assert(frequency > 0);
 			_amplitudeModulator.start(fromCurrent ? std::optional{ _amplitudeModulator.currentValue<LinearShaper>() } : std::nullopt);
@@ -216,7 +208,7 @@ namespace aulos
 			_frequency = frequency;
 			const auto nextFrequency = _frequency * _frequencyModulator.currentBaseValue();
 			assert(nextFrequency > 0);
-			_period.start(_samplingRate / nextFrequency, _asymmetryModulator.currentBaseValue(), fromCurrent);
+			_period.start(_samplingRate / nextFrequency, amplitude, _asymmetryModulator.currentBaseValue(), fromCurrent);
 		}
 
 	private:
@@ -231,5 +223,6 @@ namespace aulos
 		unsigned _startDelay = 0;
 		unsigned _restartDelay = 0;
 		float _restartFrequency = 0;
+		float _restartAmplitude = 0;
 	};
 }

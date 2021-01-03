@@ -7,6 +7,7 @@
 #include <aulos/format.hpp>
 #include "acoustics.hpp"
 #include "composition.hpp"
+#include "tables.hpp"
 #include "utils/limited_vector.hpp"
 #include "utils/static_vector.hpp"
 #include "voice.hpp"
@@ -126,7 +127,7 @@ namespace
 							}
 							break;
 						}
-						i->_voice->start(i->_note, _gain, _acoustics.stereoDelay(i->_note));
+						i->_voice->start(aulos::kNoteFrequencies[i->_note], _gain, _acoustics.stereoDelay(i->_note));
 					});
 					_nextSound = chordEnd;
 					if (_nextSound != _sounds.cend())
