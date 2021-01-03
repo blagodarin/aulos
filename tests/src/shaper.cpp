@@ -5,6 +5,7 @@
 #include <aulos/src/shaper.hpp> // Included first to check header consistency.
 
 #include <aulos/composition.hpp>
+#include <aulos/renderer.hpp>
 
 #include <aulos/src/tables.hpp>
 

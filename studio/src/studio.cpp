@@ -12,7 +12,7 @@
 #include "voice_widget.hpp"
 
 #include <aulos/composition.hpp>
-#include <aulos/data.hpp>
+#include <aulos/renderer.hpp>
 
 #include <cassert>
 #include <stdexcept>
@@ -46,7 +46,7 @@ namespace
 	{
 		const auto maxAmplitude = [](const aulos::Composition& composition) {
 			// TODO: Implement gain calculation with looping.
-			const auto renderer = aulos::Renderer::create(composition, aulos::Renderer::kMaxSamplingRate, aulos::ChannelLayout::Mono, false);
+			const auto renderer = aulos::Renderer::create(composition, { aulos::Renderer::kMaxSamplingRate, aulos::ChannelLayout::Mono }, false);
 			assert(renderer);
 			float minimum = 0.f;
 			float maximum = 0.f;
@@ -217,15 +217,14 @@ Studio::Studio()
 			return;
 		assert(_mode == Mode::Editing);
 		_autoRepeatButton->setChecked(false);
-		const auto samplingRate = _samplingRateCombo->currentData().toUInt();
-		const auto channelLayout = static_cast<aulos::ChannelLayout>(_channelLayoutCombo->currentData().toInt());
-		auto renderer = aulos::Renderer::create(*composition, samplingRate, channelLayout, _loopPlaybackCheck->isChecked());
+		const auto format = selectedFormat();
+		auto renderer = aulos::Renderer::create(*composition, format, _loopPlaybackCheck->isChecked());
 		assert(renderer);
-		const auto skippedFrames = renderer->skipFrames(_compositionWidget->startOffset() * samplingRate / _composition->_speed);
-		_playbackStartUs = skippedFrames * 1'000'000 / samplingRate;
+		const auto skippedFrames = renderer->skipFrames(_compositionWidget->startOffset() * format.samplingRate() / _composition->_speed);
+		_playbackStartUs = skippedFrames * 1'000'000 / format.samplingRate();
 		const auto loopRange = renderer->loopRange();
-		_loopBeginUs = loopRange.first * 1'000'000 / samplingRate;
-		_loopEndUs = loopRange.second * 1'000'000 / samplingRate;
+		_loopBeginUs = loopRange.first * 1'000'000 / format.samplingRate();
+		_loopEndUs = loopRange.second * 1'000'000 / format.samplingRate();
 		_player->stop();
 		_mode = Mode::Playing;
 		_player->start(std::move(renderer), 0);
@@ -442,17 +441,9 @@ void Studio::exportComposition()
 	if (!file.open(QIODevice::WriteOnly))
 		return;
 
-	const auto samplingRate = _samplingRateCombo->currentData().toUInt();
-	const auto channelLayout = static_cast<aulos::ChannelLayout>(_channelLayoutCombo->currentData().toInt());
-	const auto renderer = aulos::Renderer::create(*composition, samplingRate, channelLayout, false);
+	const auto format = selectedFormat();
+	const auto renderer = aulos::Renderer::create(*composition, format, false);
 	assert(renderer);
-
-	unsigned channels = 0;
-	switch (channelLayout)
-	{
-	case aulos::ChannelLayout::Mono: channels = 1; break;
-	case aulos::ChannelLayout::Stereo: channels = 2; break;
-	}
 
 	constexpr size_t chunkHeaderSize = 8;
 	constexpr size_t fmtChunkSize = 16;
@@ -466,10 +457,10 @@ void Studio::exportComposition()
 	file.write("fmt ");
 	::writeValue<uint32_t>(file, fmtChunkSize);
 	::writeValue<uint16_t>(file, 3); // Data format: IEEE float PCM samples.
-	::writeValue<uint16_t>(file, channels);
-	::writeValue<uint32_t>(file, samplingRate);
-	::writeValue<uint32_t>(file, samplingRate * channels * sizeof(float));
-	::writeValue<uint16_t>(file, static_cast<uint16_t>(channels * sizeof(float)));
+	::writeValue<uint16_t>(file, format.channelCount());
+	::writeValue<uint32_t>(file, format.samplingRate());
+	::writeValue<uint32_t>(file, format.samplingRate() * format.bytesPerFrame());
+	::writeValue<uint16_t>(file, format.bytesPerFrame());
 	::writeValue<uint16_t>(file, sizeof(float) * 8);
 	file.write("data");
 	const auto dataSizePos = file.pos();
@@ -479,7 +470,7 @@ void Studio::exportComposition()
 	size_t dataSize = 0;
 	for (std::array<char, kBufferSize> buffer;;)
 	{
-		auto renderedBytes = renderer->render(reinterpret_cast<float*>(buffer.data()), buffer.size() / renderer->bytesPerFrame()) * renderer->bytesPerFrame();
+		auto renderedBytes = renderer->render(reinterpret_cast<float*>(buffer.data()), buffer.size() / format.bytesPerFrame()) * format.bytesPerFrame();
 		if (!renderedBytes)
 			break;
 		file.write(buffer.data(), static_cast<qint64>(renderedBytes));
@@ -534,9 +525,8 @@ bool Studio::openComposition(const QString& path)
 
 void Studio::playNote(aulos::Note note)
 {
-	const auto samplingRate = _samplingRateCombo->currentData().toUInt();
-	const auto channelLayout = static_cast<aulos::ChannelLayout>(_channelLayoutCombo->currentData().toInt());
-	_player->start(aulos::Renderer::create(*aulos::CompositionData{ _voiceWidget->voice(), note }.pack(), samplingRate, channelLayout), samplingRate);
+	const auto format = selectedFormat();
+	_player->start(aulos::Renderer::create(*aulos::CompositionData{ _voiceWidget->voice(), note }.pack(), format), format.samplingRate());
 }
 
 bool Studio::saveComposition(const QString& path) const
@@ -605,6 +595,11 @@ void Studio::saveRecentFiles() const
 	for (const auto action : _recentFilesActions)
 		recentFiles << action->text();
 	::saveRecentFileList(recentFiles);
+}
+
+aulos::AudioFormat Studio::selectedFormat() const
+{
+	return { _samplingRateCombo->currentData().toUInt(), static_cast<aulos::ChannelLayout>(_channelLayoutCombo->currentData().toInt()) };
 }
 
 void Studio::updateStatus()

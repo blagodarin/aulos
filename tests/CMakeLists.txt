@@ -4,6 +4,7 @@
 
 source_group("src" REGULAR_EXPRESSION "/src/")
 add_executable(tests
+	src/format.cpp
 	src/loop.cpp
 	src/main.cpp
 	src/shaper.cpp

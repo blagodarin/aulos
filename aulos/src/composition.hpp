@@ -5,8 +5,8 @@
 #pragma once
 
 #include <aulos/composition.hpp>
-#include <aulos/common.hpp>
 
+#include <aulos/common.hpp>
 #include "utils/fixed.hpp"
 
 #include <string>

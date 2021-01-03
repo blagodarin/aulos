@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <aulos/data.hpp>
+#include <aulos/format.hpp>
 
 #include <memory>
 #include <optional>
@@ -40,6 +41,7 @@ private:
 	bool saveComposition(const QString& path) const;
 	bool saveCompositionAs();
 	void saveRecentFiles() const;
+	aulos::AudioFormat selectedFormat() const;
 	void setRecentFile(const QString& path);
 	void updateStatus();
 

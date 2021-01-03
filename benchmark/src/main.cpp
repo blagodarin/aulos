@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <aulos/composition.hpp>
+#include <aulos/format.hpp>
+#include <aulos/renderer.hpp>
 
 #include <array>
 #include <cassert>
@@ -122,14 +124,14 @@ int main(int argc, char** argv)
 		[&composition, source = data.get()] { composition = aulos::Composition::create(source); }, // Clang 9 is unable to capture 'data' by reference.
 		[&composition] { composition.reset(); });
 
-	static constexpr unsigned samplingRate = 48'000;
+	static constexpr aulos::AudioFormat format{ 48'000, aulos::ChannelLayout::Stereo };
 	std::unique_ptr<aulos::Renderer> renderer;
 	const auto preparation = ::measure<10'000>(
-		[&renderer, &composition] { renderer = aulos::Renderer::create(*composition, samplingRate, aulos::ChannelLayout::Stereo); },
+		[&renderer, &composition] { renderer = aulos::Renderer::create(*composition, format); },
 		[&renderer] { renderer.reset(); });
 
-	static constexpr size_t bufferFrames = samplingRate;
-	const auto buffer = std::make_unique<float[]>(bufferFrames * 2);
+	static constexpr size_t bufferFrames = format.samplingRate();
+	const auto buffer = std::make_unique<float[]>(bufferFrames * format.bytesPerFrame());
 
 	size_t compositionFrames = 0;
 	for (;;)
@@ -141,7 +143,7 @@ int main(int argc, char** argv)
 	}
 	renderer->restart();
 
-	const auto compositionDuration = static_cast<double>(compositionFrames) * double{ Measurement::Duration::period::den } / samplingRate;
+	const auto compositionDuration = static_cast<double>(compositionFrames) * double{ Measurement::Duration::period::den } / format.samplingRate();
 
 	const auto baseline = ::measure(
 		[bufferData = buffer.get(), compositionFrames] {

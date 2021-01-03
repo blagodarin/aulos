@@ -6,6 +6,8 @@ set(HEADERS
 	common.hpp
 	composition.hpp
 	data.hpp
+	format.hpp
+	renderer.hpp
 	)
 
 set(SOURCES

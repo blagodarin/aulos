@@ -4,7 +4,8 @@
 
 #include "player.hpp"
 
-#include <aulos/composition.hpp>
+#include <aulos/format.hpp>
+#include <aulos/renderer.hpp>
 
 #include <cassert>
 
@@ -28,7 +29,8 @@ public:
 private:
 	qint64 readData(char* data, qint64 maxSize) override
 	{
-		const auto maxFrames = static_cast<size_t>(maxSize) / _renderer->bytesPerFrame();
+		const auto bytesPerFrame = _renderer->format().bytesPerFrame();
+		const auto maxFrames = static_cast<size_t>(maxSize / bytesPerFrame);
 		auto renderedFrames = _renderer->render(reinterpret_cast<float*>(data), maxFrames);
 		assert(renderedFrames <= maxFrames);
 		_minRemainingFrames -= std::min(_minRemainingFrames, renderedFrames);
@@ -38,7 +40,7 @@ private:
 			renderedFrames += paddingFrames;
 			_minRemainingFrames -= paddingFrames;
 		}
-		return renderedFrames * _renderer->bytesPerFrame();
+		return renderedFrames * bytesPerFrame;
 	}
 
 	qint64 writeData(const char*, qint64) override
@@ -63,13 +65,9 @@ void Player::start(std::unique_ptr<aulos::Renderer>&& renderer, size_t minBuffer
 	stop();
 	QAudioFormat format;
 	format.setByteOrder(QAudioFormat::LittleEndian);
-	switch (renderer->channelLayout())
-	{
-	case aulos::ChannelLayout::Mono: format.setChannelCount(1); break;
-	case aulos::ChannelLayout::Stereo: format.setChannelCount(2); break;
-	}
+	format.setChannelCount(renderer->format().channelCount());
 	format.setCodec("audio/pcm");
-	format.setSampleRate(renderer->samplingRate());
+	format.setSampleRate(renderer->format().samplingRate());
 	format.setSampleSize(32);
 	format.setSampleType(QAudioFormat::Float);
 	_output = std::make_unique<QAudioOutput>(format);

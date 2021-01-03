@@ -2,6 +2,9 @@
 // Copyright (C) Sergei Blagodarin.
 // SPDX-License-Identifier: Apache-2.0
 
+#include <aulos/renderer.hpp>
+
+#include <aulos/format.hpp>
 #include "acoustics.hpp"
 #include "composition.hpp"
 #include "utils/limited_vector.hpp"
@@ -15,28 +18,28 @@
 
 namespace
 {
-	std::unique_ptr<aulos::Voice> createVoice(const aulos::WaveData& waveData, const aulos::VoiceData& voiceData, unsigned samplingRate, aulos::ChannelLayout channelLayout)
+	std::unique_ptr<aulos::Voice> createVoice(const aulos::WaveData& waveData, const aulos::VoiceData& voiceData, const aulos::AudioFormat& format)
 	{
-		switch (channelLayout)
+		switch (format.channelLayout())
 		{
 		case aulos::ChannelLayout::Mono:
 			switch (voiceData._waveShape)
 			{
-			case aulos::WaveShape::Linear: return std::make_unique<aulos::MonoVoice<aulos::LinearShaper>>(waveData, samplingRate);
-			case aulos::WaveShape::Quadratic: return std::make_unique<aulos::MonoVoice<aulos::QuadraticShaper>>(waveData, samplingRate);
-			case aulos::WaveShape::Cubic: return std::make_unique<aulos::MonoVoice<aulos::CubicShaper>>(waveData, samplingRate);
-			case aulos::WaveShape::Quintic: return std::make_unique<aulos::MonoVoice<aulos::QuinticShaper>>(waveData, samplingRate);
-			case aulos::WaveShape::Cosine: return std::make_unique<aulos::MonoVoice<aulos::CosineShaper>>(waveData, samplingRate);
+			case aulos::WaveShape::Linear: return std::make_unique<aulos::MonoVoice<aulos::LinearShaper>>(waveData, format.samplingRate());
+			case aulos::WaveShape::Quadratic: return std::make_unique<aulos::MonoVoice<aulos::QuadraticShaper>>(waveData, format.samplingRate());
+			case aulos::WaveShape::Cubic: return std::make_unique<aulos::MonoVoice<aulos::CubicShaper>>(waveData, format.samplingRate());
+			case aulos::WaveShape::Quintic: return std::make_unique<aulos::MonoVoice<aulos::QuinticShaper>>(waveData, format.samplingRate());
+			case aulos::WaveShape::Cosine: return std::make_unique<aulos::MonoVoice<aulos::CosineShaper>>(waveData, format.samplingRate());
 			}
 			break;
 		case aulos::ChannelLayout::Stereo:
 			switch (voiceData._waveShape)
 			{
-			case aulos::WaveShape::Linear: return std::make_unique<aulos::StereoVoice<aulos::LinearShaper>>(waveData, samplingRate);
-			case aulos::WaveShape::Quadratic: return std::make_unique<aulos::StereoVoice<aulos::QuadraticShaper>>(waveData, samplingRate);
-			case aulos::WaveShape::Cubic: return std::make_unique<aulos::StereoVoice<aulos::CubicShaper>>(waveData, samplingRate);
-			case aulos::WaveShape::Quintic: return std::make_unique<aulos::StereoVoice<aulos::QuinticShaper>>(waveData, samplingRate);
-			case aulos::WaveShape::Cosine: return std::make_unique<aulos::StereoVoice<aulos::CosineShaper>>(waveData, samplingRate);
+			case aulos::WaveShape::Linear: return std::make_unique<aulos::StereoVoice<aulos::LinearShaper>>(waveData, format.samplingRate());
+			case aulos::WaveShape::Quadratic: return std::make_unique<aulos::StereoVoice<aulos::QuadraticShaper>>(waveData, format.samplingRate());
+			case aulos::WaveShape::Cubic: return std::make_unique<aulos::StereoVoice<aulos::CubicShaper>>(waveData, format.samplingRate());
+			case aulos::WaveShape::Quintic: return std::make_unique<aulos::StereoVoice<aulos::QuinticShaper>>(waveData, format.samplingRate());
+			case aulos::WaveShape::Cosine: return std::make_unique<aulos::StereoVoice<aulos::CosineShaper>>(waveData, format.samplingRate());
 			}
 			break;
 		}
@@ -52,47 +55,14 @@ namespace
 			: _offset{ offset }, _note{ note } {}
 	};
 
-	class CompositionFormat
-	{
-	public:
-		CompositionFormat(unsigned samplingRate, aulos::ChannelLayout channelLayout, unsigned speed) noexcept
-			: _samplingRate{ samplingRate }
-			, _channelLayout{ channelLayout }
-			, _stepFrames{ static_cast<size_t>(std::lround(static_cast<double>(samplingRate) / speed)) }
-		{
-		}
-
-		constexpr auto bytesPerFrame() const noexcept { return _bytesPerFrame; }
-		constexpr auto channelCount() const noexcept { return channelCount(_channelLayout); }
-		constexpr auto channelLayout() const noexcept { return _channelLayout; }
-		constexpr auto samplingRate() const noexcept { return _samplingRate; }
-		constexpr auto stepsToFrames(size_t steps) const noexcept { return steps * _stepFrames; }
-
-	private:
-		static constexpr size_t channelCount(aulos::ChannelLayout channelLayout) noexcept
-		{
-			switch (channelLayout)
-			{
-			case aulos::ChannelLayout::Mono: return 1;
-			case aulos::ChannelLayout::Stereo: return 2;
-			}
-			return 0;
-		}
-
-	private:
-		const unsigned _samplingRate;
-		const aulos::ChannelLayout _channelLayout;
-		const size_t _bytesPerFrame = channelCount(_channelLayout) * sizeof(float);
-		const size_t _stepFrames;
-	};
-
 	struct TrackRenderer
 	{
 	public:
-		TrackRenderer(const CompositionFormat& format, const aulos::VoiceData& voiceData, const aulos::TrackProperties& trackProperties, const std::vector<AbsoluteSound>& sounds, const std::optional<std::pair<size_t, size_t>>& loop) noexcept
+		TrackRenderer(const aulos::AudioFormat& format, size_t stepFrames, const aulos::VoiceData& voiceData, const aulos::TrackProperties& trackProperties, const std::vector<AbsoluteSound>& sounds, const std::optional<std::pair<size_t, size_t>>& loop) noexcept
 			: _format{ format }
-			, _waveData{ voiceData, _format.samplingRate() }
-			, _acoustics{ _format.channelLayout() == aulos::ChannelLayout::Mono ? aulos::CircularAcoustics{} : aulos::CircularAcoustics{ trackProperties, _format.samplingRate() } }
+			, _stepFrames{ stepFrames }
+			, _waveData{ voiceData, format.samplingRate() }
+			, _acoustics{ format.channelLayout() == aulos::ChannelLayout::Mono ? aulos::CircularAcoustics{} : aulos::CircularAcoustics{ trackProperties, format.samplingRate() } }
 			, _polyphony{ trackProperties._polyphony }
 			, _weight{ static_cast<float>(trackProperties._weight) }
 		{
@@ -160,10 +130,10 @@ namespace
 					});
 					_nextSound = chordEnd;
 					if (_nextSound != _sounds.cend())
-						_strideFramesRemaining = _format.stepsToFrames(_nextSound->_delaySteps);
+						_strideFramesRemaining = _nextSound->_delaySteps * _stepFrames;
 					else if (_loopDelay > 0)
 					{
-						_strideFramesRemaining = _format.stepsToFrames(_loopDelay);
+						_strideFramesRemaining = _loopDelay * _stepFrames;
 						_nextSound = _loopSound;
 					}
 					else
@@ -221,7 +191,7 @@ namespace
 			}
 			_playingSounds.clear();
 			_nextSound = _sounds.cbegin();
-			_strideFramesRemaining = _format.stepsToFrames(_nextSound->_delaySteps);
+			_strideFramesRemaining = _nextSound->_delaySteps * _stepFrames;
 			_gain = _weight / gainDivisor;
 		}
 
@@ -257,7 +227,7 @@ namespace
 			assert(_voicePool.empty() && _playingSounds.empty());
 			_voicePool.reserve(maxVoices);
 			while (_voicePool.size() < maxVoices)
-				_voicePool.emplace_back(::createVoice(_waveData, voiceData, _format.samplingRate(), _format.channelLayout()));
+				_voicePool.emplace_back(::createVoice(_waveData, voiceData, _format));
 			_playingSounds.reserve(maxVoices);
 		}
 
@@ -320,7 +290,8 @@ namespace
 				: _delaySteps{ delaySteps }, _note{ note }, _chordLength{ chordLength } {}
 		};
 
-		const CompositionFormat& _format;
+		const aulos::AudioFormat _format;
+		const size_t _stepFrames;
 		const aulos::WaveData _waveData;
 		const aulos::CircularAcoustics _acoustics;
 		const aulos::Polyphony _polyphony;
@@ -339,8 +310,9 @@ namespace
 	class CompositionRenderer final : public aulos::Renderer
 	{
 	public:
-		CompositionRenderer(const aulos::CompositionImpl& composition, unsigned samplingRate, aulos::ChannelLayout channelLayout, bool looping)
-			: _format{ samplingRate, channelLayout, composition._speed }
+		CompositionRenderer(const aulos::CompositionImpl& composition, const aulos::AudioFormat& format, bool looping)
+			: _format{ format }
+			, _stepFrames{ static_cast<size_t>(std::lround(static_cast<double>(format.samplingRate()) / composition._speed)) }
 			, _gainDivisor{ static_cast<float>(composition._gainDivisor) }
 			, _loopOffset{ composition._loopOffset }
 			, _loopLength{ composition._loopLength }
@@ -373,25 +345,20 @@ namespace
 						}
 					}
 					if (!sounds.empty())
-						_tracks.emplace_back(_format, part._voice, track._properties, sounds, looping ? std::optional{ std::pair{ composition._loopOffset, composition._loopLength } } : std::nullopt);
+						_tracks.emplace_back(_format, _stepFrames, part._voice, track._properties, sounds, looping ? std::optional{ std::pair{ composition._loopOffset, composition._loopLength } } : std::nullopt);
 				}
 			}
 			restart();
 		}
 
-		size_t bytesPerFrame() const noexcept override
+		aulos::AudioFormat format() const noexcept override
 		{
-			return _format.bytesPerFrame();
+			return _format;
 		}
 
 		std::pair<size_t, size_t> loopRange() const noexcept override
 		{
-			return { _format.stepsToFrames(_loopOffset), _format.stepsToFrames(_loopOffset + _loopLength) };
-		}
-
-		aulos::ChannelLayout channelLayout() const noexcept override
-		{
-			return _format.channelLayout();
+			return { _loopOffset * _stepFrames, (_loopOffset + _loopLength) * _stepFrames };
 		}
 
 		size_t render(float* buffer, size_t maxFrames) noexcept override
@@ -407,11 +374,6 @@ namespace
 		{
 			for (auto& track : _tracks)
 				track.restart(_gainDivisor);
-		}
-
-		unsigned samplingRate() const noexcept override
-		{
-			return _format.samplingRate();
 		}
 
 		size_t skipFrames(size_t maxFrames) noexcept override
@@ -433,7 +395,8 @@ namespace
 		}
 
 	public:
-		CompositionFormat _format;
+		aulos::AudioFormat _format;
+		const size_t _stepFrames;
 		const float _gainDivisor;
 		const size_t _loopOffset;
 		const size_t _loopLength;
@@ -443,13 +406,13 @@ namespace
 
 namespace aulos
 {
-	std::unique_ptr<Renderer> Renderer::create(const Composition& composition, unsigned samplingRate, ChannelLayout channelLayout, bool looping)
+	std::unique_ptr<Renderer> Renderer::create(const Composition& composition, const AudioFormat& format, bool looping)
 	{
-		if (samplingRate < kMinSamplingRate || samplingRate > kMaxSamplingRate)
+		if (format.samplingRate() < kMinSamplingRate || format.samplingRate() > kMaxSamplingRate)
 			return nullptr;
 		const auto& compositionImpl = static_cast<const CompositionImpl&>(composition);
 		if (looping && !compositionImpl.hasLoop())
 			return nullptr;
-		return std::make_unique<CompositionRenderer>(static_cast<const CompositionImpl&>(composition), samplingRate, channelLayout, looping);
+		return std::make_unique<CompositionRenderer>(static_cast<const CompositionImpl&>(composition), format, looping);
 	}
 }
