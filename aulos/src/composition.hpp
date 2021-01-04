@@ -46,8 +46,6 @@ namespace aulos
 		std::string _title;
 		std::string _author;
 
-		bool hasLoop() const noexcept override { return _loopLength > 0; }
-
 		void load(const char* source);
 	};
 }

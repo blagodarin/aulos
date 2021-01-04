@@ -30,8 +30,8 @@ public:
 	void stop();
 
 signals:
+	void offsetChanged(double currentFrame);
 	void stateChanged();
-	void timeAdvanced(qint64 microseconds);
 
 private:
 	enum class State
@@ -43,4 +43,7 @@ private:
 	std::unique_ptr<AudioSource> _source;
 	std::unique_ptr<QAudioOutput> _output;
 	State _state = State::Stopped;
+	double _samplingRate = 0;
+	double _currentOffset = 0;
+	qint64 _lastProcessedUs = 0;
 };

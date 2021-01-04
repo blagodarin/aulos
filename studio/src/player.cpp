@@ -26,13 +26,22 @@ public:
 		return true;
 	}
 
+	std::pair<double, double> loopRange() const
+	{
+		return { _renderer->loopRange().first, _loopEnd.load() };
+	}
+
 private:
 	qint64 readData(char* data, qint64 maxSize) override
 	{
 		const auto bytesPerFrame = _renderer->format().bytesPerFrame();
 		const auto maxFrames = static_cast<size_t>(maxSize / bytesPerFrame);
+		const auto offsetBefore = _renderer->currentOffset();
 		auto renderedFrames = _renderer->render(reinterpret_cast<float*>(data), maxFrames);
 		assert(renderedFrames <= maxFrames);
+		const auto offsetAfter = _renderer->currentOffset();
+		if (offsetAfter != offsetBefore + renderedFrames)
+			_loopEnd = offsetBefore + renderedFrames - (offsetAfter - _renderer->loopRange().first);
 		_minRemainingFrames -= std::min(_minRemainingFrames, renderedFrames);
 		if (renderedFrames < maxFrames && _minRemainingFrames > 0)
 		{
@@ -51,6 +60,7 @@ private:
 private:
 	std::unique_ptr<aulos::Renderer> _renderer;
 	size_t _minRemainingFrames;
+	std::atomic<size_t> _loopEnd{ std::numeric_limits<size_t>::max() };
 };
 
 Player::Player(QObject* parent)
@@ -73,7 +83,15 @@ void Player::start(std::unique_ptr<aulos::Renderer>&& renderer, size_t minBuffer
 	_output = std::make_unique<QAudioOutput>(format);
 	_output->setNotifyInterval(20);
 	connect(_output.get(), &QAudioOutput::notify, this, [this] {
-		emit timeAdvanced(_output->processedUSecs());
+		const auto advanceUs = _output->processedUSecs() - _lastProcessedUs;
+		if (!advanceUs)
+			return;
+		_currentOffset += _samplingRate * advanceUs / 1'000'000.0;
+		_lastProcessedUs += advanceUs;
+		const auto loopRange = _source->loopRange();
+		if (_currentOffset > loopRange.second)
+			_currentOffset = loopRange.first + (_currentOffset - loopRange.second);
+		emit offsetChanged(_currentOffset);
 	});
 	connect(_output.get(), &QAudioOutput::stateChanged, this, [this](QAudio::State state) {
 		if (const auto newState = state == QAudio::ActiveState ? State::Started : State::Stopped; newState != _state)
@@ -82,9 +100,12 @@ void Player::start(std::unique_ptr<aulos::Renderer>&& renderer, size_t minBuffer
 			emit stateChanged();
 		}
 	});
+	_currentOffset = renderer->currentOffset();
+	_samplingRate = format.sampleRate();
+	_lastProcessedUs = 0;
 	_source = std::make_unique<AudioSource>(std::move(renderer), minBufferFrames);
 	_output->start(_source.get());
-	emit timeAdvanced(0);
+	emit offsetChanged(_currentOffset);
 }
 
 void Player::stop()

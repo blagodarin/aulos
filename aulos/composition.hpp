@@ -16,8 +16,5 @@ namespace aulos
 		[[nodiscard]] static std::unique_ptr<Composition> create(const char* textData);
 
 		virtual ~Composition() noexcept = default;
-
-		// Returns true if the composition has loop markup.
-		[[nodiscard]] virtual bool hasLoop() const noexcept = 0;
 	};
 }

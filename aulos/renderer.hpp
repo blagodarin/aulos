@@ -23,6 +23,9 @@ namespace aulos
 
 		virtual ~Renderer() noexcept = default;
 
+		// Returns current frame offset.
+		[[nodiscard]] virtual size_t currentOffset() const noexcept = 0;
+
 		// Returns the start and end frame offsets of the loop.
 		[[nodiscard]] virtual std::pair<size_t, size_t> loopRange() const noexcept = 0;
 
@@ -41,6 +44,6 @@ namespace aulos
 		// The composition is skipped in whole frames, where a frame is one sample for each channel.
 		// Returns the number of frames actually skipped,
 		// which may be less than requested if the composition has ended.
-		[[nodiscard]] virtual size_t skipFrames(size_t maxFrames) noexcept = 0;
+		virtual size_t skipFrames(size_t maxFrames) noexcept = 0;
 	};
 }
