@@ -37,7 +37,7 @@ target_include_directories(aulos PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE
 set_property(TARGET aulos PROPERTY POSITION_INDEPENDENT_CODE ON)
 install_target(aulos EXPORT AulosTargets)
 
-if(WITH_STANDALONE OR WITH_BENCHMARK)
+if(WITH_STANDALONE OR WITH_TESTS OR WITH_BENCHMARK)
 	add_library(aulos_standalone STATIC ${HEADERS} ${SOURCES})
 	target_compile_options(aulos_standalone PRIVATE ${MAX_WARNINGS})
 	target_include_directories(aulos_standalone PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)

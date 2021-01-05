@@ -26,8 +26,9 @@ namespace aulos
 		// Returns current frame offset.
 		[[nodiscard]] virtual size_t currentOffset() const noexcept = 0;
 
-		// Returns the start and end frame offsets of the loop.
-		[[nodiscard]] virtual std::pair<size_t, size_t> loopRange() const noexcept = 0;
+		// Returns the frame offset at which the renderer restarts during looped playback.
+		// Returns zero if playback is not looped.
+		[[nodiscard]] virtual size_t loopOffset() const noexcept = 0;
 
 		// Returns audio format.
 		[[nodiscard]] virtual AudioFormat format() const noexcept = 0;

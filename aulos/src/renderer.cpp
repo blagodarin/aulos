@@ -255,7 +255,7 @@ namespace
 		void setLoop(size_t loopOffset, size_t loopLength) noexcept
 		{
 			assert(!_sounds.empty() && _loopSound == _sounds.cbegin() && !_loopDelay);
-			auto loopSoundOffset = _loopSound->_delaySteps;
+			auto loopSoundOffset = size_t{ _loopSound->_delaySteps };
 			while (loopSoundOffset < loopOffset)
 			{
 				if (++_loopSound == _sounds.cend())
@@ -312,11 +312,11 @@ namespace
 			, _stepFrames{ static_cast<size_t>(std::lround(static_cast<double>(format.samplingRate()) / composition._speed)) }
 			, _gainDivisor{ static_cast<float>(composition._gainDivisor) }
 			, _looping{ looping }
-			, _loopLength{ _looping ? composition._loopLength : 0 }
-			, _loopOffset{ _loopLength > 0 ? composition._loopOffset : 0 }
 		{
+			const auto loopStepCount = _looping ? size_t{ composition._loopLength } : 0;
+			const auto loopStepOffset = loopStepCount > 0 ? size_t{ composition._loopOffset } : 0;
 			std::vector<AbsoluteSound> sounds;
-			const auto maxSoundOffset = _loopLength > 0 ? _loopOffset + _loopLength - 1 : std::numeric_limits<size_t>::max();
+			const auto maxSoundStep = loopStepCount > 0 ? loopStepOffset + loopStepCount - 1 : std::numeric_limits<size_t>::max();
 			_tracks.reserve(std::accumulate(composition._parts.cbegin(), composition._parts.cend(), size_t{}, [](size_t count, const aulos::Part& part) { return count + part._tracks.size(); }));
 			for (const auto& part : composition._parts)
 			{
@@ -327,24 +327,26 @@ namespace
 				for (const auto& track : part._tracks)
 				{
 					sounds.clear();
-					for (size_t fragmentOffset = 0; const auto& fragment : track._fragments)
+					for (size_t fragmentStep = 0; const auto& fragment : track._fragments)
 					{
-						fragmentOffset += fragment._delay;
-						if (fragmentOffset > maxSoundOffset)
+						fragmentStep += fragment._delay;
+						if (fragmentStep > maxSoundStep)
 							break;
-						sounds.erase(std::find_if(sounds.crbegin(), sounds.crend(), [fragmentOffset](const AbsoluteSound& sound) { return sound._offset < fragmentOffset; }).base(), sounds.cend());
-						for (auto soundOffset = fragmentOffset; const auto& sound : track._sequences[fragment._sequence])
+						sounds.erase(std::find_if(sounds.crbegin(), sounds.crend(), [fragmentStep](const AbsoluteSound& sound) { return sound._offset < fragmentStep; }).base(), sounds.cend());
+						for (auto soundStep = fragmentStep; const auto& sound : track._sequences[fragment._sequence])
 						{
-							soundOffset += sound._delay;
-							if (soundOffset > maxSoundOffset)
+							soundStep += sound._delay;
+							if (soundStep > maxSoundStep)
 								break;
-							sounds.emplace_back(soundOffset, sound._note);
+							sounds.emplace_back(soundStep, sound._note);
 						}
 					}
 					if (!sounds.empty())
-						_tracks.emplace_back(_format, _stepFrames, part._voice, track._properties, sounds, _loopOffset, _loopLength);
+						_tracks.emplace_back(_format, _stepFrames, part._voice, track._properties, sounds, loopStepOffset, loopStepCount);
 				}
 			}
+			_loopOffset = loopStepOffset * _stepFrames;
+			_loopLength = loopStepCount * _stepFrames;
 			restart();
 		}
 
@@ -353,47 +355,26 @@ namespace
 			return _format;
 		}
 
-		std::pair<size_t, size_t> loopRange() const noexcept override
-		{
-			return { _loopOffset * _stepFrames, (_loopOffset + _loopLength) * _stepFrames };
-		}
-
 		size_t currentOffset() const noexcept override
 		{
 			return _currentOffset;
+		}
+
+		size_t loopOffset() const noexcept override
+		{
+			return _loopOffset;
 		}
 
 		size_t render(float* buffer, size_t maxFrames) noexcept override
 		{
 			std::memset(buffer, 0, maxFrames * _format.bytesPerFrame());
 			size_t result = 0;
-			for (;;)
+			while (result < maxFrames)
 			{
-				size_t framesRendered = 0;
-				for (auto& track : _tracks)
-					framesRendered = std::max(framesRendered, track.render(buffer, maxFrames));
+				const auto [framesRendered, stopped] = renderPart(buffer + result * _format.channelCount(), maxFrames - result);
 				result += framesRendered;
-				_currentOffset += framesRendered;
-				if (_looping && _loopLength > 0)
-				{
-					const auto loop = loopRange();
-					while (_currentOffset >= loop.second)
-						_currentOffset = loop.first + (_currentOffset - loop.second);
-				}
-				if (framesRendered == maxFrames || !_looping)
+				if (stopped)
 					break;
-				// The composition has no loop but is requested to be played in a loop.
-				assert(_loopLength == 0);
-				const auto stepFramesRemaining = _stepFrames - _currentOffset % _stepFrames;
-				const auto framesSkipped = std::min(maxFrames - framesRendered, stepFramesRemaining);
-				result += framesSkipped;
-				_currentOffset += framesSkipped;
-				if (framesSkipped < stepFramesRemaining)
-					break;
-				assert(framesRendered + framesSkipped <= maxFrames);
-				buffer += (framesRendered + framesSkipped) * _format.channelCount();
-				maxFrames -= framesRendered + framesSkipped;
-				restart();
 			}
 			return result;
 		}
@@ -408,35 +389,49 @@ namespace
 		size_t skipFrames(size_t maxFrames) noexcept override
 		{
 			static std::array<std::byte, 65'536> skipBuffer;
-			const auto bufferFrames = skipBuffer.size() / _format.bytesPerFrame();
 			size_t result = 0;
 			while (result < maxFrames)
 			{
-				const auto framesToRender = std::min(maxFrames - result, bufferFrames);
-				size_t framesRendered = 0;
-				for (auto& track : _tracks)
-					framesRendered = std::max(framesRendered, track.render(reinterpret_cast<float*>(skipBuffer.data()), framesToRender));
+				const auto [framesRendered, stopped] = renderPart(reinterpret_cast<float*>(skipBuffer.data()), std::min(maxFrames - result, skipBuffer.size() / _format.bytesPerFrame()));
 				result += framesRendered;
-				_currentOffset += framesRendered;
-				if (_looping && _loopLength > 0)
+				if (stopped)
+					break;
+			}
+			return result;
+		}
+
+	private:
+		std::pair<size_t, bool> renderPart(float* buffer, size_t maxFrames) noexcept
+		{
+			size_t framesRendered = 0;
+			for (auto& track : _tracks)
+				framesRendered = std::max(framesRendered, track.render(buffer, maxFrames));
+			_currentOffset += framesRendered;
+			if (_looping && _loopLength > 0)
+				while (_currentOffset >= _loopOffset + _loopLength)
+					_currentOffset -= _loopLength;
+			if (framesRendered < maxFrames)
+			{
+				if (!_looping)
+					return { framesRendered, true };
+				const auto framesToSkip = _loopLength > 0
+					? _loopOffset + _loopLength - _currentOffset  // The composition is empty, but has a loop.
+					: _stepFrames - _currentOffset % _stepFrames; // The composition has no loop but is requested to be played in a loop.
+				const auto framesSkipped = std::min(maxFrames - framesRendered, framesToSkip);
+				framesRendered += framesSkipped;
+				_currentOffset += framesSkipped;
+				if (framesSkipped == framesToSkip)
 				{
-					const auto loop = loopRange();
-					while (_currentOffset >= loop.second)
-						_currentOffset = loop.first + (_currentOffset - loop.second);
-				}
-				if (framesRendered < framesToRender && _looping)
-				{
-					// The composition has no loop but is requested to be played in a loop.
-					assert(_loopLength == 0);
-					const auto stepFramesRemaining = _stepFrames - _currentOffset % _stepFrames;
-					const auto framesSkipped = std::min(framesToRender - framesRendered, stepFramesRemaining);
-					result += framesSkipped;
-					_currentOffset += framesSkipped;
-					if (framesSkipped == stepFramesRemaining)
+					if (_loopLength > 0)
+					{
+						assert(_tracks.empty());
+						_currentOffset = _loopOffset;
+					}
+					else
 						restart();
 				}
 			}
-			return result;
+			return { framesRendered, false };
 		}
 
 	public:
@@ -444,10 +439,10 @@ namespace
 		const size_t _stepFrames;
 		const float _gainDivisor;
 		const bool _looping;
-		const size_t _loopLength;
-		const size_t _loopOffset;
 		aulos::LimitedVector<TrackRenderer> _tracks;
 		size_t _currentOffset = 0;
+		size_t _loopOffset = 0;
+		size_t _loopLength = 0;
 	};
 }
 

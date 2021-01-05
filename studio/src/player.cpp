@@ -28,7 +28,7 @@ public:
 
 	std::pair<double, double> loopRange() const
 	{
-		return { _renderer->loopRange().first, _loopEnd.load() };
+		return { _renderer->loopOffset(), _loopEnd.load() };
 	}
 
 private:
@@ -41,7 +41,7 @@ private:
 		assert(renderedFrames <= maxFrames);
 		const auto offsetAfter = _renderer->currentOffset();
 		if (offsetAfter != offsetBefore + renderedFrames)
-			_loopEnd = offsetBefore + renderedFrames - (offsetAfter - _renderer->loopRange().first);
+			_loopEnd = offsetBefore + renderedFrames - (offsetAfter - _renderer->loopOffset());
 		_minRemainingFrames -= std::min(_minRemainingFrames, renderedFrames);
 		if (renderedFrames < maxFrames && _minRemainingFrames > 0)
 		{
