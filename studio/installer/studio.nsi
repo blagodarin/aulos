@@ -60,20 +60,24 @@ Section
 	SetOutPath "$INSTDIR"
 	WriteUninstaller "$INSTDIR\Uninstall.exe"
 	File "${BUILD_DIR}\AulosStudio.exe"
-	File "$%QTDIR%\bin\Qt5Core${SUFFIX}.dll"
-	File "$%QTDIR%\bin\Qt5Gui${SUFFIX}.dll"
-	File "$%QTDIR%\bin\Qt5Multimedia${SUFFIX}.dll"
-	File "$%QTDIR%\bin\Qt5Network${SUFFIX}.dll"
-	File "$%QTDIR%\bin\Qt5Widgets${SUFFIX}.dll"
+	File "${QTDIR}\bin\Qt${QT_VERSION}Core${SUFFIX}.dll"
+	File "${QTDIR}\bin\Qt${QT_VERSION}Gui${SUFFIX}.dll"
+	File "${QTDIR}\bin\Qt${QT_VERSION}Widgets${SUFFIX}.dll"
+!if ${QT_VERSION} == 5
+	File "${QTDIR}\bin\Qt5Multimedia${SUFFIX}.dll"
+	File "${QTDIR}\bin\Qt5Network${SUFFIX}.dll"
+!endif
 
+!if ${QT_VERSION} == 5
 	SetOutPath "$INSTDIR\plugins\audio"
-	File "$%QTDIR%\plugins\audio\qtaudio_windows${SUFFIX}.dll"
+	File "${QTDIR}\plugins\audio\qtaudio_windows${SUFFIX}.dll"
+!endif
 
 	SetOutPath "$INSTDIR\plugins\platforms"
-	File "$%QTDIR%\plugins\platforms\qwindows${SUFFIX}.dll"
+	File "${QTDIR}\plugins\platforms\qwindows${SUFFIX}.dll"
 
 	SetOutPath "$INSTDIR\plugins\styles"
-	File "$%QTDIR%\plugins\styles\qwindowsvistastyle${SUFFIX}.dll"
+	File "${QTDIR}\plugins\styles\qwindowsvistastyle${SUFFIX}.dll"
 
 	SetOutPath "$INSTDIR\examples"
 	File "${SOURCE_DIR}\examples\czardas.aulos"
@@ -127,17 +131,21 @@ Section "Uninstall"
 	Delete "$INSTDIR\plugins\platforms\qwindows${SUFFIX}.dll"
 	RMDir "$INSTDIR\plugins\platforms"
 
+!if ${QT_VERSION} == 5
 	Delete "$INSTDIR\plugins\audio\qtaudio_windows${SUFFIX}.dll"
 	RMDir "$INSTDIR\plugins\audio"
+!endif
 
 	RMDir "$INSTDIR\plugins"
 
 	Delete "$INSTDIR\AulosStudio.exe"
-	Delete "$INSTDIR\Qt5Core${SUFFIX}.dll"
-	Delete "$INSTDIR\Qt5Gui${SUFFIX}.dll"
+	Delete "$INSTDIR\Qt${QT_VERSION}Core${SUFFIX}.dll"
+	Delete "$INSTDIR\Qt${QT_VERSION}Gui${SUFFIX}.dll"
+	Delete "$INSTDIR\Qt${QT_VERSION}Widgets${SUFFIX}.dll"
+!if ${QT_VERSION} == 5
 	Delete "$INSTDIR\Qt5Multimedia${SUFFIX}.dll"
 	Delete "$INSTDIR\Qt5Network${SUFFIX}.dll"
-	Delete "$INSTDIR\Qt5Widgets${SUFFIX}.dll"
+!endif
 	Delete "$INSTDIR\Uninstall.exe"
 	RMDir "$INSTDIR"
 SectionEnd

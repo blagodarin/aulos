@@ -146,7 +146,7 @@ Studio::Studio()
 			_changed = true;
 			updateStatus();
 		},
-		Qt::CTRL + Qt::Key_N);
+		Qt::CTRL | Qt::Key_N);
 	_fileOpenAction = fileMenu->addAction(
 		qApp->style()->standardIcon(QStyle::SP_DialogOpenButton), tr("&Open..."), [this] {
 			if (!maybeSaveComposition())
@@ -160,7 +160,7 @@ Studio::Studio()
 			_changed = false;
 			updateStatus();
 		},
-		Qt::CTRL + Qt::Key_O);
+		Qt::CTRL | Qt::Key_O);
 	_fileSaveAction = fileMenu->addAction(
 		qApp->style()->standardIcon(QStyle::SP_DialogSaveButton), tr("&Save"), [this] {
 			if (_compositionPath.isEmpty() ? !saveCompositionAs() : !saveComposition(_compositionPath))
@@ -168,7 +168,7 @@ Studio::Studio()
 			_changed = false;
 			updateStatus();
 		},
-		Qt::CTRL + Qt::Key_S);
+		Qt::CTRL | Qt::Key_S);
 	_fileSaveAsAction = fileMenu->addAction(
 		tr("Save &As..."), [this] {
 			if (!saveCompositionAs())
@@ -176,7 +176,7 @@ Studio::Studio()
 			_changed = false;
 			updateStatus();
 		},
-		Qt::CTRL + Qt::ALT + Qt::Key_S);
+		Qt::CTRL | Qt::ALT | Qt::Key_S);
 	_fileExportAction = fileMenu->addAction(
 		tr("&Export..."), [this] { exportComposition(); });
 	_fileCloseAction = fileMenu->addAction(
@@ -187,7 +187,7 @@ Studio::Studio()
 			_changed = false;
 			updateStatus();
 		},
-		Qt::CTRL + Qt::Key_W);
+		Qt::CTRL | Qt::Key_W);
 	fileMenu->addSeparator();
 	_recentFilesMenu = fileMenu->addMenu(tr("&Recent Files"));
 	for (const auto& recentFile : loadRecentFileList())
@@ -196,7 +196,7 @@ Studio::Studio()
 	_recentFilesMenu->addAction(tr("Clear"), [this] { clearRecentFiles(); });
 	fileMenu->addSeparator();
 	fileMenu->addAction(
-		tr("E&xit"), [this] { close(); }, Qt::ALT + Qt::Key_F4);
+		tr("E&xit"), [this] { close(); }, Qt::ALT | Qt::Key_F4);
 
 	const auto editMenu = menuBar()->addMenu(tr("&Edit"));
 	_editInfoAction = editMenu->addAction(tr("Composition &information..."), [this] {

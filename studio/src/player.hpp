@@ -8,7 +8,9 @@
 
 #include <QObject>
 
+#if QT_VERSION_MAJOR == 5
 class QAudioOutput;
+#endif
 
 namespace aulos
 {
@@ -40,10 +42,12 @@ private:
 		Started,
 	};
 
+#if QT_VERSION_MAJOR == 5
 	std::unique_ptr<AudioSource> _source;
 	std::unique_ptr<QAudioOutput> _output;
-	State _state = State::Stopped;
 	double _samplingRate = 0;
-	double _currentOffset = 0;
 	qint64 _lastProcessedUs = 0;
+#endif
+	State _state = State::Stopped;
+	double _currentOffset = 0;
 };

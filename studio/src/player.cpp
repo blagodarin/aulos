@@ -9,8 +9,11 @@
 
 #include <cassert>
 
-#include <QAudioOutput>
+#if QT_VERSION_MAJOR == 5
+#	include <QAudioOutput>
+#endif
 
+#if QT_VERSION_MAJOR == 5
 class AudioSource final : public QIODevice
 {
 public:
@@ -62,6 +65,7 @@ private:
 	size_t _minRemainingFrames;
 	std::atomic<size_t> _loopEnd{ std::numeric_limits<size_t>::max() };
 };
+#endif
 
 Player::Player(QObject* parent)
 	: QObject{ parent }
@@ -70,9 +74,10 @@ Player::Player(QObject* parent)
 
 Player::~Player() = default;
 
-void Player::start(std::unique_ptr<aulos::Renderer>&& renderer, size_t minBufferFrames)
+void Player::start(std::unique_ptr<aulos::Renderer>&& renderer, [[maybe_unused]] size_t minBufferFrames)
 {
 	stop();
+#if QT_VERSION_MAJOR == 5
 	QAudioFormat format;
 	format.setByteOrder(QAudioFormat::LittleEndian);
 	format.setChannelCount(renderer->format().channelCount());
@@ -100,16 +105,24 @@ void Player::start(std::unique_ptr<aulos::Renderer>&& renderer, size_t minBuffer
 			emit stateChanged();
 		}
 	});
+#endif
 	_currentOffset = renderer->currentOffset();
+#if QT_VERSION_MAJOR == 5
 	_samplingRate = format.sampleRate();
 	_lastProcessedUs = 0;
 	_source = std::make_unique<AudioSource>(std::move(renderer), minBufferFrames);
 	_output->start(_source.get());
+#endif
 	emit offsetChanged(_currentOffset);
+#if QT_VERSION_MAJOR == 6
+	_state = State::Started;
+	emit stateChanged();
+#endif
 }
 
 void Player::stop()
 {
+#if QT_VERSION_MAJOR == 5
 	if (_source)
 	{
 		_output->stop();
@@ -117,4 +130,11 @@ void Player::stop()
 		_source.reset();
 	}
 	assert(_state == State::Stopped);
+#else
+	if (_state != State::Stopped)
+	{
+		_state = State::Stopped;
+		emit stateChanged();
+	}
+#endif
 }

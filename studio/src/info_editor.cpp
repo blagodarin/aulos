@@ -17,7 +17,7 @@ InfoEditor::InfoEditor(QWidget* parent)
 
 	const auto rootLayout = new QGridLayout{ this };
 
-	const auto validator = new QRegExpValidator{ QRegExp{ "[^\"]*" }, this };
+	const auto validator = new QRegularExpressionValidator{ QRegularExpression{ "[^\"]*" }, this };
 
 	const auto titleLabel = new QLabel{ tr("&Title:"), this };
 	rootLayout->addWidget(titleLabel, 0, 0);

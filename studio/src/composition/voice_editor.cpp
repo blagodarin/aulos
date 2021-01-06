@@ -22,7 +22,7 @@ VoiceEditor::VoiceEditor(QWidget* parent)
 
 	_nameEdit = new QLineEdit{ this };
 	_nameEdit->setMaxLength(64);
-	_nameEdit->setValidator(new QRegExpValidator{ QRegExp{ "\\w*" }, _nameEdit });
+	_nameEdit->setValidator(new QRegularExpressionValidator{ QRegularExpression{ "\\w*" }, _nameEdit });
 	rootLayout->addWidget(_nameEdit, 0, 1);
 	nameLabel->setBuddy(_nameEdit);
 
