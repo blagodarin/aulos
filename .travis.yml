@@ -7,13 +7,11 @@ matrix:
   include:
 
     - os: linux
-      dist: bionic
+      dist: focal
       compiler: gcc
       env: GCC=10 CONFIG=Release
       addons: &gcc_addons
         apt:
-          sources: &all_sources
-            - ubuntu-toolchain-r-test
           packages:
             - g++-10
             - ninja-build
@@ -21,40 +19,35 @@ matrix:
             - qtmultimedia5-dev
 
     - os: linux
-      dist: bionic
+      dist: focal
       compiler: gcc
       env: GCC=10 CONFIG=Debug
       addons: *gcc_addons
 
     - os: linux
-      dist: bionic
+      dist: focal
       compiler: clang
-      env: CLANG=10 CONFIG=Release
+      env: CLANG=11 CONFIG=Release
       addons: &clang_addons
         apt:
-          sources: *all_sources
           packages:
-            - clang-10
+            - clang-11
             - libstdc++-10-dev
             - ninja-build
             - qtbase5-dev
             - qtmultimedia5-dev
 
     - os: linux
-      dist: bionic
+      dist: focal
       compiler: clang
-      env: CLANG=10 CONFIG=Debug
+      env: CLANG=11 CONFIG=Debug
       addons: *clang_addons
 
 before_install:
   - if [ -n "${CLANG}" ]; then export CXX=clang++-${CLANG}; fi
   - if [ -n "${GCC}" ]; then export CXX=g++-${GCC}; fi
-
-install:
-  - mkdir "${HOME}/_cmake" && pushd "${HOME}/_cmake"
-  - wget --output-document=- --quiet https://github.com/Kitware/CMake/releases/download/v3.17.1/cmake-3.17.1-Linux-x86_64.tar.gz | tar -x --gzip --strip-components 1
-  - export PATH="$(pwd)/bin:${PATH}"
-  - popd
+  - ${CXX} --version
+  - cmake --version
 
 script:
   - if [ "${CONFIG}" = "Debug" ]; then CMAKE_OPTIONS="-DUSE_SANITIZERS=ON"; fi

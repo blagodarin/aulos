@@ -4,21 +4,25 @@ shallow_clone: true
 
 environment:
   matrix:
+
     - CONFIG: Release
       ARCH: amd64
       GENERATOR: Ninja
       INSTALLER: ON
       QT: 5
+
     - CONFIG: Debug
       ARCH: amd64
       GENERATOR: MSVS
       INSTALLER: OFF
       QT: 6
+
     - CONFIG: RelWithDebInfo
       ARCH: x86
       GENERATOR: MSVS
       INSTALLER: OFF
       QT: 5
+
     - CONFIG: Debug
       ARCH: x86
       GENERATOR: Ninja
