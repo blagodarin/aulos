@@ -63,15 +63,6 @@ Section
 	File "${QTDIR}\bin\Qt${QT_VERSION}Core${SUFFIX}.dll"
 	File "${QTDIR}\bin\Qt${QT_VERSION}Gui${SUFFIX}.dll"
 	File "${QTDIR}\bin\Qt${QT_VERSION}Widgets${SUFFIX}.dll"
-!if ${QT_VERSION} == 5
-	File "${QTDIR}\bin\Qt5Multimedia${SUFFIX}.dll"
-	File "${QTDIR}\bin\Qt5Network${SUFFIX}.dll"
-!endif
-
-!if ${QT_VERSION} == 5
-	SetOutPath "$INSTDIR\plugins\audio"
-	File "${QTDIR}\plugins\audio\qtaudio_windows${SUFFIX}.dll"
-!endif
 
 	SetOutPath "$INSTDIR\plugins\platforms"
 	File "${QTDIR}\plugins\platforms\qwindows${SUFFIX}.dll"
@@ -131,21 +122,12 @@ Section "Uninstall"
 	Delete "$INSTDIR\plugins\platforms\qwindows${SUFFIX}.dll"
 	RMDir "$INSTDIR\plugins\platforms"
 
-!if ${QT_VERSION} == 5
-	Delete "$INSTDIR\plugins\audio\qtaudio_windows${SUFFIX}.dll"
-	RMDir "$INSTDIR\plugins\audio"
-!endif
-
 	RMDir "$INSTDIR\plugins"
 
 	Delete "$INSTDIR\AulosStudio.exe"
 	Delete "$INSTDIR\Qt${QT_VERSION}Core${SUFFIX}.dll"
 	Delete "$INSTDIR\Qt${QT_VERSION}Gui${SUFFIX}.dll"
 	Delete "$INSTDIR\Qt${QT_VERSION}Widgets${SUFFIX}.dll"
-!if ${QT_VERSION} == 5
-	Delete "$INSTDIR\Qt5Multimedia${SUFFIX}.dll"
-	Delete "$INSTDIR\Qt5Network${SUFFIX}.dll"
-!endif
 	Delete "$INSTDIR\Uninstall.exe"
 	RMDir "$INSTDIR"
 SectionEnd

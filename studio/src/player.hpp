@@ -8,7 +8,9 @@
 
 #include <QObject>
 
-#if QT_VERSION_MAJOR == 5
+#ifdef Q_OS_WIN
+#	include "player_wasapi.hpp"
+#else
 class QAudioOutput;
 #endif
 
@@ -19,7 +21,11 @@ namespace aulos
 
 class AudioSource;
 
-class Player final : public QObject
+class Player final
+	: public QObject
+#ifdef Q_OS_WIN
+	, private PlayerCallbacks
+#endif
 {
 	Q_OBJECT
 
@@ -33,7 +39,19 @@ public:
 
 signals:
 	void offsetChanged(double currentFrame);
+#ifdef Q_OS_WIN
+	void playbackError(const QString&);
+	void playbackStarted();
+	void playbackStopped();
+#endif
 	void stateChanged();
+
+private:
+#ifdef Q_OS_WIN
+	void onPlayerError(std::string_view api, uintptr_t code, const std::string& description) override;
+	void onPlayerStarted() override;
+	void onPlayerStopped() override;
+#endif
 
 private:
 	enum class State
@@ -42,7 +60,9 @@ private:
 		Started,
 	};
 
-#if QT_VERSION_MAJOR == 5
+#ifdef Q_OS_WIN
+	std::unique_ptr<class PlayerBackend> _backend;
+#else
 	std::unique_ptr<AudioSource> _source;
 	std::unique_ptr<QAudioOutput> _output;
 	double _samplingRate = 0;

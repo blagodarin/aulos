@@ -58,14 +58,18 @@ add_executable(studio WIN32
 target_compile_options(studio PRIVATE ${STUDIO_WARNINGS})
 target_include_directories(studio PRIVATE ${PROJECT_BINARY_DIR})
 target_link_libraries(studio PRIVATE aulos)
-if(QT_VERSION EQUAL 6)
-	target_link_libraries(studio PRIVATE Qt6::Widgets)
+if(QT_VERSION EQUAL 6 OR WIN32)
+	target_link_libraries(studio PRIVATE Qt${QT_VERSION}::Widgets)
 else()
-	target_link_libraries(studio PRIVATE Qt5::Multimedia Qt5::Widgets)
+	target_link_libraries(studio PRIVATE Qt${QT_VERSION}::Multimedia Qt${QT_VERSION}::Widgets)
 endif()
 set_target_properties(studio PROPERTIES AUTOMOC ON AUTORCC ON AUTOUIC ON)
 if(WIN32)
-	target_sources(studio PRIVATE res/studio.rc)
+	target_sources(studio PRIVATE
+		res/studio.rc
+		src/player_wasapi.cpp
+		src/player_wasapi.hpp
+		)
 	set_property(TARGET studio PROPERTY OUTPUT_NAME AulosStudio)
 else()
 	set_property(TARGET studio PROPERTY OUTPUT_NAME aulos_studio)
