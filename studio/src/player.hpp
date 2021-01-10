@@ -9,7 +9,7 @@
 #include <QTimer>
 
 #ifdef Q_OS_WIN
-#	include "player_wasapi.hpp"
+#	include <aulosplay/player.hpp>
 #else
 class QAudioOutput;
 #endif
@@ -24,7 +24,7 @@ class AudioSource;
 class Player final
 	: public QObject
 #ifdef Q_OS_WIN
-	, private PlayerCallbacks
+	, private aulosplay::PlayerCallbacks
 #endif
 {
 	Q_OBJECT
@@ -62,7 +62,7 @@ private:
 
 #ifdef Q_OS_WIN
 	std::shared_ptr<class AudioSource> _source;
-	std::unique_ptr<class PlayerBackend> _backend;
+	std::unique_ptr<aulosplay::Player> _backend;
 	QTimer _timer;
 	size_t _startOffset = 0;
 	size_t _lastOffset = 0;

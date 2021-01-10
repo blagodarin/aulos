@@ -16,7 +16,7 @@
 #endif
 
 #ifdef Q_OS_WIN
-class AudioSource final : public PlayerSource
+class AudioSource final : public aulosplay::Source
 {
 public:
 	AudioSource(std::unique_ptr<aulos::Renderer>&& renderer, size_t minBufferFrames)
@@ -156,7 +156,7 @@ void Player::start(std::unique_ptr<aulos::Renderer>&& renderer, [[maybe_unused]]
 	if (!_backend || _backend->samplingRate() != samplingRate)
 	{
 		_backend.reset();
-		_backend = std::make_unique<PlayerBackend>(static_cast<PlayerCallbacks&>(*this), samplingRate);
+		_backend = std::make_unique<aulosplay::Player>(static_cast<PlayerCallbacks&>(*this), samplingRate);
 	}
 	_startOffset = renderer->currentOffset();
 	_lastOffset = _startOffset;
