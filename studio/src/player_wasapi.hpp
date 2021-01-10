@@ -15,9 +15,9 @@ class PlayerCallbacks
 public:
 	virtual ~PlayerCallbacks() noexcept = default;
 
-	virtual void onPlayerError(std::string_view api, uintptr_t code, const std::string& description) = 0;
-	virtual void onPlayerStarted() = 0;
-	virtual void onPlayerStopped() = 0;
+	virtual void onPlaybackError(std::string_view api, uintptr_t code, const std::string& description) = 0;
+	virtual void onPlaybackStarted() = 0;
+	virtual void onPlaybackStopped() = 0;
 };
 
 class PlayerSource

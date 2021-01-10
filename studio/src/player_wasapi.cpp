@@ -4,6 +4,7 @@
 
 #include "player_wasapi.hpp"
 
+#include <functional>
 #include <numeric>
 #include <string>
 
@@ -74,31 +75,27 @@ namespace
 		}
 		return buffer._data;
 	}
-}
 
-PlayerBackend::PlayerBackend(PlayerCallbacks& callbacks, unsigned samplingRate)
-	: _callbacks{ callbacks }
-	, _samplingRate{ samplingRate }
-{
-	_thread = std::thread{ [this] {
+	void runPlayerBackend(PlayerCallbacks& callbacks, unsigned samplingRate, std::atomic<size_t>& offset, const std::atomic<bool>& stopFlag, const std::function<size_t(float*, size_t)>& mixFunction)
+	{
 		if (const auto hr = ::CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED); FAILED(hr))
-			return _callbacks.onPlayerError("CoInitializeEx", hr, ::errorToString(hr));
+			return callbacks.onPlaybackError("CoInitializeEx", hr, ::errorToString(hr));
 		ComUninitializer comUninitializer;
 		ComPtr<IMMDeviceEnumerator> deviceEnumerator;
 		if (const auto hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), reinterpret_cast<void**>(&deviceEnumerator)); !deviceEnumerator)
-			return _callbacks.onPlayerError("CoCreateInstance", hr, ::errorToString(hr));
+			return callbacks.onPlaybackError("CoCreateInstance", hr, ::errorToString(hr));
 		ComPtr<IMMDevice> device;
 		if (const auto hr = deviceEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, &device); !device)
-			return _callbacks.onPlayerError("IMMDeviceEnumerator::GetDefaultAudioEndpoint", hr, ::errorToString(hr));
+			return callbacks.onPlaybackError("IMMDeviceEnumerator::GetDefaultAudioEndpoint", hr, ::errorToString(hr));
 		ComPtr<IAudioClient> audioClient;
 		if (const auto hr = device->Activate(__uuidof(IAudioClient), CLSCTX_ALL, nullptr, reinterpret_cast<void**>(&audioClient)); !audioClient)
-			return _callbacks.onPlayerError("IMMDevice::Activate", hr, ::errorToString(hr));
+			return callbacks.onPlaybackError("IMMDevice::Activate", hr, ::errorToString(hr));
 		REFERENCE_TIME period = 0;
 		if (const auto hr = audioClient->GetDevicePeriod(nullptr, &period); FAILED(hr))
-			return _callbacks.onPlayerError("IAudioClient::GetDevicePeriod", hr, ::errorToString(hr));
+			return callbacks.onPlaybackError("IAudioClient::GetDevicePeriod", hr, ::errorToString(hr));
 		ComBuffer<WAVEFORMATEX> format;
 		if (const auto hr = audioClient->GetMixFormat(&format._data); !format._data)
-			return _callbacks.onPlayerError("IAudioClient::GetMixFormat", hr, ::errorToString(hr));
+			return callbacks.onPlaybackError("IAudioClient::GetMixFormat", hr, ::errorToString(hr));
 		if (format->wFormatTag == WAVE_FORMAT_EXTENSIBLE)
 		{
 			const auto extensible = reinterpret_cast<WAVEFORMATEXTENSIBLE*>(format._data);
@@ -119,10 +116,10 @@ PlayerBackend::PlayerBackend(PlayerCallbacks& callbacks, unsigned samplingRate)
 			format->nAvgBytesPerSec = format->nBlockAlign * format->nSamplesPerSec;
 		}
 		DWORD streamFlags = AUDCLNT_STREAMFLAGS_EVENTCALLBACK;
-		if (format->nSamplesPerSec != _samplingRate)
+		if (format->nSamplesPerSec != samplingRate)
 		{
 			streamFlags |= AUDCLNT_STREAMFLAGS_RATEADJUST;
-			format->nSamplesPerSec = _samplingRate;
+			format->nSamplesPerSec = samplingRate;
 			format->nAvgBytesPerSec = format->nBlockAlign * format->nSamplesPerSec;
 		}
 		if (format->nChannels != kChannels)
@@ -132,87 +129,90 @@ PlayerBackend::PlayerBackend(PlayerCallbacks& callbacks, unsigned samplingRate)
 			format->nAvgBytesPerSec = format->nBlockAlign * format->nSamplesPerSec;
 		}
 		if (const auto hr = audioClient->Initialize(AUDCLNT_SHAREMODE_SHARED, streamFlags, period, 0, format._data, nullptr); FAILED(hr))
-			return _callbacks.onPlayerError("IAudioClient::Initialize", hr, ::errorToString(hr));
+			return callbacks.onPlaybackError("IAudioClient::Initialize", hr, ::errorToString(hr));
 		HandleWrapper event;
 		if (event._handle = ::CreateEventW(nullptr, FALSE, FALSE, nullptr); !event._handle)
 		{
 			const auto errorCode = ::GetLastError();
-			return _callbacks.onPlayerError("CreateEventW", errorCode, ::errorToString(errorCode));
+			return callbacks.onPlaybackError("CreateEventW", errorCode, ::errorToString(errorCode));
 		}
 		if (const auto hr = audioClient->SetEventHandle(event._handle); FAILED(hr))
-			return _callbacks.onPlayerError("IAudioClient::SetEventHandle", hr, ::errorToString(hr));
+			return callbacks.onPlaybackError("IAudioClient::SetEventHandle", hr, ::errorToString(hr));
 		UINT32 bufferFrames = 0;
 		if (const auto hr = audioClient->GetBufferSize(&bufferFrames); FAILED(hr))
-			return _callbacks.onPlayerError("IAudioClient::GetBufferSize", hr, ::errorToString(hr));
+			return callbacks.onPlaybackError("IAudioClient::GetBufferSize", hr, ::errorToString(hr));
 		ComPtr<IAudioRenderClient> audioRenderClient;
 		if (const auto hr = audioClient->GetService(__uuidof(IAudioRenderClient), reinterpret_cast<void**>(&audioRenderClient)); !audioRenderClient)
-			return _callbacks.onPlayerError("IAudioClient::GetService", hr, ::errorToString(hr));
+			return callbacks.onPlaybackError("IAudioClient::GetService", hr, ::errorToString(hr));
 		const UINT32 updateFrames = bufferFrames / kFrameAlignment * kFrameAlignment / 2;
 		AudioClientStopper audioClientStopper;
-		while (!_stop.load())
+		for (bool wasSilent = true; !stopFlag.load();)
 		{
 			UINT32 lockedFrames = 0;
 			for (;;)
 			{
 				UINT32 paddingFrames = 0;
 				if (const auto hr = audioClient->GetCurrentPadding(&paddingFrames); FAILED(hr))
-					return _callbacks.onPlayerError("IAudioClient::GetCurrentPadding", hr, ::errorToString(hr));
+					return callbacks.onPlaybackError("IAudioClient::GetCurrentPadding", hr, ::errorToString(hr));
 				lockedFrames = (bufferFrames - paddingFrames) / kFrameAlignment * kFrameAlignment;
 				if (lockedFrames >= updateFrames)
 					break;
-				if (const auto status = ::WaitForSingleObjectEx(event._handle, 2 * paddingFrames * 1000 / _samplingRate, FALSE); status != WAIT_OBJECT_0)
+				if (const auto status = ::WaitForSingleObjectEx(event._handle, 2 * paddingFrames * 1000 / samplingRate, FALSE); status != WAIT_OBJECT_0)
 				{
 					const auto errorCode = status == WAIT_TIMEOUT ? ERROR_TIMEOUT : ::GetLastError();
-					return _callbacks.onPlayerError("WaitForSingleObjectEx", errorCode, ::errorToString(errorCode));
+					return callbacks.onPlaybackError("WaitForSingleObjectEx", errorCode, ::errorToString(errorCode));
 				}
 			}
 			BYTE* buffer = nullptr;
 			if (const auto hr = audioRenderClient->GetBuffer(lockedFrames, &buffer); FAILED(hr))
-				return _callbacks.onPlayerError("IAudioRenderClient::GetBuffer", hr, ::errorToString(hr));
-			UINT32 readFrames = 0;
+				return callbacks.onPlaybackError("IAudioRenderClient::GetBuffer", hr, ::errorToString(hr));
+			auto writtenFrames = static_cast<UINT32>(mixFunction(reinterpret_cast<float*>(buffer), lockedFrames));
 			DWORD releaseFlags = 0;
-			bool started = false;
-			bool stopped = false;
+			const auto isSilent = writtenFrames == 0;
+			if (isSilent)
 			{
-				std::lock_guard lock{ _mutex };
-				if (_source)
-				{
-					if (_sourceChanged)
-					{
-						_sourceChanged = false;
-						started = true;
-					}
-					readFrames = static_cast<UINT32>(_source->onRead(reinterpret_cast<float*>(buffer), lockedFrames));
-					if (readFrames < lockedFrames)
-					{
-						_source.reset();
-						stopped = true;
-					}
-				}
-				else
-				{
-					readFrames = lockedFrames;
-					releaseFlags = AUDCLNT_BUFFERFLAGS_SILENT;
-					if (_sourceChanged)
-					{
-						_sourceChanged = false;
-						stopped = true;
-					}
-				}
+				writtenFrames = lockedFrames;
+				releaseFlags = AUDCLNT_BUFFERFLAGS_SILENT;
 			}
-			if (const auto hr = audioRenderClient->ReleaseBuffer(readFrames, releaseFlags); FAILED(hr))
-				return _callbacks.onPlayerError("IAudioRenderClient::ReleaseBuffer", hr, ::errorToString(hr));
+			if (const auto hr = audioRenderClient->ReleaseBuffer(writtenFrames, releaseFlags); FAILED(hr))
+				return callbacks.onPlaybackError("IAudioRenderClient::ReleaseBuffer", hr, ::errorToString(hr));
 			if (!audioClientStopper._audioClient)
 			{
 				if (const auto hr = audioClient->Start(); FAILED(hr))
-					return _callbacks.onPlayerError("IAudioRenderClient::Start", hr, ::errorToString(hr));
+					return callbacks.onPlaybackError("IAudioRenderClient::Start", hr, ::errorToString(hr));
 				audioClientStopper._audioClient = audioClient;
 			}
-			if (started)
-				_callbacks.onPlayerStarted();
-			if (stopped)
-				_callbacks.onPlayerStopped();
+			if (isSilent != wasSilent)
+			{
+				wasSilent = isSilent;
+				if (!isSilent)
+				{
+					offset.store(0);
+					callbacks.onPlaybackStarted();
+				}
+				else
+					callbacks.onPlaybackStopped();
+			}
+			else if (!isSilent)
+				offset.fetch_add(lockedFrames);
 		}
+	}
+}
+
+PlayerBackend::PlayerBackend(PlayerCallbacks& callbacks, unsigned samplingRate)
+	: _callbacks{ callbacks }
+	, _samplingRate{ samplingRate }
+{
+	_thread = std::thread{ [this] {
+		runPlayerBackend(_callbacks, _samplingRate, _offset, _stop, [this](float* buffer, size_t frames) -> size_t {
+			std::lock_guard lock{ _mutex };
+			if (!_source)
+				return 0;
+			const auto result = _source->onRead(reinterpret_cast<float*>(buffer), frames);
+			if (result < frames)
+				_source.reset();
+			return result;
+		});
 	} };
 }
 

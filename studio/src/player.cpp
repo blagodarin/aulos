@@ -25,7 +25,7 @@ public:
 	{
 	}
 
-	std::pair<double, double> loopRange() const
+	std::pair<size_t, size_t> loopRange() const
 	{
 		return { _renderer->loopOffset(), _loopEnd.load() };
 	}
@@ -112,21 +112,36 @@ Player::Player(QObject* parent)
 	: QObject{ parent }
 {
 #ifdef Q_OS_WIN
+	_timer.setInterval(20);
 	connect(this, &Player::playbackError, this, [this](const QString& error) {
 		qInfo() << error;
 		if (_state != State::Stopped)
 		{
 			_state = State::Stopped;
+			_timer.stop();
 			emit stateChanged();
 		}
 	});
 	connect(this, &Player::playbackStarted, this, [this] {
 		_state = State::Started;
+		_timer.start();
 		emit stateChanged();
 	});
 	connect(this, &Player::playbackStopped, this, [this] {
 		_state = State::Stopped;
+		_timer.stop();
 		emit stateChanged();
+	});
+	connect(&_timer, &QTimer::timeout, this, [this] {
+		auto currentOffset = _startOffset + _backend->currentOffset();
+		const auto loopRange = _source->loopRange();
+		while (currentOffset > loopRange.second)
+			currentOffset = loopRange.first + (currentOffset - loopRange.second);
+		if (currentOffset != _lastOffset)
+		{
+			_lastOffset = currentOffset;
+			emit offsetChanged(static_cast<double>(currentOffset));
+		}
 	});
 #endif
 }
@@ -143,6 +158,10 @@ void Player::start(std::unique_ptr<aulos::Renderer>&& renderer, [[maybe_unused]]
 		_backend.reset();
 		_backend = std::make_unique<PlayerBackend>(static_cast<PlayerCallbacks&>(*this), samplingRate);
 	}
+	_startOffset = renderer->currentOffset();
+	_lastOffset = _startOffset;
+	_source = std::make_shared<AudioSource>(std::move(renderer), minBufferFrames);
+	_backend->play(_source);
 #else
 	QAudioFormat format;
 	format.setByteOrder(QAudioFormat::LittleEndian);
@@ -171,17 +190,13 @@ void Player::start(std::unique_ptr<aulos::Renderer>&& renderer, [[maybe_unused]]
 			emit stateChanged();
 		}
 	});
-#endif
 	_currentOffset = renderer->currentOffset();
-#ifdef Q_OS_WIN
-	_backend->play(std::make_shared<AudioSource>(std::move(renderer), minBufferFrames));
-#else
 	_samplingRate = samplingRate;
 	_lastProcessedUs = 0;
 	_source = std::make_unique<AudioSource>(std::move(renderer), minBufferFrames);
 	_output->start(_source.get());
-#endif
 	emit offsetChanged(_currentOffset);
+#endif
 }
 
 void Player::stop()
@@ -201,19 +216,19 @@ void Player::stop()
 }
 
 #ifdef Q_OS_WIN
-void Player::onPlayerError(std::string_view api, uintptr_t code, const std::string& description)
+void Player::onPlaybackError(std::string_view api, uintptr_t code, const std::string& description)
 {
 	emit playbackError(description.empty()
 			? QStringLiteral("[%1] Error 0x%2").arg(QString::fromStdString(std::string{ api })).arg(code, 8, 16, QLatin1Char{ '0' })
 			: QStringLiteral("[%1] Error 0x%2: %3").arg(QString::fromStdString(std::string{ api })).arg(code, 8, 16, QLatin1Char{ '0' }).arg(QString::fromStdString(description)));
 }
 
-void Player::onPlayerStarted()
+void Player::onPlaybackStarted()
 {
 	emit playbackStarted();
 }
 
-void Player::onPlayerStopped()
+void Player::onPlaybackStopped()
 {
 	emit playbackStopped();
 }

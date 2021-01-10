@@ -6,7 +6,7 @@
 
 #include <memory>
 
-#include <QObject>
+#include <QTimer>
 
 #ifdef Q_OS_WIN
 #	include "player_wasapi.hpp"
@@ -48,9 +48,9 @@ signals:
 
 private:
 #ifdef Q_OS_WIN
-	void onPlayerError(std::string_view api, uintptr_t code, const std::string& description) override;
-	void onPlayerStarted() override;
-	void onPlayerStopped() override;
+	void onPlaybackError(std::string_view api, uintptr_t code, const std::string& description) override;
+	void onPlaybackStarted() override;
+	void onPlaybackStopped() override;
 #endif
 
 private:
@@ -61,13 +61,17 @@ private:
 	};
 
 #ifdef Q_OS_WIN
+	std::shared_ptr<class AudioSource> _source;
 	std::unique_ptr<class PlayerBackend> _backend;
+	QTimer _timer;
+	size_t _startOffset = 0;
+	size_t _lastOffset = 0;
 #else
 	std::unique_ptr<AudioSource> _source;
 	std::unique_ptr<QAudioOutput> _output;
 	double _samplingRate = 0;
 	qint64 _lastProcessedUs = 0;
+	double _currentOffset = 0;
 #endif
 	State _state = State::Stopped;
-	double _currentOffset = 0;
 };
