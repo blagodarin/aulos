@@ -31,6 +31,11 @@ public:
 	}
 
 private:
+	bool isStereo() const noexcept override
+	{
+		return _renderer->format().channelLayout() == aulos::ChannelLayout::Stereo;
+	}
+
 	size_t onRead(float* buffer, size_t maxFrames) noexcept override
 	{
 		const auto offsetBefore = _renderer->currentOffset();

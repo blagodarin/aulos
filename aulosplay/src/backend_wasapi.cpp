@@ -79,7 +79,7 @@ namespace
 
 namespace aulosplay
 {
-	void runBackend(PlayerCallbacks& callbacks, unsigned samplingRate, std::atomic<size_t>& offset, const std::atomic<bool>& stopFlag, const std::function<size_t(float*, size_t)>& mixFunction)
+	void runBackend(PlayerCallbacks& callbacks, unsigned samplingRate, std::atomic<size_t>& offset, const std::atomic<bool>& stopFlag, const std::function<size_t(float*, size_t, float*)>& mixFunction)
 	{
 		const auto reportError = [&callbacks](const char* function, auto error) {
 			callbacks.onPlaybackError(function, static_cast<DWORD>(error), ::errorToString(static_cast<DWORD>(error)));
@@ -149,6 +149,7 @@ namespace aulosplay
 		if (const auto hr = audioClient->GetService(__uuidof(IAudioRenderClient), reinterpret_cast<void**>(&audioRenderClient)); !audioRenderClient)
 			return reportError("IAudioClient::GetService", hr);
 		const UINT32 updateFrames = bufferFrames / kFrameAlignment * kFrameAlignment / 2;
+		const auto monoBuffer = std::make_unique<float[]>(bufferFrames);
 		AudioClientStopper audioClientStopper;
 		for (bool wasSilent = true; !stopFlag.load();)
 		{
@@ -170,7 +171,7 @@ namespace aulosplay
 			BYTE* buffer = nullptr;
 			if (const auto hr = audioRenderClient->GetBuffer(lockedFrames, &buffer); FAILED(hr))
 				return reportError("IAudioRenderClient::GetBuffer", hr);
-			auto writtenFrames = static_cast<UINT32>(mixFunction(reinterpret_cast<float*>(buffer), lockedFrames));
+			auto writtenFrames = static_cast<UINT32>(mixFunction(reinterpret_cast<float*>(buffer), lockedFrames, monoBuffer.get()));
 			DWORD releaseFlags = 0;
 			const auto isSilent = writtenFrames == 0;
 			if (isSilent)

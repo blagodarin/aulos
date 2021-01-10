@@ -9,6 +9,8 @@ set(HEADERS
 set(SOURCES
 	src/backend.hpp
 	src/player.cpp
+	src/utils.cpp
+	src/utils.hpp
 	)
 
 if(WIN32)

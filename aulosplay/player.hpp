@@ -17,6 +17,7 @@ namespace aulosplay
 	public:
 		virtual ~Source() noexcept = default;
 
+		virtual bool isStereo() const noexcept = 0;
 		virtual size_t onRead(float* buffer, size_t maxFrames) noexcept = 0;
 	};
 

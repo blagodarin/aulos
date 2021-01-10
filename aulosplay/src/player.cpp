@@ -5,6 +5,7 @@
 #include <aulosplay/player.hpp>
 
 #include "backend.hpp"
+#include "utils.hpp"
 
 namespace aulosplay
 {
@@ -13,13 +14,21 @@ namespace aulosplay
 		, _samplingRate{ samplingRate }
 	{
 		_thread = std::thread{ [this] {
-			runBackend(_callbacks, _samplingRate, _offset, _stop, [this](float* buffer, size_t frames) -> size_t {
+			runBackend(_callbacks, _samplingRate, _offset, _stop, [this](float* buffer, size_t frames, float* monoBuffer) {
+				size_t result = 0;
 				std::lock_guard lock{ _mutex };
-				if (!_source)
-					return 0;
-				const auto result = _source->onRead(reinterpret_cast<float*>(buffer), frames);
-				if (result < frames)
-					_source.reset();
+				if (_source)
+				{
+					if (_source->isStereo())
+						result = _source->onRead(buffer, frames);
+					else
+					{
+						result = _source->onRead(monoBuffer, frames);
+						monoToStereo(buffer, monoBuffer, result);
+					}
+					if (result < frames)
+						_source.reset();
+				}
 				return result;
 			});
 		} };
