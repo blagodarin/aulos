@@ -4,8 +4,6 @@
 
 #include "backend.hpp"
 
-#include <aulosplay/player.hpp>
-
 #define WIN32_LEAN_AND_MEAN
 #pragma warning(push)
 #pragma warning(disable : 4365) // signed/unsigned mismatch

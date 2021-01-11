@@ -4,15 +4,9 @@
 
 #pragma once
 
-#include <memory>
+#include <aulosplay/player.hpp>
 
 #include <QTimer>
-
-#ifdef Q_OS_WIN
-#	include <aulosplay/player.hpp>
-#else
-class QAudioOutput;
-#endif
 
 namespace aulos
 {
@@ -23,9 +17,7 @@ class AudioSource;
 
 class Player final
 	: public QObject
-#ifdef Q_OS_WIN
 	, private aulosplay::PlayerCallbacks
-#endif
 {
 	Q_OBJECT
 
@@ -39,19 +31,15 @@ public:
 
 signals:
 	void offsetChanged(double currentFrame);
-#ifdef Q_OS_WIN
 	void playbackError(const QString&);
 	void playbackStarted();
 	void playbackStopped();
-#endif
 	void stateChanged();
 
 private:
-#ifdef Q_OS_WIN
 	void onPlaybackError(std::string&& message) override;
 	void onPlaybackStarted() override;
 	void onPlaybackStopped() override;
-#endif
 
 private:
 	enum class State
@@ -60,16 +48,8 @@ private:
 		Started,
 	};
 
-#ifdef Q_OS_WIN
 	QTimer _timer;
 	std::shared_ptr<class AudioSource> _source;
 	std::unique_ptr<aulosplay::Player> _backend;
-#else
-	std::unique_ptr<AudioSource> _source;
-	std::unique_ptr<QAudioOutput> _output;
-	double _samplingRate = 0;
-	qint64 _lastProcessedUs = 0;
-	double _currentOffset = 0;
-#endif
 	State _state = State::Stopped;
 };
