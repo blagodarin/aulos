@@ -48,7 +48,7 @@ signals:
 
 private:
 #ifdef Q_OS_WIN
-	void onPlaybackError(std::string_view api, uintptr_t code, const std::string& description) override;
+	void onPlaybackError(std::string&& message) override;
 	void onPlaybackStarted() override;
 	void onPlaybackStopped() override;
 #endif
@@ -61,11 +61,9 @@ private:
 	};
 
 #ifdef Q_OS_WIN
+	QTimer _timer;
 	std::shared_ptr<class AudioSource> _source;
 	std::unique_ptr<aulosplay::Player> _backend;
-	QTimer _timer;
-	size_t _startOffset = 0;
-	size_t _lastOffset = 0;
 #else
 	std::unique_ptr<AudioSource> _source;
 	std::unique_ptr<QAudioOutput> _output;

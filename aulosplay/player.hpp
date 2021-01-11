@@ -4,11 +4,8 @@
 
 #pragma once
 
-#include <atomic>
 #include <memory>
-#include <mutex>
 #include <string>
-#include <thread>
 
 namespace aulosplay
 {
@@ -26,7 +23,7 @@ namespace aulosplay
 	public:
 		virtual ~PlayerCallbacks() noexcept = default;
 
-		virtual void onPlaybackError(std::string_view api, uintptr_t code, const std::string& description) = 0;
+		virtual void onPlaybackError(std::string&& message) = 0;
 		virtual void onPlaybackStarted() = 0;
 		virtual void onPlaybackStopped() = 0;
 	};
@@ -34,22 +31,12 @@ namespace aulosplay
 	class Player
 	{
 	public:
-		Player(PlayerCallbacks&, unsigned samplingRate);
-		~Player() noexcept;
+		[[nodiscard]] static std::unique_ptr<Player> create(PlayerCallbacks&, unsigned samplingRate);
 
-		[[nodiscard]] size_t currentOffset() const noexcept { return _offset.load(); }
-		void play(const std::shared_ptr<Source>& source);
-		[[nodiscard]] constexpr unsigned samplingRate() const noexcept { return _samplingRate; }
-		void stop();
+		virtual ~Player() noexcept = default;
 
-	private:
-		PlayerCallbacks& _callbacks;
-		const unsigned _samplingRate;
-		std::atomic<size_t> _offset{ 0 };
-		std::atomic<bool> _stop{ false };
-		std::shared_ptr<Source> _source;
-		bool _sourceChanged = false;
-		std::mutex _mutex;
-		std::thread _thread;
+		virtual void play(const std::shared_ptr<Source>&) = 0;
+		[[nodiscard]] virtual unsigned samplingRate() const noexcept = 0;
+		virtual void stop() = 0;
 	};
 }

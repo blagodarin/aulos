@@ -15,6 +15,9 @@ set(SOURCES
 
 if(WIN32)
 	list(APPEND SOURCES src/backend_wasapi.cpp)
+	set_property(SOURCE src/player.cpp APPEND PROPERTY COMPILE_OPTIONS
+		/wd4355 # 'this': used in base member initializer list
+		)
 endif()
 
 source_group("include" FILES ${HEADERS})

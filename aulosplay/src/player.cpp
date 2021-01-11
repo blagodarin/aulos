@@ -7,52 +7,113 @@
 #include "backend.hpp"
 #include "utils.hpp"
 
+#include <atomic>
+#include <cstdio>
+#include <mutex>
+#include <thread>
+
+namespace
+{
+	class PlayerImpl final
+		: public aulosplay::Player
+		, private aulosplay::BackendCallbacks
+	{
+	public:
+		PlayerImpl(aulosplay::PlayerCallbacks& callbacks, unsigned samplingRate)
+			: _callbacks{ callbacks }
+			, _samplingRate{ samplingRate }
+			, _thread{ [this] { runBackend(*this, _samplingRate, _stop); } }
+		{
+		}
+
+		~PlayerImpl() noexcept override
+		{
+			_stop.store(true);
+			_thread.join();
+		}
+
+		void play(const std::shared_ptr<aulosplay::Source>& source) override
+		{
+			auto inOut = source;
+			std::lock_guard lock{ _mutex };
+			_source.swap(inOut);
+		}
+
+		unsigned samplingRate() const noexcept override
+		{
+			return _samplingRate;
+		}
+
+		void stop() override
+		{
+			decltype(_source) out;
+			std::lock_guard lock{ _mutex };
+			_source.swap(out);
+		}
+
+	private:
+		size_t onDataRequested(float* output, size_t maxFrames, float* monoBuffer) noexcept override
+		{
+			size_t frames = 0;
+			bool monoToStereo = false;
+			if (std::lock_guard lock{ _mutex }; _source)
+			{
+				if (_source->isStereo())
+					frames = _source->onRead(output, maxFrames);
+				else
+				{
+					frames = _source->onRead(monoBuffer, maxFrames);
+					monoToStereo = true;
+				}
+				if (frames < maxFrames)
+					_source.reset();
+			}
+			if (monoToStereo)
+				aulosplay::monoToStereo(output, monoBuffer, frames);
+			return frames;
+		}
+
+		void onErrorReported(const char* function, unsigned code, const std::string& description) override
+		{
+			std::string message;
+			if (description.empty())
+			{
+				constexpr auto pattern = "[%s] Error 0x%08X";
+				message.resize(static_cast<size_t>(std::snprintf(nullptr, 0, pattern, function, code)), '\0');
+				std::snprintf(message.data(), message.size() + 1, pattern, function, code);
+			}
+			else
+			{
+				constexpr auto pattern = "[%s] Error 0x%08X: %s";
+				message.resize(static_cast<size_t>(std::snprintf(nullptr, 0, pattern, function, code, description.c_str())), '\0');
+				std::snprintf(message.data(), message.size() + 1, pattern, function, code, description.c_str());
+			}
+			_callbacks.onPlaybackError(std::move(message));
+		}
+
+		void onStateChanged(bool playing) override
+		{
+			if (playing)
+				_callbacks.onPlaybackStarted();
+			else
+				_callbacks.onPlaybackStopped();
+		}
+
+	private:
+		aulosplay::PlayerCallbacks& _callbacks;
+		const unsigned _samplingRate;
+		std::atomic<bool> _stop{ false };
+		std::shared_ptr<aulosplay::Source> _source;
+		bool _playing = false;
+		std::mutex _mutex;
+		std::thread _thread;
+	};
+}
+
 namespace aulosplay
 {
-	Player::Player(PlayerCallbacks& callbacks, unsigned samplingRate)
-		: _callbacks{ callbacks }
-		, _samplingRate{ samplingRate }
+	std::unique_ptr<Player> Player::create(PlayerCallbacks& callbacks, unsigned samplingRate)
 	{
-		_thread = std::thread{ [this] {
-			runBackend(_callbacks, _samplingRate, _offset, _stop, [this](float* buffer, size_t frames, float* monoBuffer) {
-				size_t result = 0;
-				std::lock_guard lock{ _mutex };
-				if (_source)
-				{
-					if (_source->isStereo())
-						result = _source->onRead(buffer, frames);
-					else
-					{
-						result = _source->onRead(monoBuffer, frames);
-						monoToStereo(buffer, monoBuffer, result);
-					}
-					if (result < frames)
-						_source.reset();
-				}
-				return result;
-			});
-		} };
-	}
-
-	Player::~Player()
-	{
-		_stop.store(true);
-		_thread.join();
-	}
-
-	void Player::play(const std::shared_ptr<Source>& source)
-	{
-		auto inOut = source;
-		std::lock_guard lock{ _mutex };
-		_source.swap(inOut);
-		_sourceChanged = true;
-	}
-
-	void Player::stop()
-	{
-		decltype(_source) out;
-		std::lock_guard lock{ _mutex };
-		_source.swap(out);
-		_sourceChanged = true;
+		return std::make_unique<PlayerImpl>(callbacks, samplingRate);
 	}
 }
