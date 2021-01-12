@@ -20,9 +20,9 @@ namespace aulosplay
 	public:
 		virtual ~BackendCallbacks() noexcept = default;
 
-		virtual size_t onDataRequested(float* output, size_t maxFrames, float* monoBuffer) noexcept = 0;
+		virtual size_t onDataExpected(float* output, size_t maxFrames, float* monoBuffer) noexcept = 0;
+		virtual void onDataProcessed() = 0;
 		virtual void onErrorReported(const char* function, unsigned code, const std::string& description) = 0;
-		virtual void onStateChanged(bool playing) = 0;
 	};
 
 	void runBackend(BackendCallbacks&, unsigned samplingRate, const std::atomic<bool>& stopFlag);

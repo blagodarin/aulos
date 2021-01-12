@@ -8,6 +8,7 @@
 #include "utils.hpp"
 
 #include <atomic>
+#include <cassert>
 #include <cstdio>
 #include <mutex>
 #include <thread>
@@ -44,7 +45,7 @@ namespace
 			return _samplingRate;
 		}
 
-		void stop() override
+		void stop() noexcept override
 		{
 			decltype(_source) out;
 			std::lock_guard lock{ _mutex };
@@ -52,7 +53,7 @@ namespace
 		}
 
 	private:
-		size_t onDataRequested(float* output, size_t maxFrames, float* monoBuffer) noexcept override
+		size_t onDataExpected(float* output, size_t maxFrames, float* monoBuffer) noexcept override
 		{
 			size_t frames = 0;
 			bool monoToStereo = false;
@@ -70,7 +71,18 @@ namespace
 			}
 			if (monoToStereo)
 				aulosplay::monoToStereo(output, monoBuffer, frames);
+			_started = !_playing && frames > 0;
+			_stopped = _playing && frames < maxFrames;
+			_playing = frames == maxFrames;
 			return frames;
+		}
+
+		void onDataProcessed() override
+		{
+			if (_started)
+				_callbacks.onPlaybackStarted();
+			if (_stopped)
+				_callbacks.onPlaybackStopped();
 		}
 
 		void onErrorReported(const char* function, unsigned code, const std::string& description) override
@@ -91,20 +103,14 @@ namespace
 			_callbacks.onPlaybackError(std::move(message));
 		}
 
-		void onStateChanged(bool playing) override
-		{
-			if (playing)
-				_callbacks.onPlaybackStarted();
-			else
-				_callbacks.onPlaybackStopped();
-		}
-
 	private:
 		aulosplay::PlayerCallbacks& _callbacks;
 		const unsigned _samplingRate;
 		std::atomic<bool> _stop{ false };
 		std::shared_ptr<aulosplay::Source> _source;
 		bool _playing = false;
+		bool _started = false;
+		bool _stopped = false;
 		std::mutex _mutex;
 		std::thread _thread;
 	};

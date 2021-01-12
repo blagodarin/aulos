@@ -7,6 +7,7 @@
 #include <aulos/format.hpp>
 #include <aulos/renderer.hpp>
 
+#include <cstring>
 #include <mutex>
 
 #include <QDebug>

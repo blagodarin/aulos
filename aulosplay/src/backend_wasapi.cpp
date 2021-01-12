@@ -7,6 +7,7 @@
 #define WIN32_LEAN_AND_MEAN
 #pragma warning(push)
 #pragma warning(disable : 4365) // signed/unsigned mismatch
+#pragma warning(disable : 4668) // '_WIN64' is not defined as a preprocessor macro, replacing with '0' for '#if/#elif'
 #pragma warning(disable : 5039) // pointer or reference to potentially throwing function passed to 'extern "C"' function under -EHc. Undefined behavior may occur if this function throws an exception.
 #pragma warning(disable : 5204) // class has virtual functions, but its trivial destructor is not virtual; instances of objects derived from this class may not be destructed correctly
 #include <audioclient.h>
@@ -53,7 +54,7 @@ namespace
 
 namespace aulosplay
 {
-	void runBackend(BackendCallbacks& callbacks, unsigned samplingRate, const std::atomic<bool>& stopFlag)
+	void runBackend(BackendCallbacks& callbacks, unsigned samplingRate, const std::atomic<bool>& done)
 	{
 		const auto error = [&callbacks](const char* function, HRESULT code) {
 			std::string description;
@@ -147,7 +148,7 @@ namespace aulosplay
 		const UINT32 updateFrames = bufferFrames / kFrameAlignment * kFrameAlignment / 2;
 		const auto monoBuffer = std::make_unique<float[]>(bufferFrames);
 		AudioClientStopper audioClientStopper;
-		for (bool wasSilent = true; !stopFlag.load();)
+		while (!done)
 		{
 			UINT32 lockedFrames = 0;
 			for (;;)
@@ -164,10 +165,9 @@ namespace aulosplay
 			BYTE* buffer = nullptr;
 			if (const auto hr = audioRenderClient->GetBuffer(lockedFrames, &buffer); FAILED(hr))
 				return error("IAudioRenderClient::GetBuffer", hr);
-			auto writtenFrames = static_cast<UINT32>(callbacks.onDataRequested(reinterpret_cast<float*>(buffer), lockedFrames, monoBuffer.get()));
+			auto writtenFrames = static_cast<UINT32>(callbacks.onDataExpected(reinterpret_cast<float*>(buffer), lockedFrames, monoBuffer.get()));
 			DWORD releaseFlags = 0;
-			const auto isSilent = writtenFrames == 0;
-			if (isSilent)
+			if (!writtenFrames)
 			{
 				writtenFrames = lockedFrames;
 				releaseFlags = AUDCLNT_BUFFERFLAGS_SILENT;
@@ -180,11 +180,7 @@ namespace aulosplay
 					return error("IAudioRenderClient::Start", hr);
 				audioClientStopper._audioClient = audioClient;
 			}
-			if (isSilent != wasSilent)
-			{
-				wasSilent = isSilent;
-				callbacks.onStateChanged(!isSilent);
-			}
+			callbacks.onDataProcessed();
 		}
 	}
 }

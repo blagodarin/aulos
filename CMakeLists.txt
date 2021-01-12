@@ -137,7 +137,7 @@ endfunction()
 
 add_subdirectory(aulos)
 
-if(WIN32 AND (WITH_AULOSPLAY OR WITH_STUDIO))
+if(WITH_AULOSPLAY OR WITH_STUDIO)
 	add_subdirectory(aulosplay)
 endif()
 

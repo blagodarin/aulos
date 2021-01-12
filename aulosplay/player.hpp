@@ -37,6 +37,6 @@ namespace aulosplay
 
 		virtual void play(const std::shared_ptr<Source>&) = 0;
 		[[nodiscard]] virtual unsigned samplingRate() const noexcept = 0;
-		virtual void stop() = 0;
+		virtual void stop() noexcept = 0;
 	};
 }

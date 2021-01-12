@@ -14,6 +14,7 @@ matrix:
         apt:
           packages:
             - g++-10
+            - libasound2-dev
             - ninja-build
             - qtbase5-dev
             - qtmultimedia5-dev
@@ -32,6 +33,7 @@ matrix:
         apt:
           packages:
             - clang-11
+            - libasound2-dev
             - libstdc++-10-dev
             - ninja-build
             - qtbase5-dev
@@ -52,7 +54,7 @@ before_install:
 script:
   - if [ "${CONFIG}" = "Debug" ]; then CMAKE_OPTIONS="-DUSE_SANITIZERS=ON"; fi
   - mkdir "${HOME}/aulos.build" && pushd "${HOME}/aulos.build"
-  - cmake ${TRAVIS_BUILD_DIR} -G Ninja -DCMAKE_BUILD_TYPE=${CONFIG} -DCMAKE_INSTALL_PREFIX="${HOME}/aulos.install" -DQT_VERSION=5 -DWITH_BENCHMARK=ON -DWITH_STANDALONE=ON -DWITH_STUDIO=ON -DWITH_TESTS=ON ${CMAKE_OPTIONS}
+  - cmake ${TRAVIS_BUILD_DIR} -G Ninja -DCMAKE_BUILD_TYPE=${CONFIG} -DCMAKE_INSTALL_PREFIX="${HOME}/aulos.install" -DQT_VERSION=5 -DWITH_AULOSPLAY=ON -DWITH_BENCHMARK=ON -DWITH_STANDALONE=ON -DWITH_STUDIO=ON -DWITH_TESTS=ON ${CMAKE_OPTIONS}
   - TERM=dumb cmake --build .
   - ctest --output-on-failure
   - TERM=dumb cmake --build . --target install

@@ -4,6 +4,8 @@
 
 #include "backend.hpp"
 
+#include <cstring>
+
 #include <alsa/asoundlib.h>
 
 namespace
@@ -49,7 +51,7 @@ namespace
 
 namespace aulosplay
 {
-	void runBackend(BackendCallbacks& callbacks, unsigned samplingRate, const std::atomic<bool>& stopFlag)
+	void runBackend(BackendCallbacks& callbacks, unsigned samplingRate, const std::atomic<bool>& done)
 	{
 #define CHECK_ALSA(call) \
 	if (const auto status = call; status < 0) \
@@ -90,16 +92,12 @@ namespace aulosplay
 		const auto period = std::make_unique<float[]>(periodFrames * kChannels);
 		const auto monoBuffer = std::make_unique<float[]>(periodFrames);
 		PcmDrain drain{ pcm };
-		for (bool wasSilent = true; !stopFlag.load();)
+		while (!done)
 		{
 			auto data = period.get();
-			auto framesLeft = callbacks.onDataRequested(period.get(), periodFrames, monoBuffer.get());
-			if (const auto isSilent = framesLeft == 0; isSilent != wasSilent)
-			{
-				wasSilent = isSilent;
-				callbacks.onStateChanged(!isSilent);
-			}
-			while (framesLeft > 0)
+			const auto writtenFrames = callbacks.onDataExpected(data, periodFrames, monoBuffer.get());
+			std::memset(data + writtenFrames * kChannels, 0, (periodFrames - writtenFrames) * kFrameBytes);
+			for (auto framesLeft = periodFrames; framesLeft > 0;)
 			{
 				const auto result = ::snd_pcm_writei(pcm, data, framesLeft);
 				if (result < 0)
@@ -117,6 +115,7 @@ namespace aulosplay
 				data += static_cast<snd_pcm_uframes_t>(result) * kChannels;
 				framesLeft -= static_cast<snd_pcm_uframes_t>(result);
 			}
+			callbacks.onDataProcessed();
 		}
 	}
 }
