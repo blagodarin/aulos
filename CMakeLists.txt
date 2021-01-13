@@ -138,6 +138,10 @@ endfunction()
 add_subdirectory(aulos)
 
 if(WITH_AULOSPLAY OR WITH_STUDIO)
+	if(NOT WIN32)
+		find_package(ALSA REQUIRED)
+		find_package(Threads REQUIRED)
+	endif()
 	add_subdirectory(aulosplay)
 endif()
 

@@ -5,6 +5,7 @@
 #include "backend.hpp"
 
 #include <cstring>
+#include <memory>
 
 #include <alsa/asoundlib.h>
 
@@ -82,7 +83,7 @@ namespace aulosplay
 		}
 		{
 			PcmSwParams sw;
-			CHECK_ALSA(snd_pcm_sw_params_malloc(sw._handle));
+			CHECK_ALSA(snd_pcm_sw_params_malloc(&sw._handle));
 			CHECK_ALSA(snd_pcm_sw_params_current(pcm, sw));
 			CHECK_ALSA(snd_pcm_sw_params_set_avail_min(pcm, sw, periodFrames));
 			CHECK_ALSA(snd_pcm_sw_params_set_start_threshold(pcm, sw, 1));

@@ -7,6 +7,7 @@
 #include <atomic>
 #include <functional>
 #include <numeric>
+#include <string>
 
 namespace aulosplay
 {
