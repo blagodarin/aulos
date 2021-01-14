@@ -32,3 +32,4 @@ add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/${STUDIO_INSTALLER_NAME}
 	VERBATIM
 	WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
 add_custom_target(studio_installer DEPENDS ${PROJECT_BINARY_DIR}/${STUDIO_INSTALLER_NAME})
+set_property(TARGET studio_installer PROPERTY FOLDER studio)

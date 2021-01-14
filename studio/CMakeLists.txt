@@ -58,7 +58,12 @@ add_executable(studio WIN32
 target_compile_options(studio PRIVATE ${STUDIO_WARNINGS})
 target_include_directories(studio PRIVATE ${PROJECT_BINARY_DIR})
 target_link_libraries(studio PRIVATE aulos aulosplay Qt${QT_VERSION}::Widgets)
-set_target_properties(studio PROPERTIES AUTOMOC ON AUTORCC ON AUTOUIC ON)
+set_target_properties(studio PROPERTIES
+	AUTOMOC ON
+	AUTORCC ON
+	AUTOUIC ON
+	FOLDER studio
+	)
 if(WIN32)
 	target_sources(studio PRIVATE res/studio.rc)
 	set_property(TARGET studio PROPERTY OUTPUT_NAME AulosStudio)

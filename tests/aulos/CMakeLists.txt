@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 source_group("src" REGULAR_EXPRESSION "/src/")
-add_executable(tests
+add_executable(aulos_tests
 	src/format.cpp
 	src/loop.cpp
 	src/main.cpp
@@ -11,12 +11,12 @@ add_executable(tests
 	src/utils.cpp
 	src/voice.cpp
 	)
-target_compile_options(tests PRIVATE ${MAX_WARNINGS})
-target_include_directories(tests PRIVATE ${PROJECT_BINARY_DIR})
-target_link_libraries(tests PRIVATE aulos_standalone)
-set_target_properties(tests PROPERTIES
+target_compile_options(aulos_tests PRIVATE ${MAX_WARNINGS})
+target_include_directories(aulos_tests PRIVATE ${PROJECT_BINARY_DIR})
+target_link_libraries(aulos_tests PRIVATE aulos_standalone)
+set_target_properties(aulos_tests PROPERTIES
+	FOLDER aulos
 	MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
 	POSITION_INDEPENDENT_CODE OFF
 	)
-
-add_test(NAME aulos COMMAND tests)
+add_test(NAME aulos COMMAND aulos_tests)
