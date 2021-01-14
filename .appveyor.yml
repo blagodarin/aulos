@@ -55,7 +55,7 @@ build_script:
 
 test_script:
   - cd %BUILD_DIR%
-  - ctest --output-on-failure %EXTRA_TEST_FLAGS%
+  - ctest --verbose %EXTRA_TEST_FLAGS%
   - cd %INSTALL_DIR%\bin
   - aulos_benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\czardas.aulos
   - aulos_benchmark.exe %APPVEYOR_BUILD_FOLDER%\examples\frere_jacques.aulos
