@@ -60,24 +60,18 @@ Player::Player(QObject* parent)
 	: QObject{ parent }
 {
 	_timer.setInterval(20);
-	connect(this, &Player::playbackError, this, [this](const QString& error) {
-		qInfo() << error;
-		if (_state != State::Stopped)
-		{
-			_state = State::Stopped;
-			_timer.stop();
-			emit stateChanged();
-		}
-	});
 	connect(this, &Player::playbackStarted, this, [this] {
 		_state = State::Started;
 		_timer.start();
 		emit stateChanged();
 	});
 	connect(this, &Player::playbackStopped, this, [this] {
-		_state = State::Stopped;
-		_timer.stop();
-		emit stateChanged();
+		if (_state != State::Stopped)
+		{
+			_state = State::Stopped;
+			_timer.stop();
+			emit stateChanged();
+		}
 	});
 	connect(&_timer, &QTimer::timeout, this, [this] {
 		emit offsetChanged(static_cast<double>(_source->currentOffset()));
@@ -106,9 +100,19 @@ void Player::stop()
 		_backend->stop();
 }
 
+void Player::onPlaybackError(aulosplay::PlaybackError error)
+{
+	switch (error)
+	{
+	case aulosplay::PlaybackError::NoDevice: qWarning() << "PlaybackError::NoDevice"; break;
+	}
+	emit playbackStopped();
+}
+
 void Player::onPlaybackError(std::string&& message)
 {
-	emit playbackError(QString::fromStdString(message));
+	qWarning() << QString::fromStdString(message);
+	emit playbackStopped();
 }
 
 void Player::onPlaybackStarted()

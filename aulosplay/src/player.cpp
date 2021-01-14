@@ -85,7 +85,12 @@ namespace
 				_callbacks.onPlaybackStopped();
 		}
 
-		void onErrorReported(const char* function, unsigned code, const std::string& description) override
+		void onErrorReported(aulosplay::PlaybackError error) override
+		{
+			_callbacks.onPlaybackError(error);
+		}
+
+		void onErrorReported(const char* function, int code, const std::string& description) override
 		{
 			std::string message;
 			if (description.empty())

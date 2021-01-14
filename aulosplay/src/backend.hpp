@@ -4,10 +4,11 @@
 
 #pragma once
 
+#include <aulosplay/player.hpp>
+
 #include <atomic>
 #include <functional>
 #include <numeric>
-#include <string>
 
 namespace aulosplay
 {
@@ -23,7 +24,8 @@ namespace aulosplay
 
 		virtual size_t onDataExpected(float* output, size_t maxFrames, float* monoBuffer) noexcept = 0;
 		virtual void onDataProcessed() = 0;
-		virtual void onErrorReported(const char* function, unsigned code, const std::string& description) = 0;
+		virtual void onErrorReported(PlaybackError) = 0;
+		virtual void onErrorReported(const char* function, int code, const std::string& description) = 0;
 	};
 
 	void runBackend(BackendCallbacks&, unsigned samplingRate, const std::atomic<bool>& stopFlag);

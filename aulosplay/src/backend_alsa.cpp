@@ -17,6 +17,8 @@ namespace
 
 	std::string functionName(const char* signature)
 	{
+		while (*signature == ':')
+			++signature;
 		auto end = signature;
 		while (*end != '(')
 			++end;
@@ -34,39 +36,40 @@ namespace aulosplay
 
 		snd_pcm_uframes_t periodFrames = 0;
 		snd_pcm_uframes_t bufferFrames = 0;
-		CPtr<snd_pcm_t, snd_pcm_close> pcm;
-		CHECK_ALSA(snd_pcm_open(pcm.out(), "default", SND_PCM_STREAM_PLAYBACK, 0));
+		CPtr<snd_pcm_t, ::snd_pcm_close> pcm;
+		if (const auto status = ::snd_pcm_open(pcm.out(), "default", SND_PCM_STREAM_PLAYBACK, 0); status < 0)
+			return status == -ENOENT ? callbacks.onErrorReported(PlaybackError::NoDevice) : callbacks.onErrorReported("snd_pcm_open", status, ::snd_strerror(status));
 		{
-			CPtr<snd_pcm_hw_params_t, snd_pcm_hw_params_free> hw;
-			CHECK_ALSA(snd_pcm_hw_params_malloc(hw.out()));
-			CHECK_ALSA(snd_pcm_hw_params_any(pcm, hw));
-			CHECK_ALSA(snd_pcm_hw_params_set_access(pcm, hw, SND_PCM_ACCESS_RW_INTERLEAVED));
-			CHECK_ALSA(snd_pcm_hw_params_set_format(pcm, hw, SND_PCM_FORMAT_FLOAT));
-			CHECK_ALSA(snd_pcm_hw_params_set_channels(pcm, hw, kChannels));
-			CHECK_ALSA(snd_pcm_hw_params_set_rate(pcm, hw, samplingRate, 0));
+			CPtr<snd_pcm_hw_params_t, ::snd_pcm_hw_params_free> hw;
+			CHECK_ALSA(::snd_pcm_hw_params_malloc(hw.out()));
+			CHECK_ALSA(::snd_pcm_hw_params_any(pcm, hw));
+			CHECK_ALSA(::snd_pcm_hw_params_set_access(pcm, hw, SND_PCM_ACCESS_RW_INTERLEAVED));
+			CHECK_ALSA(::snd_pcm_hw_params_set_format(pcm, hw, SND_PCM_FORMAT_FLOAT));
+			CHECK_ALSA(::snd_pcm_hw_params_set_channels(pcm, hw, kChannels));
+			CHECK_ALSA(::snd_pcm_hw_params_set_rate(pcm, hw, samplingRate, 0));
 			unsigned periods = kPeriodsPerBuffer;
-			CHECK_ALSA(snd_pcm_hw_params_set_periods_near(pcm, hw, &periods, nullptr));
+			CHECK_ALSA(::snd_pcm_hw_params_set_periods_near(pcm, hw, &periods, nullptr));
 			snd_pcm_uframes_t minPeriod = 0;
 			int dir = 0;
-			CHECK_ALSA(snd_pcm_hw_params_get_period_size_min(hw, &minPeriod, &dir));
+			CHECK_ALSA(::snd_pcm_hw_params_get_period_size_min(hw, &minPeriod, &dir));
 			periodFrames = (minPeriod + kFrameAlignment - 1) / kFrameAlignment * kFrameAlignment;
-			CHECK_ALSA(snd_pcm_hw_params_set_period_size(pcm, hw, periodFrames, periodFrames == minPeriod ? dir : 0));
-			CHECK_ALSA(snd_pcm_hw_params(pcm, hw));
-			CHECK_ALSA(snd_pcm_hw_params_get_period_size(hw, &periodFrames, nullptr));
-			CHECK_ALSA(snd_pcm_hw_params_get_buffer_size(hw, &bufferFrames));
+			CHECK_ALSA(::snd_pcm_hw_params_set_period_size(pcm, hw, periodFrames, periodFrames == minPeriod ? dir : 0));
+			CHECK_ALSA(::snd_pcm_hw_params(pcm, hw));
+			CHECK_ALSA(::snd_pcm_hw_params_get_period_size(hw, &periodFrames, nullptr));
+			CHECK_ALSA(::snd_pcm_hw_params_get_buffer_size(hw, &bufferFrames));
 		}
 		{
-			CPtr<snd_pcm_sw_params_t, snd_pcm_sw_params_free> sw;
-			CHECK_ALSA(snd_pcm_sw_params_malloc(sw.out()));
-			CHECK_ALSA(snd_pcm_sw_params_current(pcm, sw));
-			CHECK_ALSA(snd_pcm_sw_params_set_avail_min(pcm, sw, periodFrames));
-			CHECK_ALSA(snd_pcm_sw_params_set_start_threshold(pcm, sw, 1));
-			CHECK_ALSA(snd_pcm_sw_params_set_stop_threshold(pcm, sw, bufferFrames));
-			CHECK_ALSA(snd_pcm_sw_params(pcm, sw));
+			CPtr<snd_pcm_sw_params_t, ::snd_pcm_sw_params_free> sw;
+			CHECK_ALSA(::snd_pcm_sw_params_malloc(sw.out()));
+			CHECK_ALSA(::snd_pcm_sw_params_current(pcm, sw));
+			CHECK_ALSA(::snd_pcm_sw_params_set_avail_min(pcm, sw, periodFrames));
+			CHECK_ALSA(::snd_pcm_sw_params_set_start_threshold(pcm, sw, 1));
+			CHECK_ALSA(::snd_pcm_sw_params_set_stop_threshold(pcm, sw, bufferFrames));
+			CHECK_ALSA(::snd_pcm_sw_params(pcm, sw));
 		}
 		const auto period = std::make_unique<float[]>(periodFrames * kChannels);
 		const auto monoBuffer = std::make_unique<float[]>(periodFrames);
-		CPtr<snd_pcm_t, snd_pcm_drain> drain{ pcm };
+		CPtr<snd_pcm_t, ::snd_pcm_drain> drain{ pcm };
 		while (!done)
 		{
 			auto data = period.get();
@@ -78,8 +81,7 @@ namespace aulosplay
 				if (result < 0)
 				{
 					if (result != -EAGAIN)
-						if (const auto recovered = ::snd_pcm_recover(pcm, static_cast<int>(result), 1); recovered < 0)
-							return callbacks.onErrorReported("snd_pcm_writei", static_cast<unsigned>(recovered), ::snd_strerror(recovered));
+						CHECK_ALSA(::snd_pcm_recover(pcm, static_cast<int>(result), 1));
 					continue;
 				}
 				if (result == 0)

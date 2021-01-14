@@ -9,6 +9,12 @@
 
 namespace aulosplay
 {
+	// Known playback errors.
+	enum class PlaybackError
+	{
+		NoDevice, // No audio playback device found.
+	};
+
 	class Source
 	{
 	public:
@@ -23,6 +29,7 @@ namespace aulosplay
 	public:
 		virtual ~PlayerCallbacks() noexcept = default;
 
+		virtual void onPlaybackError(PlaybackError) = 0;
 		virtual void onPlaybackError(std::string&& message) = 0;
 		virtual void onPlaybackStarted() = 0;
 		virtual void onPlaybackStopped() = 0;

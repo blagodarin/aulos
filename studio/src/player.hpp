@@ -31,12 +31,12 @@ public:
 
 signals:
 	void offsetChanged(double currentFrame);
-	void playbackError(const QString&);
 	void playbackStarted();
 	void playbackStopped();
 	void stateChanged();
 
 private:
+	void onPlaybackError(aulosplay::PlaybackError) override;
 	void onPlaybackError(std::string&& message) override;
 	void onPlaybackStarted() override;
 	void onPlaybackStopped() override;

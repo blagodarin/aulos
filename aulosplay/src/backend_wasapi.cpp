@@ -67,7 +67,7 @@ namespace aulosplay
 					description.assign(buffer._data, length);
 				}
 			}
-			callbacks.onErrorReported(function, static_cast<unsigned>(code), description);
+			callbacks.onErrorReported(function, static_cast<int>(code), description);
 		};
 
 		if (const auto hr = ::CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED); FAILED(hr))
@@ -78,7 +78,7 @@ namespace aulosplay
 			return error("CoCreateInstance", hr);
 		ComPtr<IMMDevice> device;
 		if (const auto hr = deviceEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, &device); !device)
-			return error("IMMDeviceEnumerator::GetDefaultAudioEndpoint", hr);
+			return hr == E_NOTFOUND ? callbacks.onErrorReported(PlaybackError::NoDevice) : error("IMMDeviceEnumerator::GetDefaultAudioEndpoint", hr);
 		ComPtr<IAudioClient> audioClient;
 		if (const auto hr = device->Activate(__uuidof(IAudioClient), CLSCTX_ALL, nullptr, reinterpret_cast<void**>(&audioClient)); !audioClient)
 			return error("IMMDevice::Activate", hr);
