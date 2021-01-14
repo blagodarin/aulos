@@ -4,6 +4,8 @@
 
 #include "backend.hpp"
 
+#include "c_ptr.hpp"
+
 #include <cstring>
 #include <memory>
 
@@ -12,34 +14,6 @@
 namespace
 {
 	constexpr unsigned kPeriodsPerBuffer = 2;
-
-	struct Pcm
-	{
-		snd_pcm_t* _handle = nullptr;
-		~Pcm() noexcept { ::snd_pcm_close(_handle); }
-		constexpr operator snd_pcm_t*() const noexcept { return _handle; }
-	};
-
-	struct PcmHwParams
-	{
-		snd_pcm_hw_params_t* _handle = nullptr;
-		~PcmHwParams() noexcept { ::snd_pcm_hw_params_free(_handle); }
-		constexpr operator snd_pcm_hw_params_t*() const noexcept { return _handle; }
-	};
-
-	struct PcmSwParams
-	{
-		snd_pcm_sw_params_t* _handle = nullptr;
-		~PcmSwParams() noexcept { ::snd_pcm_sw_params_free(_handle); }
-		constexpr operator snd_pcm_sw_params_t*() const noexcept { return _handle; }
-	};
-
-	struct PcmDrain
-	{
-		snd_pcm_t* _handle = nullptr;
-		constexpr PcmDrain(snd_pcm_t* handle) noexcept : _handle{ handle } {}
-		~PcmDrain() noexcept { ::snd_pcm_drain(_handle); }
-	};
 
 	std::string functionName(const char* signature)
 	{
@@ -56,15 +30,15 @@ namespace aulosplay
 	{
 #define CHECK_ALSA(call) \
 	if (const auto status = call; status < 0) \
-		return callbacks.onErrorReported(::functionName(#call).c_str(), static_cast<unsigned>(status), ::snd_strerror(status))
+	return callbacks.onErrorReported(::functionName(#call).c_str(), status, ::snd_strerror(status))
 
 		snd_pcm_uframes_t periodFrames = 0;
 		snd_pcm_uframes_t bufferFrames = 0;
-		Pcm pcm;
-		CHECK_ALSA(snd_pcm_open(&pcm._handle, "default", SND_PCM_STREAM_PLAYBACK, 0));
+		CPtr<snd_pcm_t, snd_pcm_close> pcm;
+		CHECK_ALSA(snd_pcm_open(pcm.out(), "default", SND_PCM_STREAM_PLAYBACK, 0));
 		{
-			PcmHwParams hw;
-			CHECK_ALSA(snd_pcm_hw_params_malloc(&hw._handle));
+			CPtr<snd_pcm_hw_params_t, snd_pcm_hw_params_free> hw;
+			CHECK_ALSA(snd_pcm_hw_params_malloc(hw.out()));
 			CHECK_ALSA(snd_pcm_hw_params_any(pcm, hw));
 			CHECK_ALSA(snd_pcm_hw_params_set_access(pcm, hw, SND_PCM_ACCESS_RW_INTERLEAVED));
 			CHECK_ALSA(snd_pcm_hw_params_set_format(pcm, hw, SND_PCM_FORMAT_FLOAT));
@@ -82,8 +56,8 @@ namespace aulosplay
 			CHECK_ALSA(snd_pcm_hw_params_get_buffer_size(hw, &bufferFrames));
 		}
 		{
-			PcmSwParams sw;
-			CHECK_ALSA(snd_pcm_sw_params_malloc(&sw._handle));
+			CPtr<snd_pcm_sw_params_t, snd_pcm_sw_params_free> sw;
+			CHECK_ALSA(snd_pcm_sw_params_malloc(sw.out()));
 			CHECK_ALSA(snd_pcm_sw_params_current(pcm, sw));
 			CHECK_ALSA(snd_pcm_sw_params_set_avail_min(pcm, sw, periodFrames));
 			CHECK_ALSA(snd_pcm_sw_params_set_start_threshold(pcm, sw, 1));
@@ -92,7 +66,7 @@ namespace aulosplay
 		}
 		const auto period = std::make_unique<float[]>(periodFrames * kChannels);
 		const auto monoBuffer = std::make_unique<float[]>(periodFrames);
-		PcmDrain drain{ pcm };
+		CPtr<snd_pcm_t, snd_pcm_drain> drain{ pcm };
 		while (!done)
 		{
 			auto data = period.get();

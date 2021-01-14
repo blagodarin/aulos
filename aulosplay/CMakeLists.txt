@@ -8,6 +8,7 @@ set(HEADERS
 
 set(SOURCES
 	src/backend.hpp
+	src/c_ptr.hpp
 	src/player.cpp
 	src/utils.cpp
 	src/utils.hpp

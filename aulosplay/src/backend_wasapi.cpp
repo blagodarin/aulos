@@ -4,6 +4,8 @@
 
 #include "backend.hpp"
 
+#include "c_ptr.hpp"
+
 #define WIN32_LEAN_AND_MEAN
 #pragma warning(push)
 #pragma warning(disable : 4365) // signed/unsigned mismatch
@@ -19,25 +21,11 @@
 namespace
 {
 	template <typename T>
-	struct ComBuffer
-	{
-		T* _data = nullptr;
-		~ComBuffer() noexcept { ::CoTaskMemFree(_data); }
-		T* operator->() noexcept { return _data; }
-	};
-
-	template <typename T>
 	using ComPtr = _com_ptr_t<_com_IIID<T, &__uuidof(T)>>;
 
 	struct ComUninitializer
 	{
 		~ComUninitializer() noexcept { ::CoUninitialize(); }
-	};
-
-	struct HandleWrapper
-	{
-		HANDLE _handle = NULL;
-		~HandleWrapper() noexcept { ::CloseHandle(_handle); }
 	};
 
 	struct AudioClientStopper
@@ -97,12 +85,12 @@ namespace aulosplay
 		REFERENCE_TIME period = 0;
 		if (const auto hr = audioClient->GetDevicePeriod(nullptr, &period); FAILED(hr))
 			return error("IAudioClient::GetDevicePeriod", hr);
-		ComBuffer<WAVEFORMATEX> format;
-		if (const auto hr = audioClient->GetMixFormat(&format._data); !format._data)
+		CPtr<WAVEFORMATEX, ::CoTaskMemFree> format;
+		if (const auto hr = audioClient->GetMixFormat(format.out()); !format)
 			return error("IAudioClient::GetMixFormat", hr);
 		if (format->wFormatTag == WAVE_FORMAT_EXTENSIBLE)
 		{
-			const auto extensible = reinterpret_cast<WAVEFORMATEXTENSIBLE*>(format._data);
+			const auto extensible = reinterpret_cast<WAVEFORMATEXTENSIBLE*>(format.get());
 			if (!::IsEqualGUID(extensible->SubFormat, KSDATAFORMAT_SUBTYPE_IEEE_FLOAT) || extensible->Format.wBitsPerSample != 32)
 			{
 				extensible->Format.wBitsPerSample = 32;
@@ -132,12 +120,12 @@ namespace aulosplay
 			format->nBlockAlign = static_cast<WORD>((format->wBitsPerSample / 8) * format->nChannels);
 			format->nAvgBytesPerSec = format->nBlockAlign * format->nSamplesPerSec;
 		}
-		if (const auto hr = audioClient->Initialize(AUDCLNT_SHAREMODE_SHARED, streamFlags, period, 0, format._data, nullptr); FAILED(hr))
+		if (const auto hr = audioClient->Initialize(AUDCLNT_SHAREMODE_SHARED, streamFlags, period, 0, format, nullptr); FAILED(hr))
 			return error("IAudioClient::Initialize", hr);
-		HandleWrapper event;
-		if (event._handle = ::CreateEventW(nullptr, FALSE, FALSE, nullptr); !event._handle)
+		CPtr<std::remove_pointer_t<HANDLE>, ::CloseHandle> event;
+		if (*event.out() = ::CreateEventW(nullptr, FALSE, FALSE, nullptr); !event)
 			return error("CreateEventW", static_cast<HRESULT>(::GetLastError()));
-		if (const auto hr = audioClient->SetEventHandle(event._handle); FAILED(hr))
+		if (const auto hr = audioClient->SetEventHandle(event); FAILED(hr))
 			return error("IAudioClient::SetEventHandle", hr);
 		UINT32 bufferFrames = 0;
 		if (const auto hr = audioClient->GetBufferSize(&bufferFrames); FAILED(hr))
@@ -159,7 +147,7 @@ namespace aulosplay
 				lockedFrames = (bufferFrames - paddingFrames) / kFrameAlignment * kFrameAlignment;
 				if (lockedFrames >= updateFrames)
 					break;
-				if (const auto status = ::WaitForSingleObjectEx(event._handle, 2 * paddingFrames * 1000 / samplingRate, FALSE); status != WAIT_OBJECT_0)
+				if (const auto status = ::WaitForSingleObjectEx(event, 2 * paddingFrames * 1000 / samplingRate, FALSE); status != WAIT_OBJECT_0)
 					return error("WaitForSingleObjectEx", static_cast<HRESULT>(status == WAIT_TIMEOUT ? ERROR_TIMEOUT : ::GetLastError()));
 			}
 			BYTE* buffer = nullptr;
