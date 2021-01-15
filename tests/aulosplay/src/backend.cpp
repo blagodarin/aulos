@@ -4,6 +4,8 @@
 
 #include <aulosplay/src/backend.hpp>
 
+#include "common.hpp"
+
 #include <cstring>
 
 #include <ostream>
@@ -11,22 +13,31 @@
 
 namespace
 {
-	constexpr size_t kTestFrames = 32'783; // A prime number.
-
-	struct TestCallbacks : public aulosplay::BackendCallbacks
+	class BackendTester : public aulosplay::BackendCallbacks
 	{
-		unsigned _step = 0;
-		size_t _framesRemaining = kTestFrames;
-		std::atomic<bool> _stopFlag{ false };
-		bool _skipPostconditions = false;
+	public:
+		void checkPostconditions() const
+		{
+			if (!_skipPostconditions)
+			{
+				CHECK(_framesRemaining == 0);
+				CHECK(_stopFlag);
+			}
+		}
 
+		const std::atomic<bool>& stopFlag() const
+		{
+			return _stopFlag;
+		}
+
+	private:
 		size_t onDataExpected(float* output, size_t maxFrames, float*) noexcept override
 		{
 			CHECK(maxFrames > 0);
 			const auto result = std::min(_framesRemaining, maxFrames);
 			if (result > 0)
 			{
-				std::memset(output, 0, result * aulosplay::kFrameBytes);
+				std::memset(output, 0, result * aulosplay::kBackendFrameBytes);
 				_framesRemaining -= result;
 			}
 			else
@@ -57,16 +68,18 @@ namespace
 			FAIL_CHECK(description, " (", function, " -> ", code, ")");
 			_skipPostconditions = true;
 		}
+
+	private:
+		std::atomic<bool> _stopFlag{ false };
+		unsigned _step = 0;
+		size_t _framesRemaining = kTestFrames;
+		bool _skipPostconditions = false;
 	};
 }
 
 TEST_CASE("backend")
 {
-	TestCallbacks callbacks;
-	aulosplay::runBackend(callbacks, 48'000, callbacks._stopFlag);
-	if (!callbacks._skipPostconditions)
-	{
-		CHECK(callbacks._framesRemaining == 0);
-		CHECK(callbacks._stopFlag);
-	}
+	BackendTester tester;
+	aulosplay::runBackend(tester, kTestSamplingRate, tester.stopFlag());
+	tester.checkPostconditions();
 }

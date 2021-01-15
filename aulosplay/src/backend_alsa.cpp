@@ -45,14 +45,14 @@ namespace aulosplay
 			CHECK_ALSA(::snd_pcm_hw_params_any(pcm, hw));
 			CHECK_ALSA(::snd_pcm_hw_params_set_access(pcm, hw, SND_PCM_ACCESS_RW_INTERLEAVED));
 			CHECK_ALSA(::snd_pcm_hw_params_set_format(pcm, hw, SND_PCM_FORMAT_FLOAT));
-			CHECK_ALSA(::snd_pcm_hw_params_set_channels(pcm, hw, kChannels));
+			CHECK_ALSA(::snd_pcm_hw_params_set_channels(pcm, hw, kBackendChannels));
 			CHECK_ALSA(::snd_pcm_hw_params_set_rate(pcm, hw, samplingRate, 0));
 			unsigned periods = kPeriodsPerBuffer;
 			CHECK_ALSA(::snd_pcm_hw_params_set_periods_near(pcm, hw, &periods, nullptr));
 			snd_pcm_uframes_t minPeriod = 0;
 			int dir = 0;
 			CHECK_ALSA(::snd_pcm_hw_params_get_period_size_min(hw, &minPeriod, &dir));
-			periodFrames = (minPeriod + kFrameAlignment - 1) / kFrameAlignment * kFrameAlignment;
+			periodFrames = (minPeriod + kBackendFrameAlignment - 1) / kBackendFrameAlignment * kBackendFrameAlignment;
 			CHECK_ALSA(::snd_pcm_hw_params_set_period_size(pcm, hw, periodFrames, periodFrames == minPeriod ? dir : 0));
 			CHECK_ALSA(::snd_pcm_hw_params(pcm, hw));
 			CHECK_ALSA(::snd_pcm_hw_params_get_period_size(hw, &periodFrames, nullptr));
@@ -67,14 +67,14 @@ namespace aulosplay
 			CHECK_ALSA(::snd_pcm_sw_params_set_stop_threshold(pcm, sw, bufferFrames));
 			CHECK_ALSA(::snd_pcm_sw_params(pcm, sw));
 		}
-		const auto period = std::make_unique<float[]>(periodFrames * kChannels);
+		const auto period = std::make_unique<float[]>(periodFrames * kBackendChannels);
 		const auto monoBuffer = std::make_unique<float[]>(periodFrames);
 		CPtr<snd_pcm_t, ::snd_pcm_drain> drain{ pcm };
 		while (!done)
 		{
 			auto data = period.get();
 			const auto writtenFrames = callbacks.onDataExpected(data, periodFrames, monoBuffer.get());
-			std::memset(data + writtenFrames * kChannels, 0, (periodFrames - writtenFrames) * kFrameBytes);
+			std::memset(data + writtenFrames * kBackendChannels, 0, (periodFrames - writtenFrames) * kBackendFrameBytes);
 			for (auto framesLeft = periodFrames; framesLeft > 0;)
 			{
 				const auto result = ::snd_pcm_writei(pcm, data, framesLeft);
@@ -89,7 +89,7 @@ namespace aulosplay
 					::snd_pcm_wait(pcm, static_cast<int>((bufferFrames * 1000 + samplingRate - 1) / samplingRate));
 					continue;
 				}
-				data += static_cast<snd_pcm_uframes_t>(result) * kChannels;
+				data += static_cast<snd_pcm_uframes_t>(result) * kBackendChannels;
 				framesLeft -= static_cast<snd_pcm_uframes_t>(result);
 			}
 			callbacks.onDataProcessed();

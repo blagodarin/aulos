@@ -114,9 +114,9 @@ namespace aulosplay
 			format->nSamplesPerSec = samplingRate;
 			format->nAvgBytesPerSec = format->nBlockAlign * format->nSamplesPerSec;
 		}
-		if (format->nChannels != kChannels)
+		if (format->nChannels != kBackendChannels)
 		{
-			format->nChannels = kChannels;
+			format->nChannels = kBackendChannels;
 			format->nBlockAlign = static_cast<WORD>((format->wBitsPerSample / 8) * format->nChannels);
 			format->nAvgBytesPerSec = format->nBlockAlign * format->nSamplesPerSec;
 		}
@@ -133,7 +133,7 @@ namespace aulosplay
 		ComPtr<IAudioRenderClient> audioRenderClient;
 		if (const auto hr = audioClient->GetService(__uuidof(IAudioRenderClient), reinterpret_cast<void**>(&audioRenderClient)); !audioRenderClient)
 			return error("IAudioClient::GetService", hr);
-		const UINT32 updateFrames = bufferFrames / kFrameAlignment * kFrameAlignment / 2;
+		const UINT32 updateFrames = bufferFrames / kBackendFrameAlignment * kBackendFrameAlignment / 2;
 		const auto monoBuffer = std::make_unique<float[]>(bufferFrames);
 		AudioClientStopper audioClientStopper;
 		while (!done)
@@ -144,7 +144,7 @@ namespace aulosplay
 				UINT32 paddingFrames = 0;
 				if (const auto hr = audioClient->GetCurrentPadding(&paddingFrames); FAILED(hr))
 					return error("IAudioClient::GetCurrentPadding", hr);
-				lockedFrames = (bufferFrames - paddingFrames) / kFrameAlignment * kFrameAlignment;
+				lockedFrames = (bufferFrames - paddingFrames) / kBackendFrameAlignment * kBackendFrameAlignment;
 				if (lockedFrames >= updateFrames)
 					break;
 				if (const auto status = ::WaitForSingleObjectEx(event, 2 * paddingFrames * 1000 / samplingRate, FALSE); status != WAIT_OBJECT_0)

@@ -12,10 +12,10 @@
 
 namespace aulosplay
 {
-	constexpr auto kChannels = 2u;
+	constexpr auto kBackendChannels = 2u;
 	constexpr auto kSimdAlignment = 16u;
-	constexpr auto kFrameBytes = kChannels * sizeof(float);
-	constexpr auto kFrameAlignment = std::lcm(kSimdAlignment, kFrameBytes) / kFrameBytes;
+	constexpr auto kBackendFrameBytes = kBackendChannels * sizeof(float);
+	constexpr auto kBackendFrameAlignment = std::lcm(kSimdAlignment, kBackendFrameBytes) / kBackendFrameBytes;
 
 	class BackendCallbacks
 	{

@@ -5,8 +5,10 @@
 source_group("src" REGULAR_EXPRESSION "/src/")
 add_executable(aulosplay_tests
 	src/backend.cpp
+	src/common.hpp
 	src/main.cpp
 	src/player.cpp
+	src/utils.cpp
 	)
 target_compile_options(aulosplay_tests PRIVATE ${MAX_WARNINGS})
 target_include_directories(aulosplay_tests PRIVATE ${PROJECT_BINARY_DIR})
