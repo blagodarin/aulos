@@ -1,16 +1,8 @@
 #!/bin/sh
-cat << EOF >> /etc/modules.conf
-alias char-major-116 snd
-alias snd-card-0 snd-dummy
-EOF
 cat << EOF > .asoundrc
-pcm.dummy {
+pcm.!default {
 	type hw
-	card 0
-}
-ctl.dummy {
-	type hw
-	card 0
+	card Dummy
 }
 EOF
 apt-get install linux-modules-extra-$(uname -r)
