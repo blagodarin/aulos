@@ -13,6 +13,7 @@ matrix:
       addons: &gcc_addons
         apt:
           packages:
+            - alsa-utils
             - g++-10
             - libasound2-dev
             - ninja-build
@@ -32,6 +33,7 @@ matrix:
       addons: &clang_addons
         apt:
           packages:
+            - alsa-utils
             - clang-11
             - libasound2-dev
             - libstdc++-10-dev
@@ -50,6 +52,7 @@ before_install:
   - if [ -n "${GCC}" ]; then export CXX=g++-${GCC}; fi
   - ${CXX} --version
   - cmake --version
+  - sudo tests/setup_travis_audio.sh
 
 script:
   - if [ "${CONFIG}" = "Debug" ]; then CMAKE_OPTIONS="-DUSE_SANITIZERS=ON"; fi
