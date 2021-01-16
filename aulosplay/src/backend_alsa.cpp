@@ -28,17 +28,17 @@ namespace
 
 namespace aulosplay
 {
-	void runBackend(BackendCallbacks& callbacks, unsigned samplingRate, const std::atomic<bool>& done)
+	void runBackend(BackendCallbacks& callbacks, unsigned samplingRate)
 	{
 #define CHECK_ALSA(call) \
 	if (const auto status = call; status < 0) \
-	return callbacks.onErrorReported(::functionName(#call).c_str(), status, ::snd_strerror(status))
+	return callbacks.onBackendError(::functionName(#call).c_str(), status, ::snd_strerror(status))
 
 		snd_pcm_uframes_t periodFrames = 0;
 		snd_pcm_uframes_t bufferFrames = 0;
 		CPtr<snd_pcm_t, ::snd_pcm_close> pcm;
 		if (const auto status = ::snd_pcm_open(pcm.out(), "default", SND_PCM_STREAM_PLAYBACK, 0); status < 0)
-			return status == -ENOENT ? callbacks.onErrorReported(PlaybackError::NoDevice) : callbacks.onErrorReported("snd_pcm_open", status, ::snd_strerror(status));
+			return status == -ENOENT ? callbacks.onBackendError(PlaybackError::NoDevice) : callbacks.onBackendError("snd_pcm_open", status, ::snd_strerror(status));
 		{
 			CPtr<snd_pcm_hw_params_t, ::snd_pcm_hw_params_free> hw;
 			CHECK_ALSA(::snd_pcm_hw_params_malloc(hw.out()));
@@ -70,10 +70,10 @@ namespace aulosplay
 		const auto period = std::make_unique<float[]>(periodFrames * kBackendChannels);
 		const auto monoBuffer = std::make_unique<float[]>(periodFrames);
 		CPtr<snd_pcm_t, ::snd_pcm_drain> drain{ pcm };
-		while (!done)
+		while (callbacks.onBackendIdle())
 		{
 			auto data = period.get();
-			const auto writtenFrames = callbacks.onDataExpected(data, periodFrames, monoBuffer.get());
+			const auto writtenFrames = callbacks.onBackendRead(data, periodFrames, monoBuffer.get());
 			std::memset(data + writtenFrames * kBackendChannels, 0, (periodFrames - writtenFrames) * kBackendFrameBytes);
 			for (auto framesLeft = periodFrames; framesLeft > 0;)
 			{
@@ -92,7 +92,6 @@ namespace aulosplay
 				data += static_cast<snd_pcm_uframes_t>(result) * kBackendChannels;
 				framesLeft -= static_cast<snd_pcm_uframes_t>(result);
 			}
-			callbacks.onDataProcessed();
 		}
 	}
 }

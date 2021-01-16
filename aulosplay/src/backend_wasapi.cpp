@@ -42,7 +42,7 @@ namespace
 
 namespace aulosplay
 {
-	void runBackend(BackendCallbacks& callbacks, unsigned samplingRate, const std::atomic<bool>& done)
+	void runBackend(BackendCallbacks& callbacks, unsigned samplingRate)
 	{
 		const auto error = [&callbacks](const char* function, HRESULT code) {
 			std::string description;
@@ -67,7 +67,7 @@ namespace aulosplay
 					description.assign(buffer._data, length);
 				}
 			}
-			callbacks.onErrorReported(function, static_cast<int>(code), description);
+			callbacks.onBackendError(function, static_cast<int>(code), description);
 		};
 
 		if (const auto hr = ::CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED); FAILED(hr))
@@ -78,7 +78,7 @@ namespace aulosplay
 			return error("CoCreateInstance", hr);
 		ComPtr<IMMDevice> device;
 		if (const auto hr = deviceEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, &device); !device)
-			return hr == E_NOTFOUND ? callbacks.onErrorReported(PlaybackError::NoDevice) : error("IMMDeviceEnumerator::GetDefaultAudioEndpoint", hr);
+			return hr == E_NOTFOUND ? callbacks.onBackendError(PlaybackError::NoDevice) : error("IMMDeviceEnumerator::GetDefaultAudioEndpoint", hr);
 		ComPtr<IAudioClient> audioClient;
 		if (const auto hr = device->Activate(__uuidof(IAudioClient), CLSCTX_ALL, nullptr, reinterpret_cast<void**>(&audioClient)); !audioClient)
 			return error("IMMDevice::Activate", hr);
@@ -136,7 +136,7 @@ namespace aulosplay
 		const UINT32 updateFrames = bufferFrames / kBackendFrameAlignment * kBackendFrameAlignment / 2;
 		const auto monoBuffer = std::make_unique<float[]>(bufferFrames);
 		AudioClientStopper audioClientStopper;
-		while (!done)
+		while (callbacks.onBackendIdle())
 		{
 			UINT32 lockedFrames = 0;
 			for (;;)
@@ -153,7 +153,7 @@ namespace aulosplay
 			BYTE* buffer = nullptr;
 			if (const auto hr = audioRenderClient->GetBuffer(lockedFrames, &buffer); FAILED(hr))
 				return error("IAudioRenderClient::GetBuffer", hr);
-			auto writtenFrames = static_cast<UINT32>(callbacks.onDataExpected(reinterpret_cast<float*>(buffer), lockedFrames, monoBuffer.get()));
+			auto writtenFrames = static_cast<UINT32>(callbacks.onBackendRead(reinterpret_cast<float*>(buffer), lockedFrames, monoBuffer.get()));
 			DWORD releaseFlags = 0;
 			if (!writtenFrames)
 			{
@@ -168,7 +168,6 @@ namespace aulosplay
 					return error("IAudioRenderClient::Start", hr);
 				audioClientStopper._audioClient = audioClient;
 			}
-			callbacks.onDataProcessed();
 		}
 	}
 }

@@ -21,18 +21,40 @@ namespace
 			if (!_skipPostconditions)
 			{
 				CHECK(_framesRemaining == 0);
-				CHECK(_stopFlag);
+				CHECK(_stopping);
 			}
 		}
 
-		const std::atomic<bool>& stopFlag() const
+	private:
+		void onBackendError(aulosplay::PlaybackError error) override
 		{
-			return _stopFlag;
+			CHECK(!_stopping);
+			REQUIRE(error == aulosplay::PlaybackError::NoDevice);
+			CHECK(_step == 0);
+			CHECK(_framesRemaining == kTestFrames);
+			MESSAGE("No audio playback device found");
+			_skipPostconditions = true;
 		}
 
-	private:
-		size_t onDataExpected(float* output, size_t maxFrames, float*) noexcept override
+		void onBackendError(const char* function, int code, const std::string& description) override
 		{
+			CHECK(!_stopping);
+			FAIL_CHECK(description, " (", function, " -> ", code, ")");
+			_skipPostconditions = true;
+		}
+
+		bool onBackendIdle() override
+		{
+			if (!_done)
+				return true;
+			CHECK(!_stopping);
+			_stopping = true;
+			return false;
+		}
+
+		size_t onBackendRead(float* output, size_t maxFrames, float*) noexcept override
+		{
+			CHECK(!_stopping);
 			CHECK(maxFrames > 0);
 			const auto result = std::min(_framesRemaining, maxFrames);
 			if (result > 0)
@@ -41,36 +63,14 @@ namespace
 				_framesRemaining -= result;
 			}
 			else
-			{
-				CHECK(!_stopFlag);
-				_stopFlag = true;
-			}
+				_done = true;
 			MESSAGE(++_step, ") ", maxFrames, " -> ", result);
 			return result;
 		}
 
-		void onDataProcessed() override
-		{
-		}
-
-		void onErrorReported(aulosplay::PlaybackError error) override
-		{
-			REQUIRE(error == aulosplay::PlaybackError::NoDevice);
-			CHECK(_step == 0);
-			CHECK(_framesRemaining == kTestFrames);
-			CHECK(!_stopFlag);
-			MESSAGE("No audio playback device found");
-			_skipPostconditions = true;
-		}
-
-		void onErrorReported(const char* function, int code, const std::string& description) override
-		{
-			FAIL_CHECK(description, " (", function, " -> ", code, ")");
-			_skipPostconditions = true;
-		}
-
 	private:
-		std::atomic<bool> _stopFlag{ false };
+		bool _done = false;
+		bool _stopping = false;
 		unsigned _step = 0;
 		size_t _framesRemaining = kTestFrames;
 		bool _skipPostconditions = false;
@@ -80,6 +80,6 @@ namespace
 TEST_CASE("backend")
 {
 	BackendTester tester;
-	aulosplay::runBackend(tester, kTestSamplingRate, tester.stopFlag());
+	aulosplay::runBackend(tester, kTestSamplingRate);
 	tester.checkPostconditions();
 }

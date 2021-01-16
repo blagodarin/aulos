@@ -8,7 +8,6 @@
 #include "utils.hpp"
 
 #include <atomic>
-#include <cassert>
 #include <cstdio>
 #include <mutex>
 #include <thread>
@@ -23,13 +22,13 @@ namespace
 		PlayerImpl(aulosplay::PlayerCallbacks& callbacks, unsigned samplingRate)
 			: _callbacks{ callbacks }
 			, _samplingRate{ samplingRate }
-			, _thread{ [this] { runBackend(*this, _samplingRate, _stop); } }
+			, _thread{ [this] { runBackend(*this, _samplingRate); } }
 		{
 		}
 
 		~PlayerImpl() noexcept override
 		{
-			_stop.store(true);
+			_done.store(true);
 			_thread.join();
 		}
 
@@ -53,7 +52,39 @@ namespace
 		}
 
 	private:
-		size_t onDataExpected(float* output, size_t maxFrames, float* monoBuffer) noexcept override
+		void onBackendError(aulosplay::PlaybackError error) override
+		{
+			_callbacks.onPlaybackError(error);
+		}
+
+		void onBackendError(const char* function, int code, const std::string& description) override
+		{
+			std::string message;
+			if (description.empty())
+			{
+				constexpr auto pattern = "[%s] Error 0x%08X";
+				message.resize(static_cast<size_t>(std::snprintf(nullptr, 0, pattern, function, code)), '\0');
+				std::snprintf(message.data(), message.size() + 1, pattern, function, code);
+			}
+			else
+			{
+				constexpr auto pattern = "[%s] Error 0x%08X: %s";
+				message.resize(static_cast<size_t>(std::snprintf(nullptr, 0, pattern, function, code, description.c_str())), '\0');
+				std::snprintf(message.data(), message.size() + 1, pattern, function, code, description.c_str());
+			}
+			_callbacks.onPlaybackError(std::move(message));
+		}
+
+		bool onBackendIdle() override
+		{
+			if (_started)
+				_callbacks.onPlaybackStarted();
+			if (_stopped)
+				_callbacks.onPlaybackStopped();
+			return !_done.load();
+		}
+
+		size_t onBackendRead(float* output, size_t maxFrames, float* monoBuffer) noexcept override
 		{
 			size_t frames = 0;
 			bool monoToStereo = false;
@@ -77,41 +108,10 @@ namespace
 			return frames;
 		}
 
-		void onDataProcessed() override
-		{
-			if (_started)
-				_callbacks.onPlaybackStarted();
-			if (_stopped)
-				_callbacks.onPlaybackStopped();
-		}
-
-		void onErrorReported(aulosplay::PlaybackError error) override
-		{
-			_callbacks.onPlaybackError(error);
-		}
-
-		void onErrorReported(const char* function, int code, const std::string& description) override
-		{
-			std::string message;
-			if (description.empty())
-			{
-				constexpr auto pattern = "[%s] Error 0x%08X";
-				message.resize(static_cast<size_t>(std::snprintf(nullptr, 0, pattern, function, code)), '\0');
-				std::snprintf(message.data(), message.size() + 1, pattern, function, code);
-			}
-			else
-			{
-				constexpr auto pattern = "[%s] Error 0x%08X: %s";
-				message.resize(static_cast<size_t>(std::snprintf(nullptr, 0, pattern, function, code, description.c_str())), '\0');
-				std::snprintf(message.data(), message.size() + 1, pattern, function, code, description.c_str());
-			}
-			_callbacks.onPlaybackError(std::move(message));
-		}
-
 	private:
 		aulosplay::PlayerCallbacks& _callbacks;
 		const unsigned _samplingRate;
-		std::atomic<bool> _stop{ false };
+		std::atomic<bool> _done{ false };
 		std::shared_ptr<aulosplay::Source> _source;
 		bool _playing = false;
 		bool _started = false;
