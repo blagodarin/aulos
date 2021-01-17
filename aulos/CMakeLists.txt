@@ -22,18 +22,15 @@ set(SOURCES
 	src/tables.hpp
 	src/voice.hpp
 	src/wave.hpp
-	src/utils/fixed.hpp
-	src/utils/limited_vector.hpp
-	src/utils/static_vector.hpp
 	)
 
 source_group("include" FILES ${HEADERS})
 source_group("src" REGULAR_EXPRESSION "/src/")
-source_group("src\\utils" REGULAR_EXPRESSION "/src/utils/")
 
 add_library(aulos STATIC ${HEADERS} ${SOURCES})
 target_compile_options(aulos PRIVATE ${MAX_WARNINGS})
 target_include_directories(aulos PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+target_link_libraries(aulos PRIVATE primal)
 set_target_properties(aulos PROPERTIES
 	FOLDER aulos
 	POSITION_INDEPENDENT_CODE ON
@@ -44,6 +41,7 @@ if(WITH_STANDALONE OR WITH_TESTS OR WITH_BENCHMARK)
 	add_library(aulos_standalone STATIC ${HEADERS} ${SOURCES})
 	target_compile_options(aulos_standalone PRIVATE ${MAX_WARNINGS})
 	target_include_directories(aulos_standalone PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+	target_link_libraries(aulos_standalone PRIVATE primal)
 	set_target_properties(aulos_standalone PROPERTIES
 		FOLDER aulos
 		MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"

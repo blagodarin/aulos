@@ -1,4 +1,4 @@
-// This file is part of the Aulos toolkit.
+// This file is part of the Primal library.
 // Copyright (C) Sergei Blagodarin.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -10,7 +10,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace aulos
+namespace primal
 {
 	// std::vector-like container with preallocated storage (like std::array).
 	template <typename T, size_t kCapacity>

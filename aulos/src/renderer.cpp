@@ -8,9 +8,10 @@
 #include "acoustics.hpp"
 #include "composition.hpp"
 #include "tables.hpp"
-#include "utils/limited_vector.hpp"
-#include "utils/static_vector.hpp"
 #include "voice.hpp"
+
+#include <primal/rigid_vector.hpp>
+#include <primal/static_vector.hpp>
 
 #include <algorithm>
 #include <cstring>
@@ -93,7 +94,7 @@ namespace
 					assert(std::distance(_nextSound, _sounds.cend()) >= chordLength);
 					const auto chordEnd = _nextSound + chordLength;
 					assert(std::all_of(std::next(_nextSound), chordEnd, [](const TrackSound& sound) { return !sound._delaySteps; }));
-					aulos::StaticVector<PlayingSound*, aulos::kNoteCount> newSounds;
+					primal::StaticVector<PlayingSound*, aulos::kNoteCount> newSounds;
 					std::for_each(_nextSound, chordEnd, [this, &newSounds](const TrackSound& sound) {
 						auto i = _playingSounds.end();
 						switch (_polyphony)
@@ -211,7 +212,7 @@ namespace
 				break;
 			}
 			case aulos::Polyphony::Full: {
-				aulos::StaticVector<aulos::Note, aulos::kNoteCount> noteCounter;
+				primal::StaticVector<aulos::Note, aulos::kNoteCount> noteCounter;
 				for (const auto& sound : _sounds)
 					if (std::find(noteCounter.cbegin(), noteCounter.cend(), sound._note) == noteCounter.cend())
 						noteCounter.emplace_back(sound._note);
@@ -293,9 +294,9 @@ namespace
 		const aulos::CircularAcoustics _acoustics;
 		const aulos::Polyphony _polyphony;
 		const float _weight;
-		aulos::LimitedVector<std::unique_ptr<aulos::Voice>> _voicePool;
-		aulos::LimitedVector<PlayingSound> _playingSounds;
-		aulos::LimitedVector<TrackSound> _sounds;
+		primal::RigidVector<std::unique_ptr<aulos::Voice>> _voicePool;
+		primal::RigidVector<PlayingSound> _playingSounds;
+		primal::RigidVector<TrackSound> _sounds;
 		const TrackSound* _nextSound = nullptr;
 		const TrackSound* _loopSound = nullptr;
 		size_t _lastSoundOffset = 0;
@@ -439,7 +440,7 @@ namespace
 		const size_t _stepFrames;
 		const float _gainDivisor;
 		const bool _looping;
-		aulos::LimitedVector<TrackRenderer> _tracks;
+		primal::RigidVector<TrackRenderer> _tracks;
 		size_t _currentOffset = 0;
 		size_t _loopOffset = 0;
 		size_t _loopLength = 0;

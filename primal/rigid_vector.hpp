@@ -1,4 +1,4 @@
-// This file is part of the Aulos toolkit.
+// This file is part of the Primal library.
 // Copyright (C) Sergei Blagodarin.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -10,21 +10,21 @@
 #include <type_traits>
 #include <utility>
 
-namespace aulos
+namespace primal
 {
 	// std::vector-like container which:
 	// * is noncopyable and is able to contain immovable objects;
 	// * requires reserve() before use and allows only one reserve() during lifetime;
 	// * doesn't check preconditions at runtime.
 	template <typename T>
-	class LimitedVector
+	class RigidVector
 	{
 	public:
-		constexpr LimitedVector() noexcept = default;
+		constexpr RigidVector() noexcept = default;
 
-		LimitedVector(const LimitedVector&) = delete;
+		RigidVector(const RigidVector&) = delete;
 
-		constexpr LimitedVector(LimitedVector&& other) noexcept
+		constexpr RigidVector(RigidVector&& other) noexcept
 			: _data(std::exchange(other._data, nullptr))
 			, _size(std::exchange(other._size, size_t{}))
 #ifndef NDEBUG
@@ -33,15 +33,15 @@ namespace aulos
 		{
 		}
 
-		~LimitedVector() noexcept
+		~RigidVector() noexcept
 		{
 			std::destroy_n(_data, _size);
 			std::free(_data);
 		}
 
-		LimitedVector& operator=(const LimitedVector&) = delete;
+		RigidVector& operator=(const RigidVector&) = delete;
 
-		constexpr LimitedVector& operator=(LimitedVector&& other) noexcept
+		constexpr RigidVector& operator=(RigidVector&& other) noexcept
 		{
 			std::swap(_data, other._data);
 			std::swap(_size, other._size);

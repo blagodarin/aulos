@@ -7,7 +7,8 @@
 #include <aulos/common.hpp>
 #include "modulator.hpp"
 #include "period.hpp"
-#include "utils/limited_vector.hpp"
+
+#include <primal/rigid_vector.hpp>
 
 namespace aulos
 {
@@ -90,7 +91,7 @@ namespace aulos
 		const unsigned _asymmetrySize;
 		const unsigned _oscillationOffset;
 		const unsigned _oscillationSize;
-		LimitedVector<SampledPoint> _pointBuffer;
+		primal::RigidVector<SampledPoint> _pointBuffer;
 	};
 
 	class WaveState

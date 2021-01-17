@@ -8,9 +8,7 @@ set(HEADERS
 
 set(SOURCES
 	src/backend.hpp
-	src/c_ptr.hpp
 	src/player.cpp
-	src/utils.cpp
 	src/utils.hpp
 	)
 
@@ -30,7 +28,7 @@ source_group("src" REGULAR_EXPRESSION "/src/")
 add_library(aulosplay STATIC ${HEADERS} ${SOURCES})
 target_compile_options(aulosplay PRIVATE ${MAX_WARNINGS})
 target_include_directories(aulosplay PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-target_link_libraries(aulosplay PRIVATE Threads::Threads ${AULOSPLAY_LIBRARIES})
+target_link_libraries(aulosplay PRIVATE primal Threads::Threads ${AULOSPLAY_LIBRARIES})
 set_target_properties(aulosplay PROPERTIES
 	FOLDER aulosplay
 	POSITION_INDEPENDENT_CODE ON
@@ -43,7 +41,7 @@ if(WITH_STANDALONE OR WITH_TESTS)
 	add_library(aulosplay_standalone STATIC ${HEADERS} ${SOURCES})
 	target_compile_options(aulosplay_standalone PRIVATE ${MAX_WARNINGS})
 	target_include_directories(aulosplay_standalone PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-	target_link_libraries(aulosplay_standalone PRIVATE Threads::Threads ${AULOSPLAY_LIBRARIES})
+	target_link_libraries(aulosplay_standalone PRIVATE primal Threads::Threads ${AULOSPLAY_LIBRARIES})
 	set_target_properties(aulosplay_standalone PROPERTIES
 		FOLDER aulosplay
 		MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"

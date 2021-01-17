@@ -1,10 +1,10 @@
-// This file is part of the Aulos toolkit.
+// This file is part of the Primal library.
 // Copyright (C) Sergei Blagodarin.
 // SPDX-License-Identifier: Apache-2.0
 
 #include <type_traits>
 
-namespace aulosplay
+namespace primal
 {
 	template <typename T, auto deleter>
 	class CPtr

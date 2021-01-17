@@ -8,7 +8,6 @@ add_executable(aulos_tests
 	src/loop.cpp
 	src/main.cpp
 	src/shaper.cpp
-	src/utils.cpp
 	src/voice.cpp
 	)
 target_compile_options(aulos_tests PRIVATE ${MAX_WARNINGS})

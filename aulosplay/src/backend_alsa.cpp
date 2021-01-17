@@ -4,7 +4,7 @@
 
 #include "backend.hpp"
 
-#include "c_ptr.hpp"
+#include <primal/c_ptr.hpp>
 
 #include <cstring>
 #include <memory>
@@ -36,11 +36,11 @@ namespace aulosplay
 
 		snd_pcm_uframes_t periodFrames = 0;
 		snd_pcm_uframes_t bufferFrames = 0;
-		CPtr<snd_pcm_t, ::snd_pcm_close> pcm;
+		primal::CPtr<snd_pcm_t, ::snd_pcm_close> pcm;
 		if (const auto status = ::snd_pcm_open(pcm.out(), "default", SND_PCM_STREAM_PLAYBACK, 0); status < 0)
 			return status == -ENOENT ? callbacks.onBackendError(PlaybackError::NoDevice) : callbacks.onBackendError("snd_pcm_open", status, ::snd_strerror(status));
 		{
-			CPtr<snd_pcm_hw_params_t, ::snd_pcm_hw_params_free> hw;
+			primal::CPtr<snd_pcm_hw_params_t, ::snd_pcm_hw_params_free> hw;
 			CHECK_ALSA(::snd_pcm_hw_params_malloc(hw.out()));
 			CHECK_ALSA(::snd_pcm_hw_params_any(pcm, hw));
 			CHECK_ALSA(::snd_pcm_hw_params_set_access(pcm, hw, SND_PCM_ACCESS_RW_INTERLEAVED));
@@ -59,7 +59,7 @@ namespace aulosplay
 			CHECK_ALSA(::snd_pcm_hw_params_get_buffer_size(hw, &bufferFrames));
 		}
 		{
-			CPtr<snd_pcm_sw_params_t, ::snd_pcm_sw_params_free> sw;
+			primal::CPtr<snd_pcm_sw_params_t, ::snd_pcm_sw_params_free> sw;
 			CHECK_ALSA(::snd_pcm_sw_params_malloc(sw.out()));
 			CHECK_ALSA(::snd_pcm_sw_params_current(pcm, sw));
 			CHECK_ALSA(::snd_pcm_sw_params_set_avail_min(pcm, sw, periodFrames));
@@ -69,7 +69,7 @@ namespace aulosplay
 		}
 		const auto period = std::make_unique<float[]>(periodFrames * kBackendChannels);
 		const auto monoBuffer = std::make_unique<float[]>(periodFrames);
-		CPtr<snd_pcm_t, ::snd_pcm_drain> drain{ pcm };
+		primal::CPtr<snd_pcm_t, ::snd_pcm_drain> drain{ pcm };
 		while (callbacks.onBackendIdle())
 		{
 			auto data = period.get();

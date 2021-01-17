@@ -4,7 +4,7 @@
 
 #include "backend.hpp"
 
-#include "c_ptr.hpp"
+#include <primal/c_ptr.hpp>
 
 #define WIN32_LEAN_AND_MEAN
 #pragma warning(push)
@@ -85,7 +85,7 @@ namespace aulosplay
 		REFERENCE_TIME period = 0;
 		if (const auto hr = audioClient->GetDevicePeriod(nullptr, &period); FAILED(hr))
 			return error("IAudioClient::GetDevicePeriod", hr);
-		CPtr<WAVEFORMATEX, ::CoTaskMemFree> format;
+		primal::CPtr<WAVEFORMATEX, ::CoTaskMemFree> format;
 		if (const auto hr = audioClient->GetMixFormat(format.out()); !format)
 			return error("IAudioClient::GetMixFormat", hr);
 		if (format->wFormatTag == WAVE_FORMAT_EXTENSIBLE)
@@ -122,7 +122,7 @@ namespace aulosplay
 		}
 		if (const auto hr = audioClient->Initialize(AUDCLNT_SHAREMODE_SHARED, streamFlags, period, 0, format, nullptr); FAILED(hr))
 			return error("IAudioClient::Initialize", hr);
-		CPtr<std::remove_pointer_t<HANDLE>, ::CloseHandle> event;
+		primal::CPtr<std::remove_pointer_t<HANDLE>, ::CloseHandle> event;
 		if (*event.out() = ::CreateEventW(nullptr, FALSE, FALSE, nullptr); !event)
 			return error("CreateEventW", static_cast<HRESULT>(::GetLastError()));
 		if (const auto hr = audioClient->SetEventHandle(event); FAILED(hr))

@@ -1,4 +1,4 @@
-// This file is part of the Aulos toolkit.
+// This file is part of the Primal library.
 // Copyright (C) Sergei Blagodarin.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -7,7 +7,7 @@
 #include <cmath>
 #include <cstdint>
 
-namespace aulos
+namespace primal
 {
 	// Fixed-point storage.
 	template <typename T, unsigned kFractionBits>
@@ -31,6 +31,4 @@ namespace aulos
 		constexpr explicit Fixed(T value) noexcept
 			: _value{ value } {}
 	};
-
-	using Fixed12u4 = Fixed<uint16_t, 4>;
 }

@@ -7,8 +7,10 @@
 #include <aulos/composition.hpp>
 
 #include <aulos/common.hpp>
-#include "utils/fixed.hpp"
 
+#include <primal/fixed.hpp>
+
+#include <cstdint>
 #include <string>
 
 namespace aulos
@@ -41,7 +43,7 @@ namespace aulos
 		unsigned _speed = kMinSpeed;
 		unsigned _loopOffset = 0;
 		unsigned _loopLength = 0;
-		Fixed12u4 _gainDivisor{ 1.f };
+		primal::Fixed<uint16_t, 4> _gainDivisor{ 1.f };
 		std::vector<Part> _parts;
 		std::string _title;
 		std::string _author;

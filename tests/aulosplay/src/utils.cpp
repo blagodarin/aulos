@@ -11,7 +11,7 @@
 
 #include <doctest.h>
 
-TEST_CASE("mono_to_stereo")
+TEST_CASE("utils_mono_to_stereo")
 {
 	constexpr size_t kTestFrames = 17;
 	alignas(aulosplay::kSimdAlignment) std::array<float, kTestFrames * 2> stereo{};
