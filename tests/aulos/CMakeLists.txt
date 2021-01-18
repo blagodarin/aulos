@@ -12,7 +12,7 @@ add_executable(aulos_tests
 	)
 target_compile_options(aulos_tests PRIVATE ${MAX_WARNINGS})
 target_include_directories(aulos_tests PRIVATE ${PROJECT_BINARY_DIR})
-target_link_libraries(aulos_tests PRIVATE aulos_standalone)
+target_link_libraries(aulos_tests PRIVATE aulos_standalone primal)
 set_target_properties(aulos_tests PROPERTIES
 	FOLDER aulos
 	MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"

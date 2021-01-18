@@ -7,7 +7,11 @@ cmake_minimum_required(VERSION 3.15)
 project(Aulos VERSION 0.0.5.0 HOMEPAGE_URL https://github.com/blagodarin/aulos LANGUAGES CXX)
 
 include(CMakePackageConfigHelpers)
+include(FetchContent)
 include(GNUInstallDirs)
+
+FetchContent_Declare(primal GIT_REPOSITORY https://github.com/blagodarin/primal.git GIT_TAG 34c4242c855bd3873d50e92c0c2cb2290d0720ee)
+FetchContent_MakeAvailable(primal)
 
 set(CMAKE_CXX_STANDARD 20)
 
@@ -135,7 +139,6 @@ function(install_target _target)
 	endif()
 endfunction()
 
-add_subdirectory(primal)
 add_subdirectory(aulos)
 
 if(WITH_AULOSPLAY OR WITH_STUDIO)
@@ -151,7 +154,6 @@ if(WITH_TESTS)
 	download_file("https://raw.githubusercontent.com/onqtam/doctest/2.4.4/doctest/doctest.h" SHA1 "7c25b870f3e0cde6d6c8596c60f3592fe557989a")
 	add_subdirectory(tests/aulos)
 	add_subdirectory(tests/aulosplay)
-	add_subdirectory(tests/primal)
 endif()
 
 if(WITH_BENCHMARK)
