@@ -14,4 +14,4 @@ set_target_properties(benchmark PROPERTIES
 	OUTPUT_NAME aulos_benchmark
 	POSITION_INDEPENDENT_CODE OFF
 	)
-install_target(benchmark)
+primal_install(benchmark)

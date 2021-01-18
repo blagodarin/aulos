@@ -6,11 +6,9 @@ cmake_minimum_required(VERSION 3.15)
 
 project(Aulos VERSION 0.0.5.0 HOMEPAGE_URL https://github.com/blagodarin/aulos LANGUAGES CXX)
 
-include(CMakePackageConfigHelpers)
 include(FetchContent)
-include(GNUInstallDirs)
 
-FetchContent_Declare(primal GIT_REPOSITORY https://github.com/blagodarin/primal.git GIT_TAG 34c4242c855bd3873d50e92c0c2cb2290d0720ee)
+FetchContent_Declare(primal GIT_REPOSITORY https://github.com/blagodarin/primal.git GIT_TAG 9bc22031c703753375859039517ca45e1d4b1675)
 FetchContent_MakeAvailable(primal)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -84,61 +82,6 @@ set(AULOS_RC_VERSION "${PROJECT_VERSION_MAJOR},${PROJECT_VERSION_MINOR},${PROJEC
 set(AULOS_VERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
 configure_file(config.h.in ${PROJECT_BINARY_DIR}/aulos_config.h)
 
-function(download_file _url)
-	cmake_parse_arguments(_arg "" "SHA1" "" ${ARGN})
-	string(REGEX REPLACE "^.*/([^/]+)$" "\\1" _name ${_url})
-	set(_path ${PROJECT_BINARY_DIR}/${_name})
-	if(EXISTS ${_path})
-		if(NOT _arg_SHA1)
-			return()
-		endif()
-		file(SHA1 ${_path} _existing_sha1)
-		if(${_arg_SHA1} STREQUAL ${_existing_sha1})
-			return()
-		endif()
-		message(STATUS "Removing ${_name} (hash mismatch)")
-		file(REMOVE ${_path})
-	endif()
-	message(STATUS "Downloading ${_name}")
-	if(_arg_SHA1)
-		file(DOWNLOAD ${_url} ${_path} TLS_VERIFY ON EXPECTED_HASH SHA1=${_arg_SHA1})
-	else()
-		file(DOWNLOAD ${_url} ${_path} TLS_VERIFY ON)
-	endif()
-endfunction()
-
-function(install_target _target)
-	cmake_parse_arguments(arg "" "EXPORT" "" ${ARGN})
-	if(arg_EXPORT)
-		set(keyword_EXPORT "EXPORT")
-	else()
-		set(keyword_EXPORT "")
-	endif()
-	install(TARGETS ${_target} ${keyword_EXPORT} ${arg_EXPORT}
-		ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-		LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-		RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-		)
-	if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-		get_target_property(target_type ${_target} TYPE)
-		get_target_property(target_name ${_target} OUTPUT_NAME)
-		get_target_property(target_postfix ${_target} DEBUG_POSTFIX)
-		if(NOT target_name)
-			set(target_name ${_target})
-		endif()
-		if(NOT target_postfix)
-			set(target_postfix "")
-		endif()
-		if(target_type STREQUAL STATIC_LIBRARY)
-			set_target_properties(${_target} PROPERTIES COMPILE_PDB_NAME "${target_name}" COMPILE_PDB_NAME_DEBUG "${target_name}${target_postfix}")
-			install(FILES "$<TARGET_FILE_DIR:${_target}>/$<$<NOT:$<CONFIG:Debug>>:$<TARGET_PROPERTY:${_target},COMPILE_PDB_NAME>>$<$<CONFIG:Debug>:$<TARGET_PROPERTY:${_target},COMPILE_PDB_NAME_DEBUG>>.pdb" DESTINATION ${CMAKE_INSTALL_LIBDIR} OPTIONAL)
-		elseif(NOT target_type STREQUAL INTERFACE_LIBRARY)
-			set_target_properties(${_target} PROPERTIES PDB_NAME "${target_name}" PDB_NAME_DEBUG "${target_name}${target_postfix}")
-			install(FILES "$<TARGET_PDB_FILE:${_target}>" DESTINATION ${CMAKE_INSTALL_BINDIR} OPTIONAL)
-		endif()
-	endif()
-endfunction()
-
 add_subdirectory(aulos)
 
 if(WITH_AULOSPLAY OR WITH_STUDIO)
@@ -151,7 +94,7 @@ endif()
 
 if(WITH_TESTS)
 	enable_testing()
-	download_file("https://raw.githubusercontent.com/onqtam/doctest/2.4.4/doctest/doctest.h" SHA1 "7c25b870f3e0cde6d6c8596c60f3592fe557989a")
+	primal_download("https://raw.githubusercontent.com/onqtam/doctest/2.4.4/doctest/doctest.h" SHA1 "7c25b870f3e0cde6d6c8596c60f3592fe557989a")
 	add_subdirectory(tests/aulos)
 	add_subdirectory(tests/aulosplay)
 endif()
@@ -169,14 +112,8 @@ if(WITH_STUDIO)
 	endif()
 endif()
 
-set(_cmake_config_dir ${CMAKE_INSTALL_LIBDIR}/cmake/Aulos)
-
-configure_package_config_file(AulosConfig.cmake.in
-	${CMAKE_CURRENT_BINARY_DIR}/AulosConfig.cmake
-	INSTALL_DESTINATION ${_cmake_config_dir})
-
-write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/AulosConfigVersion.cmake
-	COMPATIBILITY SameMinorVersion)
-
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/AulosConfig.cmake ${CMAKE_CURRENT_BINARY_DIR}/AulosConfigVersion.cmake DESTINATION ${_cmake_config_dir})
-install(EXPORT AulosTargets DESTINATION ${_cmake_config_dir} NAMESPACE Aulos::)
+include(CMakePackageConfigHelpers)
+configure_package_config_file(AulosConfig.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/AulosConfig.cmake INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Aulos)
+write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/AulosConfigVersion.cmake COMPATIBILITY SameMinorVersion)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/AulosConfig.cmake ${CMAKE_CURRENT_BINARY_DIR}/AulosConfigVersion.cmake DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Aulos)
+install(EXPORT AulosTargets DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Aulos NAMESPACE Aulos::)

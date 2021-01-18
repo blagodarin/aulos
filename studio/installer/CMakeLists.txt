@@ -6,7 +6,7 @@ find_program(NSIS_EXECUTABLE makensis.exe PATHS [HKEY_LOCAL_MACHINE\\Software\\N
 if(NSIS_EXECUTABLE MATCHES ".*-NOTFOUND$")
 	message(FATAL_ERROR "Can't find NSIS executable")
 endif()
-download_file("https://aka.ms/vs/16/release/vc_redist.x64.exe")
+primal_download("https://aka.ms/vs/16/release/vc_redist.x64.exe")
 if(PUBLIC_BUILD)
 	set(STUDIO_INSTALLER_NAME AulosStudio-${AULOS_VERSION}.exe)
 else()

@@ -34,7 +34,7 @@ set_target_properties(aulosplay PROPERTIES
 	POSITION_INDEPENDENT_CODE ON
 	)
 if(WITH_AULOSPLAY)
-	install_target(aulosplay EXPORT AulosTargets)
+	primal_install(aulosplay EXPORT AulosTargets)
 endif()
 
 if(WITH_STANDALONE OR WITH_TESTS)
@@ -48,7 +48,7 @@ if(WITH_STANDALONE OR WITH_TESTS)
 		POSITION_INDEPENDENT_CODE OFF
 		)
 	if(WITH_AULOSPLAY AND WITH_STANDALONE)
-		install_target(aulosplay_standalone EXPORT AulosTargets)
+		primal_install(aulosplay_standalone EXPORT AulosTargets)
 	endif()
 endif()
 

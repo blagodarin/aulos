@@ -35,7 +35,7 @@ set_target_properties(aulos PROPERTIES
 	FOLDER aulos
 	POSITION_INDEPENDENT_CODE ON
 	)
-install_target(aulos EXPORT AulosTargets)
+primal_install(aulos EXPORT AulosTargets)
 
 if(WITH_STANDALONE OR WITH_TESTS OR WITH_BENCHMARK)
 	add_library(aulos_standalone STATIC ${HEADERS} ${SOURCES})
@@ -48,7 +48,7 @@ if(WITH_STANDALONE OR WITH_TESTS OR WITH_BENCHMARK)
 		POSITION_INDEPENDENT_CODE OFF
 		)
 	if(WITH_STANDALONE)
-		install_target(aulos_standalone EXPORT AulosTargets)
+		primal_install(aulos_standalone EXPORT AulosTargets)
 	endif()
 endif()
 
