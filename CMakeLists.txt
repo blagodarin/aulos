@@ -8,14 +8,12 @@ project(Aulos VERSION 0.0.5.0 HOMEPAGE_URL https://github.com/blagodarin/aulos L
 
 include(FetchContent)
 
-FetchContent_Declare(primal GIT_REPOSITORY https://github.com/blagodarin/primal.git GIT_TAG 9bc22031c703753375859039517ca45e1d4b1675)
-FetchContent_MakeAvailable(primal)
+FetchContent_Declare(Primal GIT_REPOSITORY https://github.com/blagodarin/primal.git GIT_TAG cd648b57a7a3d2e27270cdedb9431e3712b05abe)
+FetchContent_MakeAvailable(Primal)
+
+primal_defaults()
 
 set(CMAKE_CXX_STANDARD 20)
-
-set_property(GLOBAL PROPERTY AUTOGEN_SOURCE_GROUP "qt")
-set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER ".cmake")
-set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 option(PUBLIC_BUILD "Build for public distribution" OFF)
 option(QT_VERSION "Qt version to use (5 or 6)" "5")

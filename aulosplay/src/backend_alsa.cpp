@@ -4,10 +4,10 @@
 
 #include "backend.hpp"
 
+#include <primal/buffer.hpp>
 #include <primal/c_ptr.hpp>
 
 #include <cstring>
-#include <memory>
 
 #include <alsa/asoundlib.h>
 
@@ -67,13 +67,13 @@ namespace aulosplay
 			CHECK_ALSA(::snd_pcm_sw_params_set_stop_threshold(pcm, sw, bufferFrames));
 			CHECK_ALSA(::snd_pcm_sw_params(pcm, sw));
 		}
-		const auto period = std::make_unique<float[]>(periodFrames * kBackendChannels);
-		const auto monoBuffer = std::make_unique<float[]>(periodFrames);
+		primal::Buffer<float, primal::AlignedAllocator<kSimdAlignment>> period{ periodFrames * kBackendChannels };
+		primal::Buffer<float, primal::AlignedAllocator<kSimdAlignment>> monoBuffer{ periodFrames };
 		primal::CPtr<snd_pcm_t, ::snd_pcm_drain> drain{ pcm };
 		while (callbacks.onBackendIdle())
 		{
-			auto data = period.get();
-			const auto writtenFrames = callbacks.onBackendRead(data, periodFrames, monoBuffer.get());
+			auto data = period.data();
+			const auto writtenFrames = callbacks.onBackendRead(data, periodFrames, monoBuffer.data());
 			std::memset(data + writtenFrames * kBackendChannels, 0, (periodFrames - writtenFrames) * kBackendFrameBytes);
 			for (auto framesLeft = periodFrames; framesLeft > 0;)
 			{
