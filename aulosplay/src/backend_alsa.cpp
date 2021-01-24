@@ -4,6 +4,8 @@
 
 #include "backend.hpp"
 
+#include <aulosplay/player.hpp>
+
 #include <primal/buffer.hpp>
 #include <primal/c_ptr.hpp>
 
@@ -68,12 +70,12 @@ namespace aulosplay
 			CHECK_ALSA(::snd_pcm_sw_params(pcm, sw));
 		}
 		primal::Buffer<float, primal::AlignedAllocator<kSimdAlignment>> period{ periodFrames * kBackendChannels };
-		primal::Buffer<float, primal::AlignedAllocator<kSimdAlignment>> monoBuffer{ periodFrames };
+		callbacks.onBackendAvailable(periodFrames);
 		primal::CPtr<snd_pcm_t, ::snd_pcm_drain> drain{ pcm };
 		while (callbacks.onBackendIdle())
 		{
 			auto data = period.data();
-			const auto writtenFrames = callbacks.onBackendRead(data, periodFrames, monoBuffer.data());
+			const auto writtenFrames = callbacks.onBackendRead(data, periodFrames);
 			std::memset(data + writtenFrames * kBackendChannels, 0, (periodFrames - writtenFrames) * kBackendFrameBytes);
 			for (auto framesLeft = periodFrames; framesLeft > 0;)
 			{

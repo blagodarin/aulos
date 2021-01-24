@@ -4,6 +4,7 @@
 
 #include <aulosplay/src/backend.hpp>
 
+#include <aulosplay/player.hpp>
 #include "common.hpp"
 
 #include <cstring>
@@ -20,14 +21,22 @@ namespace
 		{
 			if (!_skipPostconditions)
 			{
-				CHECK(_framesRemaining == 0);
+				CHECK(_available);
 				CHECK(_stopping);
+				CHECK(_framesRemaining == 0);
 			}
 		}
 
 	private:
+		void onBackendAvailable(size_t) override
+		{
+			CHECK(!_available);
+			_available = true;
+		}
+
 		void onBackendError(aulosplay::PlaybackError error) override
 		{
+			CHECK(!_available);
 			CHECK(!_stopping);
 			REQUIRE(error == aulosplay::PlaybackError::NoDevice);
 			CHECK(_step == 0);
@@ -45,15 +54,17 @@ namespace
 
 		bool onBackendIdle() override
 		{
-			if (!_done)
+			CHECK(_available);
+			if (!_shouldStop)
 				return true;
 			CHECK(!_stopping);
 			_stopping = true;
 			return false;
 		}
 
-		size_t onBackendRead(float* output, size_t maxFrames, float*) noexcept override
+		size_t onBackendRead(float* output, size_t maxFrames) noexcept override
 		{
+			CHECK(_available);
 			CHECK(!_stopping);
 			CHECK(maxFrames > 0);
 			const auto result = std::min(_framesRemaining, maxFrames);
@@ -63,13 +74,14 @@ namespace
 				_framesRemaining -= result;
 			}
 			else
-				_done = true;
+				_shouldStop = true;
 			MESSAGE(++_step, ") ", maxFrames, " -> ", result);
 			return result;
 		}
 
 	private:
-		bool _done = false;
+		bool _available = false;
+		bool _shouldStop = false;
 		bool _stopping = false;
 		unsigned _step = 0;
 		size_t _framesRemaining = kTestFrames;

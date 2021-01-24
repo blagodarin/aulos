@@ -4,7 +4,8 @@
 
 #include "backend.hpp"
 
-#include <primal/buffer.hpp>
+#include <aulosplay/player.hpp>
+
 #include <primal/c_ptr.hpp>
 
 #define WIN32_LEAN_AND_MEAN
@@ -134,8 +135,8 @@ namespace aulosplay
 		ComPtr<IAudioRenderClient> audioRenderClient;
 		if (const auto hr = audioClient->GetService(__uuidof(IAudioRenderClient), reinterpret_cast<void**>(&audioRenderClient)); !audioRenderClient)
 			return error("IAudioClient::GetService", hr);
+		callbacks.onBackendAvailable(bufferFrames);
 		const UINT32 updateFrames = bufferFrames / kBackendFrameAlignment * kBackendFrameAlignment / 2;
-		primal::Buffer<float, primal::AlignedAllocator<kSimdAlignment>> monoBuffer{ bufferFrames };
 		AudioClientStopper audioClientStopper;
 		while (callbacks.onBackendIdle())
 		{
@@ -154,7 +155,7 @@ namespace aulosplay
 			BYTE* buffer = nullptr;
 			if (const auto hr = audioRenderClient->GetBuffer(lockedFrames, &buffer); FAILED(hr))
 				return error("IAudioRenderClient::GetBuffer", hr);
-			auto writtenFrames = static_cast<UINT32>(callbacks.onBackendRead(reinterpret_cast<float*>(buffer), lockedFrames, monoBuffer.data()));
+			auto writtenFrames = static_cast<UINT32>(callbacks.onBackendRead(reinterpret_cast<float*>(buffer), lockedFrames));
 			DWORD releaseFlags = 0;
 			if (!writtenFrames)
 			{
