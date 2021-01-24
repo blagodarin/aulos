@@ -12,7 +12,6 @@
 #include <atomic>
 #include <cstdio>
 #include <mutex>
-#include <optional>
 #include <thread>
 
 namespace
@@ -57,7 +56,7 @@ namespace
 	private:
 		void onBackendAvailable(size_t maxReadFrames) override
 		{
-			_monoBuffer.emplace(maxReadFrames);
+			_monoBuffer.resize(maxReadFrames, false);
 		}
 
 		void onBackendError(aulosplay::PlaybackError error) override
@@ -102,14 +101,14 @@ namespace
 					frames = _source->onRead(output, maxFrames);
 				else
 				{
-					frames = _source->onRead(_monoBuffer->data(), maxFrames);
+					frames = _source->onRead(_monoBuffer.data(), maxFrames);
 					monoToStereo = true;
 				}
 				if (frames < maxFrames)
 					_source.reset();
 			}
 			if (monoToStereo)
-				aulosplay::monoToStereo(output, _monoBuffer->data(), frames);
+				aulosplay::monoToStereo(output, _monoBuffer.data(), frames);
 			_started = !_playing && frames > 0;
 			_stopped = _playing && frames < maxFrames;
 			_playing = frames == maxFrames;
@@ -119,7 +118,7 @@ namespace
 	private:
 		aulosplay::PlayerCallbacks& _callbacks;
 		const unsigned _samplingRate;
-		std::optional<primal::Buffer<float, primal::AlignedAllocator<aulosplay::kSimdAlignment>>> _monoBuffer;
+		primal::Buffer<float, primal::AlignedAllocator<aulosplay::kSimdAlignment>> _monoBuffer;
 		std::atomic<bool> _done{ false };
 		std::shared_ptr<aulosplay::Source> _source;
 		bool _playing = false;

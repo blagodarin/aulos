@@ -8,7 +8,7 @@ project(Aulos VERSION 0.0.5.0 HOMEPAGE_URL https://github.com/blagodarin/aulos L
 
 include(FetchContent)
 
-FetchContent_Declare(Primal GIT_REPOSITORY https://github.com/blagodarin/primal.git GIT_TAG f20d935df2999c1456a136fa440a1ee12a0fce8f)
+FetchContent_Declare(Primal GIT_REPOSITORY https://github.com/blagodarin/primal.git GIT_TAG 6940f5f3a204b855b525cc7bb1e4b41936aac855)
 FetchContent_MakeAvailable(Primal)
 
 primal_defaults()
