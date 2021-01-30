@@ -23,6 +23,12 @@ matrix:
     - os: linux
       dist: focal
       compiler: gcc
+      env: GCC=10 CONFIG=Debug SANITIZERS=1
+      addons: *gcc_addons
+
+    - os: linux
+      dist: focal
+      compiler: gcc
       env: GCC=10 CONFIG=Debug COVERAGE=1
       addons: *gcc_addons
 
@@ -63,7 +69,8 @@ install:
 
 script:
   - mkdir "${HOME}/aulos.build" && pushd "${HOME}/aulos.build"
-  - cmake ${TRAVIS_BUILD_DIR} -G Ninja -DCMAKE_BUILD_TYPE=${CONFIG} -DCMAKE_INSTALL_PREFIX="${HOME}/aulos.install" -DQT_VERSION=5 -DWITH_AULOSPLAY=ON -DWITH_BENCHMARK=ON -DWITH_STANDALONE=ON -DWITH_STUDIO=ON -DWITH_TESTS=ON
+  - if [ -z "${COVERAGE}" ]; then CMAKEFLAGS="-DWITH_BENCHMARK=ON -DWITH_STANDALONE=ON -DWITH_STUDIO=ON"; fi
+  - cmake ${TRAVIS_BUILD_DIR} -G Ninja -DCMAKE_BUILD_TYPE=${CONFIG} -DCMAKE_INSTALL_PREFIX="${HOME}/aulos.install" -DQT_VERSION=5 -DWITH_AULOSPLAY=ON -DWITH_TESTS=ON ${CMAKEFLAGS}
   - TERM=dumb cmake --build .
   - ctest --verbose
   - TERM=dumb cmake --build . --target install
