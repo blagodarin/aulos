@@ -7,7 +7,7 @@
 #include <aulosplay/player.hpp>
 
 #include <primal/buffer.hpp>
-#include <primal/c_ptr.hpp>
+#include <primal/smart_ptr.hpp>
 
 #include <cstring>
 

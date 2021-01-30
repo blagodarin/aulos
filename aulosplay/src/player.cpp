@@ -56,7 +56,7 @@ namespace
 	private:
 		void onBackendAvailable(size_t maxReadFrames) override
 		{
-			_monoBuffer.resize(maxReadFrames, false);
+			_monoBuffer.reallocate(maxReadFrames, false);
 		}
 
 		void onBackendError(aulosplay::PlaybackError error) override
