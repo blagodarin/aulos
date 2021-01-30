@@ -23,7 +23,7 @@ matrix:
     - os: linux
       dist: focal
       compiler: gcc
-      env: GCC=10 CONFIG=Debug
+      env: GCC=10 CONFIG=Debug COVERAGE=1
       addons: *gcc_addons
 
     - os: linux
@@ -44,7 +44,7 @@ matrix:
     - os: linux
       dist: focal
       compiler: clang
-      env: CLANG=11 CONFIG=Debug
+      env: CLANG=11 CONFIG=Debug SANITIZERS=1
       addons: *clang_addons
 
 before_install:
@@ -54,25 +54,32 @@ before_install:
   - cmake --version
   - sudo tests/setup_travis_audio.sh
 
+install:
+  - if [ -n "${SANITIZERS}" ]; then export CXXFLAGS="-fsanitize=address -fsanitize=undefined"; fi
+  - if [ -n "${SANITIZERS}" ]; then export LDFLAGS="-fsanitize=address -fsanitize=undefined"; fi
+  - if [ -n "${COVERAGE}" ]; then export CXXFLAGS="--coverage"; fi
+  - if [ -n "${COVERAGE}" ]; then export LDFLAGS="--coverage"; fi
+  - if [ -n "${COVERAGE}" ]; then pip install --user codecov; fi
+
 script:
-  - if [ "${CONFIG}" = "Debug" ]; then CMAKE_OPTIONS="-DUSE_SANITIZERS=ON"; fi
   - mkdir "${HOME}/aulos.build" && pushd "${HOME}/aulos.build"
-  - cmake ${TRAVIS_BUILD_DIR} -G Ninja -DCMAKE_BUILD_TYPE=${CONFIG} -DCMAKE_INSTALL_PREFIX="${HOME}/aulos.install" -DQT_VERSION=5 -DWITH_AULOSPLAY=ON -DWITH_BENCHMARK=ON -DWITH_STANDALONE=ON -DWITH_STUDIO=ON -DWITH_TESTS=ON ${CMAKE_OPTIONS}
+  - cmake ${TRAVIS_BUILD_DIR} -G Ninja -DCMAKE_BUILD_TYPE=${CONFIG} -DCMAKE_INSTALL_PREFIX="${HOME}/aulos.install" -DQT_VERSION=5 -DWITH_AULOSPLAY=ON -DWITH_BENCHMARK=ON -DWITH_STANDALONE=ON -DWITH_STUDIO=ON -DWITH_TESTS=ON
   - TERM=dumb cmake --build .
   - ctest --verbose
   - TERM=dumb cmake --build . --target install
   - popd
 
 after_success:
-  - ${HOME}/aulos.install/bin/aulos_benchmark ${TRAVIS_BUILD_DIR}/examples/czardas.aulos
-  - ${HOME}/aulos.install/bin/aulos_benchmark ${TRAVIS_BUILD_DIR}/examples/frere_jacques.aulos
-  - ${HOME}/aulos.install/bin/aulos_benchmark ${TRAVIS_BUILD_DIR}/examples/fur_elise.aulos
-  - ${HOME}/aulos.install/bin/aulos_benchmark ${TRAVIS_BUILD_DIR}/examples/grande_valse_brillante.aulos
-  - ${HOME}/aulos.install/bin/aulos_benchmark ${TRAVIS_BUILD_DIR}/examples/hungarian_dance.aulos
-  - ${HOME}/aulos.install/bin/aulos_benchmark ${TRAVIS_BUILD_DIR}/examples/prelude_in_c_minor.aulos
-  - ${HOME}/aulos.install/bin/aulos_benchmark ${TRAVIS_BUILD_DIR}/examples/prelude_in_g_minor.aulos
-  - ${HOME}/aulos.install/bin/aulos_benchmark ${TRAVIS_BUILD_DIR}/examples/synth_1.aulos
-  - ${HOME}/aulos.install/bin/aulos_benchmark ${TRAVIS_BUILD_DIR}/examples/turkish_march.aulos
+  - if [ -n "${COVERAGE}" ]; then codecov --gcov-root "${HOME}/aulos.build" --gcov-exec gcov-${GCC} --gcov-args "-s `pwd`"; fi
+  - if [ -z "${COVERAGE}" ] && [ -z "${SANITIZERS}" ]; then ${HOME}/aulos.install/bin/aulos_benchmark ${TRAVIS_BUILD_DIR}/examples/czardas.aulos; fi
+  - if [ -z "${COVERAGE}" ] && [ -z "${SANITIZERS}" ]; then ${HOME}/aulos.install/bin/aulos_benchmark ${TRAVIS_BUILD_DIR}/examples/frere_jacques.aulos; fi
+  - if [ -z "${COVERAGE}" ] && [ -z "${SANITIZERS}" ]; then ${HOME}/aulos.install/bin/aulos_benchmark ${TRAVIS_BUILD_DIR}/examples/fur_elise.aulos; fi
+  - if [ -z "${COVERAGE}" ] && [ -z "${SANITIZERS}" ]; then ${HOME}/aulos.install/bin/aulos_benchmark ${TRAVIS_BUILD_DIR}/examples/grande_valse_brillante.aulos; fi
+  - if [ -z "${COVERAGE}" ] && [ -z "${SANITIZERS}" ]; then ${HOME}/aulos.install/bin/aulos_benchmark ${TRAVIS_BUILD_DIR}/examples/hungarian_dance.aulos; fi
+  - if [ -z "${COVERAGE}" ] && [ -z "${SANITIZERS}" ]; then ${HOME}/aulos.install/bin/aulos_benchmark ${TRAVIS_BUILD_DIR}/examples/prelude_in_c_minor.aulos; fi
+  - if [ -z "${COVERAGE}" ] && [ -z "${SANITIZERS}" ]; then ${HOME}/aulos.install/bin/aulos_benchmark ${TRAVIS_BUILD_DIR}/examples/prelude_in_g_minor.aulos; fi
+  - if [ -z "${COVERAGE}" ] && [ -z "${SANITIZERS}" ]; then ${HOME}/aulos.install/bin/aulos_benchmark ${TRAVIS_BUILD_DIR}/examples/synth_1.aulos; fi
+  - if [ -z "${COVERAGE}" ] && [ -z "${SANITIZERS}" ]; then ${HOME}/aulos.install/bin/aulos_benchmark ${TRAVIS_BUILD_DIR}/examples/turkish_march.aulos; fi
 
 notifications:
   email: false
