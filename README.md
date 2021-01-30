@@ -1,12 +1,11 @@
 [![Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![AppVeyor status](https://ci.appveyor.com/api/projects/status/kha9y50o39k3uscu?svg=true)](https://ci.appveyor.com/project/blagodarin/aulos)
-[![Travis CI status](https://travis-ci.org/blagodarin/aulos.svg?branch=master)](https://travis-ci.org/github/blagodarin/aulos)
-
+[![AppVeyor](https://ci.appveyor.com/api/projects/status/kha9y50o39k3uscu?svg=true)](https://ci.appveyor.com/project/blagodarin/aulos)
+[![Travis CI](https://travis-ci.org/blagodarin/aulos.svg?branch=master)](https://travis-ci.org/github/blagodarin/aulos)
+[![Codecov](https://codecov.io/gh/blagodarin/aulos/branch/master/graph/badge.svg?token=DDI9G10OEZ)](https://codecov.io/gh/blagodarin/aulos)
 
 ### [Download Aulos Studio 0.0.5 for Windows](https://ci.appveyor.com/api/buildjobs/dnaql7b4su4r2ak8/artifacts/AulosStudio-0.0.5.exe)
 
 [...or get the latest unstable installer at your own risk](https://ci.appveyor.com/api/projects/blagodarin/aulos/artifacts/AulosStudio-0.0.5-unstable.exe?branch=master&job=Environment%3A%20CONFIG%3DRelease%2C%20ARCH%3Damd64%2C%20GENERATOR%3DNinja%2C%20INSTALLER%3DON%2C%20QT%3D5)
-
 
 # Aulos
 
@@ -28,11 +27,9 @@ The primary features of Aulos are:
 * **Incremental synthesis.** A composition can be rendered block by block,
   which allows to reduce memory requirements and improve load times.
 
-
 ## What does it look like
 
 ![Screenshot of Aulos Studio](studio/screenshot.png)
-
 
 ## What's not there
 
