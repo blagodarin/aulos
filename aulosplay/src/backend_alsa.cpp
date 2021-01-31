@@ -7,6 +7,7 @@
 #include <aulosplay/player.hpp>
 
 #include <primal/buffer.hpp>
+#include <primal/scope.hpp>
 #include <primal/smart_ptr.hpp>
 
 #include <cstring>
@@ -71,7 +72,7 @@ namespace aulosplay
 		}
 		primal::Buffer<float, primal::AlignedAllocator<kSimdAlignment>> period{ periodFrames * kBackendChannels };
 		callbacks.onBackendAvailable(periodFrames);
-		primal::CPtr<snd_pcm_t, ::snd_pcm_drain> drain{ pcm };
+		PRIMAL_FINALLY([&] { ::snd_pcm_drain(pcm); });
 		while (callbacks.onBackendIdle())
 		{
 			auto data = period.data();

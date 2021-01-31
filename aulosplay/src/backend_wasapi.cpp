@@ -6,6 +6,7 @@
 
 #include <aulosplay/player.hpp>
 
+#include <primal/scope.hpp>
 #include <primal/smart_ptr.hpp>
 
 #define WIN32_LEAN_AND_MEAN
@@ -24,22 +25,6 @@ namespace
 {
 	template <typename T>
 	using ComPtr = _com_ptr_t<_com_IIID<T, &__uuidof(T)>>;
-
-	struct ComUninitializer
-	{
-		~ComUninitializer() noexcept { ::CoUninitialize(); }
-	};
-
-	struct AudioClientStopper
-	{
-		IAudioClient* _audioClient = nullptr;
-
-		~AudioClientStopper() noexcept
-		{
-			if (_audioClient)
-				_audioClient->Stop();
-		}
-	};
 }
 
 namespace aulosplay
@@ -74,7 +59,7 @@ namespace aulosplay
 
 		if (const auto hr = ::CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED); FAILED(hr))
 			return error("CoInitializeEx", hr);
-		ComUninitializer comUninitializer;
+		PRIMAL_FINALLY([] { ::CoUninitialize(); });
 		ComPtr<IMMDeviceEnumerator> deviceEnumerator;
 		if (const auto hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), reinterpret_cast<void**>(&deviceEnumerator)); !deviceEnumerator)
 			return error("CoCreateInstance", hr);
@@ -137,7 +122,11 @@ namespace aulosplay
 			return error("IAudioClient::GetService", hr);
 		callbacks.onBackendAvailable(bufferFrames);
 		const UINT32 updateFrames = bufferFrames / kBackendFrameAlignment * kBackendFrameAlignment / 2;
-		AudioClientStopper audioClientStopper;
+		bool audioClientStarted = false;
+		PRIMAL_FINALLY([&] {
+			if (audioClientStarted)
+				audioClient->Stop();
+		});
 		while (callbacks.onBackendIdle())
 		{
 			UINT32 lockedFrames = 0;
@@ -164,11 +153,11 @@ namespace aulosplay
 			}
 			if (const auto hr = audioRenderClient->ReleaseBuffer(writtenFrames, releaseFlags); FAILED(hr))
 				return error("IAudioRenderClient::ReleaseBuffer", hr);
-			if (!audioClientStopper._audioClient)
+			if (!audioClientStarted)
 			{
 				if (const auto hr = audioClient->Start(); FAILED(hr))
 					return error("IAudioRenderClient::Start", hr);
-				audioClientStopper._audioClient = audioClient;
+				audioClientStarted = true;
 			}
 		}
 	}
