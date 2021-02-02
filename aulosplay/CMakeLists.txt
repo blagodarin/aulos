@@ -2,6 +2,8 @@
 # Copyright (C) Sergei Blagodarin.
 # SPDX-License-Identifier: Apache-2.0
 
+primal_set_folder(aulosplay)
+
 set(HEADERS
 	player.hpp
 	)
@@ -29,29 +31,14 @@ add_library(aulosplay STATIC ${HEADERS} ${SOURCES})
 target_compile_options(aulosplay PRIVATE ${MAX_WARNINGS})
 target_include_directories(aulosplay PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 target_link_libraries(aulosplay PRIVATE primal Threads::Threads ${AULOSPLAY_LIBRARIES})
-set_target_properties(aulosplay PROPERTIES
-	FOLDER aulosplay
-	POSITION_INDEPENDENT_CODE ON
-	)
-if(WITH_AULOSPLAY)
-	primal_install(aulosplay EXPORT AulosTargets)
-endif()
+primal_set_properties(aulosplay)
+primal_install(aulosplay EXPORT AulosTargets)
 
-if(WITH_STANDALONE OR WITH_TESTS)
-	add_library(aulosplay_standalone STATIC ${HEADERS} ${SOURCES})
-	target_compile_options(aulosplay_standalone PRIVATE ${MAX_WARNINGS})
-	target_include_directories(aulosplay_standalone PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-	target_link_libraries(aulosplay_standalone PRIVATE primal Threads::Threads ${AULOSPLAY_LIBRARIES})
-	set_target_properties(aulosplay_standalone PROPERTIES
-		FOLDER aulosplay
-		MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
-		POSITION_INDEPENDENT_CODE OFF
-		)
-	if(WITH_AULOSPLAY AND WITH_STANDALONE)
-		primal_install(aulosplay_standalone EXPORT AulosTargets)
-	endif()
-endif()
+add_library(aulosplay_standalone STATIC ${HEADERS} ${SOURCES})
+target_compile_options(aulosplay_standalone PRIVATE ${MAX_WARNINGS})
+target_include_directories(aulosplay_standalone PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+target_link_libraries(aulosplay_standalone PRIVATE primal Threads::Threads ${AULOSPLAY_LIBRARIES})
+primal_set_properties(aulosplay_standalone STANDALONE)
+primal_install(aulosplay_standalone EXPORT AulosTargets)
 
-if(WITH_AULOSPLAY)
-	install(FILES ${HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aulosplay)
-endif()
+install(FILES ${HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aulosplay)

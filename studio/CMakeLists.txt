@@ -2,6 +2,7 @@
 # Copyright (C) Sergei Blagodarin.
 # SPDX-License-Identifier: Apache-2.0
 
+primal_set_folder(studio)
 source_group("qt" REGULAR_EXPRESSION "qrc_.+\\.cpp\\.rule")
 source_group("res" REGULAR_EXPRESSION "/res/")
 source_group("src" REGULAR_EXPRESSION "/src/")
@@ -57,17 +58,13 @@ add_executable(studio WIN32
 	)
 target_compile_options(studio PRIVATE ${STUDIO_WARNINGS})
 target_include_directories(studio PRIVATE ${PROJECT_BINARY_DIR})
-target_link_libraries(studio PRIVATE aulos aulosplay Qt${QT_VERSION}::Widgets)
-set_target_properties(studio PROPERTIES
-	AUTOMOC ON
-	AUTORCC ON
-	AUTOUIC ON
-	FOLDER studio
-	)
+target_link_libraries(studio PRIVATE aulos aulosplay Qt${AULOS_QT_VERSION}::Widgets)
+set_target_properties(studio PROPERTIES AUTOMOC ON AUTORCC ON AUTOUIC ON)
 if(WIN32)
 	target_sources(studio PRIVATE res/studio.rc)
 	set_property(TARGET studio PROPERTY OUTPUT_NAME AulosStudio)
 else()
 	set_property(TARGET studio PROPERTY OUTPUT_NAME aulos_studio)
 endif()
+primal_set_properties(studio)
 primal_install(studio)

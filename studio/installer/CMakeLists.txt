@@ -2,17 +2,18 @@
 # Copyright (C) Sergei Blagodarin.
 # SPDX-License-Identifier: Apache-2.0
 
+primal_set_folder(studio)
 find_program(NSIS_EXECUTABLE makensis.exe PATHS [HKEY_LOCAL_MACHINE\\Software\\NSIS])
 if(NSIS_EXECUTABLE MATCHES ".*-NOTFOUND$")
 	message(FATAL_ERROR "Can't find NSIS executable")
 endif()
 primal_download("https://aka.ms/vs/16/release/vc_redist.x64.exe")
-if(PUBLIC_BUILD)
+if(AULOS_STABLE)
 	set(STUDIO_INSTALLER_NAME AulosStudio-${AULOS_VERSION}.exe)
 else()
 	set(STUDIO_INSTALLER_NAME AulosStudio-${AULOS_VERSION}-unstable.exe)
 endif()
-get_filename_component(QTDIR "${Qt${QT_VERSION}_DIR}" PATH)
+get_filename_component(QTDIR "${Qt${AULOS_QT_VERSION}_DIR}" PATH)
 get_filename_component(QTDIR "${QTDIR}" PATH)
 get_filename_component(QTDIR "${QTDIR}" PATH)
 add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/${STUDIO_INSTALLER_NAME}
@@ -23,7 +24,7 @@ add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/${STUDIO_INSTALLER_NAME}
 		/DCONFIG=$<CONFIG>
 		/DINSTALLER_DIR=${PROJECT_BINARY_DIR}
 		/DINSTALLER_NAME=${STUDIO_INSTALLER_NAME}
-		/DQT_VERSION=${QT_VERSION}
+		/DQT_VERSION=${AULOS_QT_VERSION}
 		/DQTDIR=${QTDIR}
 		/DSOURCE_DIR=${PROJECT_SOURCE_DIR}
 		${CMAKE_CURRENT_SOURCE_DIR}/studio.nsi
@@ -32,4 +33,3 @@ add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/${STUDIO_INSTALLER_NAME}
 	VERBATIM
 	WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
 add_custom_target(studio_installer DEPENDS ${PROJECT_BINARY_DIR}/${STUDIO_INSTALLER_NAME})
-set_property(TARGET studio_installer PROPERTY FOLDER studio)

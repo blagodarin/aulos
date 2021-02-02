@@ -8,21 +8,21 @@ project(Aulos VERSION 0.0.5.0 HOMEPAGE_URL https://github.com/blagodarin/aulos L
 
 include(FetchContent)
 
-FetchContent_Declare(Primal GIT_REPOSITORY https://github.com/blagodarin/primal.git GIT_TAG 34cd5ce9714d2a69d1245a203cb90e3884ce6f8d)
+FetchContent_Declare(Primal GIT_REPOSITORY https://github.com/blagodarin/primal.git GIT_TAG 4cf9b11e7b10de30c15ebde501faa88026d8359a)
 FetchContent_MakeAvailable(Primal)
 
-primal_defaults()
+primal_set_defaults()
 
 set(CMAKE_CXX_STANDARD 20)
 
-option(PUBLIC_BUILD "Build for public distribution" OFF)
-option(QT_VERSION "Qt version to use (5 or 6)" "5")
-option(WITH_AULOSPLAY "Build aulosplay library" OFF)
-option(WITH_BENCHMARK "Build benchmark" OFF)
-option(WITH_STANDALONE "Build standalone library variants" OFF)
-option(WITH_STUDIO "Build Aulos Studio (requires Qt)" OFF)
-option(WITH_STUDIO_INSTALLER "Build Aulos Studio installer (requires NSIS)" OFF)
-option(WITH_TESTS "Build tests" OFF)
+option(AULOS_AULOSPLAY "Build aulosplay library" ON)
+option(AULOS_BENCHMARKS "Build benchmarks" OFF)
+set(AULOS_QT_VERSION "5" CACHE STRING "Qt version to use")
+set_property(CACHE AULOS_QT_VERSION PROPERTY STRINGS "5" "6")
+option(AULOS_STABLE "Mark the build as stable" OFF)
+option(AULOS_STUDIO "Build Aulos Studio (requires Qt)" OFF)
+option(AULOS_STUDIO_INSTALLER "Build Aulos Studio installer (requires NSIS)" OFF)
+option(AULOS_TESTS "Build tests" OFF)
 
 # Qt headers don't compile with high warning levels,
 # so a separate set of warning settings is needed.
@@ -74,7 +74,7 @@ configure_file(config.h.in ${PROJECT_BINARY_DIR}/aulos_config.h)
 
 add_subdirectory(aulos)
 
-if(WITH_AULOSPLAY OR WITH_STUDIO)
+if(AULOS_AULOSPLAY OR AULOS_STUDIO OR AULOS_TESTS)
 	find_package(Threads REQUIRED)
 	if(NOT WIN32)
 		find_package(ALSA REQUIRED)
@@ -82,24 +82,24 @@ if(WITH_AULOSPLAY OR WITH_STUDIO)
 	add_subdirectory(aulosplay)
 endif()
 
-if(WITH_TESTS)
+if(AULOS_STUDIO)
+	find_package(Qt${AULOS_QT_VERSION} COMPONENTS Widgets REQUIRED)
+	message(STATUS "Using Qt ${Qt${AULOS_QT_VERSION}_VERSION}")
+	add_subdirectory(studio)
+	if(AULOS_STUDIO_INSTALLER)
+		add_subdirectory(studio/installer)
+	endif()
+endif()
+
+if(AULOS_TESTS)
 	enable_testing()
 	primal_download("https://raw.githubusercontent.com/onqtam/doctest/2.4.4/doctest/doctest.h" SHA1 "7c25b870f3e0cde6d6c8596c60f3592fe557989a")
 	add_subdirectory(tests/aulos)
 	add_subdirectory(tests/aulosplay)
 endif()
 
-if(WITH_BENCHMARK)
+if(AULOS_BENCHMARKS)
 	add_subdirectory(benchmark)
-endif()
-
-if(WITH_STUDIO)
-	find_package(Qt${QT_VERSION} COMPONENTS Widgets REQUIRED)
-	message(STATUS "Using Qt ${Qt${QT_VERSION}_VERSION}")
-	add_subdirectory(studio)
-	if(WITH_STUDIO_INSTALLER)
-		add_subdirectory(studio/installer)
-	endif()
 endif()
 
 include(CMakePackageConfigHelpers)

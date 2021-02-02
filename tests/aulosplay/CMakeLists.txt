@@ -2,6 +2,7 @@
 # Copyright (C) Sergei Blagodarin.
 # SPDX-License-Identifier: Apache-2.0
 
+primal_set_folder(aulosplay)
 source_group("src" REGULAR_EXPRESSION "/src/")
 add_executable(aulosplay_tests
 	src/backend.cpp
@@ -13,9 +14,5 @@ add_executable(aulosplay_tests
 target_compile_options(aulosplay_tests PRIVATE ${MAX_WARNINGS})
 target_include_directories(aulosplay_tests PRIVATE ${PROJECT_BINARY_DIR})
 target_link_libraries(aulosplay_tests PRIVATE aulosplay_standalone primal)
-set_target_properties(aulosplay_tests PROPERTIES
-	FOLDER aulosplay
-	MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
-	POSITION_INDEPENDENT_CODE OFF
-	)
+primal_set_properties(aulosplay_tests STANDALONE)
 add_test(NAME aulosplay COMMAND aulosplay_tests)

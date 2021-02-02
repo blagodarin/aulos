@@ -2,16 +2,12 @@
 # Copyright (C) Sergei Blagodarin.
 # SPDX-License-Identifier: Apache-2.0
 
+primal_set_folder(aulos)
 source_group("src" REGULAR_EXPRESSION "/src/")
-add_executable(benchmark
+add_executable(aulos_benchmark
 	src/main.cpp
 	)
-target_compile_options(benchmark PRIVATE ${MAX_WARNINGS})
-target_link_libraries(benchmark PRIVATE aulos_standalone)
-set_target_properties(benchmark PROPERTIES
-	FOLDER utils
-	MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
-	OUTPUT_NAME aulos_benchmark
-	POSITION_INDEPENDENT_CODE OFF
-	)
-primal_install(benchmark)
+target_compile_options(aulos_benchmark PRIVATE ${MAX_WARNINGS})
+target_link_libraries(aulos_benchmark PRIVATE aulos_standalone)
+primal_set_properties(aulos_benchmark STANDALONE)
+primal_install(aulos_benchmark)
