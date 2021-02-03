@@ -8,12 +8,10 @@ project(Aulos VERSION 0.0.5.0 HOMEPAGE_URL https://github.com/blagodarin/aulos L
 
 include(FetchContent)
 
-FetchContent_Declare(Primal GIT_REPOSITORY https://github.com/blagodarin/primal.git GIT_TAG 4cf9b11e7b10de30c15ebde501faa88026d8359a)
+FetchContent_Declare(Primal GIT_REPOSITORY https://github.com/blagodarin/primal.git GIT_TAG 12ab76b5b8eac1fd07884e1164acb995fe77eaf3)
 FetchContent_MakeAvailable(Primal)
 
 primal_set_defaults()
-
-set(CMAKE_CXX_STANDARD 20)
 
 option(AULOS_AULOSPLAY "Build aulosplay library" ON)
 option(AULOS_BENCHMARKS "Build benchmarks" OFF)
