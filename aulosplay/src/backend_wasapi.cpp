@@ -6,8 +6,8 @@
 
 #include <aulosplay/player.hpp>
 
+#include <primal/pointer.hpp>
 #include <primal/scope.hpp>
-#include <primal/smart_ptr.hpp>
 
 #define WIN32_LEAN_AND_MEAN
 #pragma warning(push)
