@@ -13,6 +13,6 @@ add_executable(aulosplay_tests
 	)
 target_compile_options(aulosplay_tests PRIVATE ${MAX_WARNINGS})
 target_include_directories(aulosplay_tests PRIVATE ${PROJECT_BINARY_DIR})
-target_link_libraries(aulosplay_tests PRIVATE aulosplay_standalone primal)
-primal_set_properties(aulosplay_tests STANDALONE)
+target_link_libraries(aulosplay_tests PRIVATE aulosplay primal)
+set_target_properties(aulosplay_tests PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<NOT:$<BOOL:${AULOS_STATIC_RUNTIME}>>:DLL>")
 add_test(NAME aulosplay COMMAND aulosplay_tests)

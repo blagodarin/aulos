@@ -70,7 +70,7 @@ install:
 script:
   - mkdir "${HOME}/aulos.build" && pushd "${HOME}/aulos.build"
   - if [ -z "${COVERAGE}" ]; then CMAKEFLAGS="-DAULOS_BENCHMARKS=ON -DAULOS_STUDIO=ON"; fi
-  - cmake ${TRAVIS_BUILD_DIR} -G Ninja -DCMAKE_BUILD_TYPE=${CONFIG} -DCMAKE_INSTALL_PREFIX="${HOME}/aulos.install" -DAULOS_AULOSPLAY=ON -DAULOS_QT_VERSION=5 -DAULOS_TESTS=ON ${CMAKEFLAGS}
+  - cmake ${TRAVIS_BUILD_DIR} -G Ninja -DCMAKE_BUILD_TYPE=${CONFIG} -DCMAKE_INSTALL_PREFIX="${HOME}/aulos.install" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DAULOS_TESTS=ON ${CMAKEFLAGS}
   - TERM=dumb cmake --build .
   - ctest --verbose
   - TERM=dumb cmake --build . --target install

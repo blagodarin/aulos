@@ -7,8 +7,8 @@
 #include <aulosplay/player.hpp>
 
 #include <primal/buffer.hpp>
+#include <primal/pointer.hpp>
 #include <primal/scope.hpp>
-#include <primal/smart_ptr.hpp>
 
 #include <cstring>
 

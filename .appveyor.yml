@@ -9,25 +9,25 @@ environment:
       ARCH: amd64
       GENERATOR: Ninja
       INSTALLER: ON
-      QT: 5
+      QT6: OFF
 
     - CONFIG: Debug
       ARCH: amd64
       GENERATOR: MSVS
       INSTALLER: OFF
-      QT: 6
+      QT6: ON
 
     - CONFIG: RelWithDebInfo
       ARCH: x86
       GENERATOR: MSVS
       INSTALLER: OFF
-      QT: 5
+      QT6: OFF
 
     - CONFIG: Debug
       ARCH: x86
       GENERATOR: Ninja
       INSTALLER: OFF
-      QT: 5
+      QT6: OFF
 
 cache:
   - _build\doctest.h
@@ -35,7 +35,7 @@ cache:
 
 install:
   - if "%ARCH%"=="amd64" (set QTDIR=C:\Qt\5.15.2\msvc2019_64) else (set QTDIR=C:\Qt\5.15.2\msvc2019)
-  - if "%QT%"=="6" set QTDIR=C:\Qt\6.0.0\msvc2019_64
+  - if "%QT6%"=="ON" set QTDIR=C:\Qt\6.0.0\msvc2019_64
   - if "%GENERATOR%"=="MSVS" (set CMAKE_GENERATOR=Visual Studio 16 2019) else (set CMAKE_GENERATOR=%GENERATOR%)
   - if "%GENERATOR%"=="Ninja" call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat" %ARCH%
   - if "%GENERATOR%"=="Ninja" cinst ninja
@@ -47,7 +47,7 @@ install:
 build_script:
   - set BUILD_DIR=%APPVEYOR_BUILD_FOLDER%\_build
   - set INSTALL_DIR=%APPVEYOR_BUILD_FOLDER%\_install
-  - cmake -S %APPVEYOR_BUILD_FOLDER% -B %BUILD_DIR% %EXTRA_CMAKE_FLAGS% -DCMAKE_INSTALL_PREFIX=%INSTALL_DIR% -DCMAKE_PREFIX_PATH=%QTDIR% -DAULOS_AULOSPLAY=ON -DAULOS_BENCHMARKS=ON -DAULOS_QT_VERSION=%QT% -DAULOS_STABLE=%APPVEYOR_REPO_TAG% -DAULOS_STUDIO=ON -DAULOS_STUDIO_INSTALLER=ON -DAULOS_TESTS=ON
+  - cmake -S %APPVEYOR_BUILD_FOLDER% -B %BUILD_DIR% %EXTRA_CMAKE_FLAGS% -DCMAKE_INSTALL_PREFIX=%INSTALL_DIR% -DCMAKE_PREFIX_PATH=%QTDIR% -DAULOS_BENCHMARKS=ON -DAULOS_STUDIO=ON -DAULOS_STUDIO_INSTALLER=ON -DAULOS_STUDIO_QT6=%QT6% -DAULOS_STUDIO_RELEASE=%APPVEYOR_REPO_TAG% -DAULOS_TESTS=ON
   - cmake --build %BUILD_DIR% %EXTRA_BUILD_FLAGS%
   - cmake --build %BUILD_DIR% --target install %EXTRA_BUILD_FLAGS%
   - cmake --build %BUILD_DIR% --target studio_installer %EXTRA_BUILD_FLAGS%

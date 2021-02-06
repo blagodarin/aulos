@@ -57,8 +57,8 @@ add_executable(studio WIN32
 	src/sequence/sound_item.hpp
 	)
 target_compile_options(studio PRIVATE ${STUDIO_WARNINGS})
-target_include_directories(studio PRIVATE ${PROJECT_BINARY_DIR})
-target_link_libraries(studio PRIVATE aulos aulosplay Qt${AULOS_QT_VERSION}::Widgets)
+target_include_directories(studio PRIVATE ${PROJECT_BINARY_DIR}) # For <aulos_config.h>.
+target_link_libraries(studio PRIVATE aulos aulosplay ${AULOS_QT}::Widgets)
 set_target_properties(studio PROPERTIES AUTOMOC ON AUTORCC ON AUTOUIC ON)
 if(WIN32)
 	target_sources(studio PRIVATE res/studio.rc)
@@ -66,5 +66,4 @@ if(WIN32)
 else()
 	set_property(TARGET studio PROPERTY OUTPUT_NAME aulos_studio)
 endif()
-primal_set_properties(studio)
 primal_install(studio)
