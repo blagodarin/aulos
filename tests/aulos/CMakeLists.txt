@@ -12,7 +12,7 @@ add_executable(aulos_tests
 	src/voice.cpp
 	)
 target_compile_options(aulos_tests PRIVATE ${MAX_WARNINGS})
-target_include_directories(aulos_tests PRIVATE ${PROJECT_BINARY_DIR})
+target_include_directories(aulos_tests PRIVATE ${CMAKE_BINARY_DIR})
 target_link_libraries(aulos_tests PRIVATE aulos primal)
 set_target_properties(aulos_tests PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<NOT:$<BOOL:${AULOS_STATIC_RUNTIME}>>:DLL>")
 add_test(NAME aulos COMMAND aulos_tests)
