@@ -57,10 +57,15 @@ before_install:
   - if [ -n "${CLANG}" ]; then export CXX=clang++-${CLANG}; fi
   - if [ -n "${GCC}" ]; then export CXX=g++-${GCC}; fi
   - ${CXX} --version
-  - cmake --version
   - sudo tests/setup_travis_audio.sh
 
 install:
+  - cmake --version
+  - mkdir "${HOME}/cmake" && pushd "${HOME}/cmake"
+  - wget --output-document=- --quiet https://github.com/Kitware/CMake/releases/download/v3.19.5/cmake-3.19.5-Linux-x86_64.tar.gz | tar -x --gzip --strip-components 1
+  - export PATH="$(pwd)/bin:${PATH}"
+  - popd
+  - cmake --version
   - if [ -n "${SANITIZERS}" ]; then export CXXFLAGS="-fsanitize=address -fsanitize=undefined"; fi
   - if [ -n "${SANITIZERS}" ]; then export LDFLAGS="-fsanitize=address -fsanitize=undefined"; fi
   - if [ -n "${COVERAGE}" ]; then export CXXFLAGS="--coverage"; fi

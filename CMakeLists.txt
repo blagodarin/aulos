@@ -2,14 +2,14 @@
 # Copyright (C) Sergei Blagodarin.
 # SPDX-License-Identifier: Apache-2.0
 
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.19)
 
 project(Aulos VERSION 0.0.5.0 HOMEPAGE_URL https://github.com/blagodarin/aulos LANGUAGES CXX)
 
 include(CMakeDependentOption)
 include(FetchContent)
 
-FetchContent_Declare(Primal GIT_REPOSITORY https://github.com/blagodarin/primal.git GIT_TAG e51e653659b9b4276d483e436967c56c27df6006)
+FetchContent_Declare(Primal GIT_REPOSITORY https://github.com/blagodarin/primal.git GIT_TAG f016b660599ca538e24ee0995c0434039ab651aa)
 FetchContent_MakeAvailable(Primal)
 
 primal_set_defaults()
