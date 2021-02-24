@@ -9,19 +9,21 @@ project(Aulos VERSION 0.0.5.0 HOMEPAGE_URL https://github.com/blagodarin/aulos L
 include(CMakeDependentOption)
 include(FetchContent)
 
-FetchContent_Declare(Primal GIT_REPOSITORY https://github.com/blagodarin/primal.git GIT_TAG f016b660599ca538e24ee0995c0434039ab651aa)
+FetchContent_Declare(Primal GIT_REPOSITORY https://github.com/blagodarin/primal.git GIT_TAG c34f30807bd360880f62d7b08ef3019ceb34878e)
 FetchContent_MakeAvailable(Primal)
 
 primal_set_defaults()
 
 option(AULOS_AULOSPLAY "Build AulosPlay library" ON)
-option(AULOS_BENCHMARKS "Build Aulos benchmarks" OFF)
 option(AULOS_STATIC_RUNTIME "Build Aulos with static runtime" OFF)
-option(AULOS_TESTS "Build Aulos tests" OFF)
-cmake_dependent_option(AULOS_STUDIO "Build Aulos Studio (requires Qt)" OFF "AULOS_AULOSPLAY;NOT AULOS_STATIC_RUNTIME" OFF)
-cmake_dependent_option(AULOS_STUDIO_INSTALLER "Build Aulos Studio installer (requires NSIS)" OFF "AULOS_STUDIO" OFF)
-cmake_dependent_option(AULOS_STUDIO_QT6 "Build Aulos Studio with Qt 6" OFF "AULOS_STUDIO" OFF)
-cmake_dependent_option(AULOS_STUDIO_RELEASE "Produce release version of Aulos Studio" OFF "AULOS_STUDIO" OFF)
+if(NOT AULOS_SUBPROJECT)
+	option(AULOS_BENCHMARKS "Build Aulos benchmarks" OFF)
+	option(AULOS_TESTS "Build Aulos tests" OFF)
+	cmake_dependent_option(AULOS_STUDIO "Build Aulos Studio (requires Qt)" OFF "AULOS_AULOSPLAY;NOT AULOS_STATIC_RUNTIME" OFF)
+	cmake_dependent_option(AULOS_STUDIO_INSTALLER "Build Aulos Studio installer (requires NSIS)" OFF "AULOS_STUDIO" OFF)
+	cmake_dependent_option(AULOS_STUDIO_QT6 "Build Aulos Studio with Qt 6" OFF "AULOS_STUDIO" OFF)
+	cmake_dependent_option(AULOS_STUDIO_RELEASE "Produce release version of Aulos Studio" OFF "AULOS_STUDIO" OFF)
+endif()
 
 # Qt headers don't compile with high warning levels,
 # so a separate set of warning settings is needed.
