@@ -40,7 +40,7 @@ install:
   - if "%GENERATOR%"=="Ninja" cinst ninja
   - if "%GENERATOR%"=="Ninja" set EXTRA_CMAKE_FLAGS=-DCMAKE_BUILD_TYPE=%CONFIG%
   - if "%GENERATOR%"=="MSVS" if "%ARCH%"=="amd64" (set CMAKE_GENERATOR_PLATFORM=x64) else (set CMAKE_GENERATOR_PLATFORM=Win32)
-  - if "%GENERATOR%"=="MSVS" set EXTRA_BUILD_FLAGS=--config %CONFIG% -- /nologo "/verbosity:minimal"
+  - if "%GENERATOR%"=="MSVS" set EXTRA_BUILD_FLAGS=--parallel --config %CONFIG% -- /nologo
   - if "%GENERATOR%"=="MSVS" set EXTRA_TEST_FLAGS=--build-config %CONFIG%
 
 build_script:
