@@ -66,13 +66,13 @@ install:
   - export PATH="$(pwd)/bin:${PATH}"
   - popd
   - cmake --version
-  - if [ -n "${SANITIZERS}" ]; then export CXXFLAGS="-fsanitize=address -fsanitize=undefined"; fi
-  - if [ -n "${SANITIZERS}" ]; then export LDFLAGS="-fsanitize=address -fsanitize=undefined"; fi
-  - if [ -n "${COVERAGE}" ]; then export CXXFLAGS="--coverage"; fi
-  - if [ -n "${COVERAGE}" ]; then export LDFLAGS="--coverage"; fi
   - if [ -n "${COVERAGE}" ]; then pip install --user codecov; fi
 
 script:
+  - if [ -n "${SANITIZERS}" ]; then export CXXFLAGS="-fsanitize=address -fsanitize=undefined -fno-sanitize=nonnull-attribute"; fi
+  - if [ -n "${SANITIZERS}" ]; then export LDFLAGS="-fsanitize=address -fsanitize=undefined"; fi
+  - if [ -n "${COVERAGE}" ]; then export CXXFLAGS="--coverage"; fi
+  - if [ -n "${COVERAGE}" ]; then export LDFLAGS="--coverage"; fi
   - mkdir "${HOME}/aulos.build" && pushd "${HOME}/aulos.build"
   - if [ -z "${COVERAGE}" ]; then CMAKEFLAGS="-DAULOS_BENCHMARKS=ON -DAULOS_STUDIO=ON"; fi
   - cmake ${TRAVIS_BUILD_DIR} -G Ninja -DCMAKE_BUILD_TYPE=${CONFIG} -DCMAKE_INSTALL_PREFIX="${HOME}/aulos.install" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DAULOS_TESTS=ON ${CMAKEFLAGS}

@@ -9,7 +9,7 @@ project(Aulos VERSION 0.0.5.0 HOMEPAGE_URL https://github.com/blagodarin/aulos L
 include(CMakeDependentOption)
 include(FetchContent)
 
-FetchContent_Declare(Primal GIT_REPOSITORY https://github.com/blagodarin/primal.git GIT_TAG 517b3c13a341c9672d49711da1cdc416ff0b1094)
+FetchContent_Declare(Primal GIT_REPOSITORY https://github.com/blagodarin/primal.git GIT_TAG 79b19d63aee0906c7559f3e2b7a434b3919f889a)
 FetchContent_MakeAvailable(Primal)
 
 primal_set_defaults()
