@@ -7,6 +7,7 @@
 #include "wave.hpp"
 
 #include <algorithm>
+#include <limits>
 #include <cassert>
 
 namespace aulos

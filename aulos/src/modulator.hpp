@@ -6,10 +6,7 @@
 
 #include "shaper.hpp"
 
-#include <array>
 #include <cassert>
-#include <limits>
-#include <numeric>
 #include <optional>
 #include <span>
 

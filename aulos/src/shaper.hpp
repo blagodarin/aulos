@@ -43,8 +43,8 @@ namespace aulos
 			return static_cast<float>(nextY);
 		}
 
-		template <typename Float, typename = std::enable_if_t<std::is_floating_point_v<Float>>>
-		static constexpr auto value(Float firstY, Float deltaY, Float deltaX, Float, Float offsetX) noexcept
+		template <typename Float>
+		static constexpr std::enable_if_t<std::is_floating_point_v<Float>, Float> value(Float firstY, Float deltaY, Float deltaX, Float, Float offsetX) noexcept
 		{
 			const auto normalizedX = offsetX / deltaX;
 			return firstY + deltaY * normalizedX;
@@ -87,8 +87,8 @@ namespace aulos
 			return _linear0 + _linear1 * x + quadratic;
 		}
 
-		template <typename Float, typename = std::enable_if_t<std::is_floating_point_v<Float>>>
-		static constexpr auto value(Float firstY, Float deltaY, Float deltaX, Float shape, Float offsetX) noexcept
+		template <typename Float>
+		static constexpr std::enable_if_t<std::is_floating_point_v<Float>, Float> value(Float firstY, Float deltaY, Float deltaX, Float shape, Float offsetX) noexcept
 		{
 			const auto normalizedX = offsetX / deltaX;
 			return firstY + deltaY * (offsetX < deltaX / 2 ? (shape + 2 * (1 - shape) * normalizedX) * normalizedX : (shape - 1) * (1 + 2 * normalizedX * normalizedX) + (4 - 3 * shape) * normalizedX);
@@ -135,8 +135,8 @@ namespace aulos
 			return result;
 		}
 
-		template <typename Float, typename = std::enable_if_t<std::is_floating_point_v<Float>>>
-		static constexpr auto value(Float firstY, Float deltaY, Float deltaX, Float shape, Float offsetX) noexcept
+		template <typename Float>
+		static constexpr std::enable_if_t<std::is_floating_point_v<Float>, Float> value(Float firstY, Float deltaY, Float deltaX, Float shape, Float offsetX) noexcept
 		{
 			assert(shape >= kMinShape && shape <= kMaxShape);
 			const auto normalizedX = offsetX / deltaX;
@@ -189,8 +189,8 @@ namespace aulos
 			return result;
 		}
 
-		template <typename Float, typename = std::enable_if_t<std::is_floating_point_v<Float>>>
-		static constexpr auto value(Float firstY, Float deltaY, Float deltaX, Float shape, Float offsetX) noexcept
+		template <typename Float>
+		static constexpr std::enable_if_t<std::is_floating_point_v<Float>, Float> value(Float firstY, Float deltaY, Float deltaX, Float shape, Float offsetX) noexcept
 		{
 			assert(shape >= kMinShape && shape <= kMaxShape);
 			const auto normalizedX = offsetX / deltaX;
@@ -232,8 +232,8 @@ namespace aulos
 			return static_cast<float>(result);
 		}
 
-		template <typename Float, typename = std::enable_if_t<std::is_floating_point_v<Float>>>
-		static auto value(Float firstY, Float deltaY, Float deltaX, Float, Float offsetX) noexcept
+		template <typename Float>
+		static std::enable_if_t<std::is_floating_point_v<Float>, Float> value(Float firstY, Float deltaY, Float deltaX, Float, Float offsetX) noexcept
 		{
 			const auto normalizedX = offsetX / deltaX;
 			return firstY + deltaY * (1 - std::cos(std::numbers::pi_v<Float> * normalizedX)) / 2;

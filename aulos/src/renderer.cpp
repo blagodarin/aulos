@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <cstring>
 #include <functional>
+#include <numeric>
 
 namespace
 {
