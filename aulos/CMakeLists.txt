@@ -10,9 +10,7 @@ set(HEADERS
 	format.hpp
 	renderer.hpp
 	)
-source_group("include" FILES ${HEADERS})
-source_group("src" REGULAR_EXPRESSION "/src/")
-add_library(aulos STATIC
+set(SOURCES
 	src/acoustics.hpp
 	src/composition.cpp
 	src/composition.hpp
@@ -25,6 +23,9 @@ add_library(aulos STATIC
 	src/voice.hpp
 	src/wave.hpp
 	)
+source_group("include" FILES ${HEADERS})
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES})
+add_library(aulos STATIC ${HEADERS} ${SOURCES})
 target_compile_options(aulos PRIVATE ${MAX_WARNINGS})
 target_include_directories(aulos PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 target_link_libraries(aulos PRIVATE primal)
