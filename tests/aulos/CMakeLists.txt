@@ -5,11 +5,17 @@
 primal_set_folder(aulos)
 source_group("src" REGULAR_EXPRESSION "/src/")
 add_executable(aulos_tests
+	src/acoustics.cpp
+	src/common.cpp
 	src/format.cpp
 	src/loop.cpp
 	src/main.cpp
+	src/modulator.cpp
+	src/period.cpp
 	src/shaper.cpp
+	src/tables.cpp
 	src/voice.cpp
+	src/wave.cpp
 	)
 target_compile_options(aulos_tests PRIVATE ${MAX_WARNINGS})
 target_include_directories(aulos_tests PRIVATE ${PRIMAL_DOWNLOAD_DIR})
