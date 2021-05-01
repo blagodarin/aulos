@@ -10,18 +10,18 @@ namespace aulos
 {
 	// A wave period consists of two parts:
 	//
-	// *               * +A
-	// |\             /|
-	// | \ (1)       / |
-	// |  \         /  |
-	// +---\-------/---+> 0
-	// |    \     /    |
-	// |     \   / (2) |
-	// |      \ /      |
-	// |       *       | -A
+	// |       *       | +A
+	// |      / \      |
+	// | (1) /   \     |
+	// |    /     \    |
+	// +---/-------\---+> 0
+	// |  /         \  |
+	// | /       (2) \ |
+	// |/             \|
+	// *               * -A
 	//
-	// The first part (+1) starts at maximum amplitude and advances towards the minimum.
-	// and the second part (-1) starts at minimum amplitude and advances towards the maximum.
+	// The first part (+1) starts at minimum amplitude and advances towards the maximum.
+	// and the second part (-1) starts at maximum amplitude and advances towards the minimum.
 	class WavePeriod
 	{
 	public:
@@ -33,9 +33,10 @@ namespace aulos
 				return true;
 			if (_nextLength == 0)
 				return false;
-			assert(_currentAmplitude > 0);
+			assert(_rightAmplitude > 0);
 			_currentLength = _nextLength;
-			_currentAmplitude = -_currentAmplitude;
+			_leftAmplitude = _rightAmplitude;
+			_rightAmplitude = -_rightAmplitude;
 			_nextLength = 0;
 			_currentRemaining += _currentLength;
 			return _currentRemaining > 0;
@@ -50,17 +51,19 @@ namespace aulos
 		{
 			assert(periodLength > 0);
 			assert(asymmetry >= 0 && asymmetry <= 1);
-			assert(_currentRemaining > -1 && _currentRemaining <= 0 && _nextLength == 0);
+			assert(_nextLength == 0);
+			assert(_currentRemaining > -1 && _currentRemaining <= 0);
 			const auto firstPartLength = periodLength * (1 + asymmetry) / 2;
 			const auto secondPartLength = periodLength - firstPartLength;
-			const auto amplitude = std::abs(_currentAmplitude);
+			const auto amplitude = std::abs(_rightAmplitude);
 			for (;;)
 			{
 				_currentRemaining += firstPartLength;
 				if (_currentRemaining > 0)
 				{
 					_currentLength = firstPartLength;
-					_currentAmplitude = amplitude;
+					_leftAmplitude = -amplitude;
+					_rightAmplitude = amplitude;
 					_nextLength = secondPartLength;
 					break;
 				}
@@ -68,7 +71,8 @@ namespace aulos
 				if (_currentRemaining > 0)
 				{
 					_currentLength = secondPartLength;
-					_currentAmplitude = -amplitude;
+					_leftAmplitude = amplitude;
+					_rightAmplitude = -amplitude;
 					_nextLength = 0;
 					break;
 				}
@@ -78,9 +82,10 @@ namespace aulos
 		constexpr ShaperData currentShaperData(float oscillation, float shapeParameter) const noexcept
 		{
 			assert(oscillation >= 0 && oscillation <= 1);
+			const auto deltaY = (_rightAmplitude - _leftAmplitude) * (1 - oscillation);
 			return {
-				_currentAmplitude,
-				-2 * _currentAmplitude * (1 - oscillation),
+				_rightAmplitude - deltaY,
+				deltaY,
 				_currentLength,
 				shapeParameter,
 				_currentLength - _currentRemaining,
@@ -97,7 +102,8 @@ namespace aulos
 			if (!fromCurrent)
 			{
 				_currentLength = firstPartLength;
-				_currentAmplitude = amplitude;
+				_leftAmplitude = 0;
+				_rightAmplitude = amplitude;
 				_nextLength = secondPartLength;
 				_currentRemaining = _currentLength;
 			}
@@ -105,17 +111,21 @@ namespace aulos
 			{
 				assert(_currentRemaining > 0);
 				const auto remainingRatio = _currentRemaining / _currentLength;
-				if (_currentAmplitude > 0)
+				if (_rightAmplitude > 0)
 				{
+					// Ascending part.
 					_currentLength = firstPartLength;
-					_currentAmplitude = amplitude;
+					_leftAmplitude = _leftAmplitude < 0 ? -amplitude : 0;
+					_rightAmplitude = amplitude;
 					_nextLength = secondPartLength;
 				}
 				else
 				{
+					// Descending part.
 					assert(_nextLength == 0);
 					_currentLength = secondPartLength;
-					_currentAmplitude = -amplitude;
+					_leftAmplitude = amplitude;
+					_rightAmplitude = -amplitude;
 				}
 				_currentRemaining = _currentLength * remainingRatio;
 			}
@@ -123,7 +133,8 @@ namespace aulos
 
 	private:
 		float _currentLength = 0;
-		float _currentAmplitude = 1;
+		float _leftAmplitude = 0;
+		float _rightAmplitude = 1;
 		float _nextLength = 0;
 		float _currentRemaining = 0;
 	};

@@ -15,12 +15,12 @@ namespace
 	constexpr auto kPeriodSamples = kTestSamplingRate / kTestNoteFrequency;
 
 	template <typename Shaper>
-	struct MonoTester
+	struct MonoVoice
 	{
 		const aulos::WaveData _waveData;
 		aulos::MonoVoice<Shaper> _voice;
 
-		MonoTester(const aulos::VoiceData& data, float amplitude)
+		MonoVoice(const aulos::VoiceData& data, float amplitude)
 			: _waveData{ data, kTestSamplingRate }
 			, _voice{ _waveData, kTestSamplingRate }
 		{
@@ -36,12 +36,12 @@ namespace
 	};
 
 	template <typename Shaper>
-	struct StereoTester
+	struct StereoVoice
 	{
 		const aulos::WaveData _waveData;
 		aulos::StereoVoice<Shaper> _voice;
 
-		StereoTester(const aulos::VoiceData& data, float amplitude)
+		StereoVoice(const aulos::VoiceData& data, float amplitude)
 			: _waveData{ data, kTestSamplingRate }
 			, _voice{ _waveData, kTestSamplingRate }
 		{
@@ -57,7 +57,7 @@ namespace
 	};
 }
 
-TEST_CASE("wave_sawtooth_mono")
+TEST_CASE("MonoVoice (sawtooth wave)")
 {
 	aulos::VoiceData data;
 	data._amplitudeEnvelope._changes.emplace_back(0ms, 1.f);
@@ -65,20 +65,36 @@ TEST_CASE("wave_sawtooth_mono")
 	data._asymmetryEnvelope._changes.emplace_back(0ms, 1.f);
 
 	constexpr auto amplitude = .1f;
-	MonoTester<aulos::LinearShaper> tester{ data, amplitude };
-	auto sample = tester.render();
-	CHECK(sample == amplitude);
+	MonoVoice<aulos::LinearShaper> voice{ data, amplitude };
+
+	// The first period.
+	auto sample = voice.render();
+	auto expected = 0.f;
+	CHECK(sample == expected);
 	for (unsigned i = 1; i < kPeriodSamples; ++i)
 	{
-		const auto nextSample = tester.render();
-		CHECK(nextSample > -amplitude);
-		CHECK(sample > nextSample);
-		sample = nextSample;
+		sample = voice.render();
+		CHECK(sample > 0.f);
+		CHECK(sample < amplitude);
+		expected += amplitude / kPeriodSamples;
+		CHECK(sample == doctest::Approx{ expected });
 	}
-	CHECK(tester.render() == amplitude);
+
+	// The second period.
+	sample = voice.render();
+	expected = -amplitude;
+	CHECK(sample == expected);
+	for (unsigned i = 1; i < kPeriodSamples; ++i)
+	{
+		sample = voice.render();
+		CHECK(sample > -amplitude);
+		CHECK(sample < amplitude);
+		expected += 2 * amplitude / kPeriodSamples;
+		CHECK(sample == doctest::Approx{ expected });
+	}
 }
 
-TEST_CASE("wave_sawtooth_stereo")
+TEST_CASE("StereoVoice (sawtooth wave)")
 {
 	aulos::VoiceData data;
 	data._amplitudeEnvelope._changes.emplace_back(0ms, 1.f);
@@ -86,25 +102,40 @@ TEST_CASE("wave_sawtooth_stereo")
 	data._asymmetryEnvelope._changes.emplace_back(0ms, 1.f);
 
 	constexpr auto amplitude = .1f;
-	StereoTester<aulos::LinearShaper> tester{ data, amplitude };
-	auto frame = tester.render();
-	CHECK(frame.first == amplitude);
-	CHECK(frame.second == amplitude);
+	StereoVoice<aulos::LinearShaper> voice{ data, amplitude };
+
+	// The first period.
+	auto frame = voice.render();
+	CHECK(frame.first == frame.second);
+	auto expected = 0.f;
+	CHECK(frame.first == expected);
 	for (unsigned i = 1; i < kPeriodSamples; ++i)
 	{
-		const auto nextFrame = tester.render();
-		CHECK(nextFrame.first > -amplitude);
-		CHECK(frame.first > nextFrame.first);
-		CHECK(nextFrame.second > -amplitude);
-		CHECK(frame.second > nextFrame.second);
-		frame = nextFrame;
+		frame = voice.render();
+		CHECK(frame.first == frame.second);
+		CHECK(frame.first > 0.f);
+		CHECK(frame.first < amplitude);
+		expected += amplitude / kPeriodSamples;
+		CHECK(frame.first == doctest::Approx{ expected });
 	}
-	frame = tester.render();
-	CHECK(frame.first == amplitude);
-	CHECK(frame.second == amplitude);
+
+	// The second period.
+	frame = voice.render();
+	CHECK(frame.first == frame.second);
+	expected = -amplitude;
+	CHECK(frame.first == expected);
+	for (unsigned i = 1; i < kPeriodSamples; ++i)
+	{
+		frame = voice.render();
+		CHECK(frame.first == frame.second);
+		CHECK(frame.first > -amplitude);
+		CHECK(frame.first < amplitude);
+		expected += 2 * amplitude / kPeriodSamples;
+		CHECK(frame.first == doctest::Approx{ expected });
+	}
 }
 
-TEST_CASE("wave_square_mono")
+TEST_CASE("MonoVoice (square wave)")
 {
 	aulos::VoiceData data;
 	data._amplitudeEnvelope._changes.emplace_back(0ms, 1.f);
@@ -112,43 +143,69 @@ TEST_CASE("wave_square_mono")
 	data._oscillationEnvelope._changes.emplace_back(0ms, 1.f);
 
 	constexpr auto amplitude = .2f;
-	MonoTester<aulos::LinearShaper> tester{ data, amplitude };
-	for (unsigned i = 0; i < kPeriodSamples / 2; ++i)
-		CHECK(tester.render() == amplitude);
-	for (unsigned i = 0; i < kPeriodSamples / 2; ++i)
-		CHECK(tester.render() == -amplitude);
-	CHECK(tester.render() == amplitude);
+	constexpr auto partLength = kPeriodSamples / 2;
+	MonoVoice<aulos::LinearShaper> voice{ data, amplitude };
+
+	// The first period.
+	for (unsigned i = 0; i < partLength; ++i)
+		CHECK(voice.render() == amplitude);
+	for (unsigned i = 0; i < partLength; ++i)
+		CHECK(voice.render() == -amplitude);
+
+	// The second period.
+	CHECK(voice.render() == amplitude);
 }
 
-TEST_CASE("wave_triangle_mono")
+TEST_CASE("MonoVoice (triangle wave)")
 {
 	aulos::VoiceData data;
 	data._amplitudeEnvelope._changes.emplace_back(0ms, 1.f);
 	data._amplitudeEnvelope._changes.emplace_back(500ms, 1.f);
 
 	constexpr auto amplitude = .3f;
-	MonoTester<aulos::LinearShaper> tester{ data, amplitude };
-	auto sample = tester.render();
-	CHECK(sample == amplitude);
-	for (unsigned i = 1; i < kPeriodSamples / 2; ++i)
+	constexpr auto partLength = kPeriodSamples / 2;
+	MonoVoice<aulos::LinearShaper> voice{ data, amplitude };
+
+	// The first period.
+	auto sample = voice.render();
+	auto expected = 0.f;
+	CHECK(sample == expected);
+	for (unsigned i = 1; i < partLength; ++i)
 	{
-		const auto nextSample = tester.render();
-		CHECK(nextSample > -amplitude);
-		CHECK(sample > nextSample);
-		sample = nextSample;
+		sample = voice.render();
+		CHECK(sample > 0.f);
+		CHECK(sample < amplitude);
+		expected += amplitude / partLength;
+		CHECK(sample == doctest::Approx{ expected });
 	}
-	sample = tester.render();
-	CHECK(sample == -amplitude);
-	for (unsigned i = 1; i < kPeriodSamples / 4; ++i)
+	sample = voice.render();
+	expected = amplitude;
+	CHECK(sample == expected);
+	for (unsigned i = 1; i < partLength; ++i)
 	{
-		const auto nextSample = tester.render();
-		CHECK(nextSample < 0.f);
-		CHECK(sample < nextSample);
-		sample = nextSample;
+		sample = voice.render();
+		CHECK(sample < amplitude);
+		CHECK(sample > -amplitude);
+		expected -= (2 * amplitude) / partLength;
+		CHECK(sample == doctest::Approx{ expected });
 	}
+
+	// The second period.
+	sample = voice.render();
+	expected = -amplitude;
+	CHECK(sample == expected);
+	for (unsigned i = 1; i < partLength; ++i)
+	{
+		sample = voice.render();
+		CHECK(sample > -amplitude);
+		CHECK(sample < amplitude);
+		expected += (2 * amplitude) / partLength;
+		CHECK(sample == doctest::Approx{ expected });
+	}
+	CHECK(voice.render() == amplitude);
 }
 
-TEST_CASE("wave_triangle_asymmetric_mono")
+TEST_CASE("MonoVoice (asymmetric triangle wave)")
 {
 	aulos::VoiceData data;
 	data._amplitudeEnvelope._changes.emplace_back(0ms, 1.f);
@@ -156,24 +213,45 @@ TEST_CASE("wave_triangle_asymmetric_mono")
 	data._asymmetryEnvelope._changes.emplace_back(0ms, .5f);
 
 	constexpr auto amplitude = .4f;
-	MonoTester<aulos::LinearShaper> tester{ data, amplitude };
-	auto sample = tester.render();
-	CHECK(sample == amplitude);
-	for (unsigned i = 1; i < kPeriodSamples * 3 / 4; ++i)
+	const auto firstPartLength = kPeriodSamples * 3 / 4;
+	const auto secondPartLength = kPeriodSamples - firstPartLength;
+	MonoVoice<aulos::LinearShaper> voice{ data, amplitude };
+
+	// The first period.
+	auto sample = voice.render();
+	auto expected = 0.f;
+	CHECK(sample == expected);
+	for (unsigned i = 1; i < firstPartLength; ++i)
 	{
-		const auto nextSample = tester.render();
-		CHECK(nextSample > -amplitude);
-		CHECK(sample > nextSample);
-		sample = nextSample;
+		sample = voice.render();
+		CHECK(sample > 0.f);
+		CHECK(sample < amplitude);
+		expected += amplitude / firstPartLength;
+		CHECK(sample == doctest::Approx{ expected });
 	}
-	sample = tester.render();
-	CHECK(sample == -amplitude);
-	for (unsigned i = 1; i < kPeriodSamples / 4; ++i)
+	sample = voice.render();
+	expected = amplitude;
+	CHECK(sample == expected);
+	for (unsigned i = 1; i < secondPartLength; ++i)
 	{
-		const auto nextSample = tester.render();
-		CHECK(nextSample < amplitude);
-		CHECK(sample < nextSample);
-		sample = nextSample;
+		sample = voice.render();
+		CHECK(sample < amplitude);
+		CHECK(sample > -amplitude);
+		expected -= (2 * amplitude) / secondPartLength;
+		CHECK(sample == doctest::Approx{ expected });
 	}
-	CHECK(tester.render() == amplitude);
+
+	// The second period.
+	sample = voice.render();
+	expected = -amplitude;
+	CHECK(sample == expected);
+	for (unsigned i = 1; i < firstPartLength; ++i)
+	{
+		sample = voice.render();
+		CHECK(sample > -amplitude);
+		CHECK(sample < amplitude);
+		expected += (2 * amplitude) / firstPartLength;
+		CHECK(sample == doctest::Approx{ expected });
+	}
+	CHECK(voice.render() == amplitude);
 }
