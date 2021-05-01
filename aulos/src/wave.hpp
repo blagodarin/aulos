@@ -128,7 +128,7 @@ namespace aulos
 				{
 					const auto nextFrequency = _frequency * _frequencyModulator.currentValue<LinearShaper>();
 					assert(nextFrequency > 0);
-					_period.restart(_samplingRate / nextFrequency, _asymmetryModulator.currentValue<LinearShaper>());
+					_period.startNext(_samplingRate / nextFrequency, _amplitude, _asymmetryModulator.currentValue<LinearShaper>());
 				}
 			}
 			if (_restartDelay > 0)
@@ -207,9 +207,10 @@ namespace aulos
 			_asymmetryModulator.start({});
 			_oscillationModulator.start({});
 			_frequency = frequency;
+			_amplitude = amplitude;
 			const auto nextFrequency = _frequency * _frequencyModulator.currentBaseValue();
 			assert(nextFrequency > 0);
-			_period.start(_samplingRate / nextFrequency, amplitude, _asymmetryModulator.currentBaseValue(), fromCurrent);
+			_period.startFirst(_samplingRate / nextFrequency, _amplitude, _asymmetryModulator.currentBaseValue(), fromCurrent);
 		}
 
 	private:
@@ -221,6 +222,7 @@ namespace aulos
 		Modulator _oscillationModulator;
 		WavePeriod _period;
 		float _frequency = 0;
+		float _amplitude = 0;
 		unsigned _startDelay = 0;
 		unsigned _restartDelay = 0;
 		float _restartFrequency = 0;
