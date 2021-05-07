@@ -4,21 +4,18 @@
 
 #pragma once
 
-#include "shaper.hpp"
-
 #include <cassert>
-#include <optional>
 #include <span>
 
 namespace aulos
 {
 	struct SampledPoint
 	{
-		unsigned _delaySamples;
+		float _delaySamples;
 		float _value;
 
 		constexpr SampledPoint(unsigned delaySamples, float value) noexcept
-			: _delaySamples{ delaySamples }, _value{ value } {}
+			: _delaySamples{ static_cast<float>(delaySamples) }, _value{ value } {}
 	};
 
 	class Modulator
@@ -29,44 +26,35 @@ namespace aulos
 			, _size{ static_cast<unsigned>(points.size()) }
 		{
 			assert(_size >= 1);
-			assert(_points->_delaySamples == 0);
+			assert(_points->_delaySamples == 0.f);
 		}
 
-		constexpr void advance(unsigned samples) noexcept
+		[[nodiscard]] constexpr float advance(float samples) noexcept
 		{
-			while (_nextIndex < _size)
+			auto maxValue = _currentValue;
+			for (; _nextIndex < _size; ++_nextIndex)
 			{
-				const auto remainingDelay = _points[_nextIndex]._delaySamples - _offsetSamples;
+				const auto& nextPoint = _points[_nextIndex];
+				const auto remainingDelay = nextPoint._delaySamples - _offsetSamples;
 				if (remainingDelay > samples)
 				{
 					_offsetSamples += samples;
+					_currentValue = _lastPointValue + (nextPoint._value - _lastPointValue) * _offsetSamples / nextPoint._delaySamples;
 					break;
 				}
 				samples -= remainingDelay;
-				_lastPointValue = _points[_nextIndex++]._value;
+				_lastPointValue = nextPoint._value;
 				_offsetSamples = 0;
+				_currentValue = _lastPointValue;
 			}
+			if (_currentValue > maxValue)
+				maxValue = _currentValue;
+			return maxValue;
 		}
 
-		constexpr ShaperData shaperData() const noexcept
+		constexpr auto currentValue() const noexcept
 		{
-			return { _lastPointValue, _points[_nextIndex]._value - _lastPointValue, static_cast<float>(_points[_nextIndex]._delaySamples), 0, static_cast<float>(_offsetSamples) };
-		}
-
-		constexpr auto currentBaseValue() const noexcept
-		{
-			return _lastPointValue;
-		}
-
-		constexpr auto currentOffset() const noexcept
-		{
-			return _offsetSamples;
-		}
-
-		template <typename Shaper>
-		auto currentValue() const noexcept
-		{
-			return Shaper::value(_lastPointValue, _points[_nextIndex]._value - _lastPointValue, static_cast<float>(_points[_nextIndex]._delaySamples), 0.f, static_cast<float>(_offsetSamples));
+			return _currentValue;
 		}
 
 		constexpr auto maxContinuousAdvance() const noexcept
@@ -74,20 +62,22 @@ namespace aulos
 			return _points[_nextIndex]._delaySamples - _offsetSamples;
 		}
 
-		void start(const std::optional<float>& initialValue) noexcept
+		void start() noexcept
 		{
-			_lastPointValue = initialValue ? *initialValue : _points->_value;
 			_nextIndex = 1;
-			while (_nextIndex < _size && !_points[_nextIndex]._delaySamples)
+			_lastPointValue = _points->_value;
+			while (_nextIndex < _size && _points[_nextIndex]._delaySamples == 0.f)
 				_lastPointValue = _points[_nextIndex++]._value;
 			_offsetSamples = 0;
+			_currentValue = _lastPointValue;
 		}
 
 		constexpr void stop() noexcept
 		{
-			_lastPointValue = _points[_size]._value;
 			_nextIndex = _size;
+			_lastPointValue = _points[_size]._value;
 			_offsetSamples = 0;
+			_currentValue = _lastPointValue;
 		}
 
 		constexpr bool stopped() const noexcept
@@ -98,8 +88,9 @@ namespace aulos
 	private:
 		const SampledPoint* const _points;
 		const unsigned _size;
-		float _lastPointValue{ _points[_size]._value };
 		unsigned _nextIndex = _size;
-		unsigned _offsetSamples = 0;
+		float _lastPointValue = _points[_size]._value;
+		float _offsetSamples = 0;
+		float _currentValue = _lastPointValue;
 	};
 }

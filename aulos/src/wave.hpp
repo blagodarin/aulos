@@ -107,110 +107,115 @@ namespace aulos
 		{
 		}
 
-		void advance(unsigned samples) noexcept
+		void advance(int samples) noexcept
 		{
-			assert(samples > 0 && samples <= maxAdvance());
-			if (_startDelay > 0)
+			assert(samples > 0);
+			if (!_started)
 			{
-				assert(!_restartDelay);
-				assert(samples <= _startDelay);
-				_startDelay -= samples;
+				if (_needRestart)
+				{
+					assert(_restartDelay > 0);
+					assert(samples <= _restartDelay);
+					_restartDelay -= samples;
+					if (_restartDelay == 0)
+					{
+						_needRestart = false;
+						startWave(_restartFrequency, _restartAmplitude);
+					}
+				}
 				return;
 			}
-			assert(!_restartDelay || samples <= _restartDelay);
-			if (!_amplitudeModulator.stopped()) // TODO: Run benchmark with and without this check.
-			{
-				_amplitudeModulator.advance(samples);
-				_frequencyModulator.advance(samples);
-				_asymmetryModulator.advance(samples);
-				_oscillationModulator.advance(samples);
-				if (!_period.advance(static_cast<float>(samples)))
-				{
-					const auto nextFrequency = _frequency * _frequencyModulator.currentValue<LinearShaper>();
-					assert(nextFrequency > 0);
-					_period.startNext(_samplingRate / nextFrequency, _amplitude, _asymmetryModulator.currentValue<LinearShaper>());
-				}
-			}
-			if (_restartDelay > 0)
-			{
-				assert(!_startDelay);
+			assert(!_period.stopped());
+			assert(samples <= static_cast<int>(std::ceil(_period.maxAdvance())));
+			if (_needRestart)
 				_restartDelay -= samples;
-				if (!_restartDelay)
-					startWave(_restartFrequency, _restartAmplitude, true);
+			if (_period.advance(static_cast<float>(samples)))
+				return;
+			assert(_period.stopped());
+			if (_needRestart && _restartDelay <= 0)
+			{
+				_needRestart = false;
+				startWave(_restartFrequency, _restartAmplitude);
+				return;
 			}
+			if (_amplitudeModulator.stopped())
+			{
+				_period = {};
+				_started = false;
+				return;
+			}
+			const auto periodFrequency = _frequency * _frequencyModulator.advance(_periodLength);
+			assert(periodFrequency > 0);
+			_periodLength = _samplingRate / periodFrequency;
+			const auto periodAmplitude = _amplitude * _amplitudeModulator.advance(_periodLength);
+			const auto periodAsymmetry = _asymmetryModulator.advance(_periodLength);
+			_period.start(_periodLength, periodAmplitude, periodAsymmetry);
+			_periodOscillation = _oscillationModulator.advance(_periodLength);
 		}
 
-		constexpr ShaperData amplitudeShaperData() const noexcept
+		int maxAdvance() const noexcept
 		{
-			// Moving the condition inside the modulator is a bit slower.
-			// Also MSVC 16.5.4 fails to optimize ternary operators in return statements, so they're slower A LOT.
-			if (!_startDelay)
-				return _amplitudeModulator.shaperData();
-			assert(!_amplitudeModulator.currentOffset());
-			return { _amplitudeModulator.currentBaseValue() };
-		}
-
-		unsigned maxAdvance() const noexcept
-		{
-			if (_startDelay > 0)
-				return _startDelay;
-			const auto maxWaveAdvance = _amplitudeModulator.stopped()
-				? std::numeric_limits<unsigned>::max()
-				: std::min(_amplitudeModulator.maxContinuousAdvance(), _period.maxAdvance());
-			if (_restartDelay > 0)
-				return std::min(maxWaveAdvance, _restartDelay);
-			return maxWaveAdvance;
+			if (_started)
+				return static_cast<int>(std::ceil(_period.maxAdvance()));
+			if (_needRestart)
+			{
+				assert(_restartDelay > 0);
+				return _restartDelay;
+			}
+			assert(_period.stopped());
+			return std::numeric_limits<int>::max();
 		}
 
 		ShaperData waveShaperData() const noexcept
 		{
-			return _period.currentShaperData(_oscillationModulator.currentValue<LinearShaper>(), _shapeParameter);
+			return _period.currentShaperData(_periodOscillation, _shapeParameter);
 		}
 
-		void start(float frequency, float amplitude, unsigned delay) noexcept
+		void start(float frequency, float amplitude, int delay) noexcept
 		{
-			assert(!_restartDelay);
-			if (_amplitudeModulator.stopped() || _startDelay > 0)
+			assert(frequency > 0);
+			assert(amplitude > 0);
+			assert(delay >= 0);
+			if (!_started)
 			{
-				startWave(frequency, amplitude, false);
-				_startDelay = delay;
+				if (delay == 0)
+				{
+					startWave(frequency, amplitude);
+					return;
+				}
+				else
+					assert(!_needRestart); // TODO: Come up with a way to handle frequent wave restarts.
 			}
-			else if (!delay)
-			{
-				startWave(frequency, amplitude, true);
-				_startDelay = delay;
-			}
-			else
-			{
-				_restartDelay = delay;
-				_restartFrequency = frequency;
-				_restartAmplitude = amplitude;
-			}
+			_needRestart = true;
+			_restartFrequency = frequency;
+			_restartAmplitude = amplitude;
+			_restartDelay = delay;
 		}
 
 		constexpr void stop() noexcept
 		{
-			_amplitudeModulator.stop();
-		}
-
-		constexpr bool stopped() const noexcept
-		{
-			return _amplitudeModulator.stopped();
+			_started = false;
+			_needRestart = false;
 		}
 
 	private:
-		void startWave(float frequency, float amplitude, bool fromCurrent) noexcept
+		void startWave(float frequency, float amplitude) noexcept
 		{
 			assert(frequency > 0);
-			_amplitudeModulator.start(fromCurrent ? std::optional{ _amplitudeModulator.currentValue<LinearShaper>() } : std::nullopt);
-			_frequencyModulator.start({});
-			_asymmetryModulator.start({});
-			_oscillationModulator.start({});
+			_amplitudeModulator.start();
+			_frequencyModulator.start();
+			_asymmetryModulator.start();
+			_oscillationModulator.start();
 			_frequency = frequency;
 			_amplitude = amplitude;
-			const auto nextFrequency = _frequency * _frequencyModulator.currentBaseValue();
-			assert(nextFrequency > 0);
-			_period.startFirst(_samplingRate / nextFrequency, _amplitude, _asymmetryModulator.currentBaseValue(), fromCurrent);
+			const auto periodFrequency = _frequency * _frequencyModulator.currentValue();
+			assert(periodFrequency > 0);
+			_periodLength = _samplingRate / periodFrequency;
+			const auto periodAmplitude = _amplitude * _amplitudeModulator.advance(_periodLength);
+			const auto periodAsymmetry = _asymmetryModulator.advance(_periodLength);
+			_period.start(_periodLength, periodAmplitude, periodAsymmetry);
+			_periodOscillation = _oscillationModulator.advance(_periodLength);
+			_started = true;
 		}
 
 	private:
@@ -221,10 +226,13 @@ namespace aulos
 		Modulator _asymmetryModulator;
 		Modulator _oscillationModulator;
 		WavePeriod _period;
+		float _periodLength = 0;
+		float _periodOscillation = 0;
 		float _frequency = 0;
 		float _amplitude = 0;
-		unsigned _startDelay = 0;
-		unsigned _restartDelay = 0;
+		bool _started = false;
+		bool _needRestart = false;
+		int _restartDelay = 0;
 		float _restartFrequency = 0;
 		float _restartAmplitude = 0;
 	};

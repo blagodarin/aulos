@@ -8,7 +8,9 @@
 
 namespace aulos
 {
-	// A wave period consists of two parts:
+	// A wave period consists of two parts.
+	// The first part starts at minimum amplitude of the previous period and advances towards the maximum.
+	// The second part starts at maximum amplitude and advances towards the minimum.
 	//
 	// 0                  S/F
 	// +~~~~~~~~~~~~~~~~~~~+> periodLength
@@ -28,15 +30,13 @@ namespace aulos
 	//           +~~~~~~~~~+> asymmetry
 	//           0         1
 	//
-	// The first part of a period (+1) starts at minimum amplitude of the previous period and advances towards the maximum.
-	// The second part of a period (-1) starts at maximum amplitude and advances towards the minimum.
 	class WavePeriod
 	{
 	public:
-		constexpr bool advance(float samples) noexcept
+		[[nodiscard]] constexpr bool advance(float samples) noexcept
 		{
+			assert(_currentRemaining - samples > -1);
 			_currentRemaining -= samples;
-			assert(_currentRemaining > -1);
 			if (_currentRemaining > 0)
 				return true;
 			if (_nextLength == 0)
@@ -50,14 +50,10 @@ namespace aulos
 			return _currentRemaining > 0;
 		}
 
-		auto maxAdvance() const noexcept
-		{
-			return static_cast<unsigned>(std::ceil(_currentRemaining));
-		}
-
-		constexpr ShaperData currentShaperData(float oscillation, float shapeParameter) const noexcept
+		[[nodiscard]] constexpr ShaperData currentShaperData(float oscillation, float shapeParameter) const noexcept
 		{
 			assert(oscillation >= 0 && oscillation <= 1);
+			assert(_currentLength > 0); // Otherwise the shaper will produce garbage.
 			const auto deltaY = (_rightAmplitude - _leftAmplitude) * (1 - oscillation);
 			return {
 				_rightAmplitude - deltaY,
@@ -68,52 +64,17 @@ namespace aulos
 			};
 		}
 
-		constexpr void startFirst(float periodLength, float amplitude, float asymmetry, bool fromCurrent) noexcept
+		[[nodiscard]] constexpr auto maxAdvance() const noexcept
 		{
-			assert(periodLength > 0);
-			assert(amplitude > 0);
-			assert(asymmetry >= 0 && asymmetry <= 1);
-			const auto firstPartLength = periodLength * (1 + asymmetry) / 2;
-			const auto secondPartLength = periodLength - firstPartLength;
-			if (!fromCurrent)
-			{
-				_currentLength = firstPartLength;
-				_leftAmplitude = 0;
-				_rightAmplitude = amplitude;
-				_nextLength = secondPartLength;
-				_currentRemaining = _currentLength;
-			}
-			else
-			{
-				assert(_currentRemaining > 0);
-				const auto remainingRatio = _currentRemaining / _currentLength;
-				if (_rightAmplitude > 0)
-				{
-					// Ascending part.
-					_currentLength = firstPartLength;
-					_leftAmplitude = _leftAmplitude < 0 ? -amplitude : 0;
-					_rightAmplitude = amplitude;
-					_nextLength = secondPartLength;
-				}
-				else
-				{
-					// Descending part.
-					assert(_nextLength == 0);
-					_currentLength = secondPartLength;
-					_leftAmplitude = amplitude;
-					_rightAmplitude = -amplitude;
-				}
-				_currentRemaining = _currentLength * remainingRatio;
-			}
+			return _currentRemaining;
 		}
 
-		void startNext(float periodLength, float amplitude, float asymmetry) noexcept
+		void start(float periodLength, float amplitude, float asymmetry) noexcept
 		{
 			assert(periodLength > 0);
 			assert(amplitude >= 0);
 			assert(asymmetry >= 0 && asymmetry <= 1);
-			assert(_nextLength == 0);
-			assert(_currentRemaining > -1 && _currentRemaining <= 0);
+			assert(stopped());
 			const auto firstPartLength = periodLength * (1 + asymmetry) / 2;
 			const auto secondPartLength = periodLength - firstPartLength;
 			for (;;)
@@ -139,10 +100,15 @@ namespace aulos
 			}
 		}
 
+		[[nodiscard]] constexpr bool stopped() const noexcept
+		{
+			return _nextLength == 0 && _currentRemaining > -1 && _currentRemaining <= 0;
+		}
+
 	private:
-		float _currentLength = 0;
+		float _currentLength = 1;
 		float _leftAmplitude = 0;
-		float _rightAmplitude = 1;
+		float _rightAmplitude = 0;
 		float _nextLength = 0;
 		float _currentRemaining = 0;
 	};

@@ -40,15 +40,14 @@ namespace aulos
 			{
 				const auto maxAdvance = _wave.maxAdvance();
 				assert(maxAdvance > 0);
-				if (maxAdvance == std::numeric_limits<unsigned>::max())
+				if (maxAdvance == std::numeric_limits<int>::max())
 					break;
-				auto strideFrames = std::min(remainingFrames, maxAdvance);
+				auto strideFrames = std::min(remainingFrames, static_cast<unsigned>(maxAdvance));
 				remainingFrames -= strideFrames;
-				Shaper waveShaper{ _wave.waveShaperData() };
-				LinearShaper amplitudeShaper{ _wave.amplitudeShaperData() };
-				_wave.advance(strideFrames);
+				Shaper shaper{ _wave.waveShaperData() };
+				_wave.advance(static_cast<int>(strideFrames));
 				do
-					*buffer++ += waveShaper.advance() * amplitudeShaper.advance();
+					*buffer++ += shaper.advance();
 				while (--strideFrames > 0);
 			} while (remainingFrames > 0);
 			return maxFrames - remainingFrames;
@@ -86,20 +85,18 @@ namespace aulos
 			{
 				const auto maxAdvance = std::min(_leftWave.maxAdvance(), _rightWave.maxAdvance());
 				assert(maxAdvance > 0);
-				if (maxAdvance == std::numeric_limits<unsigned>::max())
+				if (maxAdvance == std::numeric_limits<int>::max())
 					break;
-				auto strideFrames = std::min(remainingFrames, maxAdvance);
+				auto strideFrames = std::min(remainingFrames, static_cast<unsigned>(maxAdvance));
 				remainingFrames -= strideFrames;
-				Shaper leftWaveShaper{ _leftWave.waveShaperData() };
-				LinearShaper leftAmplitudeShaper{ _leftWave.amplitudeShaperData() };
-				_leftWave.advance(strideFrames);
-				Shaper rightWaveShaper{ _rightWave.waveShaperData() };
-				LinearShaper rightAmplitudeShaper{ _rightWave.amplitudeShaperData() };
-				_rightWave.advance(strideFrames);
+				Shaper leftShaper{ _leftWave.waveShaperData() };
+				Shaper rightShaper{ _rightWave.waveShaperData() };
+				_leftWave.advance(static_cast<int>(strideFrames));
+				_rightWave.advance(static_cast<int>(strideFrames));
 				do
 				{
-					*buffer++ += leftWaveShaper.advance() * leftAmplitudeShaper.advance();
-					*buffer++ += rightWaveShaper.advance() * rightAmplitudeShaper.advance();
+					*buffer++ += leftShaper.advance();
+					*buffer++ += rightShaper.advance();
 				} while (--strideFrames > 0);
 			} while (remainingFrames > 0);
 			return maxFrames - remainingFrames;
@@ -107,8 +104,8 @@ namespace aulos
 
 		void start(float frequency, float amplitude, int delay) noexcept override
 		{
-			_leftWave.start(frequency, amplitude, static_cast<unsigned>(std::max(delay, 0)));
-			_rightWave.start(frequency, amplitude, static_cast<unsigned>(std::max(-delay, 0)));
+			_leftWave.start(frequency, amplitude, std::max(delay, 0));
+			_rightWave.start(frequency, amplitude, std::max(-delay, 0));
 		}
 
 		void stop() noexcept override
