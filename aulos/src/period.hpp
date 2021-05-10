@@ -33,21 +33,20 @@ namespace aulos
 	class WavePeriod
 	{
 	public:
-		[[nodiscard]] constexpr bool advance(float samples) noexcept
+		constexpr void advance(float samples) noexcept
 		{
 			assert(_currentRemaining - samples > -1);
 			_currentRemaining -= samples;
 			if (_currentRemaining > 0)
-				return true;
+				return;
 			if (_nextLength == 0)
-				return false;
+				return;
 			assert(_rightAmplitude > 0);
 			_currentLength = _nextLength;
 			_leftAmplitude = _rightAmplitude;
 			_rightAmplitude = -_rightAmplitude;
 			_nextLength = 0;
 			_currentRemaining += _currentLength;
-			return _currentRemaining > 0;
 		}
 
 		[[nodiscard]] constexpr ShaperData currentShaperData(float oscillation, float shapeParameter) const noexcept
@@ -69,10 +68,10 @@ namespace aulos
 			return _currentRemaining;
 		}
 
-		void start(float periodLength, float amplitude, float asymmetry) noexcept
+		void start(float periodLength, float amplitude, float asymmetry, bool stop) noexcept
 		{
 			assert(periodLength > 0);
-			assert(amplitude >= 0);
+			assert(amplitude > 0);
 			assert(asymmetry >= 0 && asymmetry <= 1);
 			assert(stopped());
 			const auto firstPartLength = periodLength * (1 + asymmetry) / 2;
@@ -84,8 +83,8 @@ namespace aulos
 				{
 					_currentLength = firstPartLength;
 					_leftAmplitude = -std::abs(_rightAmplitude);
-					_rightAmplitude = amplitude;
-					_nextLength = amplitude > 0 ? secondPartLength : 0;
+					_rightAmplitude = stop ? 0.f : amplitude;
+					_nextLength = stop ? 0.f : secondPartLength;
 					break;
 				}
 				_currentRemaining += secondPartLength;
@@ -93,7 +92,7 @@ namespace aulos
 				{
 					_currentLength = secondPartLength;
 					_leftAmplitude = amplitude;
-					_rightAmplitude = -amplitude;
+					_rightAmplitude = stop ? 0.f : -amplitude;
 					_nextLength = 0;
 					break;
 				}

@@ -38,11 +38,11 @@ namespace aulos
 			auto remainingFrames = maxFrames;
 			do
 			{
-				const auto maxAdvance = _wave.maxAdvance();
-				assert(maxAdvance > 0);
-				if (maxAdvance == std::numeric_limits<int>::max())
+				const auto maxStrideFrames = _wave.prepareAdvance();
+				assert(maxStrideFrames > 0);
+				if (maxStrideFrames == std::numeric_limits<int>::max())
 					break;
-				auto strideFrames = std::min(remainingFrames, static_cast<unsigned>(maxAdvance));
+				auto strideFrames = std::min(remainingFrames, static_cast<unsigned>(maxStrideFrames));
 				remainingFrames -= strideFrames;
 				Shaper shaper{ _wave.waveShaperData() };
 				_wave.advance(static_cast<int>(strideFrames));
@@ -83,11 +83,11 @@ namespace aulos
 			auto remainingFrames = maxFrames;
 			do
 			{
-				const auto maxAdvance = std::min(_leftWave.maxAdvance(), _rightWave.maxAdvance());
-				assert(maxAdvance > 0);
-				if (maxAdvance == std::numeric_limits<int>::max())
+				const auto maxStrideFrames = std::min(_leftWave.prepareAdvance(), _rightWave.prepareAdvance());
+				assert(maxStrideFrames > 0);
+				if (maxStrideFrames == std::numeric_limits<int>::max())
 					break;
-				auto strideFrames = std::min(remainingFrames, static_cast<unsigned>(maxAdvance));
+				auto strideFrames = std::min(remainingFrames, static_cast<unsigned>(maxStrideFrames));
 				remainingFrames -= strideFrames;
 				Shaper leftShaper{ _leftWave.waveShaperData() };
 				Shaper rightShaper{ _rightWave.waveShaperData() };
