@@ -62,14 +62,30 @@ namespace aulos
 			return _points[_nextIndex]._delaySamples - _offsetSamples;
 		}
 
-		void start() noexcept
+		void start(float offsetSamples) noexcept
 		{
+			assert(offsetSamples >= 0);
 			_nextIndex = 1;
 			_lastPointValue = _points->_value;
-			while (_nextIndex < _size && _points[_nextIndex]._delaySamples == 0.f)
-				_lastPointValue = _points[_nextIndex++]._value;
-			_offsetSamples = 0;
-			_currentValue = _lastPointValue;
+			for (;;)
+			{
+				if (_nextIndex == _size)
+				{
+					_offsetSamples = 0;
+					_currentValue = _lastPointValue;
+					break;
+				}
+				const auto& nextPoint = _points[_nextIndex];
+				if (nextPoint._delaySamples > offsetSamples)
+				{
+					_offsetSamples = offsetSamples;
+					_currentValue = _lastPointValue + (nextPoint._value - _lastPointValue) * _offsetSamples / nextPoint._delaySamples;
+					break;
+				}
+				offsetSamples -= nextPoint._delaySamples;
+				_lastPointValue = nextPoint._value;
+				++_nextIndex;
+			}
 		}
 
 		constexpr void stop() noexcept

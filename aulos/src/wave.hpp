@@ -123,7 +123,7 @@ namespace aulos
 				if (_needRestart && _restartDelay <= 0)
 				{
 					_needRestart = false;
-					startWave(_restartFrequency, _restartAmplitude, -_restartDelay);
+					startWave(_restartFrequency, _restartAmplitude, static_cast<float>(-_restartDelay));
 				}
 				else
 				{
@@ -176,15 +176,15 @@ namespace aulos
 		}
 
 	private:
-		void startWave(float frequency, float amplitude, [[maybe_unused]] int initialAdvance) noexcept // TODO: Use initialAdvance.
+		void startWave(float frequency, float amplitude, float offsetSamples) noexcept
 		{
 			assert(frequency > 0);
 			assert(amplitude > 0);
-			assert(initialAdvance >= 0);
-			_amplitudeModulator.start();
-			_frequencyModulator.start();
-			_asymmetryModulator.start();
-			_oscillationModulator.start();
+			assert(offsetSamples >= 0);
+			_amplitudeModulator.start(offsetSamples);
+			_frequencyModulator.start(offsetSamples);
+			_asymmetryModulator.start(offsetSamples);
+			_oscillationModulator.start(offsetSamples);
 			_frequency = frequency;
 			_amplitude = amplitude;
 			const auto periodFrequency = _frequency * _frequencyModulator.currentValue();
