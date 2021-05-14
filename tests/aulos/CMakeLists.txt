@@ -11,6 +11,7 @@ add_executable(aulos_tests
 	src/loop.cpp
 	src/main.cpp
 	src/modulator.cpp
+	src/oscillator.cpp
 	src/period.cpp
 	src/shaper.cpp
 	src/tables.cpp

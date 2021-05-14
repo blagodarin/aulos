@@ -6,6 +6,7 @@
 
 #include <aulos/common.hpp>
 #include "modulator.hpp"
+#include "oscillator.hpp"
 #include "period.hpp"
 
 #include <primal/rigid_vector.hpp>
@@ -39,6 +40,8 @@ namespace aulos
 			, _asymmetrySize{ 1 + static_cast<unsigned>(data._asymmetryEnvelope._changes.size()) }
 			, _oscillationOffset{ _asymmetryOffset + _asymmetrySize + 1 }
 			, _oscillationSize{ 1 + static_cast<unsigned>(data._oscillationEnvelope._changes.size()) }
+			, _tremolo{ data._tremolo }
+			, _vibrato{ data._vibrato }
 		{
 			_pointBuffer.reserve(size_t{ _oscillationOffset } + _oscillationSize + 1);
 			addPoints<Transformation::None>(data._amplitudeEnvelope, samplingRate);
@@ -47,30 +50,13 @@ namespace aulos
 			addPoints<Transformation::None>(data._oscillationEnvelope, samplingRate);
 		}
 
-		std::span<const SampledPoint> amplitudePoints() const noexcept
-		{
-			return { _pointBuffer.data(), _amplitudeSize };
-		}
-
-		std::span<const SampledPoint> asymmetryPoints() const noexcept
-		{
-			return { _pointBuffer.data() + _asymmetryOffset, _asymmetrySize };
-		}
-
-		std::span<const SampledPoint> frequencyPoints() const noexcept
-		{
-			return { _pointBuffer.data() + _frequencyOffset, _frequencySize };
-		}
-
-		std::span<const SampledPoint> oscillationPoints() const noexcept
-		{
-			return { _pointBuffer.data() + _oscillationOffset, _oscillationSize };
-		}
-
-		constexpr auto shapeParameter() const noexcept
-		{
-			return _shapeParameter;
-		}
+		[[nodiscard]] std::span<const SampledPoint> amplitudePoints() const noexcept { return { _pointBuffer.data(), _amplitudeSize }; }
+		[[nodiscard]] std::span<const SampledPoint> asymmetryPoints() const noexcept { return { _pointBuffer.data() + _asymmetryOffset, _asymmetrySize }; }
+		[[nodiscard]] std::span<const SampledPoint> frequencyPoints() const noexcept { return { _pointBuffer.data() + _frequencyOffset, _frequencySize }; }
+		[[nodiscard]] std::span<const SampledPoint> oscillationPoints() const noexcept { return { _pointBuffer.data() + _oscillationOffset, _oscillationSize }; }
+		[[nodiscard]] constexpr auto shapeParameter() const noexcept { return _shapeParameter; }
+		[[nodiscard]] constexpr auto& tremolo() const noexcept { return _tremolo; }
+		[[nodiscard]] constexpr auto& vibrato() const noexcept { return _vibrato; }
 
 	private:
 		template <Transformation transformation>
@@ -92,6 +78,8 @@ namespace aulos
 		const unsigned _oscillationOffset;
 		const unsigned _oscillationSize;
 		primal::RigidVector<SampledPoint> _pointBuffer;
+		Oscillation _tremolo;
+		Oscillation _vibrato;
 	};
 
 	class WaveState
@@ -101,7 +89,9 @@ namespace aulos
 			: _samplingRate{ static_cast<float>(samplingRate) }
 			, _shapeParameter{ data.shapeParameter() }
 			, _amplitudeModulator{ data.amplitudePoints() }
+			, _amplitudeOscillator{ _samplingRate / data.tremolo()._frequency, data.tremolo()._magnitude }
 			, _frequencyModulator{ data.frequencyPoints() }
+			, _frequencyOscillator{ _samplingRate / data.vibrato()._frequency, data.vibrato()._magnitude }
 			, _asymmetryModulator{ data.asymmetryPoints() }
 			, _oscillationModulator{ data.oscillationPoints() }
 		{
@@ -132,11 +122,13 @@ namespace aulos
 						_period = {};
 						return _needRestart ? _restartDelay : std::numeric_limits<int>::max();
 					}
-					const auto periodFrequency = _frequency * _frequencyModulator.advance(_periodLength);
+					const auto periodFrequency = _frequency * _frequencyModulator.advance(_periodLength) * _frequencyOscillator.value();
 					assert(periodFrequency > 0);
 					_periodLength = _samplingRate / periodFrequency;
-					const auto periodAmplitude = _amplitude * _amplitudeModulator.advance(_periodLength);
+					const auto periodAmplitude = _amplitude * _amplitudeModulator.advance(_periodLength) * _amplitudeOscillator.value();
 					const auto periodAsymmetry = _asymmetryModulator.advance(_periodLength);
+					_amplitudeOscillator.advance(_periodLength);
+					_frequencyOscillator.advance(_periodLength);
 					_period.start(_periodLength, periodAmplitude, periodAsymmetry, _amplitudeModulator.stopped());
 					_periodOscillation = _oscillationModulator.advance(_periodLength);
 				}
@@ -182,16 +174,20 @@ namespace aulos
 			assert(amplitude > 0);
 			assert(offsetSamples >= 0);
 			_amplitudeModulator.start(offsetSamples);
+			_amplitudeOscillator.start(offsetSamples);
 			_frequencyModulator.start(offsetSamples);
+			_frequencyOscillator.start(offsetSamples);
 			_asymmetryModulator.start(offsetSamples);
 			_oscillationModulator.start(offsetSamples);
 			_frequency = frequency;
 			_amplitude = amplitude;
-			const auto periodFrequency = _frequency * _frequencyModulator.currentValue();
+			const auto periodFrequency = _frequency * _frequencyModulator.currentValue() * _frequencyOscillator.value();
 			assert(periodFrequency > 0);
 			_periodLength = _samplingRate / periodFrequency;
-			const auto periodAmplitude = _amplitude * _amplitudeModulator.advance(_periodLength);
+			const auto periodAmplitude = _amplitude * _amplitudeModulator.advance(_periodLength) * _amplitudeOscillator.value();
 			const auto periodAsymmetry = _asymmetryModulator.advance(_periodLength);
+			_amplitudeOscillator.advance(_periodLength);
+			_frequencyOscillator.advance(_periodLength);
 			_period.start(_periodLength, periodAmplitude, periodAsymmetry, _amplitudeModulator.stopped());
 			_periodOscillation = _oscillationModulator.advance(_periodLength);
 		}
@@ -200,7 +196,9 @@ namespace aulos
 		const float _samplingRate;
 		const float _shapeParameter;
 		Modulator _amplitudeModulator;
+		TriangleOscillator _amplitudeOscillator;
 		Modulator _frequencyModulator;
+		TriangleOscillator _frequencyOscillator;
 		Modulator _asymmetryModulator;
 		Modulator _oscillationModulator;
 		WavePeriod _period;

@@ -64,21 +64,29 @@ namespace aulos
 		std::vector<EnvelopeChange> _changes; // List of consecutive value changes.
 	};
 
-	enum class Polyphony
+	struct Oscillation
 	{
-		Chord, // Multiple notes which start simultaneously are rendered as a chord.
-		Full,  // All distinct notes are rendered independently.
+		float _frequency = 1.f;
+		float _magnitude = 0.f;
 	};
 
 	// Specifies how to generate a waveform for a sound.
 	struct VoiceData
 	{
 		WaveShape _waveShape = WaveShape::Linear;
+		float _waveShapeParameter = 0.f;
 		Envelope _amplitudeEnvelope;
+		Oscillation _tremolo;
 		Envelope _frequencyEnvelope;
+		Oscillation _vibrato;
 		Envelope _asymmetryEnvelope;
 		Envelope _oscillationEnvelope;
-		float _waveShapeParameter = 0.f;
+	};
+
+	enum class Polyphony
+	{
+		Chord, // Multiple notes which start simultaneously are rendered as a chord.
+		Full,  // All distinct notes are rendered independently.
 	};
 
 	struct TrackProperties

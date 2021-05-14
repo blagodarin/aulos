@@ -1,5 +1,5 @@
 author "Vittorio Monti"
-gain 114
+gain 155
 loop 0 256
 speed 10
 title "Csárdás"
@@ -7,11 +7,15 @@ title "Csárdás"
 @voice 1 "Violin"
 amplitude 80 1.00 80 0.25 340 0.00
 asymmetry 40 0.60 460 0.30
+tremolo 1.000000 0.00
+vibrato 6.000000 0.03
 wave quintic -1.00
 
 @voice 2 "Bass"
 amplitude 20 1.00 80 0.10 900 0.00
 asymmetry 20 0.70 980 0.50
+tremolo 1.000000 0.00
+vibrato 1.000000 0.00
 wave cosine
 
 @track 1 1
@@ -20,7 +24,7 @@ stereo_angle 0
 stereo_angular_size 180
 stereo_delay 2.00
 stereo_distance 2.00
-weight 1
+weight 2
 
 @track 2 1
 polyphony chord
@@ -28,7 +32,7 @@ stereo_angle 0
 stereo_angular_size 180
 stereo_delay 2.00
 stereo_distance 2.00
-weight 2
+weight 3
 
 @sequences
 1 1 1 D5D4,,D6D5,,,,A#5A#4,,,,A5A4,,,,F5F4,,E5E4,,D5D4,,,,C#5C#4,,D5D4

@@ -354,6 +354,20 @@ namespace aulos
 					throw CompositionError{ location(), "Unexpected command" };
 				_title = readString();
 			}
+			else if (command == "tremolo")
+			{
+				if (currentSection != Section::Voice)
+					throw CompositionError{ location(), "Unexpected command" };
+				currentVoice->_tremolo._frequency = readFloat(1.f, 127.f);
+				currentVoice->_tremolo._magnitude = readFloat(0.f, 1.f);
+			}
+			else if (command == "vibrato")
+			{
+				if (currentSection != Section::Voice)
+					throw CompositionError{ location(), "Unexpected command" };
+				currentVoice->_vibrato._frequency = readFloat(1.f, 127.f);
+				currentVoice->_vibrato._magnitude = readFloat(0.f, 1.f);
+			}
 			else if (command == "wave")
 			{
 				if (currentSection != Section::Voice)

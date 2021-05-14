@@ -57,7 +57,11 @@ private:
 	QDoubleSpinBox* _waveShapeParameterSpin = nullptr;
 	WaveShapeWidget* _waveShapeWidget = nullptr;
 	std::vector<EnvelopeChange> _amplitudeEnvelope;
+	QSpinBox* _tremoloFrequencySpin = nullptr;
+	QDoubleSpinBox* _tremoloMagnitudeSpin = nullptr;
 	std::vector<EnvelopeChange> _frequencyEnvelope;
+	QSpinBox* _vibratoFrequencySpin = nullptr;
+	QDoubleSpinBox* _vibratoMagnitudeSpin = nullptr;
 	std::vector<EnvelopeChange> _asymmetryEnvelope;
 	std::vector<EnvelopeChange> _oscillationEnvelope;
 	std::shared_ptr<aulos::VoiceData> _voice;

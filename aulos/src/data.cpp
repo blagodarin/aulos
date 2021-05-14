@@ -135,6 +135,8 @@ namespace aulos
 			saveEnvelope("asymmetry", part._voice._asymmetryEnvelope);
 			saveEnvelope("frequency", part._voice._frequencyEnvelope);
 			saveEnvelope("oscillation", part._voice._oscillationEnvelope);
+			text += "\ntremolo " + std::to_string(part._voice._tremolo._frequency) + ' ' + floatToString(part._voice._tremolo._magnitude);
+			text += "\nvibrato " + std::to_string(part._voice._vibrato._frequency) + ' ' + floatToString(part._voice._vibrato._magnitude);
 			text += "\nwave ";
 			switch (part._voice._waveShape)
 			{

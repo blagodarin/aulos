@@ -1,4 +1,4 @@
-gain 786
+gain 806
 loop 0 104
 speed 4
 title "Frère Jacques"
@@ -6,6 +6,8 @@ title "Frère Jacques"
 @voice 1 "Bell"
 amplitude 10 1.00 90 0.50 1900 0.00
 asymmetry 0 0.20
+tremolo 1.000000 0.00
+vibrato 3.000000 0.05
 wave quintic 1.00
 
 @track 1 1

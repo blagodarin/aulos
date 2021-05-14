@@ -259,8 +259,31 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 		}
 	};
 
+	const auto createOscillatorWidgets = [this, widget, layout](const QString& title, QSpinBox*& frequency, QDoubleSpinBox*& magnitude) {
+		const auto [group, groupLayout] = ::createGroup<QFormLayout>(title, widget);
+		layout->addWidget(group);
+
+		frequency = new QSpinBox{ group };
+		frequency->setRange(1, 128);
+		frequency->setSingleStep(1);
+		frequency->setSuffix(tr("Hz"));
+		frequency->setValue(1);
+		groupLayout->addRow(tr("Frequency:"), frequency);
+		connect(frequency, QOverload<int>::of(&QSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
+
+		magnitude = new QDoubleSpinBox{ group };
+		magnitude->setDecimals(2);
+		magnitude->setRange(0.0, 1.0);
+		magnitude->setSingleStep(0.01);
+		magnitude->setValue(0.0);
+		groupLayout->addRow(tr("Magnitude:"), magnitude);
+		connect(magnitude, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
+	};
+
 	createEnvelopeWidgets(tr("Amplitude changes"), _amplitudeEnvelope, 0);
+	createOscillatorWidgets(tr("Tremolo"), _tremoloFrequencySpin, _tremoloMagnitudeSpin);
 	createEnvelopeWidgets(tr("Frequency changes"), _frequencyEnvelope, -1);
+	createOscillatorWidgets(tr("Vibrato"), _vibratoFrequencySpin, _vibratoMagnitudeSpin);
 	createEnvelopeWidgets(tr("Asymmetry changes"), _asymmetryEnvelope, 0);
 	createEnvelopeWidgets(tr("Oscillation changes"), _oscillationEnvelope, 0);
 
@@ -311,7 +334,11 @@ void VoiceWidget::setParameters(const std::shared_ptr<aulos::VoiceData>& voice, 
 	_waveShapeParameterSpin->setValue(usedVoice->_waveShapeParameter);
 	updateWaveImage();
 	loadEnvelope(_amplitudeEnvelope, usedVoice->_amplitudeEnvelope);
+	_tremoloFrequencySpin->setValue(static_cast<int>(usedVoice->_tremolo._frequency));
+	_tremoloMagnitudeSpin->setValue(usedVoice->_tremolo._magnitude);
 	loadEnvelope(_frequencyEnvelope, usedVoice->_frequencyEnvelope);
+	_vibratoFrequencySpin->setValue(static_cast<int>(usedVoice->_vibrato._frequency));
+	_vibratoMagnitudeSpin->setValue(usedVoice->_vibrato._magnitude);
 	loadEnvelope(_asymmetryEnvelope, usedVoice->_asymmetryEnvelope);
 	loadEnvelope(_oscillationEnvelope, usedVoice->_oscillationEnvelope);
 
@@ -369,7 +396,11 @@ void VoiceWidget::updateVoice()
 	_voice->_waveShape = static_cast<aulos::WaveShape>(_waveShapeCombo->currentData().toInt());
 	_voice->_waveShapeParameter = static_cast<float>(_waveShapeParameterSpin->value());
 	storeEnvelope(_voice->_amplitudeEnvelope, _amplitudeEnvelope);
+	_voice->_tremolo._frequency = static_cast<float>(_tremoloFrequencySpin->value());
+	_voice->_tremolo._magnitude = static_cast<float>(_tremoloMagnitudeSpin->value());
 	storeEnvelope(_voice->_frequencyEnvelope, _frequencyEnvelope);
+	_voice->_vibrato._frequency = static_cast<float>(_vibratoFrequencySpin->value());
+	_voice->_vibrato._magnitude = static_cast<float>(_vibratoMagnitudeSpin->value());
 	storeEnvelope(_voice->_asymmetryEnvelope, _asymmetryEnvelope);
 	storeEnvelope(_voice->_oscillationEnvelope, _oscillationEnvelope);
 	emit voiceChanged();
