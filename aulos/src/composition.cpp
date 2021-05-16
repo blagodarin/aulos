@@ -264,6 +264,11 @@ namespace aulos
 					envelope._changes.emplace_back(std::chrono::milliseconds{ *duration }, readFloat(minValue, maxValue));
 			};
 
+			const auto readOscillation = [&](Oscillation& oscillation) {
+				oscillation._frequency = readFloat(1.f, 127.f);
+				oscillation._magnitude = readFloat(0.f, 1.f);
+			};
+
 			if (command == "amplitude")
 			{
 				if (currentSection != Section::Voice)
@@ -275,6 +280,12 @@ namespace aulos
 				if (currentSection != Section::Voice)
 					throw CompositionError{ location(), "Unexpected command" };
 				readEnvelope(currentVoice->_asymmetryEnvelope, 0.f, 1.f);
+			}
+			else if (command == "asymmetry_osc")
+			{
+				if (currentSection != Section::Voice)
+					throw CompositionError{ location(), "Unexpected command" };
+				readOscillation(currentVoice->_asymmetryOscillation);
 			}
 			else if (command == "author")
 			{
@@ -305,7 +316,13 @@ namespace aulos
 			{
 				if (currentSection != Section::Voice)
 					throw CompositionError{ location(), "Unexpected command" };
-				readEnvelope(currentVoice->_oscillationEnvelope, 0.f, 1.f);
+				readEnvelope(currentVoice->_rectangularityEnvelope, 0.f, 1.f);
+			}
+			else if (command == "oscillation_osc")
+			{
+				if (currentSection != Section::Voice)
+					throw CompositionError{ location(), "Unexpected command" };
+				readOscillation(currentVoice->_rectangularityOscillation);
 			}
 			else if (command == "polyphony")
 			{
@@ -358,15 +375,13 @@ namespace aulos
 			{
 				if (currentSection != Section::Voice)
 					throw CompositionError{ location(), "Unexpected command" };
-				currentVoice->_tremolo._frequency = readFloat(1.f, 127.f);
-				currentVoice->_tremolo._magnitude = readFloat(0.f, 1.f);
+				readOscillation(currentVoice->_tremolo);
 			}
 			else if (command == "vibrato")
 			{
 				if (currentSection != Section::Voice)
 					throw CompositionError{ location(), "Unexpected command" };
-				currentVoice->_vibrato._frequency = readFloat(1.f, 127.f);
-				currentVoice->_vibrato._magnitude = readFloat(0.f, 1.f);
+				readOscillation(currentVoice->_vibrato);
 			}
 			else if (command == "wave")
 			{

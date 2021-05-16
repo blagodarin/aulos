@@ -1,5 +1,5 @@
 author "Johann Sebastian Bach"
-gain 41
+gain 32
 loop 0 532
 speed 9
 title "Prelude in C minor"
@@ -7,8 +7,9 @@ title "Prelude in C minor"
 @voice 1 "Voice"
 amplitude 10 1.00 90 0.25 900 0.00
 asymmetry 50 0.40 50 0.10 900 0.00
-tremolo 9.000000 0.50
-vibrato 3.000000 0.05
+asymmetry_osc 6.00 0.40
+tremolo 9.00 0.50
+vibrato 3.00 0.03
 wave linear
 
 @track 1 1

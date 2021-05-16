@@ -10,8 +10,9 @@
 
 namespace aulos
 {
-	// Y(0) = 1 + M/2
-	// Y(P) = 1 - M/2
+	// Y(0) = magnitude
+	// Y(period / 2) = 0
+	// Y(period) = magnitude
 	class TriangleOscillator
 	{
 	public:
@@ -37,7 +38,7 @@ namespace aulos
 
 		[[nodiscard]] float value() const noexcept
 		{
-			return 1 - _magnitude * (1 - std::abs(1 - 2 * _offset / _period));
+			return _magnitude * std::abs(1 - 2 * _offset / _period);
 		}
 
 	private:

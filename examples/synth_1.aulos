@@ -1,5 +1,5 @@
 author "Sergei Blagodarin"
-gain 407
+gain 450
 speed 8
 title "Synth 1"
 
@@ -36,6 +36,7 @@ wave linear
 @voice 7 "7"
 amplitude 10 1.00 90 0.25 900 0.10 1000 0.00
 asymmetry 0 1.00
+vibrato 4.00 0.01
 wave linear
 
 @track 1 1

@@ -140,7 +140,7 @@ TEST_CASE("MonoVoice (square wave)")
 	aulos::VoiceData data;
 	data._amplitudeEnvelope._changes.emplace_back(0ms, 1.f);
 	data._amplitudeEnvelope._changes.emplace_back(500ms, 1.f);
-	data._oscillationEnvelope._changes.emplace_back(0ms, 1.f);
+	data._rectangularityEnvelope._changes.emplace_back(0ms, 1.f);
 
 	constexpr auto amplitude = .2f;
 	constexpr auto partLength = kPeriodSamples / 2;

@@ -1,5 +1,5 @@
 author "Ludwig van Beethoven"
-gain 53
+gain 48
 loop 0 132
 speed 5
 title "Für Elise"
@@ -7,9 +7,10 @@ title "Für Elise"
 @voice 1 "Voice"
 amplitude 10 1.00 40 1.00 450 0.40 500 0.00
 asymmetry 0 0.50
+asymmetry_osc 5.00 0.10
 frequency 0 -0.25 10 0.00
-tremolo 5.000000 0.25
-vibrato 10.000000 0.05
+tremolo 5.00 0.25
+vibrato 10.00 0.05
 wave cosine
 
 @track 1 1

@@ -1,5 +1,5 @@
 author "Johannes Brahms"
-gain 215
+gain 192
 loop 0 512
 speed 9
 title "Hungarian Dance No. 5 in F# minor"
@@ -7,8 +7,9 @@ title "Hungarian Dance No. 5 in F# minor"
 @voice 1 "Voice"
 amplitude 10 1.00 90 0.50 900 0.00
 asymmetry 0 0.60
-tremolo 4.000000 0.25
-vibrato 6.000000 0.03
+asymmetry_osc 5.00 0.10
+tremolo 5.00 0.05
+vibrato 5.00 0.02
 wave cubic 6.00
 
 @track 1 1

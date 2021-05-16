@@ -80,7 +80,9 @@ namespace aulos
 		Envelope _frequencyEnvelope;
 		Oscillation _vibrato;
 		Envelope _asymmetryEnvelope;
-		Envelope _oscillationEnvelope;
+		Oscillation _asymmetryOscillation;
+		Envelope _rectangularityEnvelope;
+		Oscillation _rectangularityOscillation;
 	};
 
 	enum class Polyphony

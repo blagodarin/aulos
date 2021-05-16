@@ -1,12 +1,13 @@
 author "Frédéric Chopin"
-gain 154
+gain 159
 loop 120 1152
 speed 9
 title "Grande Valse Brillante, Op. 18"
 
 @voice 1 "Voice"
 amplitude 10 1.00 90 0.25 900 0.00
-asymmetry 0 0.80 10 0.60
+asymmetry 0 0.70 10 0.60
+asymmetry_osc 4.00 0.10
 oscillation 0 0.02 10 0.00 990 0.01
 wave quintic 1.00
 

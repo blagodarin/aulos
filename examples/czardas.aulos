@@ -7,15 +7,14 @@ title "Csárdás"
 @voice 1 "Violin"
 amplitude 80 1.00 80 0.25 340 0.00
 asymmetry 40 0.60 460 0.30
-tremolo 1.000000 0.00
-vibrato 6.000000 0.03
+asymmetry_osc 12.00 0.00
+oscillation_osc 1.00 0.00
+vibrato 6.00 0.05
 wave quintic -1.00
 
 @voice 2 "Bass"
 amplitude 20 1.00 80 0.10 900 0.00
 asymmetry 20 0.70 980 0.50
-tremolo 1.000000 0.00
-vibrato 1.000000 0.00
 wave cosine
 
 @track 1 1

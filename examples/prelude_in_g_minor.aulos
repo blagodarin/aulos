@@ -1,5 +1,5 @@
 author "Sergei Rachmaninoff"
-gain 93
+gain 76
 loop 0 370
 speed 8
 title "Prelude in G minor"
@@ -7,8 +7,11 @@ title "Prelude in G minor"
 @voice 1 "Voice"
 amplitude 10 1.00 90 0.50 900 0.00
 asymmetry 0 0.00 10 0.80
+asymmetry_osc 2.00 0.10
 frequency 0 -1.00 10 0.00
 oscillation 0 0.02 100 0.00
+oscillation_osc 1.00 0.00
+vibrato 3.00 0.01
 wave quintic 1.00
 
 @track 1 1

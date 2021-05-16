@@ -1,15 +1,16 @@
 author "Wolfgang Amadeus Mozart"
-gain 183
+gain 110
 loop 0 528
 speed 11
 title "Turkish March"
 
 @voice 1 "Voice"
-amplitude 10 1.00 90 0.50 900 0.00
+amplitude 10 1.00 90 0.40 900 0.00
 asymmetry 0 0.20
+asymmetry_osc 9.00 0.05
 oscillation 0 0.10 100 0.00
-tremolo 3.000000 0.50
-vibrato 3.000000 0.02
+tremolo 3.00 0.50
+vibrato 3.00 0.02
 wave quadratic 2.00
 
 @track 1 1

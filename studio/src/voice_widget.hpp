@@ -63,7 +63,11 @@ private:
 	QSpinBox* _vibratoFrequencySpin = nullptr;
 	QDoubleSpinBox* _vibratoMagnitudeSpin = nullptr;
 	std::vector<EnvelopeChange> _asymmetryEnvelope;
-	std::vector<EnvelopeChange> _oscillationEnvelope;
+	QSpinBox* _asymmetryFrequencySpin = nullptr;
+	QDoubleSpinBox* _asymmetryMagnitudeSpin = nullptr;
+	std::vector<EnvelopeChange> _rectangularityEnvelope;
+	QSpinBox* _rectangularityFrequencySpin = nullptr;
+	QDoubleSpinBox* _rectangularityMagnitudeSpin = nullptr;
 	std::shared_ptr<aulos::VoiceData> _voice;
 	std::shared_ptr<aulos::TrackProperties> _trackProperties;
 };

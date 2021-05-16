@@ -127,16 +127,29 @@ namespace aulos
 					text += ' ' + std::to_string(change._duration.count()) + ' ' + floatToString(change._value);
 			};
 
+			const auto saveOscillation = [&text, &floatToString](std::string_view name, const Oscillation& oscillation) {
+				if (oscillation._magnitude == 0.f)
+					return;
+				text += '\n';
+				text += name;
+				text += ' ';
+				text += floatToString(oscillation._frequency);
+				text += ' ';
+				text += floatToString(oscillation._magnitude);
+			};
+
 			const auto partIndex = static_cast<size_t>(&part - impl._parts.data() + 1);
 			text += "\n\n@voice " + std::to_string(partIndex);
 			if (!part._voiceName.empty())
 				text += " \"" + part._voiceName + '"';
 			saveEnvelope("amplitude", part._voice._amplitudeEnvelope);
 			saveEnvelope("asymmetry", part._voice._asymmetryEnvelope);
+			saveOscillation("asymmetry_osc", part._voice._asymmetryOscillation);
 			saveEnvelope("frequency", part._voice._frequencyEnvelope);
-			saveEnvelope("oscillation", part._voice._oscillationEnvelope);
-			text += "\ntremolo " + std::to_string(part._voice._tremolo._frequency) + ' ' + floatToString(part._voice._tremolo._magnitude);
-			text += "\nvibrato " + std::to_string(part._voice._vibrato._frequency) + ' ' + floatToString(part._voice._vibrato._magnitude);
+			saveEnvelope("oscillation", part._voice._rectangularityEnvelope);
+			saveOscillation("oscillation_osc", part._voice._rectangularityOscillation);
+			saveOscillation("tremolo", part._voice._tremolo);
+			saveOscillation("vibrato", part._voice._vibrato);
 			text += "\nwave ";
 			switch (part._voice._waveShape)
 			{

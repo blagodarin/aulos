@@ -264,7 +264,7 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 		layout->addWidget(group);
 
 		frequency = new QSpinBox{ group };
-		frequency->setRange(1, 128);
+		frequency->setRange(1, 127);
 		frequency->setSingleStep(1);
 		frequency->setSuffix(tr("Hz"));
 		frequency->setValue(1);
@@ -282,10 +282,12 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 
 	createEnvelopeWidgets(tr("Amplitude changes"), _amplitudeEnvelope, 0);
 	createOscillatorWidgets(tr("Tremolo"), _tremoloFrequencySpin, _tremoloMagnitudeSpin);
-	createEnvelopeWidgets(tr("Frequency changes"), _frequencyEnvelope, -1);
+	createEnvelopeWidgets(tr("Pitch shift"), _frequencyEnvelope, -1);
 	createOscillatorWidgets(tr("Vibrato"), _vibratoFrequencySpin, _vibratoMagnitudeSpin);
-	createEnvelopeWidgets(tr("Asymmetry changes"), _asymmetryEnvelope, 0);
-	createEnvelopeWidgets(tr("Oscillation changes"), _oscillationEnvelope, 0);
+	createEnvelopeWidgets(tr("Wave asymmetry"), _asymmetryEnvelope, 0);
+	createOscillatorWidgets(tr("Wave asymmetry LFO"), _asymmetryFrequencySpin, _asymmetryMagnitudeSpin);
+	createEnvelopeWidgets(tr("Wave rectangularity"), _rectangularityEnvelope, 0);
+	createOscillatorWidgets(tr("Wave rectangularity LFO"), _rectangularityFrequencySpin, _rectangularityMagnitudeSpin);
 
 	layout->addItem(new QSpacerItem{ 0, 0, QSizePolicy::Minimum, QSizePolicy::Expanding });
 
@@ -340,7 +342,11 @@ void VoiceWidget::setParameters(const std::shared_ptr<aulos::VoiceData>& voice, 
 	_vibratoFrequencySpin->setValue(static_cast<int>(usedVoice->_vibrato._frequency));
 	_vibratoMagnitudeSpin->setValue(usedVoice->_vibrato._magnitude);
 	loadEnvelope(_asymmetryEnvelope, usedVoice->_asymmetryEnvelope);
-	loadEnvelope(_oscillationEnvelope, usedVoice->_oscillationEnvelope);
+	_asymmetryFrequencySpin->setValue(static_cast<int>(usedVoice->_asymmetryOscillation._frequency));
+	_asymmetryMagnitudeSpin->setValue(usedVoice->_asymmetryOscillation._magnitude);
+	loadEnvelope(_rectangularityEnvelope, usedVoice->_rectangularityEnvelope);
+	_rectangularityFrequencySpin->setValue(static_cast<int>(usedVoice->_rectangularityOscillation._frequency));
+	_rectangularityMagnitudeSpin->setValue(usedVoice->_rectangularityOscillation._magnitude);
 
 	_voice = voice;
 	_trackProperties = trackProperties;
@@ -402,7 +408,11 @@ void VoiceWidget::updateVoice()
 	_voice->_vibrato._frequency = static_cast<float>(_vibratoFrequencySpin->value());
 	_voice->_vibrato._magnitude = static_cast<float>(_vibratoMagnitudeSpin->value());
 	storeEnvelope(_voice->_asymmetryEnvelope, _asymmetryEnvelope);
-	storeEnvelope(_voice->_oscillationEnvelope, _oscillationEnvelope);
+	_voice->_asymmetryOscillation._frequency = static_cast<float>(_asymmetryFrequencySpin->value());
+	_voice->_asymmetryOscillation._magnitude = static_cast<float>(_asymmetryMagnitudeSpin->value());
+	storeEnvelope(_voice->_rectangularityEnvelope, _rectangularityEnvelope);
+	_voice->_rectangularityOscillation._frequency = static_cast<float>(_rectangularityFrequencySpin->value());
+	_voice->_rectangularityOscillation._magnitude = static_cast<float>(_rectangularityMagnitudeSpin->value());
 	emit voiceChanged();
 }
 
