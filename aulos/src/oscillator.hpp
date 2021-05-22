@@ -18,32 +18,20 @@ namespace aulos
 	public:
 		constexpr explicit TriangleOscillator(float period, float magnitude) noexcept
 			: _period{ period }
-			, _magnitude{ magnitude }
+			, _doubleMagnitude{ 2 * magnitude }
 		{
-			assert(_period > 0);
-			assert(_magnitude >= 0 && _magnitude <= 1);
+			assert(period > 0);
+			assert(magnitude >= 0 && magnitude <= 1);
 		}
 
-		void advance(float duration) noexcept
+		[[nodiscard]] float value(float offset) const noexcept
 		{
-			assert(duration >= 0);
-			_offset = std::fmod(_offset + duration, _period);
-		}
-
-		void start(float offset) noexcept
-		{
-			assert(offset >= 0);
-			_offset = std::fmod(offset, _period);
-		}
-
-		[[nodiscard]] float value() const noexcept
-		{
-			return _magnitude * std::abs(1 - 2 * _offset / _period);
+			float dummy;
+			return _doubleMagnitude * std::abs(std::modf(offset / _period, &dummy) - .5f);
 		}
 
 	private:
 		const float _period;
-		const float _magnitude;
-		float _offset = 0;
+		const float _doubleMagnitude;
 	};
 }

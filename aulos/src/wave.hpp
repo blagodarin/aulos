@@ -130,16 +130,13 @@ namespace aulos
 						_period = {};
 						return _needRestart ? _restartDelay : std::numeric_limits<int>::max();
 					}
-					const auto periodFrequency = _frequency * _frequencyModulator.advance(_periodLength) * std::exp2(-_frequencyOscillator.value());
+					_offset += _periodLength;
+					const auto periodFrequency = _frequency * _frequencyModulator.advance(_periodLength) * std::exp2(-_frequencyOscillator.value(_offset));
 					assert(periodFrequency > 0);
 					_periodLength = _samplingRate / periodFrequency;
-					const auto periodAmplitude = _amplitude * _amplitudeModulator.advance(_periodLength) * (1 - _amplitudeOscillator.value());
-					const auto periodAsymmetry = adjust(_asymmetryModulator.advance(_periodLength), _asymmetryOscillator.value());
-					_periodRectangularity = adjust(_rectangularityModulator.advance(_periodLength), _rectangularityOscillator.value());
-					_amplitudeOscillator.advance(_periodLength);
-					_frequencyOscillator.advance(_periodLength);
-					_asymmetryOscillator.advance(_periodLength);
-					_rectangularityOscillator.advance(_periodLength);
+					const auto periodAmplitude = _amplitude * _amplitudeModulator.advance(_periodLength) * (1 - _amplitudeOscillator.value(_offset));
+					const auto periodAsymmetry = adjust(_asymmetryModulator.advance(_periodLength), _asymmetryOscillator.value(_offset));
+					_periodRectangularity = adjust(_rectangularityModulator.advance(_periodLength), _rectangularityOscillator.value(_offset));
 					_period.start(_periodLength, periodAmplitude, periodAsymmetry, _amplitudeModulator.stopped());
 				}
 			}
@@ -184,25 +181,18 @@ namespace aulos
 			assert(amplitude > 0);
 			assert(offsetSamples >= 0);
 			_amplitudeModulator.start(offsetSamples);
-			_amplitudeOscillator.start(offsetSamples);
 			_frequencyModulator.start(offsetSamples);
-			_frequencyOscillator.start(offsetSamples);
 			_asymmetryModulator.start(offsetSamples);
-			_asymmetryOscillator.start(offsetSamples);
 			_rectangularityModulator.start(offsetSamples);
-			_rectangularityOscillator.start(offsetSamples);
+			_offset = offsetSamples;
 			_frequency = frequency;
 			_amplitude = amplitude;
-			const auto periodFrequency = _frequency * _frequencyModulator.currentValue() * std::exp2(-_frequencyOscillator.value());
+			const auto periodFrequency = _frequency * _frequencyModulator.currentValue() * std::exp2(-_frequencyOscillator.value(_offset));
 			assert(periodFrequency > 0);
 			_periodLength = _samplingRate / periodFrequency;
-			const auto periodAmplitude = _amplitude * _amplitudeModulator.advance(_periodLength) * (1 - _amplitudeOscillator.value());
-			const auto periodAsymmetry = adjust(_asymmetryModulator.advance(_periodLength), _asymmetryOscillator.value());
-			_periodRectangularity = adjust(_rectangularityModulator.advance(_periodLength), _rectangularityOscillator.value());
-			_amplitudeOscillator.advance(_periodLength);
-			_frequencyOscillator.advance(_periodLength);
-			_asymmetryOscillator.advance(_periodLength);
-			_rectangularityOscillator.advance(_periodLength);
+			const auto periodAmplitude = _amplitude * _amplitudeModulator.advance(_periodLength) * (1 - _amplitudeOscillator.value(_offset));
+			const auto periodAsymmetry = adjust(_asymmetryModulator.advance(_periodLength), _asymmetryOscillator.value(_offset));
+			_periodRectangularity = adjust(_rectangularityModulator.advance(_periodLength), _rectangularityOscillator.value(_offset));
 			_period.start(_periodLength, periodAmplitude, periodAsymmetry, _amplitudeModulator.stopped());
 		}
 
@@ -225,6 +215,7 @@ namespace aulos
 		Modulator _rectangularityModulator;
 		TriangleOscillator _rectangularityOscillator;
 		WavePeriod _period;
+		float _offset = 0;
 		float _periodLength = 0;
 		float _periodRectangularity = 0;
 		float _frequency = 0;
