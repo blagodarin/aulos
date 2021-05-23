@@ -95,13 +95,13 @@ namespace aulos
 			: _samplingRate{ static_cast<float>(samplingRate) }
 			, _shapeParameter{ data.shapeParameter() }
 			, _amplitudeModulator{ data.amplitudePoints() }
-			, _amplitudeOscillator{ _samplingRate / data.tremolo()._frequency, data.tremolo()._magnitude }
+			, _amplitudeOscillator{ data.tremolo()._frequency / _samplingRate, data.tremolo()._magnitude }
 			, _frequencyModulator{ data.frequencyPoints() }
-			, _frequencyOscillator{ _samplingRate / data.vibrato()._frequency, data.vibrato()._magnitude }
+			, _frequencyOscillator{ data.vibrato()._frequency / _samplingRate, data.vibrato()._magnitude }
 			, _asymmetryModulator{ data.asymmetryPoints() }
-			, _asymmetryOscillator{ _samplingRate / data.asymmetryOscillation()._frequency, data.asymmetryOscillation()._magnitude }
+			, _asymmetryOscillator{ data.asymmetryOscillation()._frequency / _samplingRate, data.asymmetryOscillation()._magnitude }
 			, _rectangularityModulator{ data.rectangularityPoints() }
-			, _rectangularityOscillator{ _samplingRate / data.rectangularityOscillation()._frequency, data.rectangularityOscillation()._magnitude }
+			, _rectangularityOscillator{ data.rectangularityOscillation()._frequency / _samplingRate, data.rectangularityOscillation()._magnitude }
 		{
 		}
 
@@ -131,21 +131,15 @@ namespace aulos
 						return _needRestart ? _restartDelay : std::numeric_limits<int>::max();
 					}
 					_offset += _periodLength;
-					const auto periodFrequency = _frequency * _frequencyModulator.advance(_periodLength) * std::exp2(-_frequencyOscillator.value(_offset));
-					assert(periodFrequency > 0);
-					_periodLength = _samplingRate / periodFrequency;
-					const auto periodAmplitude = _amplitude * _amplitudeModulator.advance(_periodLength) * (1 - _amplitudeOscillator.value(_offset));
-					const auto periodAsymmetry = adjust(_asymmetryModulator.advance(_periodLength), _asymmetryOscillator.value(_offset));
-					_periodRectangularity = adjust(_rectangularityModulator.advance(_periodLength), _rectangularityOscillator.value(_offset));
-					_period.start(_periodLength, periodAmplitude, periodAsymmetry, _amplitudeModulator.stopped());
+					startWavePeriod();
 				}
 			}
 			return static_cast<int>(std::ceil(_period.maxAdvance()));
 		}
 
-		[[nodiscard]] ShaperData waveShaperData() const noexcept
+		[[nodiscard]] constexpr ShaperData shaperData() const noexcept
 		{
-			return _period.currentShaperData(_periodRectangularity, _shapeParameter);
+			return _period.shaperData(_periodRectangularity, _shapeParameter);
 		}
 
 		void start(float frequency, float amplitude, int delay) noexcept
@@ -175,6 +169,13 @@ namespace aulos
 		}
 
 	private:
+		[[nodiscard]] static constexpr float adjust(float value, float adjustment) noexcept
+		{
+			assert(value >= 0.f && value <= 1.f);
+			assert(adjustment >= 0.f && adjustment <= 1.f);
+			return value + (1 - value) * adjustment;
+		}
+
 		void startWave(float frequency, float amplitude, float offsetSamples) noexcept
 		{
 			assert(frequency > 0);
@@ -184,9 +185,14 @@ namespace aulos
 			_frequencyModulator.start(offsetSamples);
 			_asymmetryModulator.start(offsetSamples);
 			_rectangularityModulator.start(offsetSamples);
-			_offset = offsetSamples;
 			_frequency = frequency;
 			_amplitude = amplitude;
+			_offset = offsetSamples;
+			startWavePeriod();
+		}
+
+		void startWavePeriod() noexcept
+		{
 			const auto periodFrequency = _frequency * _frequencyModulator.currentValue() * std::exp2(-_frequencyOscillator.value(_offset));
 			assert(periodFrequency > 0);
 			_periodLength = _samplingRate / periodFrequency;
@@ -194,13 +200,6 @@ namespace aulos
 			const auto periodAsymmetry = adjust(_asymmetryModulator.advance(_periodLength), _asymmetryOscillator.value(_offset));
 			_periodRectangularity = adjust(_rectangularityModulator.advance(_periodLength), _rectangularityOscillator.value(_offset));
 			_period.start(_periodLength, periodAmplitude, periodAsymmetry, _amplitudeModulator.stopped());
-		}
-
-		[[nodiscard]] static constexpr float adjust(float value, float adjustment) noexcept
-		{
-			assert(value >= 0.f && value <= 1.f);
-			assert(adjustment >= 0.f && adjustment <= 1.f);
-			return value + (1 - value) * adjustment;
 		}
 
 	private:

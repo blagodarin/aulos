@@ -44,7 +44,7 @@ namespace aulos
 					break;
 				auto strideFrames = std::min(remainingFrames, static_cast<unsigned>(maxStrideFrames));
 				remainingFrames -= strideFrames;
-				Shaper shaper{ _wave.waveShaperData() };
+				Shaper shaper{ _wave.shaperData() };
 				_wave.advance(static_cast<int>(strideFrames));
 				do
 					*buffer++ += shaper.advance();
@@ -89,8 +89,8 @@ namespace aulos
 					break;
 				auto strideFrames = std::min(remainingFrames, static_cast<unsigned>(maxStrideFrames));
 				remainingFrames -= strideFrames;
-				Shaper leftShaper{ _leftWave.waveShaperData() };
-				Shaper rightShaper{ _rightWave.waveShaperData() };
+				Shaper leftShaper{ _leftWave.shaperData() };
+				Shaper rightShaper{ _rightWave.shaperData() };
 				_leftWave.advance(static_cast<int>(strideFrames));
 				_rightWave.advance(static_cast<int>(strideFrames));
 				do

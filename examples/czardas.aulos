@@ -1,14 +1,12 @@
 author "Vittorio Monti"
-gain 155
+gain 153
 loop 0 256
 speed 10
 title "Csárdás"
 
 @voice 1 "Violin"
-amplitude 80 1.00 80 0.25 340 0.00
+amplitude 80 1.00 80 0.25 640 0.00
 asymmetry 40 0.60 460 0.30
-asymmetry_osc 12.00 0.00
-oscillation_osc 1.00 0.00
 vibrato 6.00 0.05
 wave quintic -1.00
 

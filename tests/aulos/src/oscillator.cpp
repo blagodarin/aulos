@@ -8,7 +8,7 @@
 
 TEST_CASE("TriangleOscillator")
 {
-	aulos::TriangleOscillator oscillator{ 4.f, 1.f };
+	aulos::TriangleOscillator oscillator{ .25f, 1.f };
 	CHECK(oscillator.value(0.f) == 1.f);
 	CHECK(oscillator.value(1.f) == .5f);
 	CHECK(oscillator.value(2.f) == 0.f);

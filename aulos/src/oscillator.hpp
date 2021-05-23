@@ -16,22 +16,22 @@ namespace aulos
 	class TriangleOscillator
 	{
 	public:
-		constexpr explicit TriangleOscillator(float period, float magnitude) noexcept
-			: _period{ period }
+		constexpr explicit TriangleOscillator(float frequency, float magnitude) noexcept
+			: _frequency{ frequency }
 			, _doubleMagnitude{ 2 * magnitude }
 		{
-			assert(period > 0);
+			assert(frequency > 0);
 			assert(magnitude >= 0 && magnitude <= 1);
 		}
 
 		[[nodiscard]] float value(float offset) const noexcept
 		{
 			float dummy;
-			return _doubleMagnitude * std::abs(std::modf(offset / _period, &dummy) - .5f);
+			return _doubleMagnitude * std::abs(std::modf(offset * _frequency, &dummy) - .5f);
 		}
 
 	private:
-		const float _period;
+		const float _frequency;
 		const float _doubleMagnitude;
 	};
 }

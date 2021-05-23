@@ -49,7 +49,12 @@ namespace aulos
 			_currentRemaining += _currentLength;
 		}
 
-		[[nodiscard]] constexpr ShaperData currentShaperData(float oscillation, float shapeParameter) const noexcept
+		[[nodiscard]] constexpr auto maxAdvance() const noexcept
+		{
+			return _currentRemaining;
+		}
+
+		[[nodiscard]] constexpr ShaperData shaperData(float oscillation, float shapeParameter) const noexcept
 		{
 			assert(oscillation >= 0 && oscillation <= 1);
 			assert(_currentLength > 0); // Otherwise the shaper will produce garbage.
@@ -61,11 +66,6 @@ namespace aulos
 				shapeParameter,
 				_currentLength - _currentRemaining,
 			};
-		}
-
-		[[nodiscard]] constexpr auto maxAdvance() const noexcept
-		{
-			return _currentRemaining;
 		}
 
 		void start(float periodLength, float amplitude, float asymmetry, bool stop) noexcept
