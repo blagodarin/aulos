@@ -58,6 +58,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 		)
 	set(STUDIO_WARNINGS /W4
 		/wd5054 # operator '___': deprecated between enumerations of different types
+		/wd5240 # attribute is ignored in this syntactic position
 		)
 endif()
 
