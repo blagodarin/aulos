@@ -188,12 +188,13 @@ namespace aulos
 			_frequency = frequency;
 			_amplitude = amplitude;
 			_offset = offsetSamples;
+			_periodLength = 0;
 			startWavePeriod();
 		}
 
 		void startWavePeriod() noexcept
 		{
-			const auto periodFrequency = _frequency * _frequencyModulator.currentValue() * std::exp2(-_frequencyOscillator.value(_offset));
+			const auto periodFrequency = _frequency * _frequencyModulator.advance(_periodLength) * std::exp2(-_frequencyOscillator.value(_offset));
 			assert(periodFrequency > 0);
 			_periodLength = _samplingRate / periodFrequency;
 			const auto periodAmplitude = _amplitude * _amplitudeModulator.advance(_periodLength) * (1 - _amplitudeOscillator.value(_offset));
