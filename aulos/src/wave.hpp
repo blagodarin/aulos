@@ -97,7 +97,7 @@ namespace aulos
 			, _amplitudeModulator{ data.amplitudePoints() }
 			, _amplitudeOscillator{ data.tremolo()._frequency / _samplingRate, data.tremolo()._magnitude }
 			, _frequencyModulator{ data.frequencyPoints() }
-			, _frequencyOscillator{ data.vibrato()._frequency / _samplingRate, data.vibrato()._magnitude }
+			, _frequencyOscillator{ data.vibrato()._frequency / _samplingRate, 1 - std::exp2(-data.vibrato()._magnitude) }
 			, _asymmetryModulator{ data.asymmetryPoints() }
 			, _asymmetryOscillator{ data.asymmetryOscillation()._frequency / _samplingRate, data.asymmetryOscillation()._magnitude }
 			, _rectangularityModulator{ data.rectangularityPoints() }
@@ -194,7 +194,7 @@ namespace aulos
 
 		void startWavePeriod() noexcept
 		{
-			const auto periodFrequency = _frequency * _frequencyModulator.advance(_periodLength) * std::exp2(-_frequencyOscillator.value(_offset));
+			const auto periodFrequency = _frequency * _frequencyModulator.advance(_periodLength) * (1 - _frequencyOscillator.value(_offset));
 			assert(periodFrequency > 0);
 			_periodLength = _samplingRate / periodFrequency;
 			const auto periodAmplitude = _amplitude * _amplitudeModulator.advance(_periodLength) * (1 - _amplitudeOscillator.value(_offset));
