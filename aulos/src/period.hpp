@@ -41,7 +41,7 @@ namespace aulos
 				return;
 			if (_nextLength == 0)
 				return;
-			assert(_rightAmplitude > 0);
+			assert(_rightAmplitude >= 0);
 			_currentLength = _nextLength;
 			_leftAmplitude = _rightAmplitude;
 			_rightAmplitude = -_rightAmplitude;
@@ -71,7 +71,7 @@ namespace aulos
 		void start(float periodLength, float amplitude, float asymmetry, bool stop) noexcept
 		{
 			assert(periodLength > 0);
-			assert(amplitude > 0);
+			assert(amplitude >= 0);
 			assert(asymmetry >= 0 && asymmetry <= 1);
 			assert(stopped());
 			const auto firstPartLength = periodLength * (1 + asymmetry) / 2;
