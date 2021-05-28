@@ -17,6 +17,8 @@
 #include <QMenu>
 #include <QMessageBox>
 #include <QScrollBar>
+#include <QStyle>
+#include <QToolButton>
 
 namespace
 {
@@ -71,7 +73,19 @@ CompositionWidget::CompositionWidget(QWidget* parent)
 
 	_view = new QGraphicsView{ _scene, this };
 	_view->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-	layout->addWidget(_view, 0, 0);
+	layout->addWidget(_view, 0, 0, 3, 1);
+
+	const auto rightButton = new QToolButton{ this };
+	rightButton->setEnabled(false);
+	rightButton->setIcon(style()->standardIcon(QStyle::SP_ArrowRight));
+	rightButton->setToolTip(tr("Move one step right"));
+	layout->addWidget(rightButton, 0, 1);
+
+	const auto leftButton = new QToolButton{ this };
+	leftButton->setEnabled(false);
+	leftButton->setIcon(style()->standardIcon(QStyle::SP_ArrowLeft));
+	leftButton->setToolTip(tr("Move one step left"));
+	layout->addWidget(leftButton, 1, 1);
 
 	connect(_scene, &CompositionScene::fragmentMenuRequested, [this](const void* voiceId, const void* trackId, size_t offset, const QPoint& pos) {
 		const auto part = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [voiceId](const auto& partData) { return partData->_voice.get() == voiceId; });
@@ -126,10 +140,12 @@ CompositionWidget::CompositionWidget(QWidget* parent)
 		_view->horizontalScrollBar()->setValue(_view->horizontalScrollBar()->minimum());
 		emit compositionChanged();
 	});
-	connect(_scene, &CompositionScene::sequenceSelected, [this](const void* voiceId, const void* trackId, const void* sequenceId) {
+	connect(_scene, &CompositionScene::fragmentSelected, [this, rightButton, leftButton](const void* voiceId, const void* trackId, const void* sequenceId, size_t offset) {
 		std::shared_ptr<aulos::VoiceData> voice;
 		std::shared_ptr<aulos::TrackData> track;
 		std::shared_ptr<aulos::SequenceData> sequence;
+		bool canMoveRight = false;
+		bool canMoveLeft = false;
 		if (voiceId)
 		{
 			const auto partIt = std::find_if(_composition->_parts.cbegin(), _composition->_parts.cend(), [voiceId](const auto& partData) { return partData->_voice.get() == voiceId; });
@@ -145,9 +161,18 @@ CompositionWidget::CompositionWidget(QWidget* parent)
 					const auto sequenceIt = std::find_if((*trackIt)->_sequences.cbegin(), (*trackIt)->_sequences.cend(), [sequenceId](const auto& sequenceData) { return sequenceData.get() == sequenceId; });
 					assert(sequenceIt != (*trackIt)->_sequences.end());
 					sequence = *sequenceIt;
+					const auto fragmentIt = (*trackIt)->_fragments.find(offset);
+					assert(fragmentIt != (*trackIt)->_fragments.end());
+					if (const auto nextFragmentIt = std::next(fragmentIt); nextFragmentIt != (*trackIt)->_fragments.end())
+						canMoveRight = nextFragmentIt->first != offset + 1;
+					else
+						canMoveRight = true;
+					canMoveLeft = offset > 0 && !(fragmentIt != (*trackIt)->_fragments.begin() && std::prev(fragmentIt)->first == offset - 1);
 				}
 			}
 		}
+		rightButton->setEnabled(canMoveRight);
+		leftButton->setEnabled(canMoveLeft);
 		emit selectionChanged(voice, track, sequence);
 	});
 	connect(_scene, &CompositionScene::timelineMenuRequested, [this](size_t step, const QPoint& pos) {
@@ -191,7 +216,7 @@ CompositionWidget::CompositionWidget(QWidget* parent)
 			[[maybe_unused]] const auto inserted = (*track)->_fragments.insert_or_assign(offset, sequence).second;
 			assert(inserted);
 			_scene->insertFragment(voiceId, trackId, offset, sequence);
-			_scene->selectSequence(voiceId, trackId, sequence.get());
+			_scene->selectFragment(voiceId, trackId, sequence.get(), offset);
 		}
 		else if (action == removeTrackAction)
 		{

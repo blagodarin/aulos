@@ -260,7 +260,8 @@ void CompositionScene::removeTrack(const void* voiceId, const void* trackId)
 	{
 		_selectedTrackId = nullptr;
 		_selectedSequenceId = nullptr;
-		emit sequenceSelected(_selectedVoiceId, nullptr, nullptr);
+		_selectedFragmentOffset = 0;
+		emit fragmentSelected(_selectedVoiceId, nullptr, nullptr, 0);
 	}
 }
 
@@ -289,7 +290,8 @@ void CompositionScene::removeVoice(const void* voiceId)
 		_selectedVoiceId = nullptr;
 		_selectedTrackId = nullptr;
 		_selectedSequenceId = nullptr;
-		emit sequenceSelected(nullptr, nullptr, nullptr);
+		_selectedFragmentOffset = 0;
+		emit fragmentSelected(nullptr, nullptr, nullptr, 0);
 	}
 }
 
@@ -342,16 +344,17 @@ void CompositionScene::reset(const std::shared_ptr<aulos::CompositionData>& comp
 		addItem(_addVoiceItem.get());
 		addItem(_compositionItem.get());
 	}
-	if (_selectedVoiceId || _selectedTrackId || _selectedSequenceId)
+	if (_selectedVoiceId || _selectedTrackId || _selectedSequenceId || _selectedFragmentOffset)
 	{
 		_selectedVoiceId = nullptr;
 		_selectedTrackId = nullptr;
 		_selectedSequenceId = nullptr;
-		emit sequenceSelected(nullptr, nullptr, nullptr);
+		_selectedFragmentOffset = 0;
+		emit fragmentSelected(nullptr, nullptr, nullptr, 0);
 	}
 }
 
-void CompositionScene::selectSequence(const void* voiceId, const void* trackId, const void* sequenceId)
+void CompositionScene::selectFragment(const void* voiceId, const void* trackId, const void* sequenceId, size_t offset)
 {
 	if (_selectedVoiceId != voiceId)
 	{
@@ -367,7 +370,8 @@ void CompositionScene::selectSequence(const void* voiceId, const void* trackId, 
 	_selectedSequenceId = sequenceId;
 	if (trackId)
 		highlightSequence(trackId, sequenceId);
-	emit sequenceSelected(voiceId, trackId, sequenceId);
+	_selectedFragmentOffset = offset;
+	emit fragmentSelected(voiceId, trackId, sequenceId, offset);
 }
 
 float CompositionScene::selectedTrackWeight() const
@@ -460,7 +464,7 @@ FragmentItem* CompositionScene::addFragmentItem(const void* voiceId, TrackIterat
 	connect(item, &FragmentItem::fragmentMenuRequested, [this, voiceId, trackId = (*trackIt)->_background->trackId()](size_t offset, const QPoint& pos) {
 		emit fragmentMenuRequested(voiceId, trackId, offset, pos);
 	});
-	connect(item, &FragmentItem::sequenceSelected, [this, voiceId, trackId = (*trackIt)->_background->trackId()](const void* sequenceId) { selectSequence(voiceId, trackId, sequenceId); });
+	connect(item, &FragmentItem::fragmentSelected, [this, voiceId, trackId = (*trackIt)->_background->trackId()](const void* sequenceId, size_t offset) { selectFragment(voiceId, trackId, sequenceId, offset); });
 	const auto fragmentIt = (*trackIt)->_fragments.emplace(offset, item).first;
 	if (const auto nextFragmentIt = std::next(fragmentIt); nextFragmentIt != (*trackIt)->_fragments.end())
 		fragmentIt->second->stackBefore(nextFragmentIt->second);
@@ -501,7 +505,7 @@ VoiceItem* CompositionScene::addVoiceItem(const void* id, const QString& name, s
 	voiceItem->setVoiceName(name);
 	connect(voiceItem, &VoiceItem::voiceActionRequested, this, &CompositionScene::voiceActionRequested);
 	connect(voiceItem, &VoiceItem::voiceMenuRequested, this, &CompositionScene::voiceMenuRequested);
-	connect(voiceItem, &VoiceItem::voiceSelected, [this](const void* voiceId) { selectSequence(voiceId, nullptr, nullptr); });
+	connect(voiceItem, &VoiceItem::voiceSelected, [this](const void* voiceId) { selectFragment(voiceId, nullptr, nullptr, 0); });
 	return voiceItem;
 }
 

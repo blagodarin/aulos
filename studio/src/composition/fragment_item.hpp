@@ -39,7 +39,7 @@ public:
 
 signals:
 	void fragmentMenuRequested(size_t offset, const QPoint& pos);
-	void sequenceSelected(const void* sequenceId);
+	void fragmentSelected(const void* sequenceId, size_t offset);
 
 private:
 	void contextMenuEvent(QGraphicsSceneContextMenuEvent*) override;

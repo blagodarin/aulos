@@ -87,6 +87,6 @@ void FragmentItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* e)
 void FragmentItem::mousePressEvent(QGraphicsSceneMouseEvent* e)
 {
 	if (e->button() == Qt::LeftButton)
-		emit sequenceSelected(_sequenceId);
+		emit fragmentSelected(_sequenceId, _offset);
 	QGraphicsObject::mousePressEvent(e);
 }

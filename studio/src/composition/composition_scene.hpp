@@ -44,7 +44,7 @@ public:
 	void removeTrack(const void* voiceId, const void* trackId);
 	void removeVoice(const void* voiceId);
 	void reset(const std::shared_ptr<aulos::CompositionData>&, size_t viewWidth);
-	void selectSequence(const void* voiceId, const void* trackId, const void* sequenceId);
+	void selectFragment(const void* voiceId, const void* trackId, const void* sequenceId, size_t offset);
 	float selectedTrackWeight() const;
 	QRectF setCurrentStep(double step);
 	void setSpeed(unsigned speed);
@@ -58,7 +58,7 @@ signals:
 	void loopMenuRequested(const QPoint& pos);
 	void newVoiceRequested();
 	void fragmentMenuRequested(const void* voiceId, const void* trackId, size_t offset, const QPoint& pos);
-	void sequenceSelected(const void* voiceId, const void* trackId, const void* sequenceId);
+	void fragmentSelected(const void* voiceId, const void* trackId, const void* sequenceId, size_t offset);
 	void timelineMenuRequested(size_t step, const QPoint& pos);
 	void trackMenuRequested(const void* voiceId, const void* trackId, size_t offset, const QPoint& pos);
 	void voiceActionRequested(const void* voiceId);
@@ -97,4 +97,5 @@ private:
 	const void* _selectedVoiceId = nullptr;
 	const void* _selectedTrackId = nullptr;
 	const void* _selectedSequenceId = nullptr;
+	size_t _selectedFragmentOffset = 0;
 };
