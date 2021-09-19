@@ -30,10 +30,9 @@ public:
 	QRectF boundingRect() const override;
 	size_t fragmentLength() const noexcept { return _length; }
 	size_t fragmentOffset() const noexcept { return _offset; }
-	bool isHighlighted() const noexcept { return _highlighted; }
 	void paint(QPainter*, const QStyleOptionGraphicsItem*, QWidget*) override;
 	const void* sequenceId() const noexcept { return _sequenceId; }
-	void setHighlighted(bool);
+	void setHighlighted(bool highlighted, bool selected);
 	void setSequence(const std::vector<FragmentSound>&);
 	void setTrackIndex(size_t index);
 
@@ -54,4 +53,5 @@ private:
 	qreal _width = 0;
 	QPolygonF _polygon;
 	bool _highlighted = false;
+	bool _selected = false;
 };

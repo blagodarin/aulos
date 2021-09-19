@@ -33,7 +33,7 @@ void FragmentItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWi
 {
 	const auto& colors = _highlighted ? kFragmentHighlightColors[_trackIndex % kFragmentHighlightColors.size()] : kFragmentColors[_trackIndex % kFragmentColors.size()];
 	QPen pen{ colors._pen };
-	pen.setWidth(_highlighted ? 3 : 0);
+	pen.setWidth(_selected ? 3 : 0);
 	painter->setPen(pen);
 	painter->setBrush(colors._brush);
 	painter->drawConvexPolygon(_polygon);
@@ -55,9 +55,14 @@ void FragmentItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWi
 	}
 }
 
-void FragmentItem::setHighlighted(bool highlighted)
+void FragmentItem::setHighlighted(bool highlighted, bool selected)
 {
+	if (!highlighted)
+		selected = false;
+	if (_highlighted == highlighted && _selected == selected)
+		return;
 	_highlighted = highlighted;
+	_selected = selected;
 	update();
 }
 

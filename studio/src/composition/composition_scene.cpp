@@ -365,11 +365,11 @@ void CompositionScene::selectFragment(const void* voiceId, const void* trackId, 
 		_selectedVoiceId = voiceId;
 	}
 	if (_selectedTrackId && _selectedTrackId != trackId)
-		highlightSequence(_selectedTrackId, nullptr);
+		highlightSequence(_selectedTrackId, nullptr, offset);
 	_selectedTrackId = trackId;
 	_selectedSequenceId = sequenceId;
 	if (trackId)
-		highlightSequence(trackId, sequenceId);
+		highlightSequence(trackId, sequenceId, offset);
 	_selectedFragmentOffset = offset;
 	emit fragmentSelected(voiceId, trackId, sequenceId, offset);
 }
@@ -458,7 +458,7 @@ FragmentItem* CompositionScene::addFragmentItem(const void* voiceId, TrackIterat
 {
 	const auto trackIndex = (*trackIt)->_background->trackIndex();
 	const auto item = new FragmentItem{ trackIndex, offset, sequence.get(), _compositionItem.get() };
-	item->setHighlighted(sequence.get() == _selectedSequenceId);
+	item->setHighlighted(sequence.get() == _selectedSequenceId, false);
 	item->setPos(offset * kStepWidth, trackIndex * kTrackHeight);
 	item->setSequence(makeSequenceTexts(*sequence));
 	connect(item, &FragmentItem::fragmentMenuRequested, [this, voiceId, trackId = (*trackIt)->_background->trackId()](size_t offset, const QPoint& pos) {
@@ -509,16 +509,14 @@ VoiceItem* CompositionScene::addVoiceItem(const void* id, const QString& name, s
 	return voiceItem;
 }
 
-void CompositionScene::highlightSequence(const void* trackId, const void* sequenceId)
+void CompositionScene::highlightSequence(const void* trackId, const void* sequenceId, size_t offset)
 {
 	const auto trackIt = std::find_if(_tracks.begin(), _tracks.end(), [trackId](const auto& trackPtr) { return trackPtr->_background->trackId() == trackId; });
 	assert(trackIt != _tracks.end());
 	for (const auto& fragment : (*trackIt)->_fragments)
 	{
 		const auto shouldBeHighlighted = fragment.second->sequenceId() == sequenceId;
-		if (shouldBeHighlighted == fragment.second->isHighlighted())
-			continue;
-		fragment.second->setHighlighted(shouldBeHighlighted);
+		fragment.second->setHighlighted(shouldBeHighlighted, fragment.first == offset);
 		fragment.second->setZValue(shouldBeHighlighted ? kHighlightZValue : kDefaultZValue);
 	}
 }

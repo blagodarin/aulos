@@ -74,7 +74,7 @@ private:
 	FragmentItem* addFragmentItem(const void* voiceId, TrackIterator, size_t offset, const std::shared_ptr<aulos::SequenceData>&);
 	TrackIterator addTrackItem(const void* voiceId, const void* trackId, size_t trackIndex, bool isFirstTrack);
 	VoiceItem* addVoiceItem(const void* id, const QString& name, size_t trackCount);
-	void highlightSequence(const void* trackId, const void* sequenceId);
+	void highlightSequence(const void* trackId, const void* sequenceId, size_t offset);
 	void highlightVoice(const void* id, bool highlight);
 	std::vector<FragmentSound> makeSequenceTexts(const aulos::SequenceData&) const;
 	qreal requiredVoiceColumnWidth() const;
