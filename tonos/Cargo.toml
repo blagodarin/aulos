@@ -1,0 +1,9 @@
+[package]
+name = "tonos"
+version = "0.1.0"
+edition = "2018"
+
+[dependencies]
+clap = "~2.33"
+float-cmp = "0.9"
+num-integer = "0.1"
