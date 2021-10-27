@@ -15,4 +15,9 @@ target_compile_options(aulosplay_tests PRIVATE ${MAX_WARNINGS})
 target_include_directories(aulosplay_tests PRIVATE ${PRIMAL_DOWNLOAD_DIR})
 target_link_libraries(aulosplay_tests PRIVATE aulosplay primal)
 set_target_properties(aulosplay_tests PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<NOT:$<BOOL:${AULOS_STATIC_RUNTIME}>>:DLL>")
+if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+	target_compile_options(aulosplay_tests PRIVATE
+		/wd5245 # unreferenced function with internal linkage has been removed
+		)
+endif()
 add_test(NAME aulosplay COMMAND aulosplay_tests)
