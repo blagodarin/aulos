@@ -83,6 +83,7 @@ script:
 
 after_success:
   - if [ -n "${COVERAGE}" ]; then codecov --gcov-root "${HOME}/aulos.build" --gcov-exec gcov-${GCC} --gcov-args "-s `pwd`"; fi
+  - if [ -z "${COVERAGE}" ] && [ -z "${SANITIZERS}" ]; then ${HOME}/aulos.install/bin/aulos_benchmark ${TRAVIS_BUILD_DIR}/examples/csikos_post.aulos; fi
   - if [ -z "${COVERAGE}" ] && [ -z "${SANITIZERS}" ]; then ${HOME}/aulos.install/bin/aulos_benchmark ${TRAVIS_BUILD_DIR}/examples/czardas.aulos; fi
   - if [ -z "${COVERAGE}" ] && [ -z "${SANITIZERS}" ]; then ${HOME}/aulos.install/bin/aulos_benchmark ${TRAVIS_BUILD_DIR}/examples/frere_jacques.aulos; fi
   - if [ -z "${COVERAGE}" ] && [ -z "${SANITIZERS}" ]; then ${HOME}/aulos.install/bin/aulos_benchmark ${TRAVIS_BUILD_DIR}/examples/fur_elise.aulos; fi

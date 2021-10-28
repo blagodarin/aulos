@@ -1,0 +1,41 @@
+author "Hermann Necke"
+gain 70
+speed 20
+title "Csikós Post"
+
+@voice 1 "Voice"
+amplitude 5 1.00 95 0.50 900 0.00
+asymmetry 0 0.25
+asymmetry_osc 5.00 0.10
+tremolo 10.00 0.10
+wave quintic 0.50
+
+@track 1 1
+polyphony full
+stereo_angle 0
+stereo_angular_size 180
+stereo_delay 2.00
+stereo_distance 2.00
+weight 1
+
+@track 1 2
+polyphony full
+stereo_angle 0
+stereo_angular_size 180
+stereo_delay 2.00
+stereo_distance 2.00
+weight 1
+
+@sequences
+1 1 1 B5B4,,,,F#5,,,,B5B4,,,,,,,,B5B4,,,,G5,,,,B5B4,,,,,,,,B5,,,,B4,,,,D#5,,,,F#5,,,,B5
+1 1 2 ,E5,G5,B5,E6,,,,,,,,E5E4,,,,F#5F#4,,,,G5G4,,,,,,,,B5B4,,,,,,,,C6C5,,,,,,,,E6E5,,,,,,,,B5B4
+1 1 3 A5,,A4,,E5,,F#5,,C6,,,,,,,,G5,,G4,,E5,,G5,,B5,,,,,,,,F#5,,F#4,,D#5,,F#5,,B5,,,,,,,,G5G4,,,,F#5F#4,,,,E5E4
+1 1 4 B5B4,,,,A#5A#4,,,,B5B4,,,,C#6C#5,,,,D6D5,,,,C#6C#5,,,,D6D5,,,,E6E5,,,,F#6F#5,,,,,,,,C#6C#5,,,,F#6F#5,,,,B5B4,,,,,B5,D6,F#6,B6
+1 2 1 B3B2,,,,F#3,,,,B3B2,,,,,,,,B3B2,,,,G3,,,,B3B2,,,,,,,,B3,,,,B2,,,,D#3,,,,F#3,,,,B3B2,,,,,,,,B2B1
+1 2 2 E3,,,,B3G3,,,,E3,,,,B3G3,,,,E3,,,,B3G3,,,,E3,,,,B3G3,,,,E3,,,,C4A3,,,,E3,,,,C4A3,,,,E3,,,,B3G3,,,,E3,,,,B3G3
+1 2 3 A2,,,,F#3E3,,,,A2,,,,F#3E3,,,,B2,,,,G3E3,,,,B2,,,,G3E3,,,,B2,,,,A3F#3,,,,B2,,,,A3F#3,,,,G3E3,,,,B3B2,,,,G3E3
+1 2 4 F#3,,,,D4B3,,,,F#3,,,,D4B3,,,,F#3,,,,D4B3,,,,F#3,,,,D4B3,,,,E4A#3F#3,,,,,,,,E4C#4F#3,,,,,,,,D4B3,,,,,,,,B3B2
+
+@fragments
+1 1 0 1 60 2 68 3 60 2 68 4 60 2 68 3 60 2 68 4
+1 2 0 1 64 2 64 3 64 2 64 4 64 2 64 3 64 2 64 4

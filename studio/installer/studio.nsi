@@ -71,6 +71,7 @@ Section
 	File "${QTDIR}\plugins\styles\qwindowsvistastyle${SUFFIX}.dll"
 
 	SetOutPath "$INSTDIR\examples"
+	File "${SOURCE_DIR}\examples\csikos_post.aulos"
 	File "${SOURCE_DIR}\examples\czardas.aulos"
 	File "${SOURCE_DIR}\examples\frere_jacques.aulos"
 	File "${SOURCE_DIR}\examples\fur_elise.aulos"
@@ -105,6 +106,7 @@ Section "Uninstall"
 	Delete "$DESKTOP\Aulos Studio.lnk"
 	Delete "$SMPROGRAMS\Aulos Studio.lnk"
 
+	Delete "$INSTDIR\examples\csikos_post.aulos"
 	Delete "$INSTDIR\examples\czardas.aulos"
 	Delete "$INSTDIR\examples\frere_jacques.aulos"
 	Delete "$INSTDIR\examples\fur_elise.aulos"
