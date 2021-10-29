@@ -34,7 +34,7 @@ cache:
 
 install:
   - if "%ARCH%"=="amd64" (set QTDIR=C:\Qt\5.15\msvc2019_64) else (set QTDIR=C:\Qt\5.15\msvc2019)
-  - if "%QT6%"=="ON" set QTDIR=C:\Qt\6.0\msvc2019_64
+  - if "%QT6%"=="ON" set QTDIR=C:\Qt\6.2\msvc2019_64
   - if "%GENERATOR%"=="MSVS" (set CMAKE_GENERATOR=Visual Studio 16 2019) else (set CMAKE_GENERATOR=%GENERATOR%)
   - if "%GENERATOR%"=="Ninja" call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat" %ARCH%
   - if "%GENERATOR%"=="Ninja" cinst ninja
