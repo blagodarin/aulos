@@ -8,7 +8,7 @@
 
 #include <aulos/src/tables.hpp>
 
-#include <doctest.h>
+#include <doctest/doctest.h>
 
 namespace
 {

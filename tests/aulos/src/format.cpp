@@ -4,7 +4,7 @@
 
 #include <aulos/format.hpp>
 
-#include <doctest.h>
+#include <doctest/doctest.h>
 
 namespace
 {

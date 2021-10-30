@@ -9,7 +9,7 @@
 #include <array>
 #include <numeric>
 
-#include <doctest.h>
+#include <doctest/doctest.h>
 
 TEST_CASE("utils_mono_to_stereo")
 {

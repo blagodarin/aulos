@@ -9,7 +9,7 @@ project(Aulos VERSION 0.0.5.0 HOMEPAGE_URL https://github.com/blagodarin/aulos L
 include(CMakeDependentOption)
 include(FetchContent)
 
-FetchContent_Declare(Primal GIT_REPOSITORY https://github.com/blagodarin/primal.git GIT_TAG 2944209a0a37d36e54b5ddc1b2f5b403e5b0f2f4)
+FetchContent_Declare(Primal GIT_REPOSITORY https://github.com/blagodarin/primal.git GIT_TAG 693b6824c733f8e35c8d9844b68f1086406d21d4)
 FetchContent_MakeAvailable(Primal)
 
 primal_set_defaults()
@@ -99,8 +99,9 @@ if(AULOS_STUDIO)
 endif()
 
 if(AULOS_TESTS)
+	primal_provide_doctest(doctest_ROOT STATIC_RUNTIME ${AULOS_STATIC_RUNTIME})
+	find_package(doctest REQUIRED)
 	enable_testing()
-	primal_download("https://raw.githubusercontent.com/onqtam/doctest/2.4.4/doctest/doctest.h" SHA1 "7c25b870f3e0cde6d6c8596c60f3592fe557989a")
 	add_subdirectory(tests/aulos)
 	if(AULOS_AULOSPLAY)
 		add_subdirectory(tests/aulosplay)

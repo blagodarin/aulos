@@ -4,7 +4,7 @@
 
 #include <aulos/src/voice.hpp>
 
-#include <doctest.h>
+#include <doctest/doctest.h>
 
 using namespace std::chrono_literals;
 

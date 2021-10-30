@@ -10,7 +10,7 @@
 #include <cstring>
 
 #include <ostream>
-#include <doctest.h>
+#include <doctest/doctest.h>
 
 namespace
 {

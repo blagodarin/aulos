@@ -9,7 +9,6 @@ add_executable(aulos_tests
 	src/common.cpp
 	src/format.cpp
 	src/loop.cpp
-	src/main.cpp
 	src/modulator.cpp
 	src/oscillator.cpp
 	src/period.cpp
@@ -20,11 +19,6 @@ add_executable(aulos_tests
 	)
 target_compile_options(aulos_tests PRIVATE ${MAX_WARNINGS})
 target_include_directories(aulos_tests PRIVATE ${PRIMAL_DOWNLOAD_DIR})
-target_link_libraries(aulos_tests PRIVATE aulos primal)
+target_link_libraries(aulos_tests PRIVATE aulos primal doctest::doctest_with_main)
 set_target_properties(aulos_tests PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<NOT:$<BOOL:${AULOS_STATIC_RUNTIME}>>:DLL>")
-if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-	target_compile_options(aulos_tests PRIVATE
-		/wd5245 # unreferenced function with internal linkage has been removed
-		)
-endif()
 add_test(NAME aulos COMMAND aulos_tests)

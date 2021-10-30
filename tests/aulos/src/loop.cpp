@@ -7,10 +7,10 @@
 #include <aulos/format.hpp>
 #include <aulos/renderer.hpp>
 
-#include <doctest.h>
-
 #include <array>
 #include <functional>
+
+#include <doctest/doctest.h>
 
 using namespace std::chrono_literals;
 

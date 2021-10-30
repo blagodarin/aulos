@@ -4,7 +4,7 @@
 
 #include <aulos/src/oscillator.hpp>
 
-#include <doctest.h>
+#include <doctest/doctest.h>
 
 TEST_CASE("TriangleOscillator")
 {
