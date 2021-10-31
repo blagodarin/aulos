@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <primal/dsp.hpp>
+
 #include <numeric>
 #include <string>
 
@@ -11,10 +13,9 @@ namespace aulosplay
 {
 	enum class PlaybackError;
 
-	constexpr auto kSimdAlignment = 16u;
 	constexpr auto kBackendChannels = 2u;
 	constexpr auto kBackendFrameBytes = kBackendChannels * sizeof(float);
-	constexpr auto kBackendFrameAlignment = std::lcm(kSimdAlignment, kBackendFrameBytes) / kBackendFrameBytes;
+	constexpr auto kBackendFrameAlignment = std::lcm(primal::kDspAlignment, kBackendFrameBytes) / kBackendFrameBytes;
 
 	class BackendCallbacks
 	{

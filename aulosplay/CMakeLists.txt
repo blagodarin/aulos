@@ -9,7 +9,6 @@ set(HEADERS
 set(SOURCES
 	src/backend.hpp
 	src/player.cpp
-	src/utils.hpp
 	)
 if(WIN32)
 	list(APPEND SOURCES src/backend_wasapi.cpp)

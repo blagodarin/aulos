@@ -70,7 +70,7 @@ namespace aulosplay
 			CHECK_ALSA(::snd_pcm_sw_params_set_stop_threshold(pcm, sw, bufferFrames));
 			CHECK_ALSA(::snd_pcm_sw_params(pcm, sw));
 		}
-		primal::Buffer<float, primal::AlignedAllocator<kSimdAlignment>> period{ periodFrames * kBackendChannels };
+		primal::Buffer<float, primal::AlignedAllocator<primal::kDspAlignment>> period{ periodFrames * kBackendChannels };
 		callbacks.onBackendAvailable(periodFrames);
 		PRIMAL_FINALLY([&] { ::snd_pcm_drain(pcm); });
 		while (callbacks.onBackendIdle())

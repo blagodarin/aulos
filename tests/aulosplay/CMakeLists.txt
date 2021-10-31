@@ -8,7 +8,6 @@ add_executable(aulosplay_tests
 	src/backend.cpp
 	src/common.hpp
 	src/player.cpp
-	src/utils.cpp
 	)
 target_compile_options(aulosplay_tests PRIVATE ${MAX_WARNINGS})
 target_include_directories(aulosplay_tests PRIVATE ${PRIMAL_DOWNLOAD_DIR})

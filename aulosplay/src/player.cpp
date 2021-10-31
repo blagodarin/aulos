@@ -5,7 +5,6 @@
 #include <aulosplay/player.hpp>
 
 #include "backend.hpp"
-#include "utils.hpp"
 
 #include <primal/buffer.hpp>
 
@@ -108,7 +107,7 @@ namespace
 					_source.reset();
 			}
 			if (monoToStereo)
-				aulosplay::monoToStereo(output, _monoBuffer.data(), frames);
+				primal::duplicate1D_32(output, _monoBuffer.data(), frames);
 			_started = !_playing && frames > 0;
 			_stopped = _playing && frames < maxFrames;
 			_playing = frames == maxFrames;
@@ -118,7 +117,7 @@ namespace
 	private:
 		aulosplay::PlayerCallbacks& _callbacks;
 		const unsigned _samplingRate;
-		primal::Buffer<float, primal::AlignedAllocator<aulosplay::kSimdAlignment>> _monoBuffer;
+		primal::Buffer<float, primal::AlignedAllocator<primal::kDspAlignment>> _monoBuffer;
 		std::atomic<bool> _done{ false };
 		std::shared_ptr<aulosplay::Source> _source;
 		bool _playing = false;
