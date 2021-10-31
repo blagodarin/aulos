@@ -1,5 +1,5 @@
 [![Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![AppVeyor](https://ci.appveyor.com/api/projects/status/kha9y50o39k3uscu?svg=true)](https://ci.appveyor.com/project/blagodarin/aulos)
+[![AppVeyor](https://ci.appveyor.com/api/projects/status/kha9y50o39k3uscu/branch/master?svg=true)](https://ci.appveyor.com/project/blagodarin/aulos)
 [![Travis CI](https://travis-ci.com/blagodarin/aulos.svg?branch=master)](https://travis-ci.com/github/blagodarin/aulos)
 [![Codecov](https://codecov.io/gh/blagodarin/aulos/branch/master/graph/badge.svg?token=DDI9G10OEZ)](https://codecov.io/gh/blagodarin/aulos)
 
