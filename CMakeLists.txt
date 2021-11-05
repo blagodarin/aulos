@@ -2,21 +2,21 @@
 # Copyright (C) Sergei Blagodarin.
 # SPDX-License-Identifier: Apache-2.0
 
-cmake_minimum_required(VERSION 3.19)
+cmake_minimum_required(VERSION 3.21)
 
 project(Aulos VERSION 0.0.5.0 HOMEPAGE_URL https://github.com/blagodarin/aulos LANGUAGES CXX)
 
 include(CMakeDependentOption)
 include(FetchContent)
 
-FetchContent_Declare(Primal GIT_REPOSITORY https://github.com/blagodarin/primal.git GIT_TAG 0d1cb745bf673dbc140a422e6d51454a4fcf38f2)
+FetchContent_Declare(Primal GIT_REPOSITORY https://github.com/blagodarin/primal.git GIT_TAG 47d74cf4427f79ab6db5a461f80cc5aa906f51a7)
 FetchContent_MakeAvailable(Primal)
 
 primal_set_defaults()
 
 option(AULOS_AULOSPLAY "Build AulosPlay library" ON)
 option(AULOS_STATIC_RUNTIME "Build Aulos with static runtime" OFF)
-if(NOT AULOS_SUBPROJECT)
+if(PROJECT_IS_TOP_LEVEL)
 	option(AULOS_BENCHMARKS "Build Aulos benchmarks" OFF)
 	option(AULOS_TESTS "Build Aulos tests" OFF)
 	cmake_dependent_option(AULOS_STUDIO "Build Aulos Studio (requires Qt)" OFF "AULOS_AULOSPLAY;NOT AULOS_STATIC_RUNTIME" OFF)
@@ -93,6 +93,7 @@ if(AULOS_STUDIO)
 	find_package(${AULOS_QT} COMPONENTS Widgets REQUIRED)
 	message(STATUS "Using Qt ${${AULOS_QT}_VERSION}")
 	add_subdirectory(studio)
+	set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT studio)
 	if(AULOS_STUDIO_INSTALLER)
 		add_subdirectory(studio/installer)
 	endif()

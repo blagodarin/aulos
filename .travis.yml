@@ -62,7 +62,7 @@ before_install:
 install:
   - cmake --version
   - mkdir "${HOME}/cmake" && pushd "${HOME}/cmake"
-  - wget --output-document=- --quiet https://github.com/Kitware/CMake/releases/download/v3.19.5/cmake-3.19.5-Linux-x86_64.tar.gz | tar -x --gzip --strip-components 1
+  - wget --output-document=- --quiet https://github.com/Kitware/CMake/releases/download/v3.21.4/cmake-3.21.4-linux-x86_64.tar.gz | tar -x --gzip --strip-components 1
   - export PATH="$(pwd)/bin:${PATH}"
   - popd
   - cmake --version
