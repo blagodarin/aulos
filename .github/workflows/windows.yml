@@ -1,0 +1,98 @@
+name: Windows
+on:
+  push:
+    paths-ignore:
+      - 'LICENSE'
+      - 'README.md'
+jobs:
+  ninja:
+    name: Ninja
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        include:
+          - config: Release
+            arch: amd64
+          - config: Debug
+            arch: x86
+      fail-fast: false
+    env:
+      CMAKE_GENERATOR: Ninja
+    steps:
+      - uses: actions/checkout@v2
+      - uses: seanmiddleditch/gha-setup-vsdevenv@master
+        with:
+          arch: ${{ matrix.arch }}
+      - uses: jurplel/install-qt-action@v2
+        if: matrix.arch == 'amd64'
+      - name: Install dependencies
+        run: |
+          cinst ninja
+      - name: Run CMake
+        run: |
+          cmake -S . -B build `
+            -DCMAKE_BUILD_TYPE=${{ matrix.config }} `
+            -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}\install" `
+            -DCMAKE_PREFIX_PATH=$Env:Qt5_DIR `
+            -DAULOS_BENCHMARKS=${{ matrix.config != 'Debug' && 'ON' || 'OFF' }} `
+            -DAULOS_STUDIO=${{ matrix.arch == 'amd64' && 'ON' || 'OFF' }} `
+            -DAULOS_STUDIO_INSTALLER=ON `
+            -DAULOS_TESTS=ON
+      - name: Build
+        run: |
+          cmake --build build
+      - name: Run tests
+        run: |
+          cd build
+          ctest --verbose
+      - name: Check library installation
+        run: |
+          cmake --build build --target install
+      - name: Build Studio installer
+        if: matrix.arch == 'amd64'
+        run: |
+          cmake --build build --target studio_installer
+  vs:
+    name: VS
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        include:
+          - config: Debug
+            arch: amd64
+          - config: RelWithDebInfo
+            arch: x86
+      fail-fast: false
+    env:
+      CMAKE_GENERATOR: Visual Studio 16 2019
+      CMAKE_GENERATOR_PLATFORM: ${{ matrix.arch == 'amd64' && 'x64' || 'Win32' }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: jurplel/install-qt-action@v2
+        if: matrix.arch == 'amd64'
+      - name: Install dependencies
+        run: |
+          cinst ninja
+      - name: Run CMake
+        run: |
+          cmake -S . -B build `
+            -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}\install" `
+            -DCMAKE_PREFIX_PATH=$Env:Qt5_DIR `
+            -DAULOS_BENCHMARKS=${{ matrix.config != 'Debug' && 'ON' || 'OFF' }} `
+            -DAULOS_STUDIO=${{ matrix.arch == 'amd64' && 'ON' || 'OFF' }} `
+            -DAULOS_STUDIO_INSTALLER=ON `
+            -DAULOS_TESTS=ON
+      - name: Build
+        run: |
+          cmake --build build --config ${{ matrix.config }} --parallel -- /nologo
+      - name: Run tests
+        run: |
+          cd build
+          ctest --build-config ${{ matrix.config }} --verbose
+      - name: Check library installation
+        run: |
+          cmake --build build --config ${{ matrix.config }} --target install -- /nologo
+      - name: Build Studio installer
+        if: matrix.arch == 'amd64'
+        run: |
+          cmake --build build --config ${{ matrix.config }} --target studio_installer -- /nologo

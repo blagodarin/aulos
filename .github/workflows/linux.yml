@@ -64,7 +64,7 @@ jobs:
         run: |
           cd build
           ctest --verbose
-      - name: Check installation
+      - name: Check library installation
         env:
           CXX: ${{ matrix.cxx }}
         run: |
