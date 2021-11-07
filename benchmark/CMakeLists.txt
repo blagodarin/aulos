@@ -10,4 +10,3 @@ add_executable(aulos_benchmark
 target_compile_options(aulos_benchmark PRIVATE ${MAX_WARNINGS})
 target_link_libraries(aulos_benchmark PRIVATE aulos)
 set_target_properties(aulos_benchmark PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<NOT:$<BOOL:${AULOS_STATIC_RUNTIME}>>:DLL>")
-primal_install(aulos_benchmark)
