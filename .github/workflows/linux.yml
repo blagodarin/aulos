@@ -1,0 +1,76 @@
+name: Linux
+on:
+  push:
+    paths-ignore:
+      - 'LICENSE'
+      - 'README.md'
+jobs:
+  ci:
+    name: Linux
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - cxx: g++-10
+            config: Release
+          - cxx: g++-10
+            config: Debug
+            mode: sanitizers
+          - cxx: g++-10
+            config: Debug
+            mode: coverage
+          - cxx: clang++-12
+            config: Release
+          - cxx: clang++-12
+            config: Debug
+            mode: sanitizers
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v2
+      - uses: jurplel/install-qt-action@v2
+        if: matrix.mode != 'coverage'
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install \
+            libasound2-dev \
+            ninja-build
+      - name: Run CMake
+        env:
+          CXX: ${{ matrix.cxx }}
+        run: |
+          case "${{ matrix.mode }}" in
+            coverage)
+              export CXXFLAGS="--coverage"
+              export LDFLAGS="--coverage"
+              ;;
+            sanitizers)
+              export CXXFLAGS="-fsanitize=address -fsanitize=undefined -fno-sanitize=nonnull-attribute"
+              export LDFLAGS="-fsanitize=address -fsanitize=undefined"
+              ;;
+          esac
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=${{ matrix.config }} \
+            -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/install" \
+            -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+            -DCMAKE_PREFIX_PATH=${Qt5_DIR} \
+            -DAULOS_TESTS=ON \
+            -DAULOS_BENCHMARKS=${{ matrix.config != 'Debug' && 'ON' || 'OFF' }} \
+            -DAULOS_STUDIO=${{ matrix.mode != 'coverage' && 'ON' || 'OFF' }}
+      - name: Build
+        run: |
+          cmake --build build
+      - name: Run tests
+        run: |
+          cd build
+          ctest --verbose
+      - name: Check installation
+        env:
+          CXX: ${{ matrix.cxx }}
+        run: |
+          cmake --build build --target install
+      - name: Upload coverage to Codecov
+        if: matrix.mode == 'coverage'
+        run: |
+          pip install --user codecov
+          codecov --gcov-root "${{ github.workspace }}/build" --gcov-exec gcov-10 --gcov-args "-s `pwd`"
