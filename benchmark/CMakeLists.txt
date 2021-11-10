@@ -2,7 +2,6 @@
 # Copyright (C) Sergei Blagodarin.
 # SPDX-License-Identifier: Apache-2.0
 
-primal_set_folder(aulos)
 source_group("src" REGULAR_EXPRESSION "/src/")
 add_executable(aulos_benchmark
 	src/main.cpp

@@ -9,21 +9,22 @@ project(Aulos VERSION 0.0.5.0 HOMEPAGE_URL https://github.com/blagodarin/aulos L
 include(CMakeDependentOption)
 include(FetchContent)
 
-FetchContent_Declare(Primal GIT_REPOSITORY https://github.com/blagodarin/primal.git GIT_TAG 956eb2f023c1554a8f1efd9a06a81d3c843e8ce3)
-FetchContent_MakeAvailable(Primal)
-
-primal_set_defaults()
-
-option(AULOS_AULOSPLAY "Build AulosPlay library" ON)
 option(AULOS_STATIC_RUNTIME "Build Aulos with static runtime" OFF)
 if(PROJECT_IS_TOP_LEVEL)
 	option(AULOS_BENCHMARKS "Build Aulos benchmarks" OFF)
 	option(AULOS_TESTS "Build Aulos tests" OFF)
-	cmake_dependent_option(AULOS_STUDIO "Build Aulos Studio (requires Qt)" OFF "AULOS_AULOSPLAY;NOT AULOS_STATIC_RUNTIME" OFF)
+	cmake_dependent_option(AULOS_STUDIO "Build Aulos Studio (requires Qt)" OFF "NOT AULOS_STATIC_RUNTIME" OFF)
 	cmake_dependent_option(AULOS_STUDIO_INSTALLER "Build Aulos Studio installer (requires NSIS)" OFF "AULOS_STUDIO" OFF)
 	cmake_dependent_option(AULOS_STUDIO_QT6 "Build Aulos Studio with Qt 6" OFF "AULOS_STUDIO" OFF)
 	cmake_dependent_option(AULOS_STUDIO_RELEASE "Produce release version of Aulos Studio" OFF "AULOS_STUDIO" OFF)
 endif()
+
+set(SEIR_AUDIO ${AULOS_STUDIO})
+set(SEIR_STATIC_RUNTIME ${AULOS_STATIC_RUNTIME})
+FetchContent_Declare(Seir GIT_REPOSITORY https://github.com/blagodarin/seir.git GIT_TAG 90c2c2b34c8ed15392716f2b88787c4e73a48f5a)
+FetchContent_MakeAvailable(Seir)
+
+seir_set_defaults()
 
 # Qt headers don't compile with high warning levels,
 # so a separate set of warning settings is needed.
@@ -76,14 +77,6 @@ configure_file(config.h.in ${PROJECT_BINARY_DIR}/aulos_config.h)
 
 add_subdirectory(aulos)
 
-if(AULOS_AULOSPLAY)
-	find_package(Threads REQUIRED)
-	if(NOT WIN32)
-		find_package(ALSA REQUIRED)
-	endif()
-	add_subdirectory(aulosplay)
-endif()
-
 if(AULOS_STUDIO)
 	if(AULOS_STUDIO_QT6)
 		set(AULOS_QT Qt6)
@@ -100,13 +93,10 @@ if(AULOS_STUDIO)
 endif()
 
 if(AULOS_TESTS)
-	primal_provide_doctest(doctest_ROOT STATIC_RUNTIME ${AULOS_STATIC_RUNTIME})
+	seir_provide_doctest(doctest_ROOT STATIC_RUNTIME ${AULOS_STATIC_RUNTIME})
 	find_package(doctest REQUIRED)
 	enable_testing()
 	add_subdirectory(tests/aulos)
-	if(AULOS_AULOSPLAY)
-		add_subdirectory(tests/aulosplay)
-	endif()
 endif()
 
 if(AULOS_BENCHMARKS)

@@ -9,7 +9,7 @@
 #include "oscillator.hpp"
 #include "period.hpp"
 
-#include <primal/rigid_vector.hpp>
+#include <seir_base/rigid_vector.hpp>
 
 namespace aulos
 {
@@ -81,7 +81,7 @@ namespace aulos
 		const unsigned _asymmetrySize;
 		const unsigned _rectangularityOffset;
 		const unsigned _rectangularitySize;
-		primal::RigidVector<SampledPoint> _pointBuffer;
+		seir::RigidVector<SampledPoint> _pointBuffer;
 		Oscillation _tremolo;
 		Oscillation _vibrato;
 		Oscillation _asymmetryOscillation;

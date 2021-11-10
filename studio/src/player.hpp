@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <aulosplay/player.hpp>
+#include <seir_audio/player.hpp>
 
 #include <QTimer>
 
@@ -17,7 +17,7 @@ class AudioSource;
 
 class Player final
 	: public QObject
-	, private aulosplay::PlayerCallbacks
+	, private seir::AudioCallbacks
 {
 	Q_OBJECT
 
@@ -36,7 +36,7 @@ signals:
 	void stateChanged();
 
 private:
-	void onPlaybackError(aulosplay::PlaybackError) override;
+	void onPlaybackError(seir::AudioError) override;
 	void onPlaybackError(std::string&& message) override;
 	void onPlaybackStarted() override;
 	void onPlaybackStopped() override;
@@ -50,6 +50,6 @@ private:
 
 	QTimer _timer;
 	std::shared_ptr<class AudioSource> _source;
-	std::unique_ptr<aulosplay::Player> _backend;
+	std::unique_ptr<seir::AudioPlayer> _backend;
 	State _state = State::Stopped;
 };

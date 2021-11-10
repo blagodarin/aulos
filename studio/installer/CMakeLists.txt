@@ -2,12 +2,11 @@
 # Copyright (C) Sergei Blagodarin.
 # SPDX-License-Identifier: Apache-2.0
 
-primal_set_folder(studio)
 find_program(NSIS_EXECUTABLE makensis.exe PATHS [HKEY_LOCAL_MACHINE\\Software\\NSIS])
 if(NSIS_EXECUTABLE MATCHES ".*-NOTFOUND$")
 	message(FATAL_ERROR "Can't find NSIS executable")
 endif()
-primal_download("https://aka.ms/vs/16/release/vc_redist.x64.exe")
+seir_download("https://aka.ms/vs/16/release/vc_redist.x64.exe")
 if(AULOS_STUDIO_RELEASE)
 	set(STUDIO_INSTALLER_NAME AulosStudio-${AULOS_VERSION}.exe)
 else()
@@ -22,7 +21,7 @@ add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/${STUDIO_INSTALLER_NAME}
 		/DAULOS_VERSION=${AULOS_VERSION}
 		/DBUILD_DIR=$<TARGET_FILE_DIR:studio>
 		/DCONFIG=$<CONFIG>
-		/DDOWNLOAD_DIR=${PRIMAL_DOWNLOAD_DIR}
+		/DDOWNLOAD_DIR=${SEIR_DOWNLOAD_DIR}
 		/DINSTALLER_DIR=${PROJECT_BINARY_DIR}
 		/DINSTALLER_NAME=${STUDIO_INSTALLER_NAME}
 		/DQT_PREFIX=${AULOS_QT}

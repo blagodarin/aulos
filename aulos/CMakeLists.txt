@@ -2,7 +2,6 @@
 # Copyright (C) Sergei Blagodarin.
 # SPDX-License-Identifier: Apache-2.0
 
-primal_set_folder(aulos)
 set(HEADERS
 	common.hpp
 	composition.hpp
@@ -29,7 +28,7 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES})
 add_library(aulos STATIC ${HEADERS} ${SOURCES})
 target_compile_options(aulos PRIVATE ${MAX_WARNINGS})
 target_include_directories(aulos PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-target_link_libraries(aulos PRIVATE primal)
+target_link_libraries(aulos PRIVATE Seir::base)
 set_target_properties(aulos PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<NOT:$<BOOL:${AULOS_STATIC_RUNTIME}>>:DLL>")
-primal_install(aulos EXPORT AulosTargets)
+seir_install(aulos EXPORT AulosTargets)
 install(FILES ${HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/aulos)

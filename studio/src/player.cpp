@@ -12,7 +12,7 @@
 
 #include <QDebug>
 
-class AudioSource final : public aulosplay::Source
+class AudioSource final : public seir::AudioSource
 {
 public:
 	AudioSource(std::unique_ptr<aulos::Renderer>&& renderer, size_t minBufferFrames)
@@ -87,7 +87,7 @@ void Player::start(std::unique_ptr<aulos::Renderer>&& renderer, [[maybe_unused]]
 	if (!_backend || _backend->samplingRate() != samplingRate)
 	{
 		_backend.reset();
-		_backend = aulosplay::Player::create(*this, samplingRate);
+		_backend = seir::AudioPlayer::create(*this, samplingRate);
 	}
 	_source = std::make_shared<AudioSource>(std::move(renderer), minBufferFrames);
 	emit offsetChanged(static_cast<double>(_source->currentOffset()));
@@ -100,11 +100,11 @@ void Player::stop()
 		_backend->stop();
 }
 
-void Player::onPlaybackError(aulosplay::PlaybackError error)
+void Player::onPlaybackError(seir::AudioError error)
 {
 	switch (error)
 	{
-	case aulosplay::PlaybackError::NoDevice: qWarning() << "PlaybackError::NoDevice"; break;
+	case seir::AudioError::NoDevice: qWarning() << "seir::AudioError::NoDevice"; break;
 	}
 	emit playbackStopped();
 }
