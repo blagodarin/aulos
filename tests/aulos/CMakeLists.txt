@@ -18,5 +18,5 @@ add_executable(aulos_tests
 	)
 target_compile_options(aulos_tests PRIVATE ${MAX_WARNINGS})
 target_link_libraries(aulos_tests PRIVATE aulos Seir::base doctest::doctest_with_main)
-set_target_properties(aulos_tests PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<NOT:$<BOOL:${AULOS_STATIC_RUNTIME}>>:DLL>")
+seir_target(aulos_tests STATIC_RUNTIME ${AULOS_STATIC_RUNTIME})
 add_test(NAME aulos COMMAND aulos_tests)

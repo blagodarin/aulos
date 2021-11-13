@@ -21,10 +21,10 @@ endif()
 
 set(SEIR_AUDIO ${AULOS_STUDIO})
 set(SEIR_STATIC_RUNTIME ${AULOS_STATIC_RUNTIME})
-FetchContent_Declare(Seir GIT_REPOSITORY https://github.com/blagodarin/seir.git GIT_TAG 90c2c2b34c8ed15392716f2b88787c4e73a48f5a)
+FetchContent_Declare(Seir GIT_REPOSITORY https://github.com/blagodarin/seir.git GIT_TAG d8f4cce9f1b5c37e2c32aabead5566a834dc81e2)
 FetchContent_MakeAvailable(Seir)
 
-seir_set_defaults()
+seir_defaults()
 
 # Qt headers don't compile with high warning levels,
 # so a separate set of warning settings is needed.
