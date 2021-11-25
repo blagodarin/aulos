@@ -6,6 +6,8 @@
 
 #include <seir_audio/player.hpp>
 
+#include <memory>
+
 #include <QTimer>
 
 namespace aulos
@@ -49,7 +51,7 @@ private:
 	};
 
 	QTimer _timer;
-	std::shared_ptr<class AudioSource> _source;
-	std::unique_ptr<seir::AudioPlayer> _backend;
+	seir::SharedPtr<class AudioSource> _source;
+	seir::UniquePtr<seir::AudioPlayer> _backend;
 	State _state = State::Stopped;
 };

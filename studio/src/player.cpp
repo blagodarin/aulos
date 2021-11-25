@@ -28,21 +28,25 @@ public:
 	}
 
 private:
-	bool isStereo() const noexcept override
+	seir::AudioFormat format() const noexcept override
 	{
-		return _format.channelLayout() == aulos::ChannelLayout::Stereo;
+		return {
+			seir::AudioSampleType::f32,
+			_format.channelLayout() == aulos::ChannelLayout::Stereo ? seir::AudioChannelLayout::Stereo : seir::AudioChannelLayout::Mono,
+			_format.samplingRate()
+		};
 	}
 
-	size_t onRead(float* buffer, size_t maxFrames) noexcept override
+	size_t read(void* buffer, size_t maxFrames) noexcept override
 	{
 		std::unique_lock lock{ _mutex };
-		auto renderedFrames = _renderer->render(buffer, maxFrames);
+		auto renderedFrames = _renderer->render(static_cast<float*>(buffer), maxFrames);
 		lock.unlock();
 		_minRemainingFrames -= std::min(_minRemainingFrames, renderedFrames);
 		if (renderedFrames < maxFrames && _minRemainingFrames > 0)
 		{
 			const auto paddingFrames = std::min(maxFrames - renderedFrames, _minRemainingFrames);
-			std::memset(buffer + renderedFrames * _format.channelCount(), 0, paddingFrames * _format.bytesPerFrame());
+			std::memset(static_cast<float*>(buffer) + renderedFrames * _format.channelCount(), 0, paddingFrames * _format.bytesPerFrame());
 			renderedFrames += paddingFrames;
 			_minRemainingFrames -= paddingFrames;
 		}
@@ -84,14 +88,14 @@ void Player::start(std::unique_ptr<aulos::Renderer>&& renderer, [[maybe_unused]]
 {
 	stop();
 	const auto samplingRate = renderer->format().samplingRate();
-	if (!_backend || _backend->samplingRate() != samplingRate)
+	if (!_backend || _backend->format().samplingRate() != samplingRate)
 	{
 		_backend.reset();
 		_backend = seir::AudioPlayer::create(*this, samplingRate);
 	}
-	_source = std::make_shared<AudioSource>(std::move(renderer), minBufferFrames);
+	_source = seir::makeShared<AudioSource>(std::move(renderer), minBufferFrames);
 	emit offsetChanged(static_cast<double>(_source->currentOffset()));
-	_backend->play(_source);
+	_backend->play(seir::SharedPtr<seir::AudioSource>{ _source });
 }
 
 void Player::stop()

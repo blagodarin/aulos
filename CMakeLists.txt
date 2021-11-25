@@ -7,7 +7,6 @@ cmake_minimum_required(VERSION 3.21)
 project(Aulos VERSION 0.0.5.0 HOMEPAGE_URL https://github.com/blagodarin/aulos LANGUAGES CXX)
 
 include(CMakeDependentOption)
-include(FetchContent)
 
 option(AULOS_STATIC_RUNTIME "Build Aulos with static runtime" OFF)
 if(PROJECT_IS_TOP_LEVEL)
@@ -17,14 +16,13 @@ if(PROJECT_IS_TOP_LEVEL)
 	cmake_dependent_option(AULOS_STUDIO_INSTALLER "Build Aulos Studio installer (requires NSIS)" OFF "AULOS_STUDIO" OFF)
 	cmake_dependent_option(AULOS_STUDIO_QT6 "Build Aulos Studio with Qt 6" OFF "AULOS_STUDIO" OFF)
 	cmake_dependent_option(AULOS_STUDIO_RELEASE "Produce release version of Aulos Studio" OFF "AULOS_STUDIO" OFF)
+	set(SEIR_AUDIO ${AULOS_STUDIO})
+	set(SEIR_STATIC_RUNTIME ${AULOS_STATIC_RUNTIME})
+	include(FetchContent)
+	FetchContent_Declare(Seir GIT_REPOSITORY https://github.com/blagodarin/seir.git GIT_TAG ebf14e8ba74aadf1dc195167601290b3564f6d7c)
+	FetchContent_MakeAvailable(Seir)
+	seir_defaults()
 endif()
-
-set(SEIR_AUDIO ${AULOS_STUDIO})
-set(SEIR_STATIC_RUNTIME ${AULOS_STATIC_RUNTIME})
-FetchContent_Declare(Seir GIT_REPOSITORY https://github.com/blagodarin/seir.git GIT_TAG d8f4cce9f1b5c37e2c32aabead5566a834dc81e2)
-FetchContent_MakeAvailable(Seir)
-
-seir_defaults()
 
 # Qt headers don't compile with high warning levels,
 # so a separate set of warning settings is needed.
@@ -41,7 +39,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-	add_compile_options(/std:c++latest /WX)
+	add_compile_options(/WX)
 	set(MAX_WARNINGS /Wall
 		/wd4061 # enumerator '___' in switch of enum '___' is not explicitly handled by a case label
 		/wd4514 # unreferenced inline function has been removed
@@ -65,10 +63,6 @@ endif()
 
 if(NOT CMAKE_GENERATOR MATCHES "^Visual Studio")
 	set(CMAKE_RC_FLAGS "${CMAKE_RC_FLAGS} /nologo")
-endif()
-
-if(WIN32)
-	set(CMAKE_DEBUG_POSTFIX "d")
 endif()
 
 set(AULOS_RC_VERSION "${PROJECT_VERSION_MAJOR},${PROJECT_VERSION_MINOR},${PROJECT_VERSION_PATCH},${PROJECT_VERSION_TWEAK}")
