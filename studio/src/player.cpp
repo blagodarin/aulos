@@ -6,16 +6,17 @@
 
 #include <aulos/format.hpp>
 #include <aulos/renderer.hpp>
+#include <seir_audio/decoder.hpp>
 
 #include <cstring>
 #include <mutex>
 
 #include <QDebug>
 
-class AudioSource final : public seir::AudioSource
+class AudioDecoder final : public seir::AudioDecoder
 {
 public:
-	AudioSource(std::unique_ptr<aulos::Renderer>&& renderer, size_t minBufferFrames)
+	AudioDecoder(std::unique_ptr<aulos::Renderer>&& renderer, size_t minBufferFrames)
 		: _renderer{ std::move(renderer) }
 		, _minRemainingFrames{ minBufferFrames }
 	{
@@ -53,6 +54,13 @@ private:
 		return renderedFrames;
 	}
 
+	bool seek(size_t frameOffset) override
+	{
+		_renderer->restart();
+		_renderer->skipFrames(frameOffset);
+		return true;
+	}
+
 private:
 	mutable std::mutex _mutex;
 	const std::unique_ptr<aulos::Renderer> _renderer;
@@ -78,7 +86,7 @@ Player::Player(QObject* parent)
 		}
 	});
 	connect(&_timer, &QTimer::timeout, this, [this] {
-		emit offsetChanged(static_cast<double>(_source->currentOffset()));
+		emit offsetChanged(static_cast<double>(_decoder->currentOffset()));
 	});
 }
 
@@ -93,9 +101,9 @@ void Player::start(std::unique_ptr<aulos::Renderer>&& renderer, [[maybe_unused]]
 		_backend.reset();
 		_backend = seir::AudioPlayer::create(*this, samplingRate);
 	}
-	_source = seir::makeShared<AudioSource>(std::move(renderer), minBufferFrames);
-	emit offsetChanged(static_cast<double>(_source->currentOffset()));
-	_backend->play(seir::SharedPtr<seir::AudioSource>{ _source });
+	_decoder = seir::makeShared<AudioDecoder>(std::move(renderer), minBufferFrames);
+	emit offsetChanged(static_cast<double>(_decoder->currentOffset()));
+	_backend->play(seir::SharedPtr<seir::AudioDecoder>{ _decoder });
 }
 
 void Player::stop()

@@ -15,7 +15,7 @@ namespace aulos
 	class Renderer;
 }
 
-class AudioSource;
+class AudioDecoder;
 
 class Player final
 	: public QObject
@@ -51,7 +51,7 @@ private:
 	};
 
 	QTimer _timer;
-	seir::SharedPtr<class AudioSource> _source;
+	seir::SharedPtr<class AudioDecoder> _decoder;
 	seir::UniquePtr<seir::AudioPlayer> _backend;
 	State _state = State::Stopped;
 };
