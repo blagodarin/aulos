@@ -7,6 +7,7 @@
 #include <aulos/format.hpp>
 #include <aulos/renderer.hpp>
 #include <seir_audio/decoder.hpp>
+#include <seir_audio/format.hpp>
 
 #include <cstring>
 #include <mutex>
@@ -57,8 +58,7 @@ private:
 	bool seek(size_t frameOffset) override
 	{
 		_renderer->restart();
-		_renderer->skipFrames(frameOffset);
-		return true;
+		return _renderer->skipFrames(frameOffset) == frameOffset;
 	}
 
 private:
@@ -70,6 +70,7 @@ private:
 
 Player::Player(QObject* parent)
 	: QObject{ parent }
+	, _backend{ seir::AudioPlayer::create(*this, seir::AudioFormat::kMaxSamplingRate) }
 {
 	_timer.setInterval(20);
 	connect(this, &Player::playbackStarted, this, [this] {
@@ -95,12 +96,6 @@ Player::~Player() = default;
 void Player::start(std::unique_ptr<aulos::Renderer>&& renderer, [[maybe_unused]] size_t minBufferFrames)
 {
 	stop();
-	const auto samplingRate = renderer->format().samplingRate();
-	if (!_backend || _backend->format().samplingRate() != samplingRate)
-	{
-		_backend.reset();
-		_backend = seir::AudioPlayer::create(*this, samplingRate);
-	}
 	_decoder = seir::makeShared<AudioDecoder>(std::move(renderer), minBufferFrames);
 	emit offsetChanged(static_cast<double>(_decoder->currentOffset()));
 	_backend->play(seir::SharedPtr<seir::AudioDecoder>{ _decoder });
@@ -108,8 +103,7 @@ void Player::start(std::unique_ptr<aulos::Renderer>&& renderer, [[maybe_unused]]
 
 void Player::stop()
 {
-	if (_backend)
-		_backend->stop();
+	_backend->stopAll();
 }
 
 void Player::onPlaybackError(seir::AudioError error)

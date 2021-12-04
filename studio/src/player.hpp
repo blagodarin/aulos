@@ -50,8 +50,8 @@ private:
 		Started,
 	};
 
+	const seir::UniquePtr<seir::AudioPlayer> _backend;
 	QTimer _timer;
 	seir::SharedPtr<class AudioDecoder> _decoder;
-	seir::UniquePtr<seir::AudioPlayer> _backend;
 	State _state = State::Stopped;
 };
