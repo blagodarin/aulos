@@ -26,6 +26,7 @@ set(SOURCES
 source_group("include" FILES ${HEADERS})
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES})
 add_library(aulos STATIC ${HEADERS} ${SOURCES})
+add_library(Aulos::aulos ALIAS aulos)
 target_compile_options(aulos PRIVATE ${MAX_WARNINGS})
 target_include_directories(aulos PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 target_link_libraries(aulos PRIVATE Seir::base)

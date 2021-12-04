@@ -17,6 +17,6 @@ add_executable(aulos_tests
 	src/wave.cpp
 	)
 target_compile_options(aulos_tests PRIVATE ${MAX_WARNINGS})
-target_link_libraries(aulos_tests PRIVATE aulos Seir::base doctest::doctest_with_main)
+target_link_libraries(aulos_tests PRIVATE Aulos::aulos Seir::base doctest::doctest_with_main)
 seir_target(aulos_tests STATIC_RUNTIME ${AULOS_STATIC_RUNTIME})
 add_test(NAME aulos COMMAND aulos_tests)
