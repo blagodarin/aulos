@@ -6,7 +6,7 @@
 
 #include "../theme.hpp"
 
-#include <aulos/data.hpp>
+#include <seir_synth/data.hpp>
 
 #include <numeric>
 

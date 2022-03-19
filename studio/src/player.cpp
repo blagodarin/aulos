@@ -4,10 +4,9 @@
 
 #include "player.hpp"
 
-#include <aulos/format.hpp>
-#include <aulos/renderer.hpp>
 #include <seir_audio/decoder.hpp>
-#include <seir_audio/format.hpp>
+#include <seir_synth/format.hpp>
+#include <seir_synth/renderer.hpp>
 
 #include <cstring>
 #include <mutex>
@@ -17,7 +16,7 @@
 class AudioDecoder final : public seir::AudioDecoder
 {
 public:
-	AudioDecoder(std::unique_ptr<aulos::Renderer>&& renderer, size_t minBufferFrames)
+	AudioDecoder(std::unique_ptr<seir::synth::Renderer>&& renderer, size_t minBufferFrames)
 		: _renderer{ std::move(renderer) }
 		, _minRemainingFrames{ minBufferFrames }
 	{
@@ -34,7 +33,7 @@ private:
 	{
 		return {
 			seir::AudioSampleType::f32,
-			_format.channelLayout() == aulos::ChannelLayout::Stereo ? seir::AudioChannelLayout::Stereo : seir::AudioChannelLayout::Mono,
+			_format.channelLayout() == seir::synth::ChannelLayout::Stereo ? seir::AudioChannelLayout::Stereo : seir::AudioChannelLayout::Mono,
 			_format.samplingRate()
 		};
 	}
@@ -63,14 +62,14 @@ private:
 
 private:
 	mutable std::mutex _mutex;
-	const std::unique_ptr<aulos::Renderer> _renderer;
-	const aulos::AudioFormat _format = _renderer->format();
+	const std::unique_ptr<seir::synth::Renderer> _renderer;
+	const seir::synth::AudioFormat _format = _renderer->format();
 	size_t _minRemainingFrames = 0;
 };
 
 Player::Player(QObject* parent)
 	: QObject{ parent }
-	, _backend{ seir::AudioPlayer::create(*this, seir::AudioFormat::kMaxSamplingRate) }
+	, _backend{ seir::AudioPlayer::create(*this) }
 {
 	_timer.setInterval(20);
 	connect(this, &Player::playbackStarted, this, [this] {
@@ -93,7 +92,7 @@ Player::Player(QObject* parent)
 
 Player::~Player() = default;
 
-void Player::start(std::unique_ptr<aulos::Renderer>&& renderer, [[maybe_unused]] size_t minBufferFrames)
+void Player::start(std::unique_ptr<seir::synth::Renderer>&& renderer, [[maybe_unused]] size_t minBufferFrames)
 {
 	stop();
 	_decoder = seir::makeShared<AudioDecoder>(std::move(renderer), minBufferFrames);

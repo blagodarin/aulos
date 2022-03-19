@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <aulos/data.hpp>
+#include <seir_synth/data.hpp>
 
 #include <QGraphicsObject>
 
@@ -20,7 +20,7 @@ public:
 	void setStepCount(size_t count);
 
 signals:
-	void newSoundRequested(size_t offset, aulos::Note);
+	void newSoundRequested(size_t offset, seir::synth::Note);
 
 private:
 	void mousePressEvent(QGraphicsSceneMouseEvent*) override;

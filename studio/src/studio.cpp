@@ -11,8 +11,8 @@
 #include "theme.hpp"
 #include "voice_widget.hpp"
 
-#include <aulos/composition.hpp>
-#include <aulos/renderer.hpp>
+#include <seir_synth/composition.hpp>
+#include <seir_synth/renderer.hpp>
 
 #include <cassert>
 #include <stdexcept>
@@ -42,11 +42,11 @@ namespace
 	constexpr int kMaxRecentFiles = 10;
 	const auto kRecentFileKeyBase = QStringLiteral("RecentFile%1");
 
-	std::unique_ptr<aulos::Composition> packComposition(aulos::CompositionData& data)
+	std::unique_ptr<seir::synth::Composition> packComposition(seir::synth::CompositionData& data)
 	{
-		const auto maxAmplitude = [](const aulos::Composition& composition) {
+		const auto maxAmplitude = [](const seir::synth::Composition& composition) {
 			// TODO: Implement gain calculation with looping.
-			const auto renderer = aulos::Renderer::create(composition, { aulos::Renderer::kMaxSamplingRate, aulos::ChannelLayout::Mono }, false);
+			const auto renderer = seir::synth::Renderer::create(composition, { seir::synth::Renderer::kMaxSamplingRate, seir::synth::ChannelLayout::Mono }, false);
 			assert(renderer);
 			float minimum = 0.f;
 			float maximum = 0.f;
@@ -87,10 +87,10 @@ namespace
 		return result;
 	}
 
-	std::shared_ptr<aulos::VoiceData> makeDefaultVoice()
+	std::shared_ptr<seir::synth::VoiceData> makeDefaultVoice()
 	{
 		using namespace std::chrono_literals;
-		auto voice = std::make_shared<aulos::VoiceData>();
+		auto voice = std::make_shared<seir::synth::VoiceData>();
 		voice->_amplitudeEnvelope._changes = {
 			{ 100ms, 1.f },
 			{ 400ms, .5f },
@@ -218,7 +218,7 @@ Studio::Studio()
 		assert(_mode == Mode::Editing);
 		_autoRepeatButton->setChecked(false);
 		const auto format = selectedFormat();
-		auto renderer = aulos::Renderer::create(*composition, format, _loopPlaybackCheck->isChecked());
+		auto renderer = seir::synth::Renderer::create(*composition, format, _loopPlaybackCheck->isChecked());
 		assert(renderer);
 		renderer->skipFrames(_compositionWidget->startOffset() * format.samplingRate() / _composition->_speed);
 		_player->stop();
@@ -237,8 +237,8 @@ Studio::Studio()
 	_speedSpin->setSuffix("x");
 
 	_channelLayoutCombo = new QComboBox{ this };
-	_channelLayoutCombo->addItem(tr("Stereo"), static_cast<int>(aulos::ChannelLayout::Stereo));
-	_channelLayoutCombo->addItem(tr("Mono"), static_cast<int>(aulos::ChannelLayout::Mono));
+	_channelLayoutCombo->addItem(tr("Stereo"), static_cast<int>(seir::synth::ChannelLayout::Stereo));
+	_channelLayoutCombo->addItem(tr("Mono"), static_cast<int>(seir::synth::ChannelLayout::Mono));
 
 	_samplingRateCombo = new QComboBox{ this };
 	const auto hz = tr("%L1 Hz");
@@ -347,7 +347,7 @@ Studio::Studio()
 			_mode = Mode::Editing;
 		updateStatus();
 	});
-	connect(_compositionWidget, &CompositionWidget::selectionChanged, [this](const std::shared_ptr<aulos::VoiceData>& voice, const std::shared_ptr<aulos::TrackData>& track, const std::shared_ptr<aulos::SequenceData>& sequence) {
+	connect(_compositionWidget, &CompositionWidget::selectionChanged, [this](const std::shared_ptr<seir::synth::VoiceData>& voice, const std::shared_ptr<seir::synth::TrackData>& track, const std::shared_ptr<seir::synth::SequenceData>& sequence) {
 		_voiceWidget->setParameters(voice, track ? track->_properties : nullptr);
 		_sequenceWidget->setSequence(sequence);
 		_autoRepeatButton->setChecked(false);
@@ -358,7 +358,7 @@ Studio::Studio()
 		_changed = true;
 		updateStatus();
 	});
-	connect(_sequenceWidget, &SequenceWidget::noteActivated, [this](aulos::Note note) {
+	connect(_sequenceWidget, &SequenceWidget::noteActivated, [this](seir::synth::Note note) {
 		bool play = true;
 		if (_autoRepeatButton->isChecked())
 		{
@@ -407,11 +407,11 @@ void Studio::createEmptyComposition()
 {
 	assert(!_hasComposition);
 	assert(_compositionPath.isEmpty());
-	_composition = std::make_shared<aulos::CompositionData>();
+	_composition = std::make_shared<seir::synth::CompositionData>();
 	_composition->_speed = 6;
-	const auto& part = _composition->_parts.emplace_back(std::make_shared<aulos::PartData>(::makeDefaultVoice()));
+	const auto& part = _composition->_parts.emplace_back(std::make_shared<seir::synth::PartData>(::makeDefaultVoice()));
 	part->_voiceName = tr("NewVoice").toStdString();
-	part->_tracks.emplace_back(std::make_shared<aulos::TrackData>(std::make_shared<aulos::TrackProperties>()));
+	part->_tracks.emplace_back(std::make_shared<seir::synth::TrackData>(std::make_shared<seir::synth::TrackProperties>()));
 	_compositionFileName = tr("New composition");
 	_speedSpin->setValue(static_cast<int>(_composition->_speed));
 	_compositionWidget->setComposition(_composition);
@@ -433,7 +433,7 @@ void Studio::exportComposition()
 		return;
 
 	const auto format = selectedFormat();
-	const auto renderer = aulos::Renderer::create(*composition, format, false);
+	const auto renderer = seir::synth::Renderer::create(*composition, format, false);
 	assert(renderer);
 
 	constexpr size_t chunkHeaderSize = 8;
@@ -493,17 +493,17 @@ bool Studio::openComposition(const QString& path)
 	if (!file.open(QIODevice::ReadOnly))
 		return false;
 
-	std::unique_ptr<aulos::Composition> composition;
+	std::unique_ptr<seir::synth::Composition> composition;
 	try
 	{
-		composition = aulos::Composition::create(file.readAll().constData());
+		composition = seir::synth::Composition::create(file.readAll().constData());
 	}
 	catch (const std::runtime_error&)
 	{
 		return false;
 	}
 
-	_composition = std::make_shared<aulos::CompositionData>(*composition);
+	_composition = std::make_shared<seir::synth::CompositionData>(*composition);
 	_compositionPath = path;
 	_compositionFileName = QFileInfo{ file }.fileName();
 	_speedSpin->setValue(static_cast<int>(_composition->_speed));
@@ -514,10 +514,10 @@ bool Studio::openComposition(const QString& path)
 	return true;
 }
 
-void Studio::playNote(aulos::Note note)
+void Studio::playNote(seir::synth::Note note)
 {
 	const auto format = selectedFormat();
-	_player->start(aulos::Renderer::create(*aulos::CompositionData{ _voiceWidget->voice(), note }.pack(), format), format.samplingRate());
+	_player->start(seir::synth::Renderer::create(*seir::synth::CompositionData{ _voiceWidget->voice(), note }.pack(), format), format.samplingRate());
 }
 
 bool Studio::saveComposition(const QString& path) const
@@ -526,7 +526,7 @@ bool Studio::saveComposition(const QString& path) const
 	assert(!path.isEmpty());
 	const auto composition = ::packComposition(*_composition);
 	assert(composition);
-	const auto buffer = aulos::serialize(*composition);
+	const auto buffer = seir::synth::serialize(*composition);
 	QFile file{ path };
 	if (!file.open(QIODevice::WriteOnly) || file.write(reinterpret_cast<const char*>(buffer.data()), static_cast<qint64>(buffer.size())) < static_cast<qint64>(buffer.size()))
 	{
@@ -588,9 +588,9 @@ void Studio::saveRecentFiles() const
 	::saveRecentFileList(recentFiles);
 }
 
-aulos::AudioFormat Studio::selectedFormat() const
+seir::synth::AudioFormat Studio::selectedFormat() const
 {
-	return { _samplingRateCombo->currentData().toUInt(), static_cast<aulos::ChannelLayout>(_channelLayoutCombo->currentData().toInt()) };
+	return { _samplingRateCombo->currentData().toUInt(), static_cast<seir::synth::ChannelLayout>(_channelLayoutCombo->currentData().toInt()) };
 }
 
 void Studio::updateStatus()

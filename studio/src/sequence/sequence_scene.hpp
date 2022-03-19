@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <aulos/data.hpp>
+#include <seir_synth/data.hpp>
 
 #include <memory>
 
@@ -22,17 +22,17 @@ public:
 	explicit SequenceScene(QObject* parent = nullptr);
 	~SequenceScene() override;
 
-	void insertSound(size_t offset, aulos::Note);
-	void removeSound(size_t offset, aulos::Note);
-	qreal setSequence(const aulos::SequenceData&, const QSize& viewSize);
+	void insertSound(size_t offset, seir::synth::Note);
+	void removeSound(size_t offset, seir::synth::Note);
+	qreal setSequence(const seir::synth::SequenceData&, const QSize& viewSize);
 
 signals:
-	void insertingSound(size_t offset, aulos::Note);
-	void noteActivated(aulos::Note);
-	void removingSound(size_t offset, aulos::Note);
+	void insertingSound(size_t offset, seir::synth::Note);
+	void noteActivated(seir::synth::Note);
+	void removingSound(size_t offset, seir::synth::Note);
 
 private:
-	void insertNewSound(size_t offset, aulos::Note);
+	void insertNewSound(size_t offset, seir::synth::Note);
 	void removeSoundItems();
 	void setPianorollLength(size_t steps);
 

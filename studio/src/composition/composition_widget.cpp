@@ -8,7 +8,7 @@
 #include "composition_scene.hpp"
 #include "voice_editor.hpp"
 
-#include <aulos/data.hpp>
+#include <seir_synth/data.hpp>
 
 #include <cassert>
 
@@ -22,7 +22,7 @@
 
 namespace
 {
-	const std::array<char, aulos::kNotesPerOctave> kNoteNames{ 'C', 'C', 'D', 'D', 'E', 'F', 'F', 'G', 'G', 'A', 'A', 'B' };
+	const std::array<char, seir::synth::kNotesPerOctave> kNoteNames{ 'C', 'C', 'D', 'D', 'E', 'F', 'F', 'G', 'G', 'A', 'A', 'B' };
 
 	QFont makeBold(QFont&& font)
 	{
@@ -30,10 +30,10 @@ namespace
 		return std::move(font);
 	}
 
-	std::shared_ptr<aulos::VoiceData> makeDefaultVoice()
+	std::shared_ptr<seir::synth::VoiceData> makeDefaultVoice()
 	{
 		using namespace std::chrono_literals;
-		auto voice = std::make_shared<aulos::VoiceData>();
+		auto voice = std::make_shared<seir::synth::VoiceData>();
 		voice->_amplitudeEnvelope._changes = {
 			{ 100ms, 1.f },
 			{ 400ms, .5f },
@@ -42,7 +42,7 @@ namespace
 		return voice;
 	}
 
-	QString makeSequenceName(const aulos::SequenceData& sequence)
+	QString makeSequenceName(const seir::synth::SequenceData& sequence)
 	{
 		QString result;
 		for (const auto& sound : sequence._sounds)
@@ -133,17 +133,17 @@ CompositionWidget::CompositionWidget(QWidget* parent)
 		_voiceEditor->setVoiceName(tr("NewVoice").toStdString());
 		if (_voiceEditor->exec() != QDialog::Accepted)
 			return;
-		const auto& part = _composition->_parts.emplace_back(std::make_shared<aulos::PartData>(::makeDefaultVoice()));
+		const auto& part = _composition->_parts.emplace_back(std::make_shared<seir::synth::PartData>(::makeDefaultVoice()));
 		part->_voiceName = _voiceEditor->voiceName();
-		part->_tracks.emplace_back(std::make_shared<aulos::TrackData>(std::make_shared<aulos::TrackProperties>()));
+		part->_tracks.emplace_back(std::make_shared<seir::synth::TrackData>(std::make_shared<seir::synth::TrackProperties>()));
 		_scene->appendPart(part);
 		_view->horizontalScrollBar()->setValue(_view->horizontalScrollBar()->minimum());
 		emit compositionChanged();
 	});
 	connect(_scene, &CompositionScene::fragmentSelected, [this, rightButton, leftButton](const void* voiceId, const void* trackId, const void* sequenceId, size_t offset) {
-		std::shared_ptr<aulos::VoiceData> voice;
-		std::shared_ptr<aulos::TrackData> track;
-		std::shared_ptr<aulos::SequenceData> sequence;
+		std::shared_ptr<seir::synth::VoiceData> voice;
+		std::shared_ptr<seir::synth::TrackData> track;
+		std::shared_ptr<seir::synth::SequenceData> sequence;
 		bool canMoveRight = false;
 		bool canMoveLeft = false;
 		if (voiceId)
@@ -211,7 +211,7 @@ CompositionWidget::CompositionWidget(QWidget* parent)
 		removeTrackAction->setEnabled((*part)->_tracks.size() > 1);
 		if (const auto action = menu.exec(pos); action == newSequenceAction)
 		{
-			const auto sequence = std::make_shared<aulos::SequenceData>();
+			const auto sequence = std::make_shared<seir::synth::SequenceData>();
 			(*track)->_sequences.emplace_back(sequence);
 			[[maybe_unused]] const auto inserted = (*track)->_fragments.insert_or_assign(offset, sequence).second;
 			assert(inserted);
@@ -260,7 +260,7 @@ CompositionWidget::CompositionWidget(QWidget* parent)
 		}
 		else if (action == addTrackAction)
 		{
-			auto& track = (*part)->_tracks.emplace_back(std::make_shared<aulos::TrackData>(std::make_shared<aulos::TrackProperties>()));
+			auto& track = (*part)->_tracks.emplace_back(std::make_shared<seir::synth::TrackData>(std::make_shared<seir::synth::TrackProperties>()));
 			_scene->addTrack(voiceId, track.get());
 		}
 		else if (action == removeVoiceAction)
@@ -282,7 +282,7 @@ float CompositionWidget::selectedTrackWeight() const
 	return _scene->selectedTrackWeight();
 }
 
-void CompositionWidget::setComposition(const std::shared_ptr<aulos::CompositionData>& composition)
+void CompositionWidget::setComposition(const std::shared_ptr<seir::synth::CompositionData>& composition)
 {
 	_scene->reset(composition, _view->width());
 	_view->horizontalScrollBar()->setValue(_view->horizontalScrollBar()->minimum());
@@ -323,7 +323,7 @@ size_t CompositionWidget::startOffset() const
 	return _scene->startOffset();
 }
 
-void CompositionWidget::updateSelectedSequence(const std::shared_ptr<aulos::SequenceData>& sequence)
+void CompositionWidget::updateSelectedSequence(const std::shared_ptr<seir::synth::SequenceData>& sequence)
 {
 	_scene->updateSelectedSequence(sequence);
 }

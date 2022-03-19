@@ -12,7 +12,7 @@
 
 class QStaticText;
 
-namespace aulos
+namespace seir::synth
 {
 	struct CompositionData;
 	struct PartData;
@@ -38,12 +38,12 @@ public:
 	~CompositionScene() override;
 
 	void addTrack(const void* voiceId, const void* trackId);
-	void appendPart(const std::shared_ptr<aulos::PartData>&);
-	void insertFragment(const void* voiceId, const void* trackId, size_t offset, const std::shared_ptr<aulos::SequenceData>&);
+	void appendPart(const std::shared_ptr<seir::synth::PartData>&);
+	void insertFragment(const void* voiceId, const void* trackId, size_t offset, const std::shared_ptr<seir::synth::SequenceData>&);
 	void removeFragment(const void* trackId, size_t offset);
 	void removeTrack(const void* voiceId, const void* trackId);
 	void removeVoice(const void* voiceId);
-	void reset(const std::shared_ptr<aulos::CompositionData>&, size_t viewWidth);
+	void reset(const std::shared_ptr<seir::synth::CompositionData>&, size_t viewWidth);
 	void selectFragment(const void* voiceId, const void* trackId, const void* sequenceId, size_t offset);
 	float selectedTrackWeight() const;
 	QRectF setCurrentStep(double step);
@@ -51,7 +51,7 @@ public:
 	void showCursor(bool);
 	size_t startOffset() const;
 	void updateLoop();
-	void updateSelectedSequence(const std::shared_ptr<aulos::SequenceData>&);
+	void updateSelectedSequence(const std::shared_ptr<seir::synth::SequenceData>&);
 	void updateVoice(const void* id, const std::string& name);
 
 signals:
@@ -71,18 +71,18 @@ private:
 	struct Track;
 	using TrackIterator = std::vector<std::unique_ptr<Track>>::iterator;
 
-	FragmentItem* addFragmentItem(const void* voiceId, TrackIterator, size_t offset, const std::shared_ptr<aulos::SequenceData>&);
+	FragmentItem* addFragmentItem(const void* voiceId, TrackIterator, size_t offset, const std::shared_ptr<seir::synth::SequenceData>&);
 	TrackIterator addTrackItem(const void* voiceId, const void* trackId, size_t trackIndex, bool isFirstTrack);
 	VoiceItem* addVoiceItem(const void* id, const QString& name, size_t trackCount);
 	void highlightSequence(const void* trackId, const void* sequenceId, size_t offset);
 	void highlightVoice(const void* id, bool highlight);
-	std::vector<FragmentSound> makeSequenceTexts(const aulos::SequenceData&) const;
+	std::vector<FragmentSound> makeSequenceTexts(const seir::synth::SequenceData&) const;
 	qreal requiredVoiceColumnWidth() const;
 	void setVoiceColumnWidth(qreal);
 	void updateSceneRect(size_t compositionLength);
 
 private:
-	std::shared_ptr<aulos::CompositionData> _composition;
+	std::shared_ptr<seir::synth::CompositionData> _composition;
 	std::vector<std::unique_ptr<VoiceItem>> _voices;
 	std::unique_ptr<AddVoiceItem> _addVoiceItem;
 	std::unique_ptr<CompositionItem> _compositionItem;

@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <aulos/data.hpp>
+#include <seir_synth/data.hpp>
 
 #include <QGraphicsObject>
 
@@ -15,11 +15,11 @@ class SoundItem final : public QGraphicsObject
 	Q_OBJECT
 
 public:
-	SoundItem(size_t offset, aulos::Note, QGraphicsItem* parent = nullptr);
+	SoundItem(size_t offset, seir::synth::Note, QGraphicsItem* parent = nullptr);
 
-	aulos::Note note() const noexcept { return _note; }
+	seir::synth::Note note() const noexcept { return _note; }
 	size_t offset() const noexcept { return _offset; }
-	void setNote(aulos::Note);
+	void setNote(seir::synth::Note);
 
 signals:
 	void playRequested();
@@ -32,5 +32,5 @@ private:
 
 private:
 	const size_t _offset;
-	aulos::Note _note;
+	seir::synth::Note _note;
 };

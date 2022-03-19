@@ -4,8 +4,8 @@
 
 #include "voice_widget.hpp"
 
-#include <aulos/data.hpp>
-#include <aulos/src/shaper.hpp>
+#include <seir_synth/data.hpp>
+#include <seir_synth/shaper.hpp>
 
 #include <cassert>
 #include <optional>
@@ -44,7 +44,7 @@ public:
 		setMinimumWidth(kMinWidth);
 	}
 
-	void setShape(aulos::WaveShape shape, float parameter)
+	void setShape(seir::synth::WaveShape shape, float parameter)
 	{
 		_shape = shape;
 		_parameter = parameter;
@@ -76,11 +76,11 @@ protected:
 			painter.setPen(Qt::red);
 			switch (_shape)
 			{
-			case aulos::WaveShape::Linear: drawShape<aulos::LinearShaper>(painter, x, firstY, deltaX, deltaY, endX, lastY, _parameter); break;
-			case aulos::WaveShape::Quadratic: drawShape<aulos::QuadraticShaper>(painter, x, firstY, deltaX, deltaY, endX, lastY, _parameter); break;
-			case aulos::WaveShape::Cubic: drawShape<aulos::CubicShaper>(painter, x, firstY, deltaX, deltaY, endX, lastY, _parameter); break;
-			case aulos::WaveShape::Quintic: drawShape<aulos::QuinticShaper>(painter, x, firstY, deltaX, deltaY, endX, lastY, _parameter); break;
-			case aulos::WaveShape::Cosine: drawShape<aulos::CosineShaper>(painter, x, firstY, deltaX, deltaY, endX, lastY, _parameter); break;
+			case seir::synth::WaveShape::Linear: drawShape<seir::synth::LinearShaper>(painter, x, firstY, deltaX, deltaY, endX, lastY, _parameter); break;
+			case seir::synth::WaveShape::Quadratic: drawShape<seir::synth::QuadraticShaper>(painter, x, firstY, deltaX, deltaY, endX, lastY, _parameter); break;
+			case seir::synth::WaveShape::Cubic: drawShape<seir::synth::CubicShaper>(painter, x, firstY, deltaX, deltaY, endX, lastY, _parameter); break;
+			case seir::synth::WaveShape::Quintic: drawShape<seir::synth::QuinticShaper>(painter, x, firstY, deltaX, deltaY, endX, lastY, _parameter); break;
+			case seir::synth::WaveShape::Cosine: drawShape<seir::synth::CosineShaper>(painter, x, firstY, deltaX, deltaY, endX, lastY, _parameter); break;
 			}
 		}
 	}
@@ -122,7 +122,7 @@ private:
 	}
 
 private:
-	aulos::WaveShape _shape = aulos::WaveShape::Linear;
+	seir::synth::WaveShape _shape = seir::synth::WaveShape::Linear;
 	float _parameter = 0.f;
 };
 
@@ -153,8 +153,8 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 
 	_polyphonyCombo = new QComboBox{ trackGroup };
 	trackLayout->addRow(tr("Polyphony:"), _polyphonyCombo);
-	_polyphonyCombo->addItem(tr("Chord"), static_cast<int>(aulos::Polyphony::Chord));
-	_polyphonyCombo->addItem(tr("Full"), static_cast<int>(aulos::Polyphony::Full));
+	_polyphonyCombo->addItem(tr("Chord"), static_cast<int>(seir::synth::Polyphony::Chord));
+	_polyphonyCombo->addItem(tr("Full"), static_cast<int>(seir::synth::Polyphony::Full));
 	connect(_polyphonyCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &VoiceWidget::updateTrackProperties);
 
 	_headDelaySpin = new QDoubleSpinBox{ trackGroup };
@@ -192,11 +192,11 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 
 	_waveShapeCombo = new QComboBox{ waveShapeGroup };
 	waveShapeLayout->addWidget(_waveShapeCombo, 0, 0);
-	_waveShapeCombo->addItem(tr("Linear"), static_cast<int>(aulos::WaveShape::Linear));
-	_waveShapeCombo->addItem(tr("Quadratic"), static_cast<int>(aulos::WaveShape::Quadratic));
-	_waveShapeCombo->addItem(tr("Cubic"), static_cast<int>(aulos::WaveShape::Cubic));
-	_waveShapeCombo->addItem(tr("Quintic"), static_cast<int>(aulos::WaveShape::Quintic));
-	_waveShapeCombo->addItem(tr("Cosine"), static_cast<int>(aulos::WaveShape::Cosine));
+	_waveShapeCombo->addItem(tr("Linear"), static_cast<int>(seir::synth::WaveShape::Linear));
+	_waveShapeCombo->addItem(tr("Quadratic"), static_cast<int>(seir::synth::WaveShape::Quadratic));
+	_waveShapeCombo->addItem(tr("Cubic"), static_cast<int>(seir::synth::WaveShape::Cubic));
+	_waveShapeCombo->addItem(tr("Quintic"), static_cast<int>(seir::synth::WaveShape::Quintic));
+	_waveShapeCombo->addItem(tr("Cosine"), static_cast<int>(seir::synth::WaveShape::Cosine));
 	connect(_waveShapeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), [this] {
 		updateShapeParameter();
 		updateWaveImage();
@@ -232,7 +232,7 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 
 			change._duration = new QSpinBox{ group };
 			change._duration->setEnabled(false);
-			change._duration->setRange(0, aulos::EnvelopeChange::kMaxDuration.count());
+			change._duration->setRange(0, seir::synth::EnvelopeChange::kMaxDuration.count());
 			change._duration->setSingleStep(1);
 			change._duration->setSuffix(tr("ms"));
 			change._duration->setValue(0);
@@ -297,9 +297,9 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 
 VoiceWidget::~VoiceWidget() = default;
 
-void VoiceWidget::setParameters(const std::shared_ptr<aulos::VoiceData>& voice, const std::shared_ptr<aulos::TrackProperties>& trackProperties)
+void VoiceWidget::setParameters(const std::shared_ptr<seir::synth::VoiceData>& voice, const std::shared_ptr<seir::synth::TrackProperties>& trackProperties)
 {
-	const auto loadEnvelope = [](std::vector<EnvelopeChange>& dst, const aulos::Envelope& src) {
+	const auto loadEnvelope = [](std::vector<EnvelopeChange>& dst, const seir::synth::Envelope& src) {
 		for (auto i = dst.rbegin(); i != dst.rend(); ++i)
 		{
 			i->_check->setChecked(false);
@@ -320,7 +320,7 @@ void VoiceWidget::setParameters(const std::shared_ptr<aulos::VoiceData>& voice, 
 
 	_trackGroup->setEnabled(static_cast<bool>(trackProperties));
 
-	aulos::TrackProperties defaultTrackProperties;
+	seir::synth::TrackProperties defaultTrackProperties;
 	const auto usedTrackProperties = trackProperties ? trackProperties.get() : &defaultTrackProperties;
 	_trackWeightSpin->setValue(trackProperties ? trackProperties->_weight : 0);
 	_polyphonyCombo->setCurrentIndex(_polyphonyCombo->findData(static_cast<int>(usedTrackProperties->_polyphony)));
@@ -329,7 +329,7 @@ void VoiceWidget::setParameters(const std::shared_ptr<aulos::VoiceData>& voice, 
 	_sourceWidthSpin->setValue(usedTrackProperties->_sourceWidth);
 	_sourceOffsetSpin->setValue(usedTrackProperties->_sourceOffset);
 
-	aulos::VoiceData defaultVoice;
+	seir::synth::VoiceData defaultVoice;
 	const auto usedVoice = voice ? voice.get() : &defaultVoice;
 	_waveShapeCombo->setCurrentIndex(_waveShapeCombo->findData(static_cast<int>(usedVoice->_waveShape)));
 	updateShapeParameter();
@@ -354,20 +354,20 @@ void VoiceWidget::setParameters(const std::shared_ptr<aulos::VoiceData>& voice, 
 
 void VoiceWidget::updateShapeParameter()
 {
-	if (const auto waveShape = static_cast<aulos::WaveShape>(_waveShapeCombo->currentData().toInt()); waveShape == aulos::WaveShape::Quadratic)
+	if (const auto waveShape = static_cast<seir::synth::WaveShape>(_waveShapeCombo->currentData().toInt()); waveShape == seir::synth::WaveShape::Quadratic)
 	{
 		_waveShapeParameterSpin->setEnabled(true);
-		_waveShapeParameterSpin->setRange(aulos::QuadraticShaper::kMinShape, aulos::QuadraticShaper::kMaxShape);
+		_waveShapeParameterSpin->setRange(seir::synth::QuadraticShaper::kMinShape, seir::synth::QuadraticShaper::kMaxShape);
 	}
-	else if (waveShape == aulos::WaveShape::Cubic)
+	else if (waveShape == seir::synth::WaveShape::Cubic)
 	{
 		_waveShapeParameterSpin->setEnabled(true);
-		_waveShapeParameterSpin->setRange(aulos::CubicShaper::kMinShape, aulos::CubicShaper::kMaxShape);
+		_waveShapeParameterSpin->setRange(seir::synth::CubicShaper::kMinShape, seir::synth::CubicShaper::kMaxShape);
 	}
-	else if (waveShape == aulos::WaveShape::Quintic)
+	else if (waveShape == seir::synth::WaveShape::Quintic)
 	{
 		_waveShapeParameterSpin->setEnabled(true);
-		_waveShapeParameterSpin->setRange(aulos::QuinticShaper::kMinShape, aulos::QuinticShaper::kMaxShape);
+		_waveShapeParameterSpin->setRange(seir::synth::QuinticShaper::kMinShape, seir::synth::QuinticShaper::kMaxShape);
 	}
 	else
 	{
@@ -381,7 +381,7 @@ void VoiceWidget::updateTrackProperties()
 	if (!_trackProperties)
 		return;
 	_trackProperties->_weight = _trackWeightSpin->value();
-	_trackProperties->_polyphony = static_cast<aulos::Polyphony>(_polyphonyCombo->currentData().toInt());
+	_trackProperties->_polyphony = static_cast<seir::synth::Polyphony>(_polyphonyCombo->currentData().toInt());
 	_trackProperties->_headDelay = static_cast<float>(_headDelaySpin->value());
 	_trackProperties->_sourceDistance = static_cast<float>(_sourceDistanceSpin->value());
 	_trackProperties->_sourceWidth = _sourceWidthSpin->value();
@@ -391,7 +391,7 @@ void VoiceWidget::updateTrackProperties()
 
 void VoiceWidget::updateVoice()
 {
-	const auto storeEnvelope = [](aulos::Envelope& dst, const std::vector<EnvelopeChange>& src) {
+	const auto storeEnvelope = [](seir::synth::Envelope& dst, const std::vector<EnvelopeChange>& src) {
 		dst._changes.clear();
 		for (auto i = src.begin(); i != src.end() && i->_check->isChecked(); ++i)
 			dst._changes.emplace_back(std::chrono::milliseconds{ i->_duration->value() }, static_cast<float>(i->_value->value()));
@@ -399,7 +399,7 @@ void VoiceWidget::updateVoice()
 
 	if (!_voice)
 		return;
-	_voice->_waveShape = static_cast<aulos::WaveShape>(_waveShapeCombo->currentData().toInt());
+	_voice->_waveShape = static_cast<seir::synth::WaveShape>(_waveShapeCombo->currentData().toInt());
 	_voice->_waveShapeParameter = static_cast<float>(_waveShapeParameterSpin->value());
 	storeEnvelope(_voice->_amplitudeEnvelope, _amplitudeEnvelope);
 	_voice->_tremolo._frequency = static_cast<float>(_tremoloFrequencySpin->value());
@@ -418,5 +418,5 @@ void VoiceWidget::updateVoice()
 
 void VoiceWidget::updateWaveImage()
 {
-	_waveShapeWidget->setShape(static_cast<aulos::WaveShape>(_waveShapeCombo->currentData().toInt()), static_cast<float>(_waveShapeParameterSpin->value()));
+	_waveShapeWidget->setShape(static_cast<seir::synth::WaveShape>(_waveShapeCombo->currentData().toInt()), static_cast<float>(_waveShapeParameterSpin->value()));
 }

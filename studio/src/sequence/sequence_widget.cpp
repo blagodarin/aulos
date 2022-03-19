@@ -24,11 +24,11 @@ SequenceWidget::SequenceWidget(QWidget* parent)
 	_view->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 	layout->addWidget(_view, 0, 0);
 
-	connect(_scene, &SequenceScene::insertingSound, [this](size_t offset, aulos::Note note) {
+	connect(_scene, &SequenceScene::insertingSound, [this](size_t offset, seir::synth::Note note) {
 		if (!_sequenceData)
 			return;
 		size_t position = 0;
-		const auto first = std::find_if(_sequenceData->_sounds.begin(), _sequenceData->_sounds.end(), [offset, &position](const aulos::Sound& sound) {
+		const auto first = std::find_if(_sequenceData->_sounds.begin(), _sequenceData->_sounds.end(), [offset, &position](const seir::synth::Sound& sound) {
 			position += sound._delay;
 			return position >= offset;
 		});
@@ -49,8 +49,8 @@ SequenceWidget::SequenceWidget(QWidget* parent)
 		else
 		{
 			assert(position == offset);
-			const auto end = std::find_if(std::next(first), _sequenceData->_sounds.end(), [](const aulos::Sound& sound) { return sound._delay > 0; });
-			const auto before = std::find_if(first, end, [note](const aulos::Sound& sound) { return sound._note <= note; });
+			const auto end = std::find_if(std::next(first), _sequenceData->_sounds.end(), [](const seir::synth::Sound& sound) { return sound._delay > 0; });
+			const auto before = std::find_if(first, end, [note](const seir::synth::Sound& sound) { return sound._note <= note; });
 			assert(before == end || before->_note != note);
 			const auto delay = before == first ? std::exchange(first->_delay, 0) : 0;
 			_sequenceData->_sounds.emplace(before, delay, note);
@@ -59,10 +59,10 @@ SequenceWidget::SequenceWidget(QWidget* parent)
 		emit sequenceChanged();
 	});
 	connect(_scene, &SequenceScene::noteActivated, this, &SequenceWidget::noteActivated);
-	connect(_scene, &SequenceScene::removingSound, [this](size_t offset, aulos::Note note) {
+	connect(_scene, &SequenceScene::removingSound, [this](size_t offset, seir::synth::Note note) {
 		if (!_sequenceData)
 			return;
-		const auto sound = std::find_if(_sequenceData->_sounds.begin(), _sequenceData->_sounds.end(), [offset, note, position = size_t{}](const aulos::Sound& sound) mutable {
+		const auto sound = std::find_if(_sequenceData->_sounds.begin(), _sequenceData->_sounds.end(), [offset, note, position = size_t{}](const seir::synth::Sound& sound) mutable {
 			position += sound._delay;
 			assert(position <= offset);
 			return position == offset && sound._note == note;
@@ -81,10 +81,10 @@ void SequenceWidget::setInteractive(bool interactive)
 	_view->setInteractive(interactive);
 }
 
-void SequenceWidget::setSequence(const std::shared_ptr<aulos::SequenceData>& sequence)
+void SequenceWidget::setSequence(const std::shared_ptr<seir::synth::SequenceData>& sequence)
 {
 	_sequenceData = sequence;
-	const auto verticalPosition = _scene->setSequence(sequence ? *sequence : aulos::SequenceData{}, _view->size());
+	const auto verticalPosition = _scene->setSequence(sequence ? *sequence : seir::synth::SequenceData{}, _view->size());
 	const auto horizontalScrollBar = _view->horizontalScrollBar();
 	horizontalScrollBar->setValue(horizontalScrollBar->minimum());
 	const auto verticalScrollBar = _view->verticalScrollBar();

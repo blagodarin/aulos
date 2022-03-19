@@ -14,7 +14,7 @@
 #include "track_item.hpp"
 #include "voice_item.hpp"
 
-#include <aulos/data.hpp>
+#include <seir_synth/data.hpp>
 
 #include <cassert>
 #include <numeric>
@@ -44,7 +44,7 @@ namespace
 		bool _extra = false;
 	};
 
-	const std::array<NoteInfo, aulos::kNotesPerOctave> kNoteInfo{
+	const std::array<NoteInfo, seir::synth::kNotesPerOctave> kNoteInfo{
 		NoteInfo{ 0, false }, // C
 		NoteInfo{ 0, true },  // C#
 		NoteInfo{ 1, false }, // D
@@ -184,7 +184,7 @@ void CompositionScene::addTrack(const void* voiceId, const void* trackId)
 	updateSceneRect(_timelineItem->compositionLength());
 }
 
-void CompositionScene::appendPart(const std::shared_ptr<aulos::PartData>& partData)
+void CompositionScene::appendPart(const std::shared_ptr<seir::synth::PartData>& partData)
 {
 	assert(partData->_tracks.size() == 1);
 	assert(partData->_tracks.front()->_fragments.empty());
@@ -215,7 +215,7 @@ void CompositionScene::appendPart(const std::shared_ptr<aulos::PartData>& partDa
 	_loopItem->setPos(_composition->_loopOffset * kStepWidth, _tracks.size() * kTrackHeight + kLoopItemOffset);
 }
 
-void CompositionScene::insertFragment(const void* voiceId, const void* trackId, size_t offset, const std::shared_ptr<aulos::SequenceData>& sequence)
+void CompositionScene::insertFragment(const void* voiceId, const void* trackId, size_t offset, const std::shared_ptr<seir::synth::SequenceData>& sequence)
 {
 	const auto trackIt = std::find_if(_tracks.begin(), _tracks.end(), [trackId](const auto& trackPtr) { return trackPtr->_background->trackId() == trackId; });
 	assert(trackIt != _tracks.end());
@@ -295,7 +295,7 @@ void CompositionScene::removeVoice(const void* voiceId)
 	}
 }
 
-void CompositionScene::reset(const std::shared_ptr<aulos::CompositionData>& composition, size_t viewWidth)
+void CompositionScene::reset(const std::shared_ptr<seir::synth::CompositionData>& composition, size_t viewWidth)
 {
 	if (_composition)
 	{
@@ -421,7 +421,7 @@ void CompositionScene::updateLoop()
 	_loopItem->setVisible(_composition->_loopLength > 0);
 }
 
-void CompositionScene::updateSelectedSequence(const std::shared_ptr<aulos::SequenceData>& sequence)
+void CompositionScene::updateSelectedSequence(const std::shared_ptr<seir::synth::SequenceData>& sequence)
 {
 	assert(_selectedTrackId);
 	const auto trackIt = std::find_if(_tracks.begin(), _tracks.end(), [this](const auto& trackPtr) { return trackPtr->_background->trackId() == _selectedTrackId; });
@@ -454,7 +454,7 @@ void CompositionScene::setCompositionLength(size_t length)
 	_rightBoundItem->setPos(_timelineItem->pos() + _timelineItem->boundingRect().topRight());
 }
 
-FragmentItem* CompositionScene::addFragmentItem(const void* voiceId, TrackIterator trackIt, size_t offset, const std::shared_ptr<aulos::SequenceData>& sequence)
+FragmentItem* CompositionScene::addFragmentItem(const void* voiceId, TrackIterator trackIt, size_t offset, const std::shared_ptr<seir::synth::SequenceData>& sequence)
 {
 	const auto trackIndex = (*trackIt)->_background->trackIndex();
 	const auto item = new FragmentItem{ trackIndex, offset, sequence.get(), _compositionItem.get() };
@@ -529,7 +529,7 @@ void CompositionScene::highlightVoice(const void* id, bool highlight)
 	(*voiceIt)->setZValue(highlight ? kHighlightZValue : kDefaultZValue);
 }
 
-std::vector<FragmentSound> CompositionScene::makeSequenceTexts(const aulos::SequenceData& sequence) const
+std::vector<FragmentSound> CompositionScene::makeSequenceTexts(const seir::synth::SequenceData& sequence) const
 {
 	std::vector<FragmentSound> result;
 	result.reserve(sequence._sounds.size()); // A reasonable guess.

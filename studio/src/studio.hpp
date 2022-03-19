@@ -2,8 +2,8 @@
 // Copyright (C) Sergei Blagodarin.
 // SPDX-License-Identifier: Apache-2.0
 
-#include <aulos/data.hpp>
-#include <aulos/format.hpp>
+#include <seir_synth/data.hpp>
+#include <seir_synth/format.hpp>
 
 #include <memory>
 #include <optional>
@@ -37,11 +37,11 @@ private:
 	void exportComposition();
 	bool maybeSaveComposition();
 	bool openComposition(const QString& path);
-	void playNote(aulos::Note);
+	void playNote(seir::synth::Note);
 	bool saveComposition(const QString& path) const;
 	bool saveCompositionAs();
 	void saveRecentFiles() const;
-	aulos::AudioFormat selectedFormat() const;
+	seir::synth::AudioFormat selectedFormat() const;
 	void setRecentFile(const QString& path);
 	void updateStatus();
 
@@ -55,7 +55,7 @@ private:
 		Playing,
 	};
 
-	std::shared_ptr<aulos::CompositionData> _composition;
+	std::shared_ptr<seir::synth::CompositionData> _composition;
 	std::unique_ptr<InfoEditor> _infoEditor;
 
 	size_t _startStep = 0;
@@ -65,7 +65,7 @@ private:
 	QString _compositionFileName;
 
 	Mode _mode = Mode::Editing;
-	std::optional<aulos::Note> _autoRepeatNote;
+	std::optional<seir::synth::Note> _autoRepeatNote;
 	bool _hasComposition = false;
 	bool _changed = false;
 

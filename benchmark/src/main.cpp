@@ -2,9 +2,9 @@
 // Copyright (C) Sergei Blagodarin.
 // SPDX-License-Identifier: Apache-2.0
 
-#include <aulos/composition.hpp>
-#include <aulos/format.hpp>
-#include <aulos/renderer.hpp>
+#include <seir_synth/composition.hpp>
+#include <seir_synth/format.hpp>
+#include <seir_synth/renderer.hpp>
 
 #include <array>
 #include <cassert>
@@ -119,15 +119,15 @@ int main(int argc, char** argv)
 	if (!data)
 		return 1;
 
-	std::unique_ptr<aulos::Composition> composition;
+	std::unique_ptr<seir::synth::Composition> composition;
 	const auto parsing = ::measure<10'000>(
-		[&composition, source = data.get()] { composition = aulos::Composition::create(source); }, // Clang 9 is unable to capture 'data' by reference.
+		[&composition, source = data.get()] { composition = seir::synth::Composition::create(source); }, // Clang 9 is unable to capture 'data' by reference.
 		[&composition] { composition.reset(); });
 
-	static constexpr aulos::AudioFormat format{ 48'000, aulos::ChannelLayout::Stereo };
-	std::unique_ptr<aulos::Renderer> renderer;
+	static constexpr seir::synth::AudioFormat format{ 48'000, seir::synth::ChannelLayout::Stereo };
+	std::unique_ptr<seir::synth::Renderer> renderer;
 	const auto preparation = ::measure<10'000>(
-		[&renderer, &composition] { renderer = aulos::Renderer::create(*composition, format); },
+		[&renderer, &composition] { renderer = seir::synth::Renderer::create(*composition, format); },
 		[&renderer] { renderer.reset(); });
 
 	static constexpr size_t bufferFrames = format.samplingRate();

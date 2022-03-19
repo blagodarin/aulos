@@ -11,7 +11,7 @@
 
 class QGraphicsView;
 
-namespace aulos
+namespace seir::synth
 {
 	struct CompositionData;
 	struct SequenceData;
@@ -30,17 +30,17 @@ public:
 	explicit CompositionWidget(QWidget* parent);
 
 	float selectedTrackWeight() const;
-	void setComposition(const std::shared_ptr<aulos::CompositionData>&);
+	void setComposition(const std::shared_ptr<seir::synth::CompositionData>&);
 	void setInteractive(bool);
 	void setPlaybackOffset(double);
 	void setSpeed(unsigned speed);
 	void showCursor(bool);
 	size_t startOffset() const;
-	void updateSelectedSequence(const std::shared_ptr<aulos::SequenceData>&);
+	void updateSelectedSequence(const std::shared_ptr<seir::synth::SequenceData>&);
 
 signals:
 	void compositionChanged();
-	void selectionChanged(const std::shared_ptr<aulos::VoiceData>&, const std::shared_ptr<aulos::TrackData>&, const std::shared_ptr<aulos::SequenceData>&);
+	void selectionChanged(const std::shared_ptr<seir::synth::VoiceData>&, const std::shared_ptr<seir::synth::TrackData>&, const std::shared_ptr<seir::synth::SequenceData>&);
 
 private:
 	bool editVoiceName(const void* id, std::string&);
@@ -49,5 +49,5 @@ private:
 	std::unique_ptr<VoiceEditor> _voiceEditor;
 	CompositionScene* const _scene;
 	QGraphicsView* _view = nullptr;
-	std::shared_ptr<aulos::CompositionData> _composition;
+	std::shared_ptr<seir::synth::CompositionData> _composition;
 };

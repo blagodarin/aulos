@@ -18,9 +18,9 @@ SequenceScene::SequenceScene(QObject* parent)
 	: QGraphicsScene{ parent }
 {
 	setBackgroundBrush(kBackgroundColor);
-	for (size_t i = 0; i < aulos::kNoteCount; ++i)
+	for (size_t i = 0; i < seir::synth::kNoteCount; ++i)
 	{
-		const auto note = static_cast<aulos::Note>(i);
+		const auto note = static_cast<seir::synth::Note>(i);
 		const auto keyItem = new KeyItem{ note };
 		addItem(keyItem);
 		connect(keyItem, &KeyItem::activated, [this, note] { emit noteActivated(note); });
@@ -40,13 +40,13 @@ SequenceScene::~SequenceScene()
 	removeItem(_pianorollItem.get());
 }
 
-void SequenceScene::insertSound(size_t offset, aulos::Note note)
+void SequenceScene::insertSound(size_t offset, seir::synth::Note note)
 {
 	insertNewSound(offset, note);
 	emit noteActivated(note);
 }
 
-void SequenceScene::removeSound(size_t offset, aulos::Note note)
+void SequenceScene::removeSound(size_t offset, seir::synth::Note note)
 {
 	const auto range = _soundItems.equal_range(offset);
 	assert(range.first != range.second);
@@ -57,7 +57,7 @@ void SequenceScene::removeSound(size_t offset, aulos::Note note)
 	_soundItems.erase(item);
 }
 
-qreal SequenceScene::setSequence(const aulos::SequenceData& sequence, const QSize& viewSize)
+qreal SequenceScene::setSequence(const seir::synth::SequenceData& sequence, const QSize& viewSize)
 {
 	removeSoundItems();
 	size_t offset = 0;
@@ -75,7 +75,7 @@ qreal SequenceScene::setSequence(const aulos::SequenceData& sequence, const QSiz
 	return (rect.center().y() - viewSize.height() / 2) / heightDifference;
 }
 
-void SequenceScene::insertNewSound(size_t offset, aulos::Note note)
+void SequenceScene::insertNewSound(size_t offset, seir::synth::Note note)
 {
 	const auto soundItem = _soundItems.emplace(offset, std::make_unique<SoundItem>(offset, note, _pianorollItem.get()))->second.get();
 	connect(soundItem, &SoundItem::playRequested, [this, soundItem] { emit noteActivated(soundItem->note()); });

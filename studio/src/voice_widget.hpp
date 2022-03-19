@@ -14,7 +14,7 @@ class QDoubleSpinBox;
 class QGroupBox;
 class QSpinBox;
 
-namespace aulos
+namespace seir::synth
 {
 	struct TrackProperties;
 	struct VoiceData;
@@ -30,8 +30,8 @@ public:
 	explicit VoiceWidget(QWidget* parent);
 	~VoiceWidget() override;
 
-	void setParameters(const std::shared_ptr<aulos::VoiceData>&, const std::shared_ptr<aulos::TrackProperties>&);
-	std::shared_ptr<aulos::VoiceData> voice() const { return _voice; }
+	void setParameters(const std::shared_ptr<seir::synth::VoiceData>&, const std::shared_ptr<seir::synth::TrackProperties>&);
+	std::shared_ptr<seir::synth::VoiceData> voice() const { return _voice; }
 
 signals:
 	void trackPropertiesChanged();
@@ -68,6 +68,6 @@ private:
 	std::vector<EnvelopeChange> _rectangularityEnvelope;
 	QSpinBox* _rectangularityFrequencySpin = nullptr;
 	QDoubleSpinBox* _rectangularityMagnitudeSpin = nullptr;
-	std::shared_ptr<aulos::VoiceData> _voice;
-	std::shared_ptr<aulos::TrackProperties> _trackProperties;
+	std::shared_ptr<seir::synth::VoiceData> _voice;
+	std::shared_ptr<seir::synth::TrackProperties> _trackProperties;
 };

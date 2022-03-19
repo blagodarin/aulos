@@ -4,13 +4,13 @@
 
 #pragma once
 
-#include <aulos/data.hpp>
+#include <seir_synth/data.hpp>
 
 #include <QWidget>
 
 class QGraphicsView;
 
-namespace aulos
+namespace seir::synth
 {
 	struct SequenceData;
 }
@@ -25,15 +25,15 @@ public:
 	explicit SequenceWidget(QWidget* parent);
 
 	void setInteractive(bool);
-	void setSequence(const std::shared_ptr<aulos::SequenceData>&);
-	std::shared_ptr<aulos::SequenceData> sequence() const { return _sequenceData; }
+	void setSequence(const std::shared_ptr<seir::synth::SequenceData>&);
+	std::shared_ptr<seir::synth::SequenceData> sequence() const { return _sequenceData; }
 
 signals:
-	void noteActivated(aulos::Note);
+	void noteActivated(seir::synth::Note);
 	void sequenceChanged();
 
 private:
 	SequenceScene* const _scene;
 	QGraphicsView* _view = nullptr;
-	std::shared_ptr<aulos::SequenceData> _sequenceData;
+	std::shared_ptr<seir::synth::SequenceData> _sequenceData;
 };

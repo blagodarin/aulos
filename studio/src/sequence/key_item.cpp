@@ -52,7 +52,7 @@ struct KeyItem::NoteInfo
 	KeyStyle _style;
 };
 
-const std::array<KeyItem::NoteInfo, aulos::kNotesPerOctave> KeyItem::kNoteInfo{
+const std::array<KeyItem::NoteInfo, seir::synth::kNotesPerOctave> KeyItem::kNoteInfo{
 	NoteInfo{ QStringLiteral("C%1"), 10.5, 1.5, 0.5, KeyStyle::White },
 	NoteInfo{ QStringLiteral("C#%1"), 10.0, 1.0, 0.0, KeyStyle::Black },
 	NoteInfo{ QStringLiteral("D%1"), 8.5, 2.0, 0.5, KeyStyle::White },
@@ -67,13 +67,13 @@ const std::array<KeyItem::NoteInfo, aulos::kNotesPerOctave> KeyItem::kNoteInfo{
 	NoteInfo{ QStringLiteral("B%1"), 0.0, 1.5, 0.0, KeyStyle::White },
 };
 
-KeyItem::KeyItem(aulos::Note note, QGraphicsItem* parent)
+KeyItem::KeyItem(seir::synth::Note note, QGraphicsItem* parent)
 	: ButtonItem{ Mode::Press, parent }
 	, _octave{ static_cast<size_t>(note) / kNoteInfo.size() }
 	, _noteInfo{ kNoteInfo[static_cast<size_t>(note) % kNoteInfo.size()] }
 	, _styleInfo{ kStyleInfo[static_cast<size_t>(_noteInfo._style)] }
 {
-	setPos(0, ((aulos::kOctaveCount - 1 - _octave) * kNoteInfo.size() + _noteInfo._y) * kNoteHeight);
+	setPos(0, ((seir::synth::kOctaveCount - 1 - _octave) * kNoteInfo.size() + _noteInfo._y) * kNoteHeight);
 	setZValue(_styleInfo._z);
 }
 
