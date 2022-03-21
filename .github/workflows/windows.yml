@@ -28,12 +28,11 @@ jobs:
           cmake -S . -B build `
             -DCMAKE_BUILD_TYPE=${{ matrix.config }} `
             -DCMAKE_PREFIX_PATH=$Env:Qt5_DIR `
-            -DAULOS_BENCHMARKS=${{ matrix.config != 'Debug' && 'ON' || 'OFF' }} `
             -DAULOS_STUDIO_INSTALLER=ON
       - name: Build
         run: |
           cmake --build build
-      - name: Build Studio installer
+      - name: Build installer
         run: |
           cmake --build build --target studio_installer
   vs:
@@ -59,11 +58,10 @@ jobs:
           cmake -S . -B build `
             -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}\install" `
             -DCMAKE_PREFIX_PATH=$Env:Qt5_DIR `
-            -DAULOS_BENCHMARKS=${{ matrix.config != 'Debug' && 'ON' || 'OFF' }} `
             -DAULOS_STUDIO_INSTALLER=ON
       - name: Build
         run: |
           cmake --build build --config ${{ matrix.config }} --parallel -- /nologo
-      - name: Build Studio installer
+      - name: Build installer
         run: |
           cmake --build build --config ${{ matrix.config }} --target studio_installer -- /nologo

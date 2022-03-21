@@ -36,8 +36,7 @@ jobs:
           cmake -S . -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=${{ matrix.config }} \
             -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
-            -DCMAKE_PREFIX_PATH=${Qt5_DIR} \
-            -DAULOS_BENCHMARKS=${{ matrix.config != 'Debug' && 'ON' || 'OFF' }}
+            -DCMAKE_PREFIX_PATH=${Qt5_DIR}
       - name: Build
         run: |
           cmake --build build

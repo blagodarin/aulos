@@ -2,7 +2,7 @@
 # Copyright (C) Sergei Blagodarin.
 # SPDX-License-Identifier: Apache-2.0
 
-source_group("qt" REGULAR_EXPRESSION "qrc_.+\\.cpp\\.rule")
+source_group("gen" REGULAR_EXPRESSION "cmake_pch\\.[ch]xx|qrc_.+\\.cpp\\.rule")
 source_group("res" REGULAR_EXPRESSION "/res/")
 source_group("src" REGULAR_EXPRESSION "/src/")
 source_group("src\\composition" REGULAR_EXPRESSION "/src/composition/")
@@ -55,9 +55,9 @@ add_executable(studio WIN32
 	src/sequence/sound_item.cpp
 	src/sequence/sound_item.hpp
 	)
-target_compile_options(studio PRIVATE ${STUDIO_WARNINGS})
 target_include_directories(studio PRIVATE ${PROJECT_BINARY_DIR}) # For <aulos_config.h>.
 target_link_libraries(studio PRIVATE Seir::audio Seir::synth ${AULOS_QT}::Widgets)
+target_precompile_headers(studio PRIVATE <QtWidgets>)
 set_target_properties(studio PROPERTIES AUTOMOC ON AUTORCC ON AUTOUIC ON)
 if(WIN32)
 	target_sources(studio PRIVATE res/studio.rc)
