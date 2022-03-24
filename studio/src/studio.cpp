@@ -219,11 +219,9 @@ Studio::Studio()
 		_autoRepeatButton->setChecked(false);
 		const auto format = selectedFormat();
 		auto renderer = seir::synth::Renderer::create(*composition, format, _loopPlaybackCheck->isChecked());
-		assert(renderer);
-		renderer->skipFrames(_compositionWidget->startOffset() * format.samplingRate() / _composition->_speed);
 		_player->stop();
 		_mode = Mode::Playing;
-		_player->start(std::move(renderer), 0);
+		_player->start(std::move(renderer), _compositionWidget->startOffset() * format.samplingRate() / _composition->_speed, 0);
 		updateStatus();
 	});
 	_stopAction = playbackMenu->addAction(qApp->style()->standardIcon(QStyle::SP_MediaStop), tr("&Stop"), [this] {
@@ -517,7 +515,7 @@ bool Studio::openComposition(const QString& path)
 void Studio::playNote(seir::synth::Note note)
 {
 	const auto format = selectedFormat();
-	_player->start(seir::synth::Renderer::create(*seir::synth::CompositionData{ _voiceWidget->voice(), note }.pack(), format), format.samplingRate());
+	_player->start(seir::synth::Renderer::create(*seir::synth::CompositionData{ _voiceWidget->voice(), note }.pack(), format), 0, format.samplingRate());
 }
 
 bool Studio::saveComposition(const QString& path) const

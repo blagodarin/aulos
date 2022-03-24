@@ -16,10 +16,12 @@
 class AudioDecoder final : public seir::AudioDecoder
 {
 public:
-	AudioDecoder(std::unique_ptr<seir::synth::Renderer>&& renderer, size_t minBufferFrames)
+	AudioDecoder(std::unique_ptr<seir::synth::Renderer>&& renderer, size_t baseOffset, size_t minBufferFrames)
 		: _renderer{ std::move(renderer) }
+		, _baseOffset{ baseOffset }
 		, _minRemainingFrames{ minBufferFrames }
 	{
+		_renderer->skipFrames(_baseOffset); // TODO: Remove extra skip.
 	}
 
 	auto currentOffset() const noexcept
@@ -57,13 +59,15 @@ private:
 	bool seek(size_t frameOffset) override
 	{
 		_renderer->restart();
-		return _renderer->skipFrames(frameOffset) == frameOffset;
+		const auto offset = _baseOffset + frameOffset;
+		return _renderer->skipFrames(offset) == offset;
 	}
 
 private:
 	mutable std::mutex _mutex;
 	const std::unique_ptr<seir::synth::Renderer> _renderer;
 	const seir::synth::AudioFormat _format = _renderer->format();
+	size_t _baseOffset = 0;
 	size_t _minRemainingFrames = 0;
 };
 
@@ -92,10 +96,10 @@ Player::Player(QObject* parent)
 
 Player::~Player() = default;
 
-void Player::start(std::unique_ptr<seir::synth::Renderer>&& renderer, [[maybe_unused]] size_t minBufferFrames)
+void Player::start(std::unique_ptr<seir::synth::Renderer>&& renderer, size_t baseOffset, size_t minBufferFrames)
 {
 	stop();
-	_decoder = seir::makeShared<AudioDecoder>(std::move(renderer), minBufferFrames);
+	_decoder = seir::makeShared<AudioDecoder>(std::move(renderer), baseOffset, minBufferFrames);
 	emit offsetChanged(static_cast<double>(_decoder->currentOffset()));
 	_backend->play(seir::SharedPtr<seir::AudioDecoder>{ _decoder });
 }

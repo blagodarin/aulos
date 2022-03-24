@@ -28,7 +28,7 @@ public:
 	~Player() override;
 
 	constexpr bool isPlaying() const noexcept { return _state == State::Started; }
-	void start(std::unique_ptr<seir::synth::Renderer>&&, size_t minBufferBytes);
+	void start(std::unique_ptr<seir::synth::Renderer>&&, size_t baseOffset, size_t minBufferBytes);
 	void stop();
 
 signals:
