@@ -131,6 +131,7 @@ struct VoiceWidget::EnvelopeChange
 	QCheckBox* _check = nullptr;
 	QSpinBox* _duration = nullptr;
 	QDoubleSpinBox* _value = nullptr;
+	QRadioButton* _sustain = nullptr;
 };
 
 VoiceWidget::VoiceWidget(QWidget* parent)
@@ -248,6 +249,18 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 			groupLayout->addWidget(change._value, i, 3);
 			connect(change._value, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &VoiceWidget::updateVoice);
 
+			change._sustain = new QRadioButton{ group };
+			change._sustain->setEnabled(false);
+			change._sustain->setAutoExclusive(false);
+			groupLayout->addWidget(change._sustain, i, 4);
+			connect(change._sustain, &QRadioButton::toggled, [this, i, &envelope](bool checked) {
+				if (checked)
+					for (int j = 0; j < 5; ++j)
+						if (j != i)
+							envelope[j]._sustain->setChecked(false);
+				updateVoice();
+			});
+
 			connect(change._check, &QCheckBox::toggled, change._duration, &QWidget::setEnabled);
 			connect(change._check, &QCheckBox::toggled, change._value, &QWidget::setEnabled);
 			if (i > 0)
@@ -255,6 +268,12 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 				const auto previousCheck = envelope[i - 1]._check;
 				connect(previousCheck, &QCheckBox::toggled, change._check, &QWidget::setEnabled);
 				connect(change._check, &QCheckBox::toggled, previousCheck, &QWidget::setDisabled);
+				const auto previousSustain = envelope[i - 1]._sustain;
+				connect(change._check, &QCheckBox::toggled, previousSustain, [previousSustain](bool checked) {
+					if (!checked)
+						previousSustain->setChecked(false);
+					previousSustain->setEnabled(checked);
+				});
 			}
 		}
 	};
@@ -305,12 +324,14 @@ void VoiceWidget::setParameters(const std::shared_ptr<seir::synth::VoiceData>& v
 			i->_check->setChecked(false);
 			i->_duration->setValue(0);
 			i->_value->setValue(0);
+			i->_sustain->setChecked(false);
 		}
 		for (size_t i = 0; i < std::min(dst.size(), src._changes.size()); ++i)
 		{
 			dst[i]._check->setChecked(true);
 			dst[i]._duration->setValue(src._changes[i]._duration.count());
 			dst[i]._value->setValue(src._changes[i]._value);
+			dst[i]._sustain->setChecked(i + 1 == src._sustainIndex);
 		}
 	};
 
@@ -393,8 +414,13 @@ void VoiceWidget::updateVoice()
 {
 	const auto storeEnvelope = [](seir::synth::Envelope& dst, const std::vector<EnvelopeChange>& src) {
 		dst._changes.clear();
+		dst._sustainIndex = 0;
 		for (auto i = src.begin(); i != src.end() && i->_check->isChecked(); ++i)
+		{
 			dst._changes.emplace_back(std::chrono::milliseconds{ i->_duration->value() }, static_cast<float>(i->_value->value()));
+			if (i->_sustain->isChecked())
+				dst._sustainIndex = i - src.begin() + 1;
+		}
 	};
 
 	if (!_voice)

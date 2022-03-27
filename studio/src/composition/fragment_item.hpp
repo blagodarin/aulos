@@ -15,9 +15,10 @@ struct FragmentSound
 {
 	size_t _delay = 0;
 	std::shared_ptr<QStaticText> _text;
+	size_t _sustain = 0;
 
-	FragmentSound(size_t delay, const std::shared_ptr<QStaticText>& text)
-		: _delay{ delay }, _text{ text } {}
+	FragmentSound(size_t delay, const std::shared_ptr<QStaticText>& text, size_t sustain)
+		: _delay{ delay }, _text{ text }, _sustain{ sustain } {}
 };
 
 class FragmentItem final : public QGraphicsObject

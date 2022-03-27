@@ -46,10 +46,13 @@ void FragmentItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWi
 		painter->setFont(font);
 		painter->setTransform(QTransform::fromScale(xScale, 1.0), true);
 		QPointF topLeft{ 1 / xScale, (kTrackHeight - QFontMetricsF{ font }.height()) / 2 };
+		QStaticText sustain{ "-" };
 		for (const auto& sound : _sounds)
 		{
 			topLeft.rx() += sound._delay * kStepWidth / xScale;
 			painter->drawStaticText(topLeft, *sound._text);
+			for (size_t i = 0; i < sound._sustain; ++i)
+				painter->drawStaticText(QPointF(topLeft.x() + (i + 1) * kStepWidth / xScale, topLeft.y()), sustain);
 		}
 		painter->restore();
 	}
@@ -70,7 +73,16 @@ void FragmentItem::setSequence(const std::vector<FragmentSound>& sounds)
 {
 	prepareGeometryChange();
 	_sounds = sounds;
-	_length = sounds.empty() ? 0 : std::accumulate(sounds.begin(), sounds.end(), size_t{ 1 }, [](size_t length, const FragmentSound& sound) { return length + sound._delay; });
+	if (!sounds.empty())
+	{
+		_length = std::accumulate(sounds.begin(), sounds.end(), size_t{ 1 }, [](size_t length, const FragmentSound& sound) { return length + sound._delay; });
+		auto end = std::find_if(sounds.rbegin(), sounds.rend(), [](const FragmentSound& sound) { return sound._delay != 0; });
+		if (end != sounds.rend())
+			++end;
+		_length += std::max_element(sounds.rbegin(), end, [](const FragmentSound& a, const FragmentSound& b) { return a._sustain < b._sustain; })->_sustain;
+	}
+	else
+		_length = 0;
 	_width = _length * kStepWidth;
 	_polygon.clear();
 	_polygon << QPointF{ 0, 0 } << QPointF{ _width, 0 } << QPointF{ _width + kFragmentArrowWidth, kTrackHeight / 2 } << QPointF{ _width, kTrackHeight } << QPointF{ 0, kTrackHeight };

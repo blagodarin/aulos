@@ -42,7 +42,7 @@ SequenceScene::~SequenceScene()
 
 void SequenceScene::insertSound(size_t offset, seir::synth::Note note)
 {
-	insertNewSound(offset, note);
+	insertNewSound(offset, note, 0);
 	emit noteActivated(note);
 }
 
@@ -64,7 +64,7 @@ qreal SequenceScene::setSequence(const seir::synth::SequenceData& sequence, cons
 	for (const auto& sound : sequence._sounds)
 	{
 		offset += sound._delay;
-		insertNewSound(offset, sound._note);
+		insertNewSound(offset, sound._note, sound._sustain);
 	}
 	setPianorollLength(std::max((offset + kPianorollStride) / kPianorollStride * kPianorollStride, viewSize.width() / static_cast<size_t>(kNoteWidth) + 1));
 	const auto heightDifference = std::lround(sceneRect().height() - viewSize.height());
@@ -75,9 +75,20 @@ qreal SequenceScene::setSequence(const seir::synth::SequenceData& sequence, cons
 	return (rect.center().y() - viewSize.height() / 2) / heightDifference;
 }
 
-void SequenceScene::insertNewSound(size_t offset, seir::synth::Note note)
+void SequenceScene::setSoundSustain(size_t offset, seir::synth::Note note, size_t sustain)
 {
-	const auto soundItem = _soundItems.emplace(offset, std::make_unique<SoundItem>(offset, note, _pianorollItem.get()))->second.get();
+	const auto range = _soundItems.equal_range(offset);
+	assert(range.first != range.second);
+	const auto item = std::find_if(range.first, range.second, [note](const auto& sound) { return sound.second->note() == note; });
+	assert(item != range.second);
+	item->second->setSustain(sustain);
+}
+
+void SequenceScene::insertNewSound(size_t offset, seir::synth::Note note, size_t sustain)
+{
+	const auto soundItem = _soundItems.emplace(offset, std::make_unique<SoundItem>(offset, note, sustain, _pianorollItem.get()))->second.get();
+	connect(soundItem, &SoundItem::increaseSustainRequested, [this, offset, note] { emit increasingSustain(offset, note); });
+	connect(soundItem, &SoundItem::decreaseSustainRequested, [this, offset, note] { emit decreasingSustain(offset, note); });
 	connect(soundItem, &SoundItem::playRequested, [this, soundItem] { emit noteActivated(soundItem->note()); });
 	connect(soundItem, &SoundItem::removeRequested, [this, offset, note] { emit removingSound(offset, note); });
 }

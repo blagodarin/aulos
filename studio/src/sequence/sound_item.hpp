@@ -15,13 +15,16 @@ class SoundItem final : public QGraphicsObject
 	Q_OBJECT
 
 public:
-	SoundItem(size_t offset, seir::synth::Note, QGraphicsItem* parent = nullptr);
+	SoundItem(size_t offset, seir::synth::Note, size_t sustain, QGraphicsItem* parent = nullptr);
 
 	seir::synth::Note note() const noexcept { return _note; }
 	size_t offset() const noexcept { return _offset; }
-	void setNote(seir::synth::Note);
+	void setSustain(size_t);
+	size_t sustain() const noexcept { return _sustain; }
 
 signals:
+	void decreaseSustainRequested();
+	void increaseSustainRequested();
 	void playRequested();
 	void removeRequested();
 
@@ -33,4 +36,5 @@ private:
 private:
 	const size_t _offset;
 	seir::synth::Note _note;
+	size_t _sustain = 0;
 };

@@ -16,7 +16,7 @@ option(AULOS_STUDIO_RELEASE "Produce release version of Aulos Studio")
 set(SEIR_AUDIO ON)
 set(SEIR_STATIC_RUNTIME OFF)
 set(SEIR_SYNTH ON)
-FetchContent_Declare(Seir GIT_REPOSITORY https://github.com/blagodarin/seir.git GIT_TAG 9ec775fc343c5a0363e65c316d9e67802d66df4f)
+FetchContent_Declare(Seir GIT_REPOSITORY https://github.com/blagodarin/seir.git GIT_TAG c9c3594b4703370bb9b83f2a25ded9e218acea7b)
 FetchContent_MakeAvailable(Seir)
 seir_defaults()
 

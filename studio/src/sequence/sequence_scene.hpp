@@ -25,14 +25,17 @@ public:
 	void insertSound(size_t offset, seir::synth::Note);
 	void removeSound(size_t offset, seir::synth::Note);
 	qreal setSequence(const seir::synth::SequenceData&, const QSize& viewSize);
+	void setSoundSustain(size_t offset, seir::synth::Note, size_t sustain);
 
 signals:
+	void decreasingSustain(size_t offset, seir::synth::Note);
+	void increasingSustain(size_t offset, seir::synth::Note);
 	void insertingSound(size_t offset, seir::synth::Note);
 	void noteActivated(seir::synth::Note);
 	void removingSound(size_t offset, seir::synth::Note);
 
 private:
-	void insertNewSound(size_t offset, seir::synth::Note);
+	void insertNewSound(size_t offset, seir::synth::Note, size_t sustain);
 	void removeSoundItems();
 	void setPianorollLength(size_t steps);
 

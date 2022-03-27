@@ -9,22 +9,24 @@
 #include <QGraphicsSceneEvent>
 #include <QPainter>
 
-SoundItem::SoundItem(size_t offset, seir::synth::Note note, QGraphicsItem* parent)
+SoundItem::SoundItem(size_t offset, seir::synth::Note note, size_t sustain, QGraphicsItem* parent)
 	: QGraphicsObject{ parent }
 	, _offset{ offset }
+	, _note{ note }
+	, _sustain{ sustain }
 {
-	setNote(note);
+	setPos(_offset * kNoteWidth, (seir::synth::kNoteCount - 1 - static_cast<size_t>(_note)) * kNoteHeight);
 }
 
-void SoundItem::setNote(seir::synth::Note note)
+void SoundItem::setSustain(size_t sustain)
 {
-	_note = note;
-	setPos(_offset * kNoteWidth, (seir::synth::kNoteCount - 1 - static_cast<size_t>(_note)) * kNoteHeight);
+	prepareGeometryChange();
+	_sustain = sustain;
 }
 
 QRectF SoundItem::boundingRect() const
 {
-	return { 0, 0, kNoteWidth, kNoteHeight };
+	return { 0, 0, kNoteWidth * (1 + _sustain), kNoteHeight };
 }
 
 void SoundItem::mousePressEvent(QGraphicsSceneMouseEvent* e)
@@ -32,12 +34,18 @@ void SoundItem::mousePressEvent(QGraphicsSceneMouseEvent* e)
 	if (const auto button = e->button(); button == Qt::LeftButton)
 	{
 		e->accept();
-		emit playRequested();
+		if (e->modifiers() & Qt::ShiftModifier)
+			emit increaseSustainRequested();
+		else
+			emit playRequested();
 	}
 	else if (button == Qt::RightButton)
 	{
 		e->accept();
-		emit removeRequested();
+		if (e->modifiers() & Qt::ShiftModifier)
+			emit decreaseSustainRequested();
+		else
+			emit removeRequested();
 	}
 }
 

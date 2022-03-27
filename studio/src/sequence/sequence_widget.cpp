@@ -24,6 +24,36 @@ SequenceWidget::SequenceWidget(QWidget* parent)
 	_view->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 	layout->addWidget(_view, 0, 0);
 
+	connect(_scene, &SequenceScene::decreasingSustain, [this](size_t offset, seir::synth::Note note) {
+		if (!_sequenceData)
+			return;
+		const auto sound = std::find_if(_sequenceData->_sounds.begin(), _sequenceData->_sounds.end(), [offset, note, position = size_t{}](const seir::synth::Sound& sound) mutable {
+			position += sound._delay;
+			assert(position <= offset);
+			return position == offset && sound._note == note;
+		});
+		assert(sound != _sequenceData->_sounds.end());
+		if (sound->_sustain == 0)
+			return;
+		--sound->_sustain;
+		_scene->setSoundSustain(offset, note, sound->_sustain);
+		emit sequenceChanged();
+	});
+	connect(_scene, &SequenceScene::increasingSustain, [this](size_t offset, seir::synth::Note note) {
+		if (!_sequenceData)
+			return;
+		const auto sound = std::find_if(_sequenceData->_sounds.begin(), _sequenceData->_sounds.end(), [offset, note, position = size_t{}](const seir::synth::Sound& sound) mutable {
+			position += sound._delay;
+			assert(position <= offset);
+			return position == offset && sound._note == note;
+		});
+		assert(sound != _sequenceData->_sounds.end());
+		if (sound->_sustain == seir::synth::kMaxSustain)
+			return;
+		++sound->_sustain;
+		_scene->setSoundSustain(offset, note, sound->_sustain);
+		emit sequenceChanged();
+	});
 	connect(_scene, &SequenceScene::insertingSound, [this](size_t offset, seir::synth::Note note) {
 		if (!_sequenceData)
 			return;
@@ -35,7 +65,7 @@ SequenceWidget::SequenceWidget(QWidget* parent)
 		if (first == _sequenceData->_sounds.end())
 		{
 			assert(position < offset || (position == offset && _sequenceData->_sounds.empty()));
-			_sequenceData->_sounds.emplace_back(offset - position, note);
+			_sequenceData->_sounds.emplace_back(offset - position, note, 0);
 		}
 		else if (position > offset)
 		{
@@ -44,7 +74,7 @@ SequenceWidget::SequenceWidget(QWidget* parent)
 			assert(first->_delay > nextDelay || (first->_delay == nextDelay && first == _sequenceData->_sounds.begin()));
 			const auto delay = first->_delay - nextDelay;
 			first->_delay = nextDelay;
-			_sequenceData->_sounds.emplace(first, delay, note);
+			_sequenceData->_sounds.emplace(first, delay, note, 0);
 		}
 		else
 		{
@@ -53,7 +83,7 @@ SequenceWidget::SequenceWidget(QWidget* parent)
 			const auto before = std::find_if(first, end, [note](const seir::synth::Sound& sound) { return sound._note <= note; });
 			assert(before == end || before->_note != note);
 			const auto delay = before == first ? std::exchange(first->_delay, 0) : 0;
-			_sequenceData->_sounds.emplace(before, delay, note);
+			_sequenceData->_sounds.emplace(before, delay, note, 0);
 		}
 		_scene->insertSound(offset, note);
 		emit sequenceChanged();

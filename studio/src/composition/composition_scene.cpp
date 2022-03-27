@@ -539,9 +539,9 @@ std::vector<FragmentSound> CompositionScene::makeSequenceTexts(const seir::synth
 			continue; // Show only the first (the highest) note at one position.
 		const auto& info = kNoteInfo[static_cast<size_t>(sound._note) % kNoteInfo.size()];
 		const auto octave = static_cast<size_t>(sound._note) / kNoteInfo.size();
-		result.emplace_back(sound._delay, _baseNoteNames[7 * octave + info._base]);
+		result.emplace_back(sound._delay, _baseNoteNames[7 * octave + info._base], sound._sustain);
 		if (info._extra)
-			result.emplace_back(0, _extraNoteNames[info._base]);
+			result.emplace_back(0, _extraNoteNames[info._base], 0);
 	}
 	return result;
 }
