@@ -1,12 +1,13 @@
 author "Johann Sebastian Bach"
-gain 271
+gain 276
+loop 520 1600
 speed 12
 title "Little Fugue"
 
 @voice 1 "Voice"
 amplitude 15 1.00 85 0.75 100 0.25 700 0.00 sustain 2
 asymmetry 0 0.50 150 0.50 0 0.45
-oscillation 0 0.50 200 0.00
+oscillation 0 0.25 250 0.00
 tremolo 5.00 0.25
 wave quintic 0.00
 
