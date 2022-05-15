@@ -12,7 +12,7 @@ oscillation 0 0.10 100 0.00
 oscillation_osc 9.00 0.05
 tremolo 3.00 0.50
 vibrato 3.00 0.02
-wave quadratic 2.00
+wave quadratic2 2.00
 
 @track 1 1
 polyphony full

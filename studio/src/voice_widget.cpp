@@ -44,10 +44,10 @@ public:
 		setMinimumWidth(kMinWidth);
 	}
 
-	void setShape(seir::synth::WaveShape shape, float parameter)
+	void setShape(seir::synth::WaveShape shape, const seir::synth::WaveShapeParameters& parameters)
 	{
 		_shape = shape;
-		_parameter = parameter;
+		_parameters = parameters;
 		update();
 	}
 
@@ -76,11 +76,14 @@ protected:
 			painter.setPen(Qt::red);
 			switch (_shape)
 			{
-			case seir::synth::WaveShape::Linear: drawShape<seir::synth::LinearShaper>(painter, x, firstY, deltaX, deltaY, endX, lastY, _parameter); break;
-			case seir::synth::WaveShape::Quadratic: drawShape<seir::synth::QuadraticShaper>(painter, x, firstY, deltaX, deltaY, endX, lastY, _parameter); break;
-			case seir::synth::WaveShape::Cubic: drawShape<seir::synth::CubicShaper>(painter, x, firstY, deltaX, deltaY, endX, lastY, _parameter); break;
-			case seir::synth::WaveShape::Quintic: drawShape<seir::synth::QuinticShaper>(painter, x, firstY, deltaX, deltaY, endX, lastY, _parameter); break;
-			case seir::synth::WaveShape::Cosine: drawShape<seir::synth::CosineShaper>(painter, x, firstY, deltaX, deltaY, endX, lastY, _parameter); break;
+			case seir::synth::WaveShape::Linear: drawShape<seir::synth::LinearShaper>(painter, x, firstY, deltaX, deltaY, endX, lastY, _parameters); break;
+			case seir::synth::WaveShape::Quadratic: drawShape<seir::synth::QuadraticShaper>(painter, x, firstY, deltaX, deltaY, endX, lastY, _parameters); break;
+			case seir::synth::WaveShape::Quadratic2: drawShape<seir::synth::Quadratic2Shaper>(painter, x, firstY, deltaX, deltaY, endX, lastY, _parameters); break;
+			case seir::synth::WaveShape::Cubic: drawShape<seir::synth::CubicShaper>(painter, x, firstY, deltaX, deltaY, endX, lastY, _parameters); break;
+			case seir::synth::WaveShape::Cubic2: drawShape<seir::synth::Cubic2Shaper>(painter, x, firstY, deltaX, deltaY, endX, lastY, _parameters); break;
+			case seir::synth::WaveShape::Quintic: drawShape<seir::synth::QuinticShaper>(painter, x, firstY, deltaX, deltaY, endX, lastY, _parameters); break;
+			case seir::synth::WaveShape::Cosine: drawShape<seir::synth::CosineShaper>(painter, x, firstY, deltaX, deltaY, endX, lastY, _parameters); break;
+			case seir::synth::WaveShape::CosineCubed: drawShape<seir::synth::CosineCubedShaper>(painter, x, firstY, deltaX, deltaY, endX, lastY, _parameters); break;
 			}
 		}
 	}
@@ -92,7 +95,7 @@ private:
 	static constexpr int kMinWidth = 2 * kUnitSize + 3; // Full period with two starting points plus left and right borders.
 
 	template <typename Shaper>
-	static void drawShape(QPainter& painter, int firstX, int firstY, int deltaX, int deltaY, int endX, std::optional<int>& lastY, float parameter)
+	static void drawShape(QPainter& painter, int firstX, int firstY, int deltaX, int deltaY, int endX, std::optional<int>& lastY, const seir::synth::WaveShapeParameters& parameters)
 	{
 		auto drawPoint = [&painter, &lastY](int x, int y) mutable {
 			if (lastY)
@@ -116,14 +119,14 @@ private:
 			painter.drawPoint(x, y);
 			lastY.emplace(y);
 		};
-		Shaper shaper{ { static_cast<float>(firstY), static_cast<float>(deltaY), static_cast<float>(deltaX), parameter, 0 } };
+		Shaper shaper{ { static_cast<float>(firstY), static_cast<float>(deltaY), static_cast<float>(deltaX), 0, parameters._shape1, parameters._shape2 } };
 		for (int x = firstX; x < endX; ++x)
 			drawPoint(x, std::lround(shaper.advance()));
 	}
 
 private:
 	seir::synth::WaveShape _shape = seir::synth::WaveShape::Linear;
-	float _parameter = 0.f;
+	seir::synth::WaveShapeParameters _parameters;
 };
 
 struct VoiceWidget::EnvelopeChange
@@ -195,28 +198,42 @@ VoiceWidget::VoiceWidget(QWidget* parent)
 	waveShapeLayout->addWidget(_waveShapeCombo, 0, 0);
 	_waveShapeCombo->addItem(tr("Linear"), static_cast<int>(seir::synth::WaveShape::Linear));
 	_waveShapeCombo->addItem(tr("Quadratic"), static_cast<int>(seir::synth::WaveShape::Quadratic));
+	_waveShapeCombo->addItem(tr("Quadratic 2"), static_cast<int>(seir::synth::WaveShape::Quadratic2));
 	_waveShapeCombo->addItem(tr("Cubic"), static_cast<int>(seir::synth::WaveShape::Cubic));
+	_waveShapeCombo->addItem(tr("Cubic 2"), static_cast<int>(seir::synth::WaveShape::Cubic2));
 	_waveShapeCombo->addItem(tr("Quintic"), static_cast<int>(seir::synth::WaveShape::Quintic));
 	_waveShapeCombo->addItem(tr("Cosine"), static_cast<int>(seir::synth::WaveShape::Cosine));
+	_waveShapeCombo->addItem(tr("Cosine cubed"), static_cast<int>(seir::synth::WaveShape::CosineCubed));
 	connect(_waveShapeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), [this] {
 		updateShapeParameter();
 		updateWaveImage();
 		updateVoice();
 	});
 
-	_waveShapeParameterSpin = new QDoubleSpinBox{ waveShapeGroup };
-	waveShapeLayout->addWidget(_waveShapeParameterSpin, 0, 1);
-	_waveShapeParameterSpin->setDecimals(2);
-	_waveShapeParameterSpin->setRange(0.0, 0.0);
-	_waveShapeParameterSpin->setSingleStep(0.01);
-	_waveShapeParameterSpin->setValue(0.0);
-	connect(_waveShapeParameterSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [this] {
+	_waveShapeParameterSpin1 = new QDoubleSpinBox{ waveShapeGroup };
+	waveShapeLayout->addWidget(_waveShapeParameterSpin1, 0, 1);
+	_waveShapeParameterSpin1->setDecimals(2);
+	_waveShapeParameterSpin1->setRange(0.0, 0.0);
+	_waveShapeParameterSpin1->setSingleStep(0.01);
+	_waveShapeParameterSpin1->setValue(0.0);
+	connect(_waveShapeParameterSpin1, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [this] {
+		updateWaveImage();
+		updateVoice();
+	});
+
+	_waveShapeParameterSpin2 = new QDoubleSpinBox{ waveShapeGroup };
+	waveShapeLayout->addWidget(_waveShapeParameterSpin2, 0, 2);
+	_waveShapeParameterSpin2->setDecimals(2);
+	_waveShapeParameterSpin2->setRange(0.0, 0.0);
+	_waveShapeParameterSpin2->setSingleStep(0.01);
+	_waveShapeParameterSpin2->setValue(0.0);
+	connect(_waveShapeParameterSpin2, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [this] {
 		updateWaveImage();
 		updateVoice();
 	});
 
 	_waveShapeWidget = new WaveShapeWidget{ waveShapeGroup };
-	waveShapeLayout->addWidget(_waveShapeWidget, 1, 0, 1, 2);
+	waveShapeLayout->addWidget(_waveShapeWidget, 1, 0, 1, 3);
 
 	const auto createEnvelopeWidgets = [this, widget, layout](const QString& title, std::vector<EnvelopeChange>& envelope, double minimum) {
 		const auto [group, groupLayout] = ::createGroup<QGridLayout>(title, widget);
@@ -354,7 +371,8 @@ void VoiceWidget::setParameters(const std::shared_ptr<seir::synth::VoiceData>& v
 	const auto usedVoice = voice ? voice.get() : &defaultVoice;
 	_waveShapeCombo->setCurrentIndex(_waveShapeCombo->findData(static_cast<int>(usedVoice->_waveShape)));
 	updateShapeParameter();
-	_waveShapeParameterSpin->setValue(usedVoice->_waveShapeParameter);
+	_waveShapeParameterSpin1->setValue(usedVoice->_waveShapeParameters._shape1);
+	_waveShapeParameterSpin2->setValue(usedVoice->_waveShapeParameters._shape2);
 	updateWaveImage();
 	loadEnvelope(_amplitudeEnvelope, usedVoice->_amplitudeEnvelope);
 	_tremoloFrequencySpin->setValue(static_cast<int>(usedVoice->_tremolo._frequency));
@@ -377,23 +395,45 @@ void VoiceWidget::updateShapeParameter()
 {
 	if (const auto waveShape = static_cast<seir::synth::WaveShape>(_waveShapeCombo->currentData().toInt()); waveShape == seir::synth::WaveShape::Quadratic)
 	{
-		_waveShapeParameterSpin->setEnabled(true);
-		_waveShapeParameterSpin->setRange(seir::synth::QuadraticShaper::kMinShape, seir::synth::QuadraticShaper::kMaxShape);
+		_waveShapeParameterSpin1->setEnabled(true);
+		_waveShapeParameterSpin1->setRange(seir::synth::QuadraticShaper::kMinShape, seir::synth::QuadraticShaper::kMaxShape);
+		_waveShapeParameterSpin2->setEnabled(false);
+		_waveShapeParameterSpin2->setRange(0.0, 0.0);
+	}
+	else if (waveShape == seir::synth::WaveShape::Quadratic2)
+	{
+		_waveShapeParameterSpin1->setEnabled(true);
+		_waveShapeParameterSpin1->setRange(seir::synth::Quadratic2Shaper::kMinShape, seir::synth::Quadratic2Shaper::kMaxShape);
+		_waveShapeParameterSpin2->setEnabled(false);
+		_waveShapeParameterSpin2->setRange(0.0, 0.0);
 	}
 	else if (waveShape == seir::synth::WaveShape::Cubic)
 	{
-		_waveShapeParameterSpin->setEnabled(true);
-		_waveShapeParameterSpin->setRange(seir::synth::CubicShaper::kMinShape, seir::synth::CubicShaper::kMaxShape);
+		_waveShapeParameterSpin1->setEnabled(true);
+		_waveShapeParameterSpin1->setRange(seir::synth::CubicShaper::kMinShape, seir::synth::CubicShaper::kMaxShape);
+		_waveShapeParameterSpin2->setEnabled(false);
+		_waveShapeParameterSpin2->setRange(0.0, 0.0);
+	}
+	else if (waveShape == seir::synth::WaveShape::Cubic2)
+	{
+		_waveShapeParameterSpin1->setEnabled(true);
+		_waveShapeParameterSpin1->setRange(seir::synth::Cubic2Shaper::kMinShape, seir::synth::Cubic2Shaper::kMaxShape);
+		_waveShapeParameterSpin2->setEnabled(true);
+		_waveShapeParameterSpin2->setRange(seir::synth::Cubic2Shaper::kMinShape, seir::synth::Cubic2Shaper::kMaxShape);
 	}
 	else if (waveShape == seir::synth::WaveShape::Quintic)
 	{
-		_waveShapeParameterSpin->setEnabled(true);
-		_waveShapeParameterSpin->setRange(seir::synth::QuinticShaper::kMinShape, seir::synth::QuinticShaper::kMaxShape);
+		_waveShapeParameterSpin1->setEnabled(true);
+		_waveShapeParameterSpin1->setRange(seir::synth::QuinticShaper::kMinShape, seir::synth::QuinticShaper::kMaxShape);
+		_waveShapeParameterSpin2->setEnabled(false);
+		_waveShapeParameterSpin2->setRange(0.0, 0.0);
 	}
 	else
 	{
-		_waveShapeParameterSpin->setEnabled(false);
-		_waveShapeParameterSpin->setRange(0.0, 0.0);
+		_waveShapeParameterSpin1->setEnabled(false);
+		_waveShapeParameterSpin1->setRange(0.0, 0.0);
+		_waveShapeParameterSpin2->setEnabled(false);
+		_waveShapeParameterSpin2->setRange(0.0, 0.0);
 	}
 }
 
@@ -426,7 +466,8 @@ void VoiceWidget::updateVoice()
 	if (!_voice)
 		return;
 	_voice->_waveShape = static_cast<seir::synth::WaveShape>(_waveShapeCombo->currentData().toInt());
-	_voice->_waveShapeParameter = static_cast<float>(_waveShapeParameterSpin->value());
+	_voice->_waveShapeParameters._shape1 = static_cast<float>(_waveShapeParameterSpin1->value());
+	_voice->_waveShapeParameters._shape2 = static_cast<float>(_waveShapeParameterSpin2->value());
 	storeEnvelope(_voice->_amplitudeEnvelope, _amplitudeEnvelope);
 	_voice->_tremolo._frequency = static_cast<float>(_tremoloFrequencySpin->value());
 	_voice->_tremolo._magnitude = static_cast<float>(_tremoloMagnitudeSpin->value());
@@ -444,5 +485,9 @@ void VoiceWidget::updateVoice()
 
 void VoiceWidget::updateWaveImage()
 {
-	_waveShapeWidget->setShape(static_cast<seir::synth::WaveShape>(_waveShapeCombo->currentData().toInt()), static_cast<float>(_waveShapeParameterSpin->value()));
+	_waveShapeWidget->setShape(static_cast<seir::synth::WaveShape>(_waveShapeCombo->currentData().toInt()),
+		{
+			static_cast<float>(_waveShapeParameterSpin1->value()),
+			static_cast<float>(_waveShapeParameterSpin2->value()),
+		});
 }

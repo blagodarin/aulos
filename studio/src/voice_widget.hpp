@@ -54,7 +54,8 @@ private:
 	QSpinBox* _sourceWidthSpin = nullptr;
 	QSpinBox* _sourceOffsetSpin = nullptr;
 	QComboBox* _waveShapeCombo = nullptr;
-	QDoubleSpinBox* _waveShapeParameterSpin = nullptr;
+	QDoubleSpinBox* _waveShapeParameterSpin1 = nullptr;
+	QDoubleSpinBox* _waveShapeParameterSpin2 = nullptr;
 	WaveShapeWidget* _waveShapeWidget = nullptr;
 	std::vector<EnvelopeChange> _amplitudeEnvelope;
 	QSpinBox* _tremoloFrequencySpin = nullptr;

@@ -1,5 +1,5 @@
 author "Johann Sebastian Bach"
-gain 268
+gain 283
 speed 12
 title "Little Fugue"
 
@@ -9,7 +9,7 @@ asymmetry 0 0.50 150 0.50 0 0.45
 frequency 0 -0.50 5 0.00
 oscillation 0 0.40 250 0.00
 tremolo 5.00 0.25
-wave quintic 0.00
+wave cosine3
 
 @track 1 1
 polyphony full
