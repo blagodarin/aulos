@@ -16,11 +16,9 @@ option(AULOS_STUDIO_RELEASE "Produce release version of Aulos Studio")
 set(SEIR_AUDIO ON)
 set(SEIR_STATIC_RUNTIME OFF)
 set(SEIR_SYNTH ON)
-FetchContent_Declare(Seir GIT_REPOSITORY https://github.com/blagodarin/seir.git GIT_TAG 535447e07ae6239fb401cc991cf82ea51e2545ee)
+FetchContent_Declare(Seir GIT_REPOSITORY https://github.com/blagodarin/seir.git GIT_TAG a386d5efc77d54e5124738a3a2a41598339bbec4)
 FetchContent_MakeAvailable(Seir)
 seir_defaults()
-
-set_property(GLOBAL PROPERTY AUTOGEN_SOURCE_GROUP "gen")
 
 # Qt headers don't compile with high warning levels. :(
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
